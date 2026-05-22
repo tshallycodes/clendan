@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(claude mcp *)",
+      "WebSearch",
+      "Bash(Out-String)",
+      "Bash(npx create-next-app@latest clendan-demo --typescript --tailwind --app --no-git --eslint --yes)",
+      "Bash(npm install *)",
+      "Bash(npx shadcn@latest init --yes --defaults)",
+      "Bash(npm run *)",
+      "Bash(git -C \"c:\\\\Users\\\\bubut\\\\Documents\\\\personalprojects\\\\Clendan\" log --oneline -5)",
+      "Bash(git -C \"c:\\\\Users\\\\bubut\\\\Documents\\\\personalprojects\\\\Clendan\" status --short)",
+      "Bash(powershell -Command \"Get-Content 'C:\\\\Users\\\\bubut\\\\.claude\\\\projects\\\\c--Users-bubut-Documents-personalprojects-Clendan\\\\c3ab0e0b-d6b3-4cb8-822c-61c0fe2a2952.jsonl' | Select-Object -Last 100\")",
+      "Bash(powershell -Command \"Get-Process node -ErrorAction SilentlyContinue | Select-Object Id, CPU, StartTime\")",
+      "mcp__playwright__browser_navigate",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000)",
+      "mcp__playwright__browser_take_screenshot",
+      "Bash(node -e \"const l = require\\('lucide-react'\\); console.log\\(Object.keys\\(l\\).filter\\(k => /git|link|twitter|x$/i.test\\(k\\)\\).join\\('\\\\n'\\)\\)\")"
+    ]
+  }
+}

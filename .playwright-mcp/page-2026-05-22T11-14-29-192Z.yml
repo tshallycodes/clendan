@@ -1,0 +1,375 @@
+- generic [active] [ref=e1]:
+  - banner [ref=e2]:
+    - generic [ref=e3]:
+      - link "C Clendan" [ref=e4] [cursor=pointer]:
+        - /url: /
+        - generic [ref=e5]: C
+        - generic [ref=e6]: Clendan
+      - navigation [ref=e7]:
+        - link "How It Works" [ref=e8] [cursor=pointer]:
+          - /url: /how-it-works
+        - link "Workers" [ref=e9] [cursor=pointer]:
+          - /url: /workers
+        - link "API Tools" [ref=e10] [cursor=pointer]:
+          - /url: /api-tools
+        - link "Pricing" [ref=e11] [cursor=pointer]:
+          - /url: /pricing
+        - link "Dashboard Demo" [ref=e12] [cursor=pointer]:
+          - /url: /dashboard
+      - generic [ref=e13]:
+        - link "View Docs" [ref=e14] [cursor=pointer]:
+          - /url: "#"
+        - link "Request Access" [ref=e15] [cursor=pointer]:
+          - /url: "#"
+  - main [ref=e16]:
+    - generic [ref=e18]:
+      - generic [ref=e19]:
+        - generic [ref=e20]: AI Financial Agent OS
+        - heading "Your Finance Team, Running on Autopilot" [level=1] [ref=e21]:
+          - text: Your Finance Team,
+          - text: Running on Autopilot
+        - paragraph [ref=e22]: Deploy AI workers that connect to your financial systems, execute tasks autonomously, and produce full audit trails for every action. Not a dashboard. Execution infrastructure.
+      - generic [ref=e23]:
+        - link "Deploy Your First Worker" [ref=e24] [cursor=pointer]:
+          - /url: /dashboard
+        - link "See How It Works →" [ref=e25] [cursor=pointer]:
+          - /url: /how-it-works
+      - generic [ref=e27]:
+        - generic [ref=e32]: clendan-orchestrator
+        - generic [ref=e35]: ">"
+      - generic [ref=e37]:
+        - paragraph [ref=e38]: Trusted integrations with
+        - generic [ref=e39]:
+          - generic [ref=e40]: Xero
+          - generic [ref=e41]: QuickBooks
+          - generic [ref=e42]: Plaid
+          - generic [ref=e43]: Stripe
+          - generic [ref=e44]: NetSuite
+          - generic [ref=e45]: Salesforce
+    - generic [ref=e47]:
+      - generic [ref=e48]:
+        - paragraph [ref=e49]: The Problem
+        - heading "Finance Operations Are Broken" [level=2] [ref=e50]
+      - generic [ref=e51]:
+        - generic [ref=e52]:
+          - generic [ref=e53]: 66%
+          - paragraph [ref=e54]: of AP teams still process invoices manually
+          - paragraph [ref=e55]: "Source: Ardent Partners 2025"
+        - generic [ref=e56]:
+          - generic [ref=e57]: 6+ days
+          - paragraph [ref=e58]: is how long 50% of finance teams take to close the books
+          - paragraph [ref=e59]: "Source: Ledge 2025"
+        - generic [ref=e60]:
+          - generic [ref=e61]: $6+
+          - paragraph [ref=e62]: to process a single invoice manually — before errors
+          - paragraph [ref=e63]: "Source: Industry average"
+    - generic [ref=e65]:
+      - generic [ref=e66]:
+        - paragraph [ref=e67]: The Solution
+        - heading "Autonomous Finance, End to End" [level=2] [ref=e68]
+      - generic [ref=e69]:
+        - generic [ref=e70]:
+          - generic [ref=e71]: "01"
+          - heading "Deploy AI Workers" [level=3] [ref=e72]
+          - paragraph [ref=e73]: Pre-built agents for every finance function. Invoice processing, reconciliation, fraud detection — deploy in minutes, not months.
+        - generic [ref=e74]:
+          - generic [ref=e75]: "02"
+          - heading "Connect Your Tools" [level=3] [ref=e76]
+          - paragraph [ref=e77]: OAuth into Xero, QuickBooks, Plaid, and Stripe. Clendan never stores credentials. All tokens are encrypted and scoped.
+        - generic [ref=e78]:
+          - generic [ref=e79]: "03"
+          - heading "Execute With Full Audit" [level=3] [ref=e80]
+          - paragraph [ref=e81]: Every agent action is logged before it is taken. Immutable. Searchable. Exportable. Policy-bound at every step.
+    - generic [ref=e83]:
+      - heading "How It Works" [level=2] [ref=e85]
+      - generic [ref=e86]:
+        - generic [ref=e88]:
+          - generic [ref=e89]: "01"
+          - generic [ref=e90]: Connect
+          - generic [ref=e91]: OAuth your tools in minutes
+        - generic [ref=e94]:
+          - generic [ref=e95]: "02"
+          - generic [ref=e96]: Configure
+          - generic [ref=e97]: Set autonomy level and policies
+        - generic [ref=e100]:
+          - generic [ref=e101]: "03"
+          - generic [ref=e102]: Execute
+          - generic [ref=e103]: Workers run tasks autonomously
+        - generic [ref=e106]:
+          - generic [ref=e107]: "04"
+          - generic [ref=e108]: Monitor
+          - generic [ref=e109]: Full audit trail in real time
+    - generic [ref=e111]:
+      - generic [ref=e112]:
+        - paragraph [ref=e113]: AI Workers
+        - heading "10 AI Workers. Every Finance Function Covered." [level=2] [ref=e114]
+      - generic [ref=e115]:
+        - generic [ref=e117] [cursor=pointer]:
+          - generic [ref=e118]:
+            - heading "Invoice Processing Worker" [level=3] [ref=e119]
+            - generic [ref=e120]: MVP
+          - paragraph [ref=e121]: Receives, parses, validates, and routes invoices automatically. Creates bills in your ERP and schedules payments.
+          - generic [ref=e122]:
+            - generic [ref=e123]: Invoice Parser API
+            - generic [ref=e124]: Xero
+            - generic [ref=e125]: QuickBooks
+            - generic [ref=e126]: Policy Engine
+        - generic [ref=e128] [cursor=pointer]:
+          - generic [ref=e129]:
+            - heading "AI Accountant Worker" [level=3] [ref=e130]
+            - generic [ref=e131]: MVP
+          - paragraph [ref=e132]: Categorises transactions, reconciles accounts, and closes the books. Flags anomalies for human review.
+          - generic [ref=e133]:
+            - generic [ref=e134]: Plaid
+            - generic [ref=e135]: Xero
+            - generic [ref=e136]: QuickBooks
+            - generic [ref=e137]: Reconciliation API
+        - generic [ref=e139] [cursor=pointer]:
+          - generic [ref=e140]:
+            - heading "Reconciliation Worker" [level=3] [ref=e141]
+            - generic [ref=e142]: V2
+          - paragraph [ref=e143]: Compares bank feeds against ledger entries in real time. Detects drift and triggers alerts.
+          - generic [ref=e144]:
+            - generic [ref=e145]: Plaid
+            - generic [ref=e146]: TrueLayer
+            - generic [ref=e147]: Xero
+            - generic [ref=e148]: Reconciliation API
+        - generic [ref=e150] [cursor=pointer]:
+          - generic [ref=e151]:
+            - heading "Expense Control Worker" [level=3] [ref=e152]
+            - generic [ref=e153]: V2
+          - paragraph [ref=e154]: Validates expense submissions against policy. Approves, rejects, or escalates based on rules.
+          - generic [ref=e155]:
+            - generic [ref=e156]: Receipt OCR API
+            - generic [ref=e157]: Policy Engine
+            - generic [ref=e158]: Slack
+        - generic [ref=e160] [cursor=pointer]:
+          - generic [ref=e161]:
+            - heading "Collections Worker" [level=3] [ref=e162]
+            - generic [ref=e163]: V2
+          - paragraph [ref=e164]: Chases overdue invoices with escalating reminders. Triggers payment collection via GoCardless.
+          - generic [ref=e165]:
+            - generic [ref=e166]: GoCardless
+            - generic [ref=e167]: Resend
+            - generic [ref=e168]: Stripe
+            - generic [ref=e169]: InvoiceFlow API
+        - generic [ref=e171] [cursor=pointer]:
+          - generic [ref=e172]:
+            - heading "Fraud Detection Worker" [level=3] [ref=e173]
+            - generic [ref=e174]: V2
+          - paragraph [ref=e175]: Scores every transaction for fraud risk using Stripe Radar signals and internal baselines.
+          - generic [ref=e176]:
+            - generic [ref=e177]: Fraud Signal API
+            - generic [ref=e178]: Stripe Radar
+            - generic [ref=e179]: Policy Engine
+        - generic [ref=e181] [cursor=pointer]:
+          - generic [ref=e182]:
+            - heading "Treasury Worker" [level=3] [ref=e183]
+            - generic [ref=e184]: V2
+          - paragraph [ref=e185]: Monitors cash positions across accounts and optimises fund allocation against targets.
+          - generic [ref=e186]:
+            - generic [ref=e187]: Plaid
+            - generic [ref=e188]: TrueLayer
+            - generic [ref=e189]: Policy Engine
+        - generic [ref=e191] [cursor=pointer]:
+          - generic [ref=e192]:
+            - heading "Revenue Recognition Worker" [level=3] [ref=e193]
+            - generic [ref=e194]: V2
+          - paragraph [ref=e195]: Automates ASC 606 / IFRS 15 revenue scheduling from Stripe subscription data.
+          - generic [ref=e196]:
+            - generic [ref=e197]: Stripe Billing
+            - generic [ref=e198]: Xero
+            - generic [ref=e199]: QuickBooks
+        - generic [ref=e201] [cursor=pointer]:
+          - generic [ref=e202]:
+            - heading "Credit Underwriting Worker" [level=3] [ref=e203]
+            - generic [ref=e204]: V3
+          - paragraph [ref=e205]: Evaluates creditworthiness using financial data and pre-computed credit signals.
+          - generic [ref=e206]:
+            - generic [ref=e207]: Plaid
+            - generic [ref=e208]: DebtStack API
+            - generic [ref=e209]: Policy Engine
+        - generic [ref=e211] [cursor=pointer]:
+          - generic [ref=e212]:
+            - heading "Compliance Worker" [level=3] [ref=e213]
+            - generic [ref=e214]: V3
+          - paragraph [ref=e215]: Monitors transactions for AML patterns and regulatory thresholds. Generates SARs automatically.
+          - generic [ref=e216]:
+            - generic [ref=e217]: Fraud Signal API
+            - generic [ref=e218]: Policy Engine
+            - generic [ref=e219]: Audit Trail
+    - generic [ref=e221]:
+      - generic [ref=e222]:
+        - paragraph [ref=e223]: Standalone APIs
+        - heading "5 APIs. Use Them Inside Clendan or On Their Own." [level=2] [ref=e224]
+      - generic [ref=e225]:
+        - generic [ref=e226]:
+          - generic [ref=e227]:
+            - generic [ref=e228]: Invoice Parser API
+            - generic [ref=e229]: POST /v1/parse/invoice
+          - paragraph [ref=e230]: Extracts structured data from invoice PDFs using Claude Vision. Returns vendor, amount, line items, due date, and PO reference with confidence scores.
+          - link "Try It →" [ref=e231] [cursor=pointer]:
+            - /url: /api-tools
+        - generic [ref=e232]:
+          - generic [ref=e233]:
+            - generic [ref=e234]: Receipt OCR + Policy Check API
+            - generic [ref=e235]: POST /v1/parse/receipt
+          - paragraph [ref=e236]: OCR-extracts receipt data and runs it through your policy engine in a single call. Returns structured data plus an approval decision.
+          - link "Try It →" [ref=e237] [cursor=pointer]:
+            - /url: /api-tools
+        - generic [ref=e238]:
+          - generic [ref=e239]:
+            - generic [ref=e240]: Document Reconciliation API
+            - generic [ref=e241]: POST /v1/reconcile
+          - paragraph [ref=e242]: Matches purchase orders against invoices and delivery notes. Returns match status, discrepancies, and recommended action.
+          - link "Try It →" [ref=e243] [cursor=pointer]:
+            - /url: /api-tools
+        - generic [ref=e244]:
+          - generic [ref=e245]:
+            - generic [ref=e246]: Fraud Signal API
+            - generic [ref=e247]: POST /v1/fraud/score
+          - paragraph [ref=e248]: Returns a 0–100 fraud risk score for any financial transaction. Integrates Stripe Radar signals with your internal baseline.
+          - link "Try It →" [ref=e249] [cursor=pointer]:
+            - /url: /api-tools
+        - generic [ref=e250]:
+          - generic [ref=e251]:
+            - generic [ref=e252]: Contract Data Extraction API
+            - generic [ref=e253]: POST /v1/parse/contract
+          - paragraph [ref=e254]: "Extracts key terms from contracts: parties, payment terms, SLAs, renewal dates, and penalty clauses."
+          - link "Try It →" [ref=e255] [cursor=pointer]:
+            - /url: /api-tools
+    - generic [ref=e257]:
+      - generic [ref=e258]:
+        - paragraph [ref=e259]: Integrations
+        - heading "Plugs Into Your Existing Stack" [level=2] [ref=e260]
+      - generic [ref=e261]:
+        - generic [ref=e262]:
+          - generic [ref=e263]: Accounting
+          - generic [ref=e264]:
+            - generic [ref=e265]: Xero
+            - generic [ref=e266]: QuickBooks
+            - generic [ref=e267]: FreshBooks
+            - generic [ref=e268]: Sage
+        - generic [ref=e269]:
+          - generic [ref=e270]: Banking
+          - generic [ref=e271]:
+            - generic [ref=e272]: Plaid
+            - generic [ref=e273]: TrueLayer
+            - generic [ref=e274]: Codat
+        - generic [ref=e275]:
+          - generic [ref=e276]: Payments
+          - generic [ref=e277]:
+            - generic [ref=e278]: Stripe
+            - generic [ref=e279]: GoCardless
+            - generic [ref=e280]: Adyen
+        - generic [ref=e281]:
+          - generic [ref=e282]: ERP
+          - generic [ref=e283]:
+            - generic [ref=e284]: NetSuite
+            - generic [ref=e285]: SAP
+            - generic [ref=e286]: Microsoft Dynamics
+        - generic [ref=e287]:
+          - generic [ref=e288]: CRM
+          - generic [ref=e289]:
+            - generic [ref=e290]: Salesforce
+            - generic [ref=e291]: HubSpot
+        - generic [ref=e292]:
+          - generic [ref=e293]: Storage
+          - generic [ref=e294]:
+            - generic [ref=e295]: Gmail
+            - generic [ref=e296]: Outlook
+            - generic [ref=e297]: Google Drive
+            - generic [ref=e298]: Dropbox
+    - generic [ref=e300]:
+      - generic [ref=e301]:
+        - generic [ref=e302]:
+          - paragraph [ref=e303]: "\"We cut invoice processing time from 4 days to 40 minutes. Clendan handles everything our finance team used to do manually.\""
+          - generic [ref=e304]: Sarah Chen
+          - generic [ref=e305]: CFO, Orbital Labs
+        - generic [ref=e306]:
+          - paragraph [ref=e307]: "\"The audit trail is the killer feature. Every decision, every amount, every approval — logged and searchable. Auditors love it.\""
+          - generic [ref=e308]: James Whitfield
+          - generic [ref=e309]: Finance Director, Apex Cloud
+        - generic [ref=e310]:
+          - paragraph [ref=e311]: "\"Month-end close went from 6 days to 1 day. The AI Accountant Worker is essentially a staff member now.\""
+          - generic [ref=e312]: Priya Nair
+          - generic [ref=e313]: VP Finance, Stackwell
+      - generic [ref=e314]:
+        - heading "Ready to Automate Your Finance Stack?" [level=2] [ref=e315]
+        - paragraph [ref=e316]: Deploy your first AI worker in under 10 minutes.
+        - link "Request Early Access" [ref=e317] [cursor=pointer]:
+          - /url: "#"
+  - contentinfo [ref=e318]:
+    - generic [ref=e319]:
+      - generic [ref=e320]:
+        - generic [ref=e321]:
+          - generic [ref=e322]:
+            - generic [ref=e323]: C
+            - generic [ref=e324]: Clendan
+          - paragraph [ref=e325]: AI execution infrastructure for autonomous finance operations.
+          - generic [ref=e326]:
+            - link "GitHub" [ref=e327] [cursor=pointer]:
+              - /url: "#"
+              - img [ref=e328]
+            - link "LinkedIn" [ref=e330] [cursor=pointer]:
+              - /url: "#"
+              - img [ref=e331]
+            - link "X / Twitter" [ref=e333] [cursor=pointer]:
+              - /url: "#"
+              - img [ref=e334]
+        - generic [ref=e336]:
+          - heading "Product" [level=4] [ref=e337]
+          - list [ref=e338]:
+            - listitem [ref=e339]:
+              - link "Workers" [ref=e340] [cursor=pointer]:
+                - /url: /workers
+            - listitem [ref=e341]:
+              - link "API Tools" [ref=e342] [cursor=pointer]:
+                - /url: /api-tools
+            - listitem [ref=e343]:
+              - link "Pricing" [ref=e344] [cursor=pointer]:
+                - /url: /pricing
+            - listitem [ref=e345]:
+              - link "Changelog" [ref=e346] [cursor=pointer]:
+                - /url: "#"
+        - generic [ref=e347]:
+          - heading "Company" [level=4] [ref=e348]
+          - list [ref=e349]:
+            - listitem [ref=e350]:
+              - link "About" [ref=e351] [cursor=pointer]:
+                - /url: "#"
+            - listitem [ref=e352]:
+              - link "Blog" [ref=e353] [cursor=pointer]:
+                - /url: "#"
+            - listitem [ref=e354]:
+              - link "Careers" [ref=e355] [cursor=pointer]:
+                - /url: "#"
+        - generic [ref=e356]:
+          - heading "Developers" [level=4] [ref=e357]
+          - list [ref=e358]:
+            - listitem [ref=e359]:
+              - link "Docs" [ref=e360] [cursor=pointer]:
+                - /url: "#"
+            - listitem [ref=e361]:
+              - link "API Reference" [ref=e362] [cursor=pointer]:
+                - /url: "#"
+            - listitem [ref=e363]:
+              - link "Status" [ref=e364] [cursor=pointer]:
+                - /url: "#"
+        - generic [ref=e365]:
+          - heading "Legal" [level=4] [ref=e366]
+          - list [ref=e367]:
+            - listitem [ref=e368]:
+              - link "Privacy" [ref=e369] [cursor=pointer]:
+                - /url: "#"
+            - listitem [ref=e370]:
+              - link "Terms" [ref=e371] [cursor=pointer]:
+                - /url: "#"
+            - listitem [ref=e372]:
+              - link "Security" [ref=e373] [cursor=pointer]:
+                - /url: "#"
+      - generic [ref=e374]:
+        - paragraph [ref=e375]: © 2026 Clendan. All rights reserved.
+        - paragraph [ref=e376]: Built for finance teams that move fast.
+  - button "Open Next.js Dev Tools" [ref=e382] [cursor=pointer]:
+    - img [ref=e383]
