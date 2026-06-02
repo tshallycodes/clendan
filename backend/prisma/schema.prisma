@@ -1,0 +1,140 @@
+generator client {
+  provider             = "prisma-client-py"
+  interface            = "asyncio"
+  recursive_type_depth = 5
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Tenant {
+  id         String   @id @default(cuid())
+  name       String
+  created_at DateTime @default(now())
+
+  users        User[]
+  integrations Integration[]
+  workers      Worker[]
+  executions   Execution[]
+  approvals    Approval[]
+  audit_logs   AuditLog[]
+  invoices     Invoice[]
+}
+
+model User {
+  id            String @id @default(cuid())
+  tenant_id     String
+  clerk_user_id String @unique
+  email         String
+  role          String @default("member")
+
+  tenant    Tenant     @relation(fields: [tenant_id], references: [id])
+  approvals Approval[]
+
+  @@index([tenant_id])
+  @@index([clerk_user_id])
+}
+
+model Integration {
+  id                    String    @id @default(cuid())
+  tenant_id             String
+  type                  String
+  encrypted_credentials String
+  status                String    @default("pending")
+  connected_at          DateTime?
+
+  tenant Tenant @relation(fields: [tenant_id], references: [id])
+
+  @@index([tenant_id])
+}
+
+model Worker {
+  id             String @id @default(cuid())
+  tenant_id      String
+  type           String
+  config_json    Json
+  autonomy_level String @default("approve")
+  version        Int    @default(1)
+  status         String @default("inactive")
+
+  tenant     Tenant      @relation(fields: [tenant_id], references: [id])
+  executions Execution[]
+
+  @@index([tenant_id])
+}
+
+model Execution {
+  id          String   @id @default(cuid())
+  tenant_id   String
+  worker_id   String
+  input_ref   String
+  decision    String
+  confidence  Float
+  status      String
+  duration_ms Int?
+  created_at  DateTime @default(now())
+
+  tenant   Tenant     @relation(fields: [tenant_id], references: [id])
+  worker   Worker     @relation(fields: [worker_id], references: [id])
+  approval Approval?
+  audit    AuditLog[]
+
+  @@index([tenant_id])
+  @@index([worker_id])
+}
+
+model Approval {
+  id           String    @id @default(cuid())
+  tenant_id    String
+  execution_id String    @unique
+  status       String    @default("pending")
+  requested_at DateTime  @default(now())
+  responded_at DateTime?
+  responder_id String?
+  expires_at   DateTime
+
+  tenant    Tenant    @relation(fields: [tenant_id], references: [id])
+  execution Execution @relation(fields: [execution_id], references: [id])
+  responder User?     @relation(fields: [responder_id], references: [id])
+
+  @@index([tenant_id])
+  @@index([execution_id])
+}
+
+model AuditLog {
+  id                   String   @id @default(cuid())
+  tenant_id            String
+  execution_id         String?
+  actor                String
+  action               String
+  reasoning_trace_json Json
+  model_version        String
+  created_at           DateTime @default(now())
+
+  tenant    Tenant     @relation(fields: [tenant_id], references: [id])
+  execution Execution? @relation(fields: [execution_id], references: [id])
+
+  @@index([tenant_id])
+  @@index([execution_id])
+}
+
+model Invoice {
+  id               String    @id @default(cuid())
+  tenant_id        String
+  vendor           String
+  invoice_number   String
+  amount_minor     Int
+  currency         String    @default("GBP")
+  due_date         DateTime?
+  status           String    @default("pending")
+  raw_document_ref String?
+  parsed_json      Json?
+  created_at       DateTime  @default(now())
+
+  tenant Tenant @relation(fields: [tenant_id], references: [id])
+
+  @@index([tenant_id])
+  @@index([tenant_id, invoice_number])
+}

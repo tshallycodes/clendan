@@ -1,579 +1,170 @@
-# Clendan — Website Demo Tasks
-# Claude Code Implementation Guide
-# Version: 1.0 | Status: Demo / Visual Preview Only
-# Purpose: Build a static visual demo of the Clendan website to preview
-#          look and feel before actual backend development begins.
-#          No real APIs, no real auth, no real database — all mock data.
+# Clendan — Build Task Tracker
+
+All phases from master-build-prompt.md. Each session builds ONE phase, confirms green, then stops.
 
 ---
 
-## Project Overview
+## FOUNDATION ✅ COMPLETE (2026-06-02)
 
-Clendan is an AI Financial Agent OS. The website demo should communicate:
-- What Clendan is (execution infrastructure for autonomous finance)
-- Who it is for (CFOs, Finance Managers, CTOs at SaaS/fintech companies)
-- How it works (deploy AI workers, connect financial tools, execute autonomously)
-- Why it is different (not a dashboard, not a chatbot — actual execution with audit trails)
-
----
-
-## Brand
-
-```
-Name:         Clendan
-Primary:      #00C853 (Electric Growth green)
-Background:   #0a0a0f (near black)
-Surface:      #111118
-Border:       #1a2a1a
-Text:         #e8f0e8
-Muted text:   #4a6a4a
-Danger:       #ff4d6d
-Info:         #00a8cc
-Font 1:       Syne (headings) — Google Fonts
-Font 2:       IBM Plex Mono (body, code) — Google Fonts
-Border radius: 4px (sharp but not harsh)
-```
+- [x] Scaffold repo structure (frontend/, backend/, prisma/, tests/)
+- [x] `frontend/` — Next.js 16 (App Router, TypeScript, Tailwind, shadcn/ui deps, Vitest)
+- [x] `backend/app/core/config.py` — Pydantic Settings v2, all config from env vars
+- [x] `backend/app/core/db.py` — Prisma client singleton
+- [x] `backend/app/core/security.py` — Clerk JWT verification via JWKS
+- [x] `backend/app/core/logging.py` — Structured JSON logging with ContextVar trace IDs
+- [x] `backend/app/main.py` — FastAPI app factory, CORS, trace middleware, `/health`, `/ready`
+- [x] `backend/prisma/schema.prisma` — 8 models: Tenant, User, Integration, Worker, Execution, Approval, AuditLog, Invoice
+- [x] `docker-compose.yml` — Postgres 16 + Redis 7 + backend
+- [x] `.env.example` — all required variables listed
+- [x] `.gitignore`, `README.md`
+- [x] Backend smoke tests: 2/2 passing (`/health`, `/ready`)
+- [x] Frontend smoke test: 1/1 passing
+- [x] Frontend build: compiled successfully
 
 ---
 
-## Tech Stack for Demo
+## PHASE 1 — Invoice Parser + Policy + Audit + Worker
 
-```
-Framework:    Next.js 14 with App Router
-Language:     TypeScript
-Styling:      Tailwind CSS
-Components:   shadcn/ui
-Animation:    Framer Motion
-Icons:        Lucide React
-Charts:       Recharts (for dashboard mockup)
-Fonts:        next/font with Google Fonts
-```
+> Start only after foundation confirmed green. ✅ Ready.
 
----
+### 1.1 Invoice Parser API — `POST /v1/parse/invoice`
+- [ ] Accept PDF/PNG/JPG upload
+- [ ] Call Claude (Anthropic SDK) to extract: vendor, invoice_number, line_items, amount_minor (integer), currency, due_date, vat, po_number, confidence
+- [ ] Pydantic output model — validate before returning; empty/low-confidence is not success
+- [ ] Idempotency-Key header support
+- [ ] Standard response shape: `{ data, error, trace_id, timestamp }`
 
-## Setup Instructions
+### 1.2 Policy Engine — `app/policy/`
+- [ ] Deterministic rule evaluation on every worker output
+- [ ] Rule: amount threshold — auto under X, approve X–Y, block above Y
+- [ ] Rule: verified-supplier check
+- [ ] Rule: currency allow-list
+- [ ] Pure functions, no side effects
+- [ ] Full unit test coverage of all branches
 
-```bash
-npx create-next-app@latest clendan-demo --typescript --tailwind --app
-cd clendan-demo
-npx shadcn-ui@latest init
-npm install framer-motion lucide-react recharts
-npm install @next/font
-```
+### 1.3 Audit Logger — `app/audit/`
+- [ ] Append-only writes to AuditLog table
+- [ ] Full reasoning trace stored, never truncated
+- [ ] If audit write fails → operation fails (no silent success)
+- [ ] Unit tests: confirm append-only behaviour
 
-Configure tailwind.config.ts to include Clendan brand colors:
+### 1.4 Invoice Processing Worker — `app/workers/invoice_processing.py`
+- [ ] Clear interface callable by Orchestrator as a tool
+- [ ] Flow: parse → validate supplier → policy check → decision → mock accounting write → audit → return
+- [ ] Currency as integer minor units throughout; format only at display edge
+- [ ] Three outcomes: auto-approved, approval-required, blocked
 
-```js
-colors: {
-  brand: {
-    green: '#00C853',
-    bg: '#0a0a0f',
-    surface: '#111118',
-    border: '#1a2a1a',
-    text: '#e8f0e8',
-    muted: '#4a6a4a',
-    danger: '#ff4d6d',
-    info: '#00a8cc',
-  }
-}
-```
+### 1.5 Execution API — `POST /v1/agents/{worker_id}/run`
+- [ ] Idempotent — same idempotency key returns same result
+- [ ] Runs worker through BullMQ queue (not in request thread)
+- [ ] Scoped to tenant; RLS enforced at DB AND app layer
+- [ ] Standard response shape
 
----
+### 1.6 Approval API — `POST /v1/approvals/{id}/respond`
+- [ ] Approve / reject actions
+- [ ] Enforces approval expiry TTL — stale approvals rejected
+- [ ] Scoped to tenant
 
-## Pages to Build
+### 1.7 Queue Wiring
+- [ ] BullMQ + Redis integration
+- [ ] Worker execution runs via queue, not in request thread
+- [ ] Dead-letter queue for failed jobs
 
-### Page 1 — Landing Page (/)
-### Page 2 — How It Works (/how-it-works)
-### Page 3 — AI Workers (/workers)
-### Page 4 — API Tools (/api-tools)
-### Page 5 — Dashboard Demo (/dashboard)
-### Page 6 — Pricing (/pricing)
-
----
-
-## Page 1 — Landing Page (/)
-
-### Section 1.1 — Navigation Bar
-- Logo: square bracket with "C" inside, next to "CLENDAN" in Syne bold, uppercase, letter-spaced
-- Nav links: How It Works, Workers, API Tools, Pricing, Dashboard Demo
-- CTA button: "Request Access" — filled green, sharp corners
-- Secondary CTA: "View Docs" — outlined
-- Sticky on scroll with subtle border appearing on scroll
-- Mobile: hamburger menu
-
-### Section 1.2 — Hero
-- Headline (large, Syne, 700 weight):
-  "Your Finance Team,\nRunning on Autopilot"
-- Sub-headline (IBM Plex Mono, muted):
-  "Deploy AI workers that connect to your financial systems,\nexecute tasks autonomously, and produce full audit trails\nfor every action. Not a dashboard. Execution infrastructure."
-- Two CTAs: "Deploy Your First Worker" (green filled) and "See How It Works" (ghost)
-- Animated terminal window below CTAs showing a live-looking execution log:
-  ```
-  [09:14:32] Invoice received — Acme Supplies Ltd
-  [09:14:33] Parser API — extracted 6 fields — confidence: 0.97
-  [09:14:33] Policy check — £1,240 — approval required
-  [09:14:34] Approval request sent → sarah@company.com
-  [09:14:51] Approved by Sarah Chen
-  [09:14:52] Bill created in Xero — INV-2026-0041
-  [09:14:52] Payment scheduled — 2026-06-15
-  [09:14:52] Audit log written ✓
-  ```
-  Lines should animate in one by one with a typing effect and blinking cursor
-- Background: subtle animated grid pattern in very dark green, low opacity
-- Below hero: logos strip — "Trusted integrations with" + Xero, QuickBooks, Plaid, Stripe, NetSuite, Salesforce logos (use text placeholders if SVGs unavailable)
-
-### Section 1.3 — Problem Statement
-- Three column cards showing the problem:
-  - Card 1: "66% of AP teams still process invoices manually" — source: Ardent Partners 2025
-  - Card 2: "50% of finance teams take 6+ days to close the books" — source: Ledge 2025
-  - Card 3: "$6+ to process a single invoice manually" — source: industry average
-- Each card: large stat in green, description below, source in muted text
-- Section headline: "Finance Operations Are Broken"
-
-### Section 1.4 — Solution Overview
-- Three column feature cards:
-  - "Deploy AI Workers" — icon, short description
-  - "Connect Your Tools" — icon, short description  
-  - "Execute With Full Audit" — icon, short description
-- Each card should have a thin green left border accent
-
-### Section 1.5 — How It Works (summary)
-- Horizontal step-by-step flow: Connect → Configure → Execute → Monitor
-- Each step has a number, title, and one-line description
-- Connected by a dashed line between steps
-- On mobile: vertical stack
-
-### Section 1.6 — Worker Showcase
-- Headline: "10 AI Workers. Every Finance Function Covered."
-- Grid of worker cards (2 per row on desktop, 1 on mobile):
-  - Invoice Processing Worker — MVP badge
-  - AI Accountant Worker — MVP badge
-  - Reconciliation Worker — V2 badge
-  - Expense Control Worker — V2 badge
-  - Collections Worker — V2 badge
-  - Fraud Detection Worker — V2 badge
-  - Treasury Worker — V2 badge
-  - Revenue Recognition Worker — V2 badge
-  - Credit Underwriting Worker — V3 badge
-  - Compliance Worker — V3 badge
-- Each card: worker name, one-line description, badge, tools list as small pills
-- Hover: card lifts slightly, green border intensifies
-
-### Section 1.7 — Standalone API Tools
-- Headline: "5 Standalone APIs. Use Them Inside Clendan or On Their Own."
-- Horizontal scroll on mobile, grid on desktop
-- Cards for each API tool:
-  - Invoice Parser API — POST /v1/parse/invoice
-  - Receipt OCR + Policy Check API — POST /v1/parse/receipt
-  - Document Reconciliation API — POST /v1/reconcile
-  - Fraud Signal API — POST /v1/fraud/score
-  - Contract Data Extraction API — POST /v1/parse/contract
-- Each card shows the endpoint in monospace, description, and "Try It" ghost button
-
-### Section 1.8 — Integration Strip
-- Headline: "Plugs Into Your Existing Stack"
-- Grid of integration logos/names with category labels:
-  - Accounting: Xero, QuickBooks, FreshBooks, Sage
-  - Banking: Plaid, TrueLayer, Codat
-  - Payments: Stripe, GoCardless, Adyen
-  - ERP: NetSuite, SAP, Microsoft Dynamics
-  - CRM: Salesforce, HubSpot
-  - Storage: Gmail, Outlook, Google Drive, Dropbox
-
-### Section 1.9 — Testimonial / Social Proof Placeholder
-- Three mock testimonial cards with placeholder names and companies
-- Quote about saving time on invoice processing or month-end close
-- Note in code comment: "REPLACE WITH REAL TESTIMONIALS"
-
-### Section 1.10 — CTA Banner
-- Full-width dark green tinted section
-- Headline: "Ready to Automate Your Finance Stack?"
-- Sub: "Deploy your first AI worker in under 10 minutes."
-- Button: "Request Early Access"
-
-### Section 1.11 — Footer
-- Logo + one-line description
-- Links: Product (Workers, API Tools, Pricing, Changelog), Company (About, Blog, Careers), Developers (Docs, API Reference, Status), Legal (Privacy, Terms, Security)
-- Bottom bar: copyright, "Built for finance teams that move fast"
-- Social icons: GitHub, LinkedIn, Twitter/X
+### 1.8 Tests
+- [ ] Unit: policy engine — all branches (auto / approve / block)
+- [ ] Unit: currency rounding
+- [ ] Unit: audit append behaviour
+- [ ] Integration: auto-approved execution end-to-end
+- [ ] Integration: approval-required execution end-to-end
+- [ ] Integration: blocked execution end-to-end
+- [ ] Proof: blocked case → no accounting write occurred
 
 ---
 
-## Page 2 — How It Works (/how-it-works)
+## PHASE 2 — Auth + Tenant Onboarding + RLS Verification
 
-### Layout
-- Step-by-step vertical scroll journey
-- Each step takes up most of the viewport height
-- Sticky progress indicator on the left showing which step the user is on
-
-### Steps to Show
-1. **Connect Your Tools** — show the OAuth connection flow mockup for Xero/QuickBooks
-2. **Deploy a Worker** — show the worker configuration UI with role, tools, autonomy level
-3. **Set Your Policies** — show the policy engine UI with approval thresholds and rules
-4. **Workers Execute** — show the animated execution log (same terminal component as hero)
-5. **Review & Approve** — show the approval queue UI
-6. **Monitor Everything** — show the dashboard with audit trail
+- [ ] Clerk auth wired end-to-end (frontend + backend)
+- [ ] Tenant onboarding flow
+- [ ] `require_auth` middleware applied to all protected routes
+- [ ] RLS policies written and applied to every PostgreSQL table
+- [ ] Cross-tenant isolation test: must FAIL to read another tenant's data
+- [ ] JWT verified server-side on every protected FastAPI route
 
 ---
 
-## Page 3 — AI Workers (/workers)
+## PHASE 3 — QuickBooks Integration (real, behind mocked interface)
 
-### Layout
-- Hero section with headline and description
-- Filter tabs: All Workers / MVP / V2 / V3
-- Grid of detailed worker cards
-- Each card expands on click to show:
-  - Full description
-  - Responsibilities list
-  - Tools it uses
-  - Sample output
-  - Which integrations it connects to
+- [ ] OAuth flow: auth → callback → encrypted token store
+- [ ] Initial sync after connect
+- [ ] Polling until data confirmed present
+- [ ] Mark integration as connected
+- [ ] Swap mock accounting write (Phase 1) for real QuickBooks client
+- [ ] Circuit breaker + retry with backoff on all QuickBooks calls
+- [ ] Encrypted credential storage (tenant-specific keys)
+- [ ] Error mapping — never expose raw QuickBooks errors to frontend
 
 ---
 
-## Page 4 — API Tools (/api-tools)
+## PHASE 4 — Plaid Integration + AI Accountant Worker
 
-### Layout
-- Hero: "5 APIs. Plug Into Any Stack."
-- For each API tool, a full section with:
-  - Endpoint URL
-  - Description
-  - Sample request (JSON code block, dark themed)
-  - Sample response (JSON code block)
-  - Use cases list
-  - "View Docs" button (placeholder link)
-- Code blocks should have syntax highlighting using a simple CSS approach
-- Language tabs: Python / Node.js / cURL
-
-### Sample Code Blocks to Include
-
-**Invoice Parser API — Python:**
-```python
-import requests
-
-response = requests.post(
-    "https://api.clendan.com/v1/parse/invoice",
-    headers={"Authorization": "Bearer YOUR_API_KEY"},
-    files={"file": open("invoice.pdf", "rb")}
-)
-
-data = response.json()
-print(data["vendor"])       # "Acme Supplies Ltd"
-print(data["total_amount"]) # 1240.00
-print(data["confidence"])   # 0.97
-```
-
-**Invoice Parser API — Node.js:**
-```javascript
-const FormData = require('form-data');
-const fs = require('fs');
-
-const form = new FormData();
-form.append('file', fs.createReadStream('invoice.pdf'));
-
-const response = await fetch('https://api.clendan.com/v1/parse/invoice', {
-  method: 'POST',
-  headers: { 'Authorization': 'Bearer YOUR_API_KEY', ...form.getHeaders() },
-  body: form
-});
-
-const data = await response.json();
-```
-
-Include similar patterns for the other 4 APIs.
+- [ ] Plaid Link integration (OAuth flow)
+- [ ] Bank transaction ingest
+- [ ] AI Accountant Worker: categorise transactions
+- [ ] AI Accountant Worker: match transactions to invoices
+- [ ] Reconciliation job: detect drift between Plaid and DB
+- [ ] Circuit breaker + retry on all Plaid calls
+- [ ] Zero trust: validate all Plaid data before writing to DB
 
 ---
 
-## Page 5 — Dashboard Demo (/dashboard)
+## PHASE 5 — Control-Plane Dashboard (Next.js frontend)
 
-This is the most important page. It should look like a real product dashboard with mock data.
-
-### Layout
-- Full-screen dashboard layout
-- Left sidebar navigation
-- Top bar with Clendan logo, search, notifications bell, user avatar
-
-### Sidebar Navigation Items
-- Overview (home icon)
-- Workers (bot icon)
-- Approvals (check icon) — show badge with number 3
-- Audit Trail (list icon)
-- Integrations (plug icon)
-- API Keys (key icon)
-- Settings (gear icon)
-
-### Main Content — Overview Tab (default view)
-
-**Top stats row (4 cards):**
-- Invoices Processed Today: 14 (+3 from yesterday)
-- Hours Saved This Month: 47.5 hrs
-- Pending Approvals: 3
-- Fraud Flags: 1
-
-**Execution Activity Chart:**
-- Line chart using Recharts
-- X axis: last 7 days
-- Y axis: number of executions
-- Two lines: auto-executed (green) vs required-approval (blue)
-- Mock data showing realistic daily volumes (15-40 range)
-
-**Recent Executions Table:**
-Columns: Time | Worker | Action | Amount | Status | View
-Mock rows:
-- 09:14 | Invoice Processing | Bill created in Xero | £1,240 | ✓ Auto | →
-- 09:02 | AI Accountant | Transaction categorised | £340 | ✓ Auto | →
-- 08:55 | Invoice Processing | Approval requested | £3,800 | ⏳ Pending | →
-- 08:41 | Fraud Detection | Transaction flagged | £12,400 | ⚠ Flagged | →
-- 08:30 | AI Accountant | Reconciliation complete | — | ✓ Auto | →
-
-**Active Workers Panel:**
-- Show 2 active workers with green pulse indicator
-- Invoice Processing Worker — running — processed 14 today
-- AI Accountant Worker — running — last action 2 mins ago
-
-### Approvals Tab
-
-List of pending approvals:
-- Each row: invoice vendor, amount, submitted by worker, time waiting, Approve / Reject buttons
-- Mock data: 3 pending approvals
-- Clicking Approve shows a success toast notification
-
-### Audit Trail Tab
-
-- Full log table with filters: All / Auto-Executed / Approved / Rejected / Flagged
-- Columns: Timestamp | Worker | Action | Decision | Reasoning | Trace ID
-- Clicking a row expands to show full reasoning trace:
-  ```
-  Decision: APPROVE
-  Worker: Invoice Processing Worker v1.2
-  Input: invoice.pdf — Acme Supplies Ltd — £1,240
-  Policy check: amount £1,240 < threshold £5,000 ✓
-  Supplier verified: Acme Supplies Ltd in approved list ✓
-  PO match: PO-2026-0089 matched ✓
-  Confidence: 0.97
-  Action: Bill created in Xero — ID: BILL-4421
-  Duration: 1.8 seconds
-  ```
+- [ ] Overview page: active workers, execution counts, approval queue depth, recent activity
+- [ ] Execution log page: all executions with status, confidence, duration; expandable reasoning trace
+- [ ] Approval queue page: pending approvals, approve/reject actions, expiry countdown
+- [ ] Audit trail page: immutable log, filterable by tenant/worker/date
+- [ ] Integrations page: connect/disconnect Xero, QuickBooks, Plaid; show sync status
+- [ ] API keys page: generate/revoke tenant API keys
+- [ ] All pages read from DB-backed endpoints only — no direct external API calls from UI
+- [ ] Design system applied: tokens, typography, motion rules from CLAUDE.md
+- [ ] Skeleton loaders (no full-screen spinners)
+- [ ] Every execution status change animates (Framer Motion)
+- [ ] Worker cards: accent border by status (green/blue/red)
 
 ---
 
-## Page 6 — Pricing (/pricing)
+## PHASE 6 — Receipt OCR API + Remaining Tools
 
-### Three Tiers
-
-**Starter — £299/month**
-- 2 AI workers
-- 500 executions/month
-- QuickBooks + Xero integrations
-- Basic policy engine
-- Email support
-- Audit trail: 30 days
-
-**Growth — £799/month** (highlight as most popular)
-- 5 AI workers
-- 5,000 executions/month
-- All integrations
-- Advanced policy engine
-- Standalone API access (10,000 calls/month)
-- Priority support
-- Audit trail: 1 year
-
-**Enterprise — Custom**
-- Unlimited workers
-- Unlimited executions
-- Custom integrations
-- SLA guarantee
-- Dedicated support
-- SOC 2 compliance
-- Audit trail: unlimited
-- On-premise option
-
-### Below Pricing Table
-- FAQ section with 5 questions:
-  1. What counts as an execution?
-  2. Can I build my own workers?
-  3. How does the audit trail work?
-  4. Is my financial data encrypted?
-  5. Do you offer a free trial?
-- Each question expands on click (accordion)
+- [ ] `POST /v1/parse/receipt` — OCR receipt image, extract merchant, amount, date, category
+- [ ] Additional standalone API tools (TBD from PRD)
+- [ ] All follow same parse → validate → policy → audit → return flow
 
 ---
 
-## Shared Components to Build
+## PHASE 7 — Hardening
 
-### TerminalWindow
-- Dark window with macOS-style traffic light dots (red/yellow/green circles)
-- Window title bar with monospace title
-- Content area with line-by-line animated text
-- Blinking cursor at end
-- Optional: typewriter animation for each new line
-
-### WorkerCard
-- Props: name, description, badge (MVP/V2/V3), tools[], status
-- Hover effect: translate Y -2px, border color to green
-- Badge colors: MVP = green, V2 = blue, V3 = muted
-
-### ApiCodeBlock
-- Props: language, code string
-- Language tabs: Python / Node.js / cURL
-- Copy button top right
-- Syntax: keywords in green, strings in yellow, comments in muted
-
-### StatCard
-- Props: value, label, change, changeDirection
-- Large value in Syne font
-- Green up arrow or red down arrow for change
-
-### AuditTraceExpand
-- Expandable row component
-- Shows structured trace data in monospace
-- Key-value pairs with color coding
-
-### ToastNotification
-- Appears bottom right
-- Green for success, red for error
-- Auto-dismisses after 3 seconds
+- [ ] Rate limiting on all external-facing endpoints
+- [ ] Circuit breakers on all integrations (Plaid, Xero, QuickBooks, Stripe)
+- [ ] Idempotency keys on all write operations verified end-to-end
+- [ ] Sentry wired: all unhandled exceptions captured
+- [ ] PostHog wired: agent executions, approval rates, worker usage tracked
+- [ ] Reconciliation jobs: detect drift for all integrations
+- [ ] Dead-letter queue replay tested
+- [ ] Health check endpoints verified: `/health` and `/ready`
+- [ ] SOC 2 prep checklist reviewed
+- [ ] No financial data in application logs (trace ID correlation only)
+- [ ] Webhook signature verification: Stripe, Plaid
+- [ ] Load test: agent execution target 2–5 seconds; flag anything above 10s
 
 ---
 
-## Animations
+## Mocked / Deferred (track what is not real yet)
 
-- Hero terminal: lines animate in 300ms apart, blinking cursor
-- Worker cards: staggered fade-up on scroll into view (Framer Motion)
-- Stat cards: count up animation when they enter viewport
-- Dashboard chart: animate drawing on load
-- Navigation: smooth underline slide on hover
-- Page transitions: subtle fade between pages
-
----
-
-## Responsive Breakpoints
-
-- Mobile: < 640px
-- Tablet: 640px – 1024px
-- Desktop: > 1024px
-
-Every section must be fully responsive. Test each page at all three sizes.
-
----
-
-## File Structure
-
-```
-clendan-demo/
-├── app/
-│   ├── layout.tsx              # Root layout with fonts and global styles
-│   ├── page.tsx                # Landing page
-│   ├── how-it-works/
-│   │   └── page.tsx
-│   ├── workers/
-│   │   └── page.tsx
-│   ├── api-tools/
-│   │   └── page.tsx
-│   ├── dashboard/
-│   │   └── page.tsx
-│   └── pricing/
-│       └── page.tsx
-├── components/
-│   ├── layout/
-│   │   ├── Navbar.tsx
-│   │   ├── Footer.tsx
-│   │   └── Sidebar.tsx
-│   ├── ui/
-│   │   ├── TerminalWindow.tsx
-│   │   ├── WorkerCard.tsx
-│   │   ├── ApiCodeBlock.tsx
-│   │   ├── StatCard.tsx
-│   │   ├── AuditTraceExpand.tsx
-│   │   └── ToastNotification.tsx
-│   ├── sections/
-│   │   ├── Hero.tsx
-│   │   ├── ProblemStatement.tsx
-│   │   ├── WorkerShowcase.tsx
-│   │   ├── ApiToolsStrip.tsx
-│   │   ├── IntegrationStrip.tsx
-│   │   └── CtaBanner.tsx
-│   └── dashboard/
-│       ├── OverviewTab.tsx
-│       ├── ApprovalsTab.tsx
-│       ├── AuditTrailTab.tsx
-│       └── ExecutionChart.tsx
-├── lib/
-│   ├── mock-data.ts            # All mock data in one place
-│   ├── constants.ts            # Brand colors, worker list, API tools
-│   └── utils.ts
-├── public/
-│   └── fonts/
-├── tailwind.config.ts
-├── next.config.js
-└── tsconfig.json
-```
-
----
-
-## Mock Data (lib/mock-data.ts)
-
-Define all mock data here so it is easy to replace with real API calls later:
-
-```typescript
-export const MOCK_EXECUTIONS = [
-  {
-    id: 'exec-001',
-    time: '09:14:32',
-    worker: 'Invoice Processing Worker',
-    action: 'Bill created in Xero',
-    amount: 1240,
-    currency: 'GBP',
-    status: 'auto',
-    traceId: 'trace-a1b2c3'
-  },
-  // ... more rows
-]
-
-export const MOCK_PENDING_APPROVALS = [
-  {
-    id: 'appr-001',
-    vendor: 'CloudStack Ltd',
-    amount: 3800,
-    currency: 'GBP',
-    submittedBy: 'Invoice Processing Worker',
-    waitingMins: 24,
-    invoiceRef: 'INV-2026-0044'
-  },
-  // ... more rows
-]
-
-export const MOCK_CHART_DATA = [
-  { day: 'Mon', autoExecuted: 32, approvalRequired: 4 },
-  { day: 'Tue', autoExecuted: 28, approvalRequired: 6 },
-  { day: 'Wed', autoExecuted: 41, approvalRequired: 3 },
-  { day: 'Thu', autoExecuted: 19, approvalRequired: 8 },
-  { day: 'Fri', autoExecuted: 37, approvalRequired: 5 },
-  { day: 'Sat', autoExecuted: 12, approvalRequired: 1 },
-  { day: 'Sun', autoExecuted: 8, approvalRequired: 0 },
-]
-```
-
----
-
-## Important Notes for Claude Code
-
-1. This is a DEMO only — no backend, no real auth, no real API calls. All data is from mock-data.ts.
-
-2. Do not install unnecessary packages. Stick to the list above.
-
-3. Every component must use Clendan brand colors from tailwind.config.ts — no hardcoded hex values in components.
-
-4. The dashboard page (/dashboard) should be the most polished page — this is what investors and design partners will see first.
-
-5. Add a visible "DEMO MODE" banner in yellow at the top of the dashboard page so it is clear this is not production.
-
-6. All forms and buttons should have hover and active states.
-
-7. Code must be clean TypeScript — no `any` types, proper interfaces for all data.
-
-8. Add a README.md explaining how to run the project locally.
-
-9. After building, run `npm run build` to confirm no TypeScript or build errors before finishing.
-
-10. The terminal animation component is the most important visual — spend extra time making it look polished and realistic.
+| Item | Mocked since | Real in Phase |
+|------|-------------|---------------|
+| QuickBooks write | Phase 1 | Phase 3 |
+| Plaid ingest | — | Phase 4 |
+| Xero sync | — | Post-Phase 4 |
+| Clerk auth end-to-end | Phase 1 (security.py exists) | Phase 2 |
+| RLS policies (DB layer) | Schema ready | Phase 2 |
+| BullMQ queue | Phase 1 | Phase 1 |
