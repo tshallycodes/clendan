@@ -31,3 +31,6 @@ build-backend = "poetry.core.masonry.api"
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
+markers = [
+    "integration: requires live PostgreSQL with RLS applied (deselect with -m 'not integration')",
+]

@@ -1,6 +1,5 @@
 from contextlib import asynccontextmanager
 from datetime import datetime, UTC
-from typing import Any, Optional
 import uuid
 
 import sentry_sdk
@@ -9,21 +8,10 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import get_settings
 from app.core.db import connect_db, disconnect_db
-from app.core.logging import get_logger, get_trace_id, set_trace_id
+from app.core.logging import get_logger, set_trace_id
+from app.core.responses import standard_response
 
 logger = get_logger(__name__)
-
-
-def standard_response(
-    data: Any = None,
-    error: Optional[str] = None,
-) -> dict:
-    return {
-        "data": data,
-        "error": error,
-        "trace_id": get_trace_id(),
-        "timestamp": datetime.now(UTC).isoformat(),
-    }
 
 
 @asynccontextmanager
@@ -82,3 +70,6 @@ def create_app() -> FastAPI:
 
 
 app = create_app()
+
+from app.api.v1.router import v1_router  # noqa: E402
+app.include_router(v1_router, prefix="/v1")
