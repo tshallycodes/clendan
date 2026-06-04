@@ -21,6 +21,7 @@ arq = "^0.25.0"
 cryptography = "^42.0.8"
 pymupdf = "^1.24.0"
 python-multipart = "^0.0.9"
+posthog = "^3.0.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.2.0"

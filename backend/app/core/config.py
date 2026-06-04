@@ -37,6 +37,7 @@ class Settings(BaseSettings):
     plaid_client_id: str = ""
     plaid_secret: str = ""
     plaid_env: str = "sandbox"  # sandbox | development | production
+    plaid_webhook_secret: str = ""
 
 
 @lru_cache()

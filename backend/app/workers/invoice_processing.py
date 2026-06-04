@@ -87,16 +87,10 @@ async def _extract_invoice(file_bytes: bytes, content_type: str) -> ParsedInvoic
 
 async def _mock_accounting_write(parsed: ParsedInvoice, tenant_id: str, execution_id: str) -> None:
     """Simulated accounting write. Phase 3 replaces this with the real QuickBooks client."""
+    # Log only the execution_id trace reference — no financial amounts in logs
     _logger.info(
         "mock_accounting_write",
-        extra={
-            "tenant_id": tenant_id,
-            "execution_id": execution_id,
-            "vendor": parsed.vendor,
-            "invoice_number": parsed.invoice_number,
-            "amount_minor": parsed.amount_minor,
-            "currency": parsed.currency,
-        },
+        extra={"tenant_id": tenant_id, "execution_id": execution_id},
     )
 
 

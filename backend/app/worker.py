@@ -12,6 +12,7 @@ from app.integrations.quickbooks.sync import sync_quickbooks_connection
 from app.integrations.plaid.sync import sync_plaid_transactions, reconcile_plaid_transactions
 from app.workers.ai_accountant import run_ai_accountant
 from app.workers.invoice_processing import run_invoice_job
+from app.workers.receipt_processing import run_receipt_job
 
 logger = get_logger(__name__)
 
@@ -27,7 +28,7 @@ async def shutdown(ctx: dict) -> None:
 
 
 class WorkerSettings:
-    functions = [sync_quickbooks_connection, sync_plaid_transactions, reconcile_plaid_transactions, run_ai_accountant, run_invoice_job]
+    functions = [sync_quickbooks_connection, sync_plaid_transactions, reconcile_plaid_transactions, run_ai_accountant, run_invoice_job, run_receipt_job]
     on_startup = startup
     on_shutdown = shutdown
 

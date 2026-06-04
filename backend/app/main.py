@@ -9,6 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import get_settings
 from app.core.db import connect_db, disconnect_db
 from app.core.logging import get_logger, set_trace_id
+from app.core.rate_limit import RateLimitMiddleware
 from app.core.responses import standard_response
 
 logger = get_logger(__name__)
@@ -40,6 +41,7 @@ def create_app() -> FastAPI:
         redoc_url=None,
     )
 
+    app.add_middleware(RateLimitMiddleware)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=["*"],
@@ -62,8 +64,33 @@ def create_app() -> FastAPI:
 
     @app.get("/ready")
     async def ready():
+        checks: dict = {}
+
+        # DB check
+        try:
+            from app.core.db import get_db
+            db = get_db()
+            await db.execute_raw("SELECT 1")
+            checks["db"] = "ok"
+        except Exception as exc:
+            checks["db"] = f"error: {type(exc).__name__}"
+
+        # Redis check
+        try:
+            from app.queue.pool import get_queue_pool
+            pool = await get_queue_pool()
+            await pool.ping()
+            checks["redis"] = "ok"
+        except Exception as exc:
+            checks["redis"] = f"error: {type(exc).__name__}"
+
+        all_ok = all(v == "ok" for v in checks.values())
         return standard_response(
-            data={"status": "ready", "timestamp": datetime.now(UTC).isoformat()}
+            data={
+                "status": "ready" if all_ok else "degraded",
+                "checks": checks,
+                "timestamp": datetime.now(UTC).isoformat(),
+            }
         )
 
     return app
