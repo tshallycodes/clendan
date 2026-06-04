@@ -15,7 +15,18 @@
       "mcp__playwright__browser_navigate",
       "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000)",
       "mcp__playwright__browser_take_screenshot",
-      "Bash(node -e \"const l = require\\('lucide-react'\\); console.log\\(Object.keys\\(l\\).filter\\(k => /git|link|twitter|x$/i.test\\(k\\)\\).join\\('\\\\n'\\)\\)\")"
+      "Bash(node -e \"const l = require\\('lucide-react'\\); console.log\\(Object.keys\\(l\\).filter\\(k => /git|link|twitter|x$/i.test\\(k\\)\\).join\\('\\\\n'\\)\\)\")",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)",
+      "Bash(git branch *)",
+      "Bash(git pull *)",
+      "Bash(git stash *)",
+      "Bash(git add *)",
+      "Read(//c/Users/PC/.claude/**)",
+      "Skill(update-config)",
+      "Skill(update-config:*)",
+      "Bash(npx -y @railway/mcp-server@latest --version)",
+      "Bash(npx -y @railway/cli mcp *)"
     ]
   }
 }
