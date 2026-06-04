@@ -15,3 +15,6 @@ RUN poetry run prisma generate
 EXPOSE 8000
 
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+
+# To run the arq background worker instead:
+# CMD ["python", "-m", "arq", "app.worker.WorkerSettings"]

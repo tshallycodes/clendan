@@ -21,6 +21,8 @@ model Tenant {
   approvals    Approval[]
   audit_logs   AuditLog[]
   invoices     Invoice[]
+  bank_accounts    BankAccount[]
+  bank_transactions BankTransaction[]
 }
 
 model User {
@@ -134,7 +136,54 @@ model Invoice {
   created_at       DateTime  @default(now())
 
   tenant Tenant @relation(fields: [tenant_id], references: [id])
+  bank_transactions BankTransaction[]
 
   @@index([tenant_id])
   @@index([tenant_id, invoice_number])
+}
+
+model BankAccount {
+  id                    String   @id @default(cuid())
+  tenant_id             String
+  plaid_account_id      String   @unique
+  plaid_item_id         String
+  name                  String
+  type                  String
+  subtype               String
+  current_balance_minor Int
+  currency              String   @default("USD")
+  created_at            DateTime @default(now())
+  updated_at            DateTime @updatedAt
+
+  tenant       Tenant            @relation(fields: [tenant_id], references: [id])
+  transactions BankTransaction[]
+
+  @@index([tenant_id])
+  @@index([plaid_account_id])
+}
+
+model BankTransaction {
+  id                   String    @id @default(cuid())
+  tenant_id            String
+  account_id           String
+  plaid_transaction_id String    @unique
+  amount_minor         Int
+  currency             String    @default("USD")
+  merchant_name        String?
+  description          String
+  date                 DateTime
+  category             String?
+  ai_category          String?
+  matched_invoice_id   String?
+  status               String    @default("pending")
+  created_at           DateTime  @default(now())
+
+  tenant          Tenant      @relation(fields: [tenant_id], references: [id])
+  account         BankAccount @relation(fields: [account_id], references: [id])
+  matched_invoice Invoice?    @relation(fields: [matched_invoice_id], references: [id])
+
+  @@index([tenant_id])
+  @@index([account_id])
+  @@index([plaid_transaction_id])
+  @@index([tenant_id, status])
 }

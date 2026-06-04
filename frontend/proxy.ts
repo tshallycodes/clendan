@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import type { NextRequest } from 'next/server'
+import type { NextFetchEvent, NextRequest } from 'next/server'
 
 // Conditionally load Clerk only when a valid publishable key is present.
 // This allows the dev server to run without Clerk keys configured,
@@ -21,9 +21,9 @@ function createClerkHandler() {
 
 const clerkHandler = createClerkHandler()
 
-export function proxy(request: NextRequest) {
+export function proxy(request: NextRequest, event: NextFetchEvent) {
   if (clerkHandler) {
-    return clerkHandler(request)
+    return clerkHandler(request, event)
   }
 
   // Development fallback when Clerk keys are not configured.

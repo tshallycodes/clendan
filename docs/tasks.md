@@ -114,44 +114,108 @@ All phases from master-build-prompt.md. Each session builds ONE phase, confirms 
 
 ---
 
-## PHASE 3 — QuickBooks Integration (real, behind mocked interface)
+## PHASE 3 — QuickBooks Integration ✅ COMPLETE (2026-06-03)
 
-- [ ] OAuth flow: auth → callback → encrypted token store
-- [ ] Initial sync after connect
-- [ ] Polling until data confirmed present
-- [ ] Mark integration as connected
-- [ ] Swap mock accounting write (Phase 1) for real QuickBooks client
-- [ ] Circuit breaker + retry with backoff on all QuickBooks calls
-- [ ] Encrypted credential storage (tenant-specific keys)
-- [ ] Error mapping — never expose raw QuickBooks errors to frontend
+- [x] `app/core/encryption.py` — Fernet encrypt/decrypt; dev key warning; never logs plaintext
+- [x] `app/integrations/quickbooks/circuit_breaker.py` — CLOSED/OPEN/HALF_OPEN state machine (5 failures → open, 60s recovery)
+- [x] `app/integrations/quickbooks/client.py` — OAuth2 client: `build_auth_url`, `exchange_code`, `refresh_token`, `get_company_info`, `revoke_token`; all tokens encrypted at rest; 3-attempt retry with exponential backoff + jitter; raw QB errors never exposed
+- [x] `app/integrations/quickbooks/sync.py` — arq job: verifies live connection, falls back to token refresh, marks error if both fail; tenant isolation enforced before credential access
+- [x] `app/worker.py` — arq `WorkerSettings`: registers sync job, wires Redis, DB lifecycle
+- [x] `GET /v1/integrations/quickbooks/connect` — returns OAuth authorization URL
+- [x] `GET /v1/integrations/quickbooks/callback` — exchanges code, stores encrypted tokens, verifies connection via company info fetch, marks connected
+- [x] `GET /v1/integrations/quickbooks/status` — returns connection status
+- [x] `DELETE /v1/integrations/quickbooks/disconnect` — revokes tokens, marks disconnected
+- [x] All routes scoped to tenant via clerk_user_id lookup
+- [x] `pyproject.toml` — `arq = "^0.25.0"` added
+- [x] `config.py` — QB client_id, client_secret, redirect_uri, sandbox flag
+- [x] `.env.example` — QB env vars documented
 
----
+- [ ] **Swap mock accounting write** (Phase 1) → real QB client — deferred until Ryan completes Phase 1 mock interface
+- [ ] Full OAuth flow test with real QB sandbox credentials (requires `QUICKBOOKS_CLIENT_ID` + `QUICKBOOKS_CLIENT_SECRET`)
 
-## PHASE 4 — Plaid Integration + AI Accountant Worker
-
-- [ ] Plaid Link integration (OAuth flow)
-- [ ] Bank transaction ingest
-- [ ] AI Accountant Worker: categorise transactions
-- [ ] AI Accountant Worker: match transactions to invoices
-- [ ] Reconciliation job: detect drift between Plaid and DB
-- [ ] Circuit breaker + retry on all Plaid calls
-- [ ] Zero trust: validate all Plaid data before writing to DB
+**Tests: 12 passed, 1 skipped — no regressions**
 
 ---
 
-## PHASE 5 — Control-Plane Dashboard (Next.js frontend)
+## PHASE 4 — Plaid Integration + AI Accountant Worker ✅ COMPLETE (2026-06-03)
 
-- [ ] Overview page: active workers, execution counts, approval queue depth, recent activity
-- [ ] Execution log page: all executions with status, confidence, duration; expandable reasoning trace
-- [ ] Approval queue page: pending approvals, approve/reject actions, expiry countdown
-- [ ] Audit trail page: immutable log, filterable by tenant/worker/date
-- [ ] Integrations page: connect/disconnect Xero, QuickBooks, Plaid; show sync status
-- [ ] API keys page: generate/revoke tenant API keys
-- [ ] All pages read from DB-backed endpoints only — no direct external API calls from UI
-- [ ] Design system applied: tokens, typography, motion rules from CLAUDE.md
-- [ ] Skeleton loaders (no full-screen spinners)
-- [ ] Every execution status change animates (Framer Motion)
-- [ ] Worker cards: accent border by status (green/blue/red)
+### Schema
+- [x] `BankAccount` model — tenant-scoped, `plaid_account_id` unique, `current_balance_minor` Int
+- [x] `BankTransaction` model — `amount_minor` Int (never float), `plaid_transaction_id` unique, `ai_category`, `matched_invoice_id`, status
+- [x] RLS policies added for both new tables in `migrations/001_enable_rls.sql`
+- [x] Prisma client regenerated
+
+### Plaid Integration
+- [x] `app/integrations/plaid/client.py` — `create_link_token`, `exchange_public_token`, `get_accounts`, `sync_transactions`, `plaid_amount_to_minor` (float → integer cents); all calls through circuit breaker + 3-attempt retry with jitter; access token encrypted at rest
+- [x] `app/integrations/plaid/circuit_breaker.py` — reuses QuickBooks circuit breaker, named `"plaid"`
+- [x] `app/integrations/plaid/sync.py` — `sync_plaid_transactions` (cursor-based pagination, account upsert, transaction ingest, cursor persistence); `reconcile_plaid_transactions` (drift detection, auto re-sync); `enqueue_plaid_sync`
+
+### Plaid API Routes
+- [x] `POST /v1/integrations/plaid/link-token` — creates Plaid Link token
+- [x] `POST /v1/integrations/plaid/exchange-token` — exchanges public_token, stores encrypted creds, triggers sync
+- [x] `GET /v1/integrations/plaid/status` — connection status + account/transaction counts
+- [x] `GET /v1/integrations/plaid/transactions` — paginated tenant-scoped transaction list
+- [x] `DELETE /v1/integrations/plaid/disconnect` — wipes credentials, marks disconnected
+
+### AI Accountant Worker
+- [x] `app/workers/ai_accountant.py` — full 7-step execution flow (receive → classify → execute → policy check → output → execution record → audit)
+- [x] Claude `claude-sonnet-4-6` categorises transactions + matches to invoices in one call
+- [x] Policy check: category allow-list, confidence thresholds (auto ≥0.85, approve ≥0.50, block <0.50)
+- [x] Blocked decisions: no DB writes to transactions
+- [x] Writes `Execution` + `AuditLog` records with full reasoning trace
+- [x] `run_ai_accountant` arq job wrapper registered in `app/worker.py`
+
+### Config + env
+- [x] `config.py` — `plaid_client_id`, `plaid_secret`, `plaid_env`
+- [x] `.env.example` — Plaid vars documented
+
+**Tests: 12 passed, 1 skipped — no regressions**
+
+**To go live:** Add `PLAID_CLIENT_ID` + `PLAID_SECRET` from [dashboard.plaid.com](https://dashboard.plaid.com) and set `PLAID_ENV=sandbox`
+
+---
+
+## PHASE 5 — Control-Plane Dashboard (Next.js frontend) ✅ COMPLETE (2026-06-04)
+
+### Design system
+- [x] `globals.css` — Tailwind v4 `@theme inline` with all `--color-brand-*` tokens
+- [x] `layout.tsx` — Syne (headings) + IBM Plex Mono (body) via `next/font/google`
+- [x] Dark background `#0a0a0f`, Surface `#111118`, Electric green `#00C853` on success only
+- [x] `framer-motion` installed (ready for animated state transitions)
+- [x] `lib/utils.ts` — `cn()`, `formatCurrency()`, `formatDate()`, `formatTime()`
+
+### Backend read endpoints (`app/api/v1/dashboard.py`)
+- [x] `GET /v1/dashboard/stats` — executions, pending approvals, active workers, invoices, transactions
+- [x] `GET /v1/dashboard/executions` — paginated, newest first, worker type included
+- [x] `GET /v1/dashboard/approvals` — pending only, oldest first, confidence + decision included
+- [x] `GET /v1/dashboard/audit` — immutable read, newest first
+- [x] `GET /v1/dashboard/workers` — all workers for tenant
+
+### Frontend pages (all server components, data from DB-backed endpoints only)
+- [x] `app/(dashboard)/layout.tsx` — sticky sidebar + auth guard + dark shell
+- [x] `app/(dashboard)/page.tsx` — Overview: 4 stat cards (animated count-up) + active workers
+- [x] `app/(dashboard)/executions/page.tsx` — execution log table with status badges
+- [x] `app/(dashboard)/approvals/page.tsx` — approval queue with urgency accent + approve/reject actions
+- [x] `app/(dashboard)/audit/page.tsx` — immutable audit trail with actor/action/timestamp
+- [x] `app/(dashboard)/integrations/page.tsx` — QB + Plaid connection status cards
+
+### Shared components
+- [x] `components/dashboard/Sidebar.tsx` — sticky nav, green active indicator, correct icon colors
+- [x] `components/dashboard/StatusBadge.tsx` — 8 states, all with correct semantic colors
+- [x] `components/dashboard/StatCard.tsx` — animated count-up via `requestAnimationFrame`
+- [x] `components/dashboard/Skeleton.tsx` — `TableSkeleton` for loading states (no spinners)
+- [x] `components/dashboard/ApproveActions.tsx` — client component, POST → `router.refresh()`
+- [x] `lib/api.ts` — `apiGet<T>()` / `apiPost<T>()` with auth headers
+
+### Tests + verification
+- [x] Backend: **12 passed, 1 skipped**
+- [x] Frontend: **1/1 Vitest**, TypeScript clean
+- [x] Playwright: dark `#0a0a0f` background ✅ · IBM Plex Mono font ✅ · `/dashboard` → 307 redirect ✅ · sign-in renders correctly ✅
+
+### Deferred
+- [ ] API keys page (Phase 6+)
+- [ ] Framer Motion execution status animations (wired up once Phase 1 execution flow is live)
+- [ ] Worker cards with accent borders (needs workers in DB — deploy Phase 1 first)
 
 ---
 
@@ -160,6 +224,21 @@ All phases from master-build-prompt.md. Each session builds ONE phase, confirms 
 - [ ] `POST /v1/parse/receipt` — OCR receipt image, extract merchant, amount, date, category
 - [ ] Additional standalone API tools (TBD from PRD)
 - [ ] All follow same parse → validate → policy → audit → return flow
+
+---
+
+## PHASE 8 — Railway Production Setup
+
+- [ ] Create Railway project with three services: PostgreSQL, Redis, backend
+- [ ] Deploy backend from GitHub repo to Railway
+- [ ] Set all env vars from `.env.example` in Railway dashboard
+- [ ] Run `prisma db push` via Railway shell to apply schema
+- [ ] Apply RLS: `psql $DATABASE_URL -f backend/migrations/001_enable_rls.sql`
+- [ ] Set `NEXT_PUBLIC_API_URL` in frontend `.env.local` pointing to Railway backend URL
+- [ ] Add Clerk keys to Railway env vars and frontend `.env.local`
+- [ ] Add `railway.toml` deploy config to backend
+- [ ] Verify `/health` and `/ready` endpoints reachable on Railway URL
+- [ ] Deploy frontend to Vercel, wire to Railway backend
 
 ---
 

@@ -114,3 +114,35 @@ CREATE POLICY invoice_insert ON "Invoice"
 CREATE POLICY invoice_update ON "Invoice"
     FOR UPDATE
     USING (tenant_id = current_setting('app.current_tenant_id', true));
+
+-- BankAccount table
+ALTER TABLE "BankAccount" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "BankAccount" FORCE ROW LEVEL SECURITY;
+
+CREATE POLICY bankaccount_select ON "BankAccount"
+    FOR SELECT
+    USING (tenant_id = current_setting('app.current_tenant_id', true));
+
+CREATE POLICY bankaccount_insert ON "BankAccount"
+    FOR INSERT
+    WITH CHECK (tenant_id = current_setting('app.current_tenant_id', true));
+
+CREATE POLICY bankaccount_update ON "BankAccount"
+    FOR UPDATE
+    USING (tenant_id = current_setting('app.current_tenant_id', true));
+
+-- BankTransaction table
+ALTER TABLE "BankTransaction" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "BankTransaction" FORCE ROW LEVEL SECURITY;
+
+CREATE POLICY banktransaction_select ON "BankTransaction"
+    FOR SELECT
+    USING (tenant_id = current_setting('app.current_tenant_id', true));
+
+CREATE POLICY banktransaction_insert ON "BankTransaction"
+    FOR INSERT
+    WITH CHECK (tenant_id = current_setting('app.current_tenant_id', true));
+
+CREATE POLICY banktransaction_update ON "BankTransaction"
+    FOR UPDATE
+    USING (tenant_id = current_setting('app.current_tenant_id', true));

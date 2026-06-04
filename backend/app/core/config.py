@@ -28,6 +28,15 @@ class Settings(BaseSettings):
     backoff_seconds: float = 1.0
     approval_ttl_seconds: int = 86400
 
+    quickbooks_client_id: str = ""
+    quickbooks_client_secret: str = ""
+    quickbooks_redirect_uri: str = "http://localhost:8000/v1/integrations/quickbooks/callback"
+    quickbooks_sandbox: bool = True
+
+    plaid_client_id: str = ""
+    plaid_secret: str = ""
+    plaid_env: str = "sandbox"  # sandbox | development | production
+
 
 @lru_cache()
 def get_settings() -> Settings:
