@@ -36,9 +36,25 @@ def create_app() -> FastAPI:
     app = FastAPI(
         title="Clendan API",
         version="1.0.0",
+        description=(
+            "Clendan AI Financial Agent OS — REST API.\n\n"
+            "All dashboard endpoints require a Clerk JWT in the `Authorization: Bearer` header. "
+            "Agent execution endpoints require `X-Tenant-ID` and `Idempotency-Key` headers. "
+            "Every response follows the shape `{data, error, trace_id, timestamp}`."
+        ),
+        contact={"name": "Clendan Support", "email": "api@clendan.com"},
         lifespan=lifespan,
-        docs_url="/docs" if settings.debug else None,
-        redoc_url=None,
+        docs_url="/docs",
+        redoc_url="/redoc",
+        openapi_tags=[
+            {"name": "health", "description": "Liveness and readiness probes."},
+            {"name": "onboarding", "description": "Create tenant and user on first sign-in."},
+            {"name": "dashboard", "description": "Aggregated stats, executions, approvals, audit trail, and workers."},
+            {"name": "agents", "description": "Trigger agent workers. Idempotent via `Idempotency-Key`."},
+            {"name": "approvals", "description": "Respond to pending human-approval requests."},
+            {"name": "integrations", "description": "Manage Plaid, Xero, and QuickBooks connections."},
+            {"name": "tenants", "description": "Tenant and worker configuration."},
+        ],
     )
 
     app.add_middleware(RateLimitMiddleware)
@@ -58,11 +74,11 @@ def create_app() -> FastAPI:
         response.headers["X-Trace-ID"] = trace_id
         return response
 
-    @app.get("/health")
+    @app.get("/health", tags=["health"])
     async def health():
         return standard_response(data={"status": "ok"})
 
-    @app.get("/ready")
+    @app.get("/ready", tags=["health"])
     async def ready():
         checks: dict = {}
 
