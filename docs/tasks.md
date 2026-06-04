@@ -234,18 +234,27 @@ All phases from master-build-prompt.md. Each session builds ONE phase, confirms 
 
 ---
 
-## PHASE 8 — Railway Production Setup
+## PHASE 8 — Railway + Vercel Production Setup ✅ CONFIG COMPLETE (2026-06-04)
 
-- [ ] Create Railway project with three services: PostgreSQL, Redis, backend
-- [ ] Deploy backend from GitHub repo to Railway
-- [ ] Set all env vars from `.env.example` in Railway dashboard
-- [ ] Run `prisma db push` via Railway shell to apply schema
-- [ ] Apply RLS: `psql $DATABASE_URL -f backend/migrations/001_enable_rls.sql`
-- [ ] Set `NEXT_PUBLIC_API_URL` in frontend `.env.local` pointing to Railway backend URL
-- [ ] Add Clerk keys to Railway env vars and frontend `.env.local`
-- [ ] Add `railway.toml` deploy config to backend
-- [ ] Verify `/health` and `/ready` endpoints reachable on Railway URL
-- [ ] Deploy frontend to Vercel, wire to Railway backend
+### Config files created (commit and push — Railway/Vercel pick these up automatically)
+- [x] `backend/railway.toml` — web service: Dockerfile build, `uvicorn` on `$PORT`, `/health` healthcheck
+- [x] `backend/railway.worker.toml` — worker service: same Dockerfile, `python -m arq app.worker.WorkerSettings`
+- [x] `backend/Dockerfile` — CMD updated to use `${PORT:-8000}` for Railway compatibility
+- [x] `backend/scripts/post_deploy.sh` — runs `prisma db push` + RLS migration after first deploy
+- [x] `frontend/vercel.json` — Next.js framework declaration, root `.next` output
+- [x] `README.md` — full step-by-step Railway + Vercel deploy guide
+
+### Manual steps (requires Railway + Vercel accounts)
+- [ ] Create Railway project → add PostgreSQL + Redis + Backend API + Background Worker services
+- [ ] Set all env vars from `.env.example` on Railway services (see README for full list)
+- [ ] First deploy: open Railway shell → `bash scripts/post_deploy.sh` (schema + RLS)
+- [ ] Note Railway backend URL → set as `NEXT_PUBLIC_API_URL` in Vercel env vars
+- [ ] Import frontend repo on Vercel, set root directory to `frontend/`, add env vars
+- [ ] Update `QUICKBOOKS_REDIRECT_URI` to Railway URL once deployed
+- [ ] Verify `https://your-api.railway.app/health` returns 200
+
+### Phase 1 review note (for Ryan)
+- `parse/invoice.py` calls Claude synchronously in the request thread — should enqueue to arq like `agents/run.py` does
 
 ---
 
