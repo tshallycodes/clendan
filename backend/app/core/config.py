@@ -17,6 +17,7 @@ class Settings(BaseSettings):
     clerk_frontend_api: str = ""
 
     anthropic_api_key: str = ""
+    claude_model: str = "claude-3-5-sonnet-20241022"
 
     sentry_dsn: str = ""
     posthog_api_key: str = ""
