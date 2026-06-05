@@ -45,49 +45,60 @@ function OnboardingInner() {
   const [stepOne, setStepOne] = useState<StepOneData>({ companyName: '', industry: 'SaaS', companySize: '1-10', useCase: 'Invoice Processing' })
   const [autonomy, setAutonomy] = useState<AutonomyLevel>('approve')
   const [threshold, setThreshold] = useState(50000)
-  const [deploying, setDeploying] = useState(false)
+  const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const selectClass = 'w-full bg-brand-bg border border-brand-border focus:border-brand-green rounded-sm px-3 py-2.5 text-xs font-mono text-brand-text outline-none transition-colors'
   const inputClass = 'w-full bg-brand-bg border border-brand-border focus:border-brand-green rounded-sm px-3 py-2.5 text-xs font-mono text-brand-text placeholder:text-brand-muted outline-none transition-colors'
   const labelClass = 'text-[10px] font-mono text-brand-muted uppercase tracking-widest'
 
-  async function handleDeploy() {
-    setDeploying(true)
+  async function handleStepOne() {
+    setLoading(true)
     setError(null)
     try {
       const token = await getToken()
-      const headers = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }
-
-      const onboardRes = await fetch(`${API}/v1/onboarding`, {
-        method: 'POST', headers,
+      const res = await fetch(`${API}/v1/onboarding`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ tenant_name: stepOne.companyName.trim() }),
       })
-      if (!onboardRes.ok) {
-        const json = await onboardRes.json().catch(() => ({}))
+      if (!res.ok) {
+        const json = await res.json().catch(() => ({}))
         setError((json as { error?: string }).error ?? 'Setup failed. Please try again.')
         return
       }
+      router.push('/onboarding?step=2')
+    } catch {
+      setError('Unable to connect to server. Check the backend is running.')
+    } finally {
+      setLoading(false)
+    }
+  }
 
-      const workerRes = await fetch(`${API}/v1/workers`, {
-        method: 'POST', headers,
+  async function handleDeploy() {
+    setLoading(true)
+    setError(null)
+    try {
+      const token = await getToken()
+      const res = await fetch(`${API}/v1/workers`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({
           type: 'invoice_processing',
           autonomy_level: autonomy,
           config: { policy: { auto_threshold: threshold, approve_threshold: 500000 } },
         }),
       })
-      if (!workerRes.ok) {
-        const json = await workerRes.json().catch(() => ({}))
+      if (!res.ok) {
+        const json = await res.json().catch(() => ({}))
         setError((json as { error?: string }).error ?? 'Worker deploy failed.')
         return
       }
-
       router.push('/onboarding?step=4')
     } catch {
-      setError('Unable to connect to server. Please try again.')
+      setError('Unable to connect to server. Check the backend is running.')
     } finally {
-      setDeploying(false)
+      setLoading(false)
     }
   }
 
@@ -130,13 +141,14 @@ function OnboardingInner() {
                   {['Invoice Processing', 'Reconciliation', 'Expense Management', 'Other'].map((v) => <option key={v}>{v}</option>)}
                 </select>
               </div>
+              {error && <p className="text-xs font-mono text-[#ff4d6d]">{error}</p>}
               <button
                 type="button"
-                disabled={!stepOne.companyName.trim()}
-                onClick={() => router.push('/onboarding?step=2')}
+                disabled={!stepOne.companyName.trim() || loading}
+                onClick={handleStepOne}
                 className="w-full bg-brand-green text-black hover:bg-[#00a844] active:scale-[0.97] rounded-sm px-4 py-2.5 text-xs font-mono font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Next →
+                {loading ? 'Setting up…' : 'Next →'}
               </button>
             </div>
           </div>
@@ -228,10 +240,10 @@ function OnboardingInner() {
             <button
               type="button"
               onClick={handleDeploy}
-              disabled={deploying}
+              disabled={loading}
               className="w-full bg-brand-green text-black hover:bg-[#00a844] active:scale-[0.97] rounded-sm px-4 py-2.5 text-xs font-mono font-medium transition-all disabled:opacity-50"
             >
-              {deploying ? 'Deploying…' : 'Deploy Worker'}
+              {loading ? 'Deploying…' : 'Deploy Worker'}
             </button>
           </div>
         )}
