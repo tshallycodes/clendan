@@ -12,7 +12,12 @@ from app.core.security import RequireAuth, extract_clerk_user_id
 logger = get_logger(__name__)
 router = APIRouter(prefix="/workers", tags=["workers"])
 
-VALID_TYPES = {"invoice_processing", "ai_accountant", "receipt_processing"}
+VALID_TYPES = {
+    "invoice_processing", "ai_accountant", "receipt_processing",
+    "reconciliation", "expense_control", "collections",
+    "fraud_detection", "treasury", "revenue_recognition",
+    "credit_underwriting", "compliance",
+}
 VALID_AUTONOMY_LEVELS = {"auto", "approve", "suggest"}
 VALID_STATUSES = {"active", "inactive"}
 
