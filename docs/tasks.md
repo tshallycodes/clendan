@@ -17,6 +17,27 @@ Payments-in integration. Webhook-driven, no OAuth needed (API key).
 - `charge.succeeded` / `payment_intent.succeeded` → `transaction_posted` event
 - Stripe customer → vendor mapping
 
+### GoCardless
+UK direct debit. Recurring B2B payments and subscriptions. Strong UK market relevance.
+- Webhook receiver with GoCardless signature verification (`Webhook-Signature` header)
+- `payments.paid_out` → `transaction_posted` event
+- `invoices.paid` → `invoice_received` event
+- OAuth for connecting customer's GoCardless account
+
+### Square
+POS and in-person payments. Retail, restaurants, service businesses.
+- Webhook receiver with Square HMAC-SHA256 signature verification
+- `payment.created` / `payment.updated` → `transaction_posted` event
+- `invoice.payment_made` → `invoice_received` event
+- OAuth for connecting merchant account
+
+### PayPal
+SMB invoicing and one-off payments. Long tail of small business usage.
+- Webhook receiver with PayPal certificate-based signature verification
+- `PAYMENT.CAPTURE.COMPLETED` → `transaction_posted` event
+- `INVOICING.INVOICE.PAID` → `invoice_received` event
+- OAuth for connecting PayPal business account
+
 ### Excel Add-in (Microsoft Office Add-in)
 Clendan as a task pane inside Excel. Finance teams run workers directly from their spreadsheet.
 - New package: `excel-addin/` — React + Office.js
