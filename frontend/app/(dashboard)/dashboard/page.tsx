@@ -2,6 +2,9 @@ import { getBackendToken } from '@/lib/auth'
 import { apiGet } from '@/lib/api'
 import { StatCard } from '@/components/dashboard/StatCard'
 import { StatusBadge } from '@/components/dashboard/StatusBadge'
+import { ExecutionChart } from '@/components/dashboard/ExecutionChart'
+import { RecentExecutionsTable } from '@/components/dashboard/RecentExecutionsTable'
+import { SystemStatusBar } from '@/components/dashboard/SystemStatusBar'
 
 interface Stats {
   executions: number
@@ -28,10 +31,30 @@ export default async function OverviewPage() {
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <StatCard value={s.executions}        label="Total Executions" />
-        <StatCard value={s.pending_approvals} label="Pending Approvals" changeDirection={s.pending_approvals > 0 ? 'down' : 'neutral'} />
-        <StatCard value={s.invoices}          label="Invoices Processed" />
-        <StatCard value={s.transactions}      label="Transactions Synced" />
+        <StatCard
+          value={s.executions}
+          label="Total Executions"
+          change="+0 today"
+          changeDirection="neutral"
+        />
+        <StatCard
+          value={s.pending_approvals}
+          label="Pending Approvals"
+          change={s.pending_approvals > 0 ? `${s.pending_approvals} pending review` : '+0 today'}
+          changeDirection={s.pending_approvals > 0 ? 'warning' : 'neutral'}
+        />
+        <StatCard
+          value={s.invoices}
+          label="Invoices Processed"
+          change="+0 today"
+          changeDirection="neutral"
+        />
+        <StatCard
+          value={s.transactions}
+          label="Transactions Synced"
+          change="+0 today"
+          changeDirection="neutral"
+        />
       </div>
 
       <div className="bg-brand-surface border border-brand-border rounded-sm overflow-hidden">
@@ -47,12 +70,20 @@ export default async function OverviewPage() {
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-green opacity-60" />
                 <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-brand-green" />
               </span>
-              <div className="flex-1 text-xs font-mono text-brand-text">{s.active_workers} worker{s.active_workers !== 1 ? 's' : ''} running</div>
+              <div className="flex-1 text-xs font-mono text-brand-text">
+                {s.active_workers} worker{s.active_workers !== 1 ? 's' : ''} running
+              </div>
               <StatusBadge status="active" />
             </div>
           )}
         </div>
       </div>
+
+      <ExecutionChart />
+
+      <RecentExecutionsTable />
+
+      <SystemStatusBar />
     </div>
   )
 }

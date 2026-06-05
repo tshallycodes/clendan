@@ -27,7 +27,7 @@ interface StatCardProps {
   value: number | string
   label: string
   change?: string
-  changeDirection?: 'up' | 'down' | 'neutral'
+  changeDirection?: 'up' | 'down' | 'neutral' | 'warning'
 }
 
 export function StatCard({ value, label, change, changeDirection = 'neutral' }: StatCardProps) {
@@ -41,11 +41,12 @@ export function StatCard({ value, label, change, changeDirection = 'neutral' }: 
       <div className="text-brand-muted text-[10px] font-mono uppercase tracking-widest mb-2">{label}</div>
       {change && (
         <div className={cn('text-xs font-mono',
-          changeDirection === 'up' && 'text-brand-green',
-          changeDirection === 'down' && 'text-brand-danger',
+          changeDirection === 'up'      && 'text-brand-green',
+          changeDirection === 'down'    && 'text-brand-danger',
           changeDirection === 'neutral' && 'text-brand-muted',
+          changeDirection === 'warning' && 'text-brand-warning',
         )}>
-          {changeDirection === 'up' && '↑ '}
+          {changeDirection === 'up'   && '↑ '}
           {changeDirection === 'down' && '↓ '}
           {change}
         </div>

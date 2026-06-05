@@ -27,3 +27,14 @@ body {
   color: #e8f0e8;
   font-family: var(--font-ibm-plex-mono), "IBM Plex Mono", monospace;
 }
+
+@keyframes terminalFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

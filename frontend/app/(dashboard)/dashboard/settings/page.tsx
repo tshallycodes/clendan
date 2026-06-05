@@ -2,6 +2,8 @@ import { getBackendToken } from '@/lib/auth'
 import { apiGet } from '@/lib/api'
 import { OrgNameForm } from '@/components/dashboard/settings/OrgNameForm'
 import { ApiKeysSection } from '@/components/dashboard/settings/ApiKeysSection'
+import { NotificationsSection } from '@/components/dashboard/settings/NotificationsSection'
+import { DangerZone } from '@/components/dashboard/settings/DangerZone'
 
 interface TenantData {
   tenant: { id: string; name: string; created_at: string }
@@ -84,6 +86,18 @@ export default async function SettingsPage() {
           <p className="text-[10px] font-mono text-brand-muted">Keys authenticate requests to the Clendan API</p>
         </div>
         <ApiKeysSection />
+      </section>
+
+      {/* Notifications */}
+      <section className="space-y-4">
+        <h2 className="text-[10px] font-mono uppercase tracking-widest text-brand-muted border-b border-brand-border pb-2">Notifications</h2>
+        <NotificationsSection />
+      </section>
+
+      {/* Danger Zone */}
+      <section className="space-y-4">
+        <h2 className="text-[10px] font-mono uppercase tracking-widest text-[#ff4d6d] border-b border-[#ff4d6d]/20 pb-2">Danger Zone</h2>
+        <DangerZone />
       </section>
     </div>
   )
