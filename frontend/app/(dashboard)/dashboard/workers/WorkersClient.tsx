@@ -8,18 +8,23 @@ import { ConfigDrawer } from '@/components/dashboard/workers/ConfigDrawer'
 import { DeployWorkerForm } from '@/components/dashboard/workers/DeployWorkerForm'
 
 const ALL_WORKER_TYPES = [
-  { type: 'invoice_processing', name: 'Invoice Processing Worker', phase: 'MVP', desc: 'Processes invoices end-to-end with policy enforcement and audit trail.' },
-  { type: 'ai_accountant', name: 'AI Accountant Worker', phase: 'MVP', desc: 'Categorises bank transactions and matches invoices to payments.' },
-  { type: 'receipt_processing', name: 'Receipt Processing Worker', phase: 'MVP', desc: 'Extracts receipt data and validates against expense policy.' },
-  { type: 'reconciliation', name: 'Reconciliation Worker', phase: 'V2', desc: 'Matches transactions across multiple sources and flags discrepancies.' },
-  { type: 'expense_control', name: 'Expense Control Worker', phase: 'V2', desc: 'Reviews expense claims and enforces company spending policy.' },
-  { type: 'fraud_detection', name: 'Fraud Detection Worker', phase: 'V2', desc: 'Monitors transactions and flags suspicious patterns in real time.' },
+  { type: 'invoice_processing',  name: 'Invoice Processing Worker',  phase: 'MVP', desc: 'Processes invoices end-to-end with policy enforcement and audit trail.' },
+  { type: 'ai_accountant',       name: 'AI Accountant Worker',       phase: 'MVP', desc: 'Categorises bank transactions and matches invoices to payments.' },
+  { type: 'receipt_processing',  name: 'Receipt Processing Worker',  phase: 'MVP', desc: 'Extracts receipt data and validates against expense policy.' },
+  { type: 'reconciliation',      name: 'Reconciliation Worker',      phase: 'V2',  desc: 'Matches transactions across multiple sources and flags discrepancies.' },
+  { type: 'expense_control',     name: 'Expense Control Worker',     phase: 'V2',  desc: 'Reviews expense claims and enforces company spending policy.' },
+  { type: 'collections',         name: 'Collections Worker',         phase: 'V2',  desc: 'Detects overdue invoices, sends reminders, and escalates collections.' },
+  { type: 'fraud_detection',     name: 'Fraud Detection Worker',     phase: 'V2',  desc: 'Monitors transactions and flags suspicious patterns in real time.' },
+  { type: 'treasury',            name: 'Treasury Worker',            phase: 'V2',  desc: 'Aggregates balances, forecasts cash flow, detects liquidity risks.' },
+  { type: 'revenue_recognition', name: 'Revenue Recognition Worker', phase: 'V2',  desc: 'Applies ASC 606 rules and generates revenue schedules from contracts.' },
+  { type: 'credit_underwriting', name: 'Credit Underwriting Worker', phase: 'V3',  desc: 'Evaluates credit risk and approves or rejects lending applications.' },
+  { type: 'compliance',          name: 'Compliance Worker',          phase: 'V3',  desc: 'Monitors transactions for regulatory violations and generates reports.' },
 ]
 
 export function WorkersClient({ initialWorkers }: { initialWorkers: Worker[] }) {
   const router = useRouter()
   const [drawerWorker, setDrawerWorker] = useState<Worker | null>(null)
-  const [showDeployForm, setShowDeployForm] = useState(false)
+  const [showDeployForm, setShowDeployForm] = useState<string | null>(null)
 
   const deployedTypes = new Set(initialWorkers.map((w) => w.type))
   const availableWorkers = ALL_WORKER_TYPES.filter((wt) => !deployedTypes.has(wt.type))
@@ -75,14 +80,18 @@ export function WorkersClient({ initialWorkers }: { initialWorkers: Worker[] }) 
                 {wt.phase === 'MVP' ? (
                   <button
                     type="button"
-                    onClick={() => setShowDeployForm(true)}
+                    onClick={() => setShowDeployForm(wt.type)}
                     className="self-start bg-brand-green text-black hover:bg-[#00a844] active:scale-[0.97] rounded-sm px-3 py-1.5 text-xs font-mono font-medium transition-all"
                   >
                     Deploy
                   </button>
-                ) : (
+                ) : wt.phase === 'V2' ? (
                   <span className="self-start text-[10px] font-mono text-brand-muted border border-brand-border rounded-sm px-2 py-0.5">
                     Coming Soon
+                  </span>
+                ) : (
+                  <span className="self-start text-[10px] font-mono text-[#4a6a4a] border border-[#1a2a1a] rounded-sm px-2 py-0.5">
+                    V3 — Roadmap
                   </span>
                 )}
               </div>
@@ -96,9 +105,9 @@ export function WorkersClient({ initialWorkers }: { initialWorkers: Worker[] }) 
           <div className="bg-brand-surface border border-brand-border rounded-sm p-6 w-full max-w-sm space-y-4">
             <div className="flex items-center justify-between">
               <h2 className="font-heading font-semibold text-brand-text text-sm">Deploy Worker</h2>
-              <button type="button" onClick={() => setShowDeployForm(false)} className="text-brand-muted hover:text-brand-text text-xs font-mono transition-colors">✕</button>
+              <button type="button" onClick={() => setShowDeployForm(null)} className="text-brand-muted hover:text-brand-text text-xs font-mono transition-colors">✕</button>
             </div>
-            <DeployWorkerForm />
+            <DeployWorkerForm defaultWorkerType={showDeployForm} onDeployed={() => { setShowDeployForm(null); router.refresh() }} />
           </div>
         </div>
       )}

@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { useAuth } from '@clerk/nextjs'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001'
@@ -21,11 +20,16 @@ const AUTONOMY_LEVELS = [
 type WorkerType = typeof WORKER_TYPES[number]['value']
 type AutonomyLevel = typeof AUTONOMY_LEVELS[number]['value']
 
-export function DeployWorkerForm() {
-  const router = useRouter()
+interface DeployWorkerFormProps {
+  defaultWorkerType?: string
+  onDeployed?: () => void
+}
+
+export function DeployWorkerForm({ defaultWorkerType, onDeployed }: DeployWorkerFormProps) {
   const { getToken } = useAuth()
 
-  const [workerType, setWorkerType] = useState<WorkerType>('invoice_processing')
+  const initialType = (WORKER_TYPES.find(t => t.value === defaultWorkerType)?.value ?? 'invoice_processing') as WorkerType
+  const [workerType, setWorkerType] = useState<WorkerType>(initialType)
   const [autonomyLevel, setAutonomyLevel] = useState<AutonomyLevel>('approve')
   const [autoThreshold, setAutoThreshold] = useState(50000)
   const [approveThreshold, setApproveThreshold] = useState(500000)
@@ -64,7 +68,7 @@ export function DeployWorkerForm() {
         return
       }
 
-      router.refresh()
+      if (onDeployed) onDeployed()
     } catch {
       setError('Unable to connect to server. Please try again.')
     } finally {
