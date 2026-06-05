@@ -2,7 +2,7 @@
 
 import { useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { useAuth } from '@clerk/nextjs'
+import { useAuth, useClerk } from '@clerk/nextjs'
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
@@ -40,6 +40,7 @@ function OnboardingInner() {
   const router = useRouter()
   const params = useSearchParams()
   const { getToken } = useAuth()
+  const { signOut } = useClerk()
   const step = Number(params.get('step') ?? '1')
 
   const [stepOne, setStepOne] = useState<StepOneData>({ companyName: '', industry: 'SaaS', companySize: '1-10', useCase: 'Invoice Processing' })
@@ -104,6 +105,30 @@ function OnboardingInner() {
 
   return (
     <div className="min-h-screen bg-brand-bg flex flex-col items-center justify-center p-6">
+      {/* Top nav */}
+      <div className="fixed top-0 left-0 right-0 flex items-center justify-between px-6 py-4">
+        {step > 1 && step < 4 ? (
+          <button
+            type="button"
+            onClick={() => router.push(`/onboarding?step=${step - 1}`)}
+            className="text-xs font-mono text-brand-muted hover:text-brand-text transition-colors"
+          >
+            ← Back
+          </button>
+        ) : (
+          <div />
+        )}
+        {step < 4 && (
+          <button
+            type="button"
+            onClick={() => signOut({ redirectUrl: '/sign-in' })}
+            className="text-xs font-mono text-brand-muted hover:text-brand-text transition-colors"
+          >
+            Sign out
+          </button>
+        )}
+      </div>
+
       <div className="w-full max-w-md space-y-0">
         <div className="flex flex-col items-center gap-3 mb-10">
           <span className="w-10 h-10 rounded-sm border border-brand-green flex items-center justify-center font-heading font-bold text-brand-green text-lg">C</span>
