@@ -25,3 +25,17 @@ Clendan as a task pane inside Excel. Finance teams run workers directly from the
 - Workers to expose: AI Accountant (categorise selected transactions), Invoice Processing (process selected invoice rows)
 - Custom functions phase 2: `=CLENDAN.CATEGORISE(A2:E2)`
 - Office Add-in manifest XML + AppSource listing
+
+#### Charts + Dashboards
+Two surfaces: charts rendered inside the task pane (React/Recharts), and Excel-native charts inserted into sheets via the Office.js Charts API.
+
+**"Generate Dashboard" button** — creates a `Clendan Analysis` sheet with board-ready Excel charts built from processed data.
+
+| Worker | Chart |
+|---|---|
+| AI Accountant | Spending by category (bar), transactions over time (line) |
+| Invoice Processing | Approved vs flagged vs blocked (stacked bar), avg processing time |
+| Collections | Overdue invoices by age bucket (horizontal bar), recovery rate |
+| Treasury | Cash flow forecast (line), runway remaining |
+| Reconciliation | Matched vs unmatched (pie), drift over time |
+| Fraud Detection | Risk score distribution (histogram), flagged transaction volume |
