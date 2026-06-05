@@ -2,7 +2,8 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Home, CheckSquare, List, Plug, BarChart2, Code2, Cpu, Settings } from 'lucide-react'
+import { Home, CheckSquare, List, Plug, BarChart2, Code2, Cpu, Settings, LogOut } from 'lucide-react'
+import { useClerk } from '@clerk/nextjs'
 import { cn } from '@/lib/utils'
 
 const NAV = [
@@ -18,6 +19,7 @@ const NAV = [
 
 export function Sidebar() {
   const pathname = usePathname()
+  const { signOut } = useClerk()
 
   return (
     <aside className="w-56 shrink-0 bg-brand-surface border-r border-brand-border flex flex-col h-screen sticky top-0">
@@ -50,10 +52,18 @@ export function Sidebar() {
         })}
       </nav>
 
-      <div className="p-4 border-t border-brand-border">
-        <Link href="/" className="w-full text-xs font-mono text-brand-muted hover:text-brand-text transition-colors block text-center border border-brand-border px-3 py-2 rounded-sm">
+      <div className="p-4 border-t border-brand-border space-y-2">
+        <Link href="/" className="w-full text-xs font-mono text-brand-muted hover:text-brand-text transition-colors flex items-center justify-center gap-2 border border-brand-border px-3 py-2 rounded-sm">
           ← Back to site
         </Link>
+        <button
+          type="button"
+          onClick={() => signOut({ redirectUrl: '/sign-in' })}
+          className="w-full text-xs font-mono text-brand-muted hover:text-[#ff4d6d] transition-colors flex items-center justify-center gap-2 border border-brand-border px-3 py-2 rounded-sm"
+        >
+          <LogOut className="w-3 h-3" />
+          Sign out
+        </button>
       </div>
     </aside>
   )
