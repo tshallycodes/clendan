@@ -69,17 +69,17 @@ function MobileMenu({ open }: { open: boolean }) {
         ))}
         <div className="flex flex-col gap-2 mt-3 pt-3 border-t border-brand-border">
           <Link
-            href="/docs"
+            href="/sign-in"
             className="text-center border border-brand-border text-brand-text hover:bg-brand-surface rounded-sm px-5 py-2.5 text-sm font-mono transition-colors"
           >
-            View Docs
+            Sign in
           </Link>
           <Link
             href="/sign-up"
             className="text-center rounded-sm px-5 py-2.5 text-sm font-mono font-medium transition-colors"
             style={{ background: '#00C853', color: '#000' }}
           >
-            Request Access
+            Get started
           </Link>
         </div>
       </nav>
@@ -125,17 +125,17 @@ export function Navbar() {
 
         <div className="hidden md:flex items-center gap-2">
           <Link
-            href="/docs"
-            className="border border-brand-border text-brand-text hover:bg-brand-surface rounded-sm px-5 py-2.5 text-sm font-mono transition-colors"
+            href="/sign-in"
+            className="text-sm font-mono text-brand-muted hover:text-brand-text transition-colors px-3 py-2.5"
           >
-            View Docs
+            Sign in
           </Link>
           <Link
             href="/sign-up"
             className="rounded-sm px-5 py-2.5 text-sm font-mono font-medium transition-colors"
             style={{ background: '#00C853', color: '#000' }}
           >
-            Request Access
+            Get started
           </Link>
         </div>
 
