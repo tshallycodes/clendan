@@ -116,6 +116,28 @@ async def sync_plaid_transactions(ctx: dict, integration_id: str, tenant_id: str
             data={"encrypted_credentials": json.dumps(creds)},
         )
 
+        # Emit transaction_posted event for newly synced transactions
+        if total_added > 0:
+            try:
+                from app.orchestrator.events import enqueue_orchestrator_event
+
+                new_txns = await db.banktransaction.find_many(
+                    where={"tenant_id": tenant_id, "status": "pending"},
+                    take=total_added,
+                    order={"created_at": "desc"},
+                )
+                if new_txns:
+                    idempotency_key = f"plaid:sync:{integration_id}:{cursor[:24] if cursor else 'initial'}"
+                    await enqueue_orchestrator_event(
+                        tenant_id=tenant_id,
+                        event_type="transaction_posted",
+                        payload={"transaction_ids": [t.id for t in new_txns]},
+                        idempotency_key=idempotency_key,
+                        db=db,
+                    )
+            except Exception as exc:
+                logger.error("plaid_sync_event_enqueue_failed", extra={"error": str(exc)})
+
         logger.info(
             "Plaid sync done: tenant=%s accounts=%d txns_added=%d",
             tenant_id,

@@ -610,20 +610,20 @@
         <span class="brand-name">Clendan</span>
       </div>
       <div class="doc-info">
-        <div>PRD — Version 2.0</div>
-        <div>Updated: 2026-05-20</div>
+        <div>PRD — Version 3.0</div>
+        <div>Updated: 2026-06-05</div>
         <div>Status: Active</div>
         <div>Owner: Founding Team</div>
       </div>
     </div>
     <h1>AI Financial<br><em>Agent OS</em></h1>
-    <p class="cover-desc">Execution infrastructure for autonomous financial operations. Not a dashboard. Not a chatbot. An API platform where companies deploy AI workers that execute financial tasks, enforce policy, and produce full audit trails.</p>
+    <p class="cover-desc">Finance teams connect their tools once, set their rules once, and walk away. Clendan's AI workers run their entire financial operations loop — invoices, transactions, reconciliation, approvals — autonomously. The finance team only gets involved when a decision exceeds their policy threshold.</p>
     <div class="cover-tags">
-      <span class="tag hot">MVP: Invoice Processing</span>
+      <span class="tag hot">Zero-Touch Finance</span>
+      <span class="tag hot">Orchestrator Live</span>
       <span class="tag">API-First</span>
       <span class="tag">Multi-Tenant</span>
-      <span class="tag">v2 Updated</span>
-      <span class="tag">Research-Validated</span>
+      <span class="tag">v3 Updated</span>
     </div>
   </div>
 
@@ -640,9 +640,10 @@
       <li><span>07</span><span>Platform APIs</span></li>
       <li><span>08</span><span>MVP Scope</span></li>
       <li><span>09</span><span>Competitive Position</span></li>
-      <li><span>10</span><span>Roadmap</span></li>
-      <li><span>11</span><span>Success Metrics</span></li>
-      <li><span>12</span><span>Non-Functional Req.</span></li>
+      <li><span>10</span><span>Integrations Roadmap</span></li>
+      <li><span>11</span><span>Roadmap</span></li>
+      <li><span>12</span><span>Success Metrics</span></li>
+      <li><span>13</span><span>Non-Functional Req.</span></li>
     </ul>
   </div>
 
@@ -699,11 +700,16 @@
       <span class="section-title">Solution</span>
     </div>
     <div class="section-body">
-      <p>Clendan is an API platform where companies deploy AI financial workers that connect to their financial systems, execute tasks autonomously, enforce policy rules, and produce full audit trails for every action taken.</p>
+      <p>Clendan is an API platform where companies deploy AI financial workers that run their financial operations autonomously. Finance teams connect their tools once, configure their rules once, and walk away. Workers handle the rest — processing invoices, categorising transactions, reconciling accounts, chasing collections — without requiring human input unless the policy threshold says otherwise.</p>
 
       <div class="callout green">
-        <div class="callout-label">Positioning</div>
-        <div class="callout-text">Clendan is not a chatbot, dashboard, or analytics SaaS. It is execution infrastructure for autonomous financial decision systems. Companies integrate Clendan via API — results land in their existing tools (ERP, CRM, accounting software). Clendan also provides a control plane dashboard for monitoring, approvals, and audit trails.</div>
+        <div class="callout-label">Core Positioning</div>
+        <div class="callout-text">Clendan is not a chatbot, dashboard, or analytics SaaS. It is zero-touch execution infrastructure. The finance team's job shifts from executing tasks to supervising autonomous workers — reviewing exceptions, setting thresholds, and approving edge cases. A finance team processing 200 invoices a month manually recovers 80% of that time. The remaining 20% are the decisions that actually require human judgment.</div>
+      </div>
+
+      <div class="callout blue">
+        <div class="callout-label">How It Works — One Sentence</div>
+        <div class="callout-text">An invoice arrives in QuickBooks at 2am → Clendan reads it, checks policy, approves and logs it → the finance manager wakes up and it's already done. They only see it if it needed a human decision.</div>
       </div>
 
       <p>Each AI worker has a defined role, a set of tools it can call, policies it must enforce, and an autonomy level: auto-execute, request approval, or suggest only.</p>
@@ -1084,9 +1090,9 @@
         </div>
       </div>
 
-      <div class="callout blue">
-        <div class="callout-label">Financial Orchestrator Worker — Master Agent</div>
-        <div class="callout-text">The Orchestrator is built last (v3) because it requires all sub-agent workers to be stable and battle-tested first. It does not execute financial tasks itself — it reasons about which worker to call, in what order, with what context. Conflict resolution strategy (what happens when two workers return contradictory outputs) must be explicitly architected before v3 begins — it cannot be assumed or left to the model.</div>
+      <div class="callout green">
+        <div class="callout-label">Financial Orchestrator — Now Live</div>
+        <div class="callout-text">The Orchestrator is live. It receives financial events via POST /v1/events — the single entry point for all automation. It classifies the event type, selects the appropriate worker, invokes it as a tool, applies policy, writes the audit log, and creates an approval request if the decision exceeds the threshold. External triggers (QuickBooks webhook, Plaid transaction sync, Stripe payment events) all flow through this single endpoint. Workers never fire directly — everything routes through the Orchestrator.</div>
       </div>
     </div>
   </div>
@@ -1167,7 +1173,7 @@
         <li><strong>Tool Registry API</strong> — POST /tools/register — Connect external systems: banks, ERP, credit bureaus, payment systems. Each tool has input/output schema, auth method, permissions</li>
         <li><strong>Execution API</strong> — POST /agents/{id}/run — Trigger agent run, receive decision + confidence + reasoning trace + executed actions</li>
         <li><strong>Policy Engine API</strong> — POST /agents/{id}/policy — Define approval thresholds, spending limits, compliance rules, human override triggers</li>
-        <li><strong>Event System</strong> — POST /events/emit — Agents subscribe to and respond to events: invoice overdue, transaction posted, fraud detected</li>
+        <li><strong>Event System</strong> — POST /v1/events — Single orchestrator entry point. All financial events route here: invoice_received, transaction_posted, expense_submitted, reconciliation_requested, fraud_check_requested. Idempotent via Idempotency-Key header.</li>
         <li><strong>Workflow Orchestration API</strong> — POST /workflows — Chain multiple agents: accounting pipeline, reconciliation pipeline</li>
         <li><strong>Human Approval API</strong> — POST /approvals/request — Route decisions for human review when risk is high or confidence is low</li>
         <li><strong>Explainability API</strong> — GET /decisions/{trace_id}/explain — Return decision factors, data sources, reasoning trace, model version</li>
@@ -1275,10 +1281,91 @@
     </div>
   </div>
 
-  <!-- Section 10: Roadmap -->
+  <!-- Section 10: Integrations Roadmap -->
   <div class="section">
     <div class="section-header">
       <span class="section-num">10</span>
+      <span class="section-title">Integrations Roadmap</span>
+    </div>
+    <div class="section-body">
+      <p>Integrations are the surface area of what Clendan can automate. Each new integration means more of the finance stack runs without human input. Every integration follows the same pattern: connect → webhook → orchestrator event → worker → audit.</p>
+
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Integration</th>
+            <th>Type</th>
+            <th>Events Emitted</th>
+            <th>Priority</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>QuickBooks</td>
+            <td>Accounting</td>
+            <td>invoice_received (Invoice/Bill Create)</td>
+            <td><span class="badge high">Live</span></td>
+          </tr>
+          <tr>
+            <td>Plaid</td>
+            <td>Banking</td>
+            <td>transaction_posted (after sync)</td>
+            <td><span class="badge high">Live</span></td>
+          </tr>
+          <tr>
+            <td>Xero</td>
+            <td>Accounting</td>
+            <td>invoice_received (Invoice/Bill webhook)</td>
+            <td><span class="badge med">Next</span></td>
+          </tr>
+          <tr>
+            <td>Stripe</td>
+            <td>Payments</td>
+            <td>invoice_received (invoice.created), transaction_posted (charge.succeeded)</td>
+            <td><span class="badge med">Next</span></td>
+          </tr>
+          <tr>
+            <td>Excel Add-in</td>
+            <td>Spreadsheet / Office</td>
+            <td>Manual trigger from selected cells — transaction_posted, invoice_received</td>
+            <td><span class="badge med">Next</span></td>
+          </tr>
+          <tr>
+            <td>Sage</td>
+            <td>Accounting (UK/EU)</td>
+            <td>invoice_received, transaction_posted</td>
+            <td><span class="badge low">V2</span></td>
+          </tr>
+          <tr>
+            <td>NetSuite</td>
+            <td>ERP (Enterprise)</td>
+            <td>invoice_received, reconciliation_requested</td>
+            <td><span class="badge low">V3</span></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="callout blue">
+        <div class="callout-label">Xero</div>
+        <div class="callout-text">UK/ANZ dominant accounting platform. Near-identical build to the existing QuickBooks integration — OAuth 2.0, webhooks, HMAC-SHA256 signature verification, same invoice_received event. Highest priority next integration given the UK market focus. Estimated: 2 days.</div>
+      </div>
+
+      <div class="callout blue">
+        <div class="callout-label">Stripe</div>
+        <div class="callout-text">Every SaaS company runs billing through Stripe. No OAuth needed — API key auth. invoice.created and invoice.finalized fire invoice_received events. charge.succeeded fires transaction_posted events. This removes the biggest manual accounting job for SaaS companies: reconciling Stripe payments against invoices. Stripe customers → vendor mapping handled in integration config.</div>
+      </div>
+
+      <div class="callout green">
+        <div class="callout-label">Excel Add-in (Microsoft Office Add-in)</div>
+        <div class="callout-text">Finance teams live in Excel. The add-in brings Clendan workers into the spreadsheet as a task pane — select a range of transactions, click "Run AI Accountant", get results written back to cells. Auth via existing API keys (no Clerk dependency). Phase 2: custom Excel functions — =CLENDAN.CATEGORISE(A2:E2). New package: excel-addin/ (React + Office.js). Enables adoption without changing the finance team's existing workflow.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Section 11: Roadmap -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-num">11</span>
       <span class="section-title">Roadmap</span>
     </div>
     <div class="section-body">
@@ -1301,13 +1388,14 @@
           <div class="roadmap-label">Phase 2 — Months 6–8</div>
           <div class="roadmap-title">Expand</div>
           <ul class="roadmap-items">
+            <li>Xero integration</li>
+            <li>Stripe integration</li>
+            <li>Excel Add-in (Office.js)</li>
             <li>Reconciliation Worker</li>
             <li>Document Reconciliation API</li>
             <li>Expense Control Worker</li>
             <li>Collections Worker</li>
-            <li>NetSuite integration</li>
             <li>Fraud Signal API</li>
-            <li>Orchestrator (basic)</li>
             <li>Billing + onboarding</li>
           </ul>
         </div>
@@ -1319,20 +1407,21 @@
             <li>Revenue Recognition Worker</li>
             <li>Treasury Worker</li>
             <li>Compliance Worker</li>
+            <li>Sage integration</li>
+            <li>Excel custom functions</li>
             <li>SOC 2 preparation</li>
             <li>Enterprise tier</li>
             <li>Credit Underwriting (v3)</li>
-            <li>Full Orchestrator</li>
           </ul>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Section 11: Tech Stack -->
+  <!-- Section 12: Tech Stack -->
   <div class="section">
     <div class="section-header">
-      <span class="section-num">11</span>
+      <span class="section-num">12</span>
       <span class="section-title">Tech Stack</span>
     </div>
     <div class="section-body">
@@ -1368,10 +1457,10 @@
     </div>
   </div>
 
-  <!-- Section 12: Success Metrics -->
+  <!-- Section 13: Success Metrics -->
   <div class="section">
     <div class="section-header">
-      <span class="section-num">11</span>
+      <span class="section-num">13</span>
       <span class="section-title">Success Metrics</span>
     </div>
     <div class="section-body">
@@ -1389,10 +1478,10 @@
     </div>
   </div>
 
-  <!-- Section 12: Non-Functional Requirements -->
+  <!-- Section 14: Non-Functional Requirements -->
   <div class="section">
     <div class="section-header">
-      <span class="section-num">12</span>
+      <span class="section-num">14</span>
       <span class="section-title">Non-Functional Requirements</span>
     </div>
     <div class="section-body">
@@ -1411,10 +1500,10 @@
     </div>
   </div>
 
-  <!-- Section 13: User Flow — Xero Integration -->
+  <!-- Section 15: User Flow — Xero Integration -->
   <div class="section">
     <div class="section-header">
-      <span class="section-num">13</span>
+      <span class="section-num">15</span>
       <span class="section-title">User Flow — Xero Integration</span>
     </div>
     <div class="section-body">
@@ -1619,7 +1708,7 @@
   </div>
 
   <footer class="footer">
-    <span class="footer-left">Clendan PRD v2.0 — Updated 2026-05-20 — Confidential</span>
+    <span class="footer-left">Clendan PRD v3.0 — Updated 2026-06-05 — Confidential</span>
     <span class="footer-right">Clendan</span>
   </footer>
 

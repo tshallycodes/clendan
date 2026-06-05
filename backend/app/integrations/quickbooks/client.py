@@ -123,6 +123,68 @@ async def get_company_info(encrypted_access: str, realm_id: str, sandbox: bool =
     }
 
 
+async def get_invoice(encrypted_access: str, realm_id: str, invoice_id: str, sandbox: bool = True) -> dict:
+    """Fetches a single QB Invoice. Returns normalised dict with minor-unit amounts."""
+    access_token = decrypt(encrypted_access)
+
+    async def _call():
+        url = f"{get_api_base(sandbox)}/{realm_id}/invoice/{invoice_id}"
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                url,
+                headers={"Authorization": f"Bearer {access_token}", "Accept": "application/json"},
+                timeout=15.0,
+            )
+            response.raise_for_status()
+            return response.json()
+
+    raw = await _circuit.call(_retry, _call)
+    inv = raw.get("Invoice", {})
+    if not inv:
+        raise ValueError(f"Empty Invoice response for id={invoice_id}")
+
+    currency = (inv.get("CurrencyRef") or {}).get("value", "USD")
+    total = float(inv.get("TotalAmt") or 0)
+    return {
+        "vendor": (inv.get("CustomerRef") or {}).get("name", "unknown"),
+        "invoice_number": inv.get("DocNumber", invoice_id),
+        "amount_minor": int(round(total * 100)),
+        "currency": currency,
+        "due_date": inv.get("DueDate"),
+    }
+
+
+async def get_bill(encrypted_access: str, realm_id: str, bill_id: str, sandbox: bool = True) -> dict:
+    """Fetches a single QB Bill (supplier invoice). Returns normalised dict."""
+    access_token = decrypt(encrypted_access)
+
+    async def _call():
+        url = f"{get_api_base(sandbox)}/{realm_id}/bill/{bill_id}"
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                url,
+                headers={"Authorization": f"Bearer {access_token}", "Accept": "application/json"},
+                timeout=15.0,
+            )
+            response.raise_for_status()
+            return response.json()
+
+    raw = await _circuit.call(_retry, _call)
+    bill = raw.get("Bill", {})
+    if not bill:
+        raise ValueError(f"Empty Bill response for id={bill_id}")
+
+    currency = (bill.get("CurrencyRef") or {}).get("value", "USD")
+    total = float(bill.get("TotalAmt") or 0)
+    return {
+        "vendor": (bill.get("VendorRef") or {}).get("name", "unknown"),
+        "invoice_number": bill.get("DocNumber", bill_id),
+        "amount_minor": int(round(total * 100)),
+        "currency": currency,
+        "due_date": bill.get("DueDate"),
+    }
+
+
 async def revoke_token(encrypted_token: str) -> None:
     """Revokes a QuickBooks token."""
     settings = get_settings()

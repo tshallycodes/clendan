@@ -33,6 +33,7 @@ class Settings(BaseSettings):
     quickbooks_client_secret: str = ""
     quickbooks_redirect_uri: str = "http://localhost:8000/v1/integrations/quickbooks/callback"
     quickbooks_sandbox: bool = True
+    quickbooks_webhook_verifier_token: str = ""
 
     plaid_client_id: str = ""
     plaid_secret: str = ""
