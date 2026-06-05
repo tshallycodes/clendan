@@ -6,7 +6,7 @@ import { Home, CheckSquare, List, Plug, BarChart2, Code2, Cpu, Settings } from '
 import { cn } from '@/lib/utils'
 
 const NAV = [
-  { icon: Home,        label: 'Overview',     href: '/dashboard' },
+  { icon: Home,        label: 'Dashboard',    href: '/dashboard' },
   { icon: CheckSquare, label: 'Approvals',    href: '/dashboard/approvals' },
   { icon: BarChart2,   label: 'Executions',   href: '/dashboard/executions' },
   { icon: List,        label: 'Audit Trail',  href: '/dashboard/audit' },

@@ -14,7 +14,7 @@ interface Stats {
   transactions: number
 }
 
-export default async function OverviewPage() {
+export default async function DashboardPage() {
   let stats: Stats | null = null
   try {
     const token = await getBackendToken()
@@ -26,7 +26,7 @@ export default async function OverviewPage() {
   return (
     <div className="p-6 space-y-6">
       <div>
-        <h1 className="font-heading font-bold text-2xl text-brand-text">Overview</h1>
+        <h1 className="font-heading font-bold text-2xl text-brand-text">Dashboard</h1>
         <p className="text-brand-muted text-xs font-mono mt-1">Agent execution summary</p>
       </div>
 
