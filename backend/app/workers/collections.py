@@ -14,7 +14,7 @@ from app.core.config import get_settings
 from app.core.db import get_db
 from app.core.logging import get_logger
 from app.queue.pool import push_to_dlq
-from app.workers.base import WorkerOutput, WorkerType
+from app.workers.base import BaseWorker, WorkerOutput, WorkerType
 
 _logger = get_logger(__name__)
 
@@ -407,3 +407,23 @@ async def run_collections_job(
             },
         )
         raise
+
+
+class CollectionsWorker(BaseWorker):
+    """Orchestrator-facing adapter. Delegates to _execute_collections."""
+    WORKER_TYPE = WorkerType.COLLECTIONS
+    REQUIRED_TOOLS = ["invoice_system_api", "email_dispatch_api"]
+    VERSION = 1
+
+    async def execute(self, input_data: dict, tenant_id: str) -> WorkerOutput:
+        worker_id = input_data.get("worker_id", "")
+        execution_id = input_data.get("execution_id", "")
+        result = await _execute_collections(tenant_id, worker_id, execution_id)
+        return WorkerOutput(
+            worker_type=self.WORKER_TYPE,
+            decision=result["decision"],
+            confidence=result["confidence"],
+            reasoning=result["reasoning"],
+            actions_taken=result.get("actions_taken", []),
+            output_data=result,
+        )
