@@ -4,7 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { useAuth } from '@clerk/nextjs'
 
-const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001'
+const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
 export interface Worker {
   id: string
@@ -33,6 +33,8 @@ interface Props {
 export function WorkerCard({ worker, onConfigure, onStatusChange }: Props) {
   const { getToken } = useAuth()
   const [toggling, setToggling] = useState(false)
+  const [confirmDelete, setConfirmDelete] = useState(false)
+  const [deleting, setDeleting] = useState(false)
   const isActive = worker.status === 'active'
   const badge = autonomyBadge[worker.autonomy_level]
 
@@ -40,14 +42,28 @@ export function WorkerCard({ worker, onConfigure, onStatusChange }: Props) {
     setToggling(true)
     try {
       const token = await getToken()
-      await fetch(`${API}/v1/workers/${worker.id}`, {
+      await fetch(`${API}/v1/workers/${worker.id}/pause`, {
         method: 'PATCH',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: isActive ? 'inactive' : 'active' }),
       })
       onStatusChange()
     } finally {
       setToggling(false)
+    }
+  }
+
+  async function handleDelete() {
+    setDeleting(true)
+    try {
+      const token = await getToken()
+      await fetch(`${API}/v1/workers/${worker.id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      onStatusChange()
+    } finally {
+      setDeleting(false)
+      setConfirmDelete(false)
     }
   }
 
@@ -79,6 +95,7 @@ export function WorkerCard({ worker, onConfigure, onStatusChange }: Props) {
               {isActive ? 'Active' : 'Inactive'}
             </span>
           </div>
+
           <button
             type="button"
             onClick={onConfigure}
@@ -86,6 +103,7 @@ export function WorkerCard({ worker, onConfigure, onStatusChange }: Props) {
           >
             Configure
           </button>
+
           <button
             type="button"
             onClick={handleToggle}
@@ -99,8 +117,38 @@ export function WorkerCard({ worker, onConfigure, onStatusChange }: Props) {
           >
             {toggling ? '…' : isActive ? 'Pause' : 'Resume'}
           </button>
+
+          {confirmDelete ? (
+            <div className="flex items-center gap-1.5">
+              <span className="text-[10px] font-mono text-brand-muted">Delete?</span>
+              <button
+                type="button"
+                onClick={handleDelete}
+                disabled={deleting}
+                className="text-xs font-mono bg-[rgba(255,77,109,0.1)] border border-[#ff4d6d] text-[#ff4d6d] hover:bg-[rgba(255,77,109,0.2)] rounded-sm px-2.5 py-1 transition-colors disabled:opacity-50"
+              >
+                {deleting ? '…' : 'Confirm'}
+              </button>
+              <button
+                type="button"
+                onClick={() => setConfirmDelete(false)}
+                className="text-xs font-mono border border-brand-border text-brand-muted hover:text-brand-text rounded-sm px-2.5 py-1 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setConfirmDelete(true)}
+              className="text-xs font-mono text-brand-muted hover:text-[#ff4d6d] transition-colors px-1"
+            >
+              Delete
+            </button>
+          )}
         </div>
       </div>
+
       <div className="mt-2">
         <Link href="/dashboard/executions" className="text-[10px] font-mono text-brand-muted hover:text-brand-text transition-colors">
           View executions →

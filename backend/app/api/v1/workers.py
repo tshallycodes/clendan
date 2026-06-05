@@ -196,13 +196,13 @@ async def update_worker(
     return standard_response(data=_serialize_worker(updated))
 
 
-@router.delete("/{worker_id}")
-async def deactivate_worker(
+@router.patch("/{worker_id}/pause")
+async def pause_worker(
     worker_id: str,
     payload: RequireAuth,
     db: Annotated[Prisma, Depends(get_db_dep)],
 ):
-    """Deactivate a worker (sets status=inactive, does not delete the row)."""
+    """Toggle a worker between active and inactive."""
     tenant_id = await _get_tenant_id(payload, db)
 
     worker = await db.worker.find_first(
@@ -211,14 +211,31 @@ async def deactivate_worker(
     if not worker:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Worker not found")
 
+    new_status = "inactive" if worker.status == "active" else "active"
     updated = await db.worker.update(
         where={"id": worker_id},
-        data={"status": "inactive", "version": worker.version + 1},
+        data={"status": new_status, "version": worker.version + 1},
     )
 
-    logger.info(
-        "worker_deactivated",
-        extra={"worker_id": worker_id, "tenant_id": tenant_id},
-    )
-
+    logger.info("worker_toggled", extra={"worker_id": worker_id, "tenant_id": tenant_id, "status": new_status})
     return standard_response(data=_serialize_worker(updated))
+
+
+@router.delete("/{worker_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_worker(
+    worker_id: str,
+    payload: RequireAuth,
+    db: Annotated[Prisma, Depends(get_db_dep)],
+):
+    """Permanently delete a worker and all associated executions."""
+    tenant_id = await _get_tenant_id(payload, db)
+
+    worker = await db.worker.find_first(
+        where={"id": worker_id, "tenant_id": tenant_id}
+    )
+    if not worker:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Worker not found")
+
+    await db.worker.delete(where={"id": worker_id})
+
+    logger.info("worker_deleted", extra={"worker_id": worker_id, "tenant_id": tenant_id})
