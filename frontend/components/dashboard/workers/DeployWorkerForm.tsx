@@ -3,12 +3,20 @@
 import { useState } from 'react'
 import { useAuth } from '@clerk/nextjs'
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001'
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
 const WORKER_TYPES = [
   { value: 'invoice_processing',  label: 'Invoice Processing' },
   { value: 'ai_accountant',       label: 'AI Accountant' },
   { value: 'receipt_processing',  label: 'Receipt Processing' },
+  { value: 'reconciliation',      label: 'Reconciliation' },
+  { value: 'expense_control',     label: 'Expense Control' },
+  { value: 'collections',         label: 'Collections' },
+  { value: 'fraud_detection',     label: 'Fraud Detection' },
+  { value: 'treasury',            label: 'Treasury' },
+  { value: 'revenue_recognition', label: 'Revenue Recognition' },
+  { value: 'credit_underwriting', label: 'Credit Underwriting' },
+  { value: 'compliance',          label: 'Compliance' },
 ] as const
 
 const AUTONOMY_LEVELS = [
