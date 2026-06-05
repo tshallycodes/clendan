@@ -1,7 +1,7 @@
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException, Path, status
-from prisma import Prisma
+from prisma import Json, Prisma
 from pydantic import BaseModel, field_validator
 
 from app.core.db import get_db_dep
@@ -102,10 +102,10 @@ async def deploy_worker(
 
     worker = await db.worker.create(
         data={
-            "tenant_id": tenant_id,
+            "tenant": {"connect": {"id": tenant_id}},
             "type": body.type,
             "autonomy_level": body.autonomy_level,
-            "config_json": body.config,
+            "config_json": Json(body.config),
             "status": "active",
             "version": 1,
         }
@@ -177,7 +177,7 @@ async def update_worker(
     if body.status is not None:
         update_data["status"] = body.status
     if body.config is not None:
-        update_data["config_json"] = body.config
+        update_data["config_json"] = Json(body.config)
 
     updated = await db.worker.update(
         where={"id": worker_id},
