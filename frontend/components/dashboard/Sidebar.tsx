@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Home, CheckSquare, List, Plug, BarChart2, Code2, Cpu } from 'lucide-react'
+import { Home, CheckSquare, List, Plug, BarChart2, Code2, Cpu, Settings } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const NAV = [
@@ -12,6 +12,7 @@ const NAV = [
   { icon: List,        label: 'Audit Trail',  href: '/dashboard/audit' },
   { icon: Plug,        label: 'Integrations', href: '/dashboard/integrations' },
   { icon: Cpu,         label: 'Workers',      href: '/dashboard/workers' },
+  { icon: Settings,    label: 'Settings',     href: '/dashboard/settings' },
   { icon: Code2,       label: 'Developer API', href: '/dashboard/api' },
 ]
 

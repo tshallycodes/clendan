@@ -36,6 +36,3 @@ Thumbs.db
 
 # Docker
 *.log
-
-# Playwright MCP artifacts
-.playwright-mcp/

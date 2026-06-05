@@ -1,0 +1,53 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - complementary [ref=e3]:
+      - generic [ref=e4]:
+        - generic [ref=e5]: C
+        - generic [ref=e6]: Clendan
+      - navigation [ref=e7]:
+        - link "Overview" [ref=e8] [cursor=pointer]:
+          - /url: /dashboard
+          - img [ref=e10]
+          - generic [ref=e13]: Overview
+        - link "Approvals" [ref=e14] [cursor=pointer]:
+          - /url: /dashboard/approvals
+          - img [ref=e15]
+          - generic [ref=e18]: Approvals
+        - link "Executions" [ref=e19] [cursor=pointer]:
+          - /url: /dashboard/executions
+          - img [ref=e20]
+          - generic [ref=e21]: Executions
+        - link "Audit Trail" [ref=e22] [cursor=pointer]:
+          - /url: /dashboard/audit
+          - img [ref=e23]
+          - generic [ref=e24]: Audit Trail
+        - link "Integrations" [ref=e25] [cursor=pointer]:
+          - /url: /dashboard/integrations
+          - img [ref=e26]
+          - generic [ref=e28]: Integrations
+      - link "← Back to site" [ref=e30] [cursor=pointer]:
+        - /url: /
+    - main [ref=e31]:
+      - generic [ref=e32]:
+        - generic [ref=e33]:
+          - heading "Overview" [level=1] [ref=e34]
+          - paragraph [ref=e35]: Agent execution summary
+        - generic [ref=e36]:
+          - generic [ref=e37]:
+            - generic [ref=e38]: "0"
+            - generic [ref=e39]: Total Executions
+          - generic [ref=e40]:
+            - generic [ref=e41]: "0"
+            - generic [ref=e42]: Pending Approvals
+          - generic [ref=e43]:
+            - generic [ref=e44]: "0"
+            - generic [ref=e45]: Invoices Processed
+          - generic [ref=e46]:
+            - generic [ref=e47]: "0"
+            - generic [ref=e48]: Transactions Synced
+        - generic [ref=e49]:
+          - heading "Active Workers" [level=2] [ref=e51]
+          - paragraph [ref=e53]: No active workers — deploy workers to begin
+  - button "Open Next.js Dev Tools" [ref=e59] [cursor=pointer]:
+    - img [ref=e60]
+  - alert [ref=e63]

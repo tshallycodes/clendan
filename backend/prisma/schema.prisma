@@ -23,6 +23,7 @@ model Tenant {
   invoices     Invoice[]
   bank_accounts    BankAccount[]
   bank_transactions BankTransaction[]
+  api_keys     ApiKey[]
 }
 
 model User {
@@ -186,4 +187,21 @@ model BankTransaction {
   @@index([account_id])
   @@index([plaid_transaction_id])
   @@index([tenant_id, status])
+}
+
+model ApiKey {
+  id           String    @id @default(cuid())
+  tenant_id    String
+  name         String
+  key_hash     String    @unique   // SHA-256 of the full key — never store plain
+  key_prefix   String              // First 12 chars, shown in UI (e.g. "ck_live_xQ3f")
+  status       String    @default("active")   // "active" | "revoked"
+  created_at   DateTime  @default(now())
+  last_used_at DateTime?
+  expires_at   DateTime?
+
+  tenant Tenant @relation(fields: [tenant_id], references: [id])
+
+  @@index([tenant_id])
+  @@index([key_hash])
 }

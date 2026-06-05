@@ -1,0 +1,90 @@
+import { getBackendToken } from '@/lib/auth'
+import { apiGet } from '@/lib/api'
+import { OrgNameForm } from '@/components/dashboard/settings/OrgNameForm'
+import { ApiKeysSection } from '@/components/dashboard/settings/ApiKeysSection'
+
+interface TenantData {
+  tenant: { id: string; name: string; created_at: string }
+  user:   { email: string; role: string }
+}
+
+export default async function SettingsPage() {
+  let data: TenantData | null = null
+  try {
+    const token = await getBackendToken()
+    if (token) data = await apiGet<TenantData>('/v1/tenants/me', token)
+  } catch { /* backend not running — show empty state */ }
+
+  const ROLE_COLORS: Record<string, string> = {
+    owner:  'text-brand-green border-brand-green/30 bg-brand-green/08',
+    admin:  'text-[#00a8cc] border-[#00a8cc]/30 bg-[#00a8cc]/08',
+    member: 'text-brand-muted border-brand-border',
+  }
+
+  return (
+    <div className="p-6 max-w-2xl space-y-10">
+      <div>
+        <h1 className="font-heading font-bold text-2xl text-brand-text">Settings</h1>
+        <p className="text-brand-muted text-xs font-mono mt-1">Manage your organisation and credentials</p>
+      </div>
+
+      {/* Organisation */}
+      <section className="space-y-4">
+        <h2 className="text-[10px] font-mono uppercase tracking-widest text-brand-muted border-b border-brand-border pb-2">Organisation</h2>
+        <div className="space-y-3">
+          <div>
+            <p className="text-[10px] font-mono text-brand-muted mb-1.5 uppercase tracking-wide">Name</p>
+            {data ? (
+              <OrgNameForm initialName={data.tenant.name} />
+            ) : (
+              <p className="text-xs font-mono text-brand-muted">Backend unavailable</p>
+            )}
+          </div>
+          <div>
+            <p className="text-[10px] font-mono text-brand-muted mb-1.5 uppercase tracking-wide">Tenant ID</p>
+            <div className="flex items-center gap-2">
+              <code className="text-xs font-mono text-brand-text bg-brand-bg border border-brand-border rounded-sm px-3 py-2">
+                {data?.tenant.id ?? '—'}
+              </code>
+              <span className="text-[10px] font-mono text-brand-muted">use as X-Tenant-ID in API calls</span>
+            </div>
+          </div>
+          <div>
+            <p className="text-[10px] font-mono text-brand-muted mb-1.5 uppercase tracking-wide">Created</p>
+            <p className="text-xs font-mono text-brand-text">
+              {data ? new Date(data.tenant.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) : '—'}
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* Account */}
+      <section className="space-y-4">
+        <h2 className="text-[10px] font-mono uppercase tracking-widest text-brand-muted border-b border-brand-border pb-2">Your Account</h2>
+        <div className="space-y-3">
+          <div>
+            <p className="text-[10px] font-mono text-brand-muted mb-1.5 uppercase tracking-wide">Email</p>
+            <p className="text-xs font-mono text-brand-text">{data?.user.email ?? '—'}</p>
+          </div>
+          <div>
+            <p className="text-[10px] font-mono text-brand-muted mb-1.5 uppercase tracking-wide">Role</p>
+            {data ? (
+              <span className={`text-[10px] font-mono px-2 py-0.5 rounded-sm border ${ROLE_COLORS[data.user.role] ?? ROLE_COLORS.member}`}>
+                {data.user.role}
+              </span>
+            ) : <p className="text-xs font-mono text-brand-muted">—</p>}
+          </div>
+        </div>
+      </section>
+
+      {/* API Keys */}
+      <section className="space-y-4">
+        <div className="border-b border-brand-border pb-2 flex items-baseline justify-between">
+          <h2 className="text-[10px] font-mono uppercase tracking-widest text-brand-muted">API Keys</h2>
+          <p className="text-[10px] font-mono text-brand-muted">Keys authenticate requests to the Clendan API</p>
+        </div>
+        <ApiKeysSection />
+      </section>
+    </div>
+  )
+}
