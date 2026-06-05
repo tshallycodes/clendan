@@ -10,7 +10,7 @@ import { WorkerShowcase } from '@/components/marketing/WorkerShowcase'
 
 export default async function HomePage() {
   const { userId } = await auth()
-  if (userId) redirect('/dashboard')
+  if (userId) redirect('/onboarding')
 
   return (
     <div className="flex flex-col min-h-screen bg-brand-bg">
