@@ -8,12 +8,12 @@
 
 | Worker | Status |
 |---|---|
-| Fraud Detection | To build |
-| Collections | To build |
-| Revenue Recognition | To build |
-| Credit Underwriting | To build |
-| Compliance | To build |
-| Orchestrator (advanced) | Base live — multi-step chaining + conflict resolution to build |
+| Fraud Detection | Done ✅ |
+| Collections | Done ✅ |
+| Revenue Recognition | Done ✅ |
+| Credit Underwriting | Done ✅ |
+| Compliance | Done ✅ |
+| Orchestrator (advanced) | Done ✅ — sequential chaining, parallel invocation, conflict resolution |
 
 ### Coworker — 6 workers
 
@@ -25,8 +25,6 @@
 | Reconciliation | To build |
 | Expense Control | To build |
 | Treasury | To build |
-
-> **Orchestrator note:** The base orchestrator (`POST /v1/events`, `run_orchestrator_job`, webhook wiring) is already live. What remains: multi-worker chaining (e.g. Invoice Processing → Fraud Detection in sequence), parallel worker invocation, and conflict resolution when two workers return contradictory outputs.
 
 ---
 
