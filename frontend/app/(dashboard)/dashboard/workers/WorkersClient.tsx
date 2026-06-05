@@ -77,23 +77,13 @@ export function WorkersClient({ initialWorkers }: { initialWorkers: Worker[] }) 
                   </div>
                   <p className="text-xs font-mono text-brand-muted mt-0.5">{wt.desc}</p>
                 </div>
-                {wt.phase === 'MVP' ? (
-                  <button
-                    type="button"
-                    onClick={() => setShowDeployForm(wt.type)}
-                    className="self-start bg-brand-green text-black hover:bg-[#00a844] active:scale-[0.97] rounded-sm px-3 py-1.5 text-xs font-mono font-medium transition-all"
-                  >
-                    Deploy
-                  </button>
-                ) : wt.phase === 'V2' ? (
-                  <span className="self-start text-[10px] font-mono text-brand-muted border border-brand-border rounded-sm px-2 py-0.5">
-                    Coming Soon
-                  </span>
-                ) : (
-                  <span className="self-start text-[10px] font-mono text-[#4a6a4a] border border-[#1a2a1a] rounded-sm px-2 py-0.5">
-                    V3 — Roadmap
-                  </span>
-                )}
+                <button
+                  type="button"
+                  onClick={() => setShowDeployForm(wt.type)}
+                  className="self-start bg-brand-green text-black hover:bg-[#00a844] active:scale-[0.97] rounded-sm px-3 py-1.5 text-xs font-mono font-medium transition-all"
+                >
+                  Deploy
+                </button>
               </div>
             ))}
           </div>
