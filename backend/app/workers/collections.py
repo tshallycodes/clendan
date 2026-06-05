@@ -1,58 +1,409 @@
-"""
-Collections Worker — sub-agent worker. Called by Financial Orchestrator as a tool.
-Determines next action for overdue invoices: reminder, escalation, payment plan, or write-off.
-# TODO: wire crm_api and email_dispatch_api in Phase 2
-"""
 from __future__ import annotations
 
-from datetime import date
-from typing import Literal
+import asyncio
+import json
+import time
+from datetime import UTC, date, datetime, timedelta
+from typing import Any, Literal
 
+import anthropic
 from pydantic import BaseModel
 
-from app.workers.base import BaseWorker, WorkerOutput, WorkerType
+from app.audit.logger import write_audit_log
+from app.core.config import get_settings
+from app.core.db import get_db
+from app.core.logging import get_logger
+from app.queue.pool import push_to_dlq
+from app.workers.base import WorkerOutput, WorkerType
+
+_logger = get_logger(__name__)
+
+WORKER_TYPE = "collections"
+WORKER_VERSION = 1
+ACTOR = "worker:collections:v1"
+MODEL_VERSION = "collections-v1"
+CONFIDENCE = 0.95
+
+Tone = Literal["reminder", "escalation", "legal"]
+RecommendedAction = Literal["send_reminder", "escalate", "initiate_legal"]
 
 
-class CollectionsInput(BaseModel):
-    tenant_id: str
-    invoice_id: str
+class _InvoiceRow(BaseModel):
+    id: str
     vendor: str
+    invoice_number: str
     amount_minor: int
     currency: str
     due_date: date
     days_overdue: int
-    previous_reminders_sent: int
-    customer_payment_history: dict
+    tone: Tone
+    recommended_action: RecommendedAction
 
 
-class CollectionsOutput(BaseModel):
-    action: Literal["reminder_sent", "escalated", "payment_plan_offered", "written_off"]
-    message_draft: str
-    next_action_date: date
-    confidence: float
+class _ClaudeMessage(BaseModel):
+    message: str
+    tone: Tone
+    recommended_action: RecommendedAction
     reasoning: str
 
 
-class CollectionsWorker(BaseWorker):
-    WORKER_TYPE = WorkerType.COLLECTIONS
-    REQUIRED_TOOLS = ["crm_api", "email_dispatch_api"]
-    VERSION = 1
+class _WorkerConfig(BaseModel):
+    first_reminder_days: int = 7
+    escalate_days: int = 30
+    legal_days: int = 60
 
-    async def execute(self, input_data: dict, tenant_id: str) -> WorkerOutput:
-        # TODO: wire crm_api and email_dispatch_api
-        validated = CollectionsInput(tenant_id=tenant_id, **input_data)
-        result = CollectionsOutput(
-            action="reminder_sent",
-            message_draft="Stub",
-            next_action_date=date.today(),
-            confidence=0.0,
-            reasoning="Stub — wire crm_api and email_dispatch_api",
+
+def _amount_display(amount_minor: int, currency: str) -> str:
+    symbol = {"GBP": "£", "USD": "$", "EUR": "€"}.get(currency, currency + " ")
+    return f"{symbol}{amount_minor / 100:.2f}"
+
+
+def _classify_tone(days_overdue: int, cfg: _WorkerConfig) -> tuple[Tone, RecommendedAction] | None:
+    if days_overdue < cfg.first_reminder_days:
+        return None
+    if days_overdue < cfg.escalate_days:
+        return "reminder", "send_reminder"
+    if days_overdue < cfg.legal_days:
+        return "escalation", "escalate"
+    return "legal", "initiate_legal"
+
+
+def _build_batch_prompt(invoices: list[_InvoiceRow], tone: Tone) -> str:
+    tone_instructions = {
+        "reminder": (
+            "Write a polite, professional payment reminder. Acknowledge the invoice may have "
+            "slipped through and invite the customer to arrange payment promptly."
+        ),
+        "escalation": (
+            "Write a firm but professional overdue notice. Make clear that the account is "
+            "significantly overdue, request immediate payment, and state that further action "
+            "may follow if payment is not received within 7 days."
+        ),
+        "legal": (
+            "Write a formal legal warning letter. State that the account has been referred for "
+            "legal recovery proceedings and that legal action will commence unless full payment "
+            "is received within 14 days."
+        ),
+    }
+
+    invoice_list = "\n".join(
+        f"- Invoice {inv.invoice_number} | Vendor: {inv.vendor} | "
+        f"Amount: {_amount_display(inv.amount_minor, inv.currency)} | "
+        f"Days overdue: {inv.days_overdue}"
+        for inv in invoices
+    )
+
+    return f"""You are a financial collections assistant for a business.
+
+Tone instruction: {tone_instructions[tone]}
+
+For EACH invoice below, return a JSON array where each element has:
+- "invoice_number": the invoice number as provided
+- "message": the collection message to send
+- "tone": "{tone}"
+- "recommended_action": "{'send_reminder' if tone == 'reminder' else 'escalate' if tone == 'escalation' else 'initiate_legal'}"
+- "reasoning": brief explanation of why this tone is appropriate
+
+Invoices:
+{invoice_list}
+
+Return ONLY a valid JSON array. No markdown, no explanation."""
+
+
+async def _call_claude_batch(
+    invoices: list[_InvoiceRow],
+    tone: Tone,
+    client: anthropic.AsyncAnthropic,
+    settings: Any,
+) -> dict[str, _ClaudeMessage]:
+    """Call Claude for a batch of invoices sharing the same tone. Returns mapping of invoice_number → message."""
+    prompt = _build_batch_prompt(invoices, tone)
+    last_exc: Exception = RuntimeError("No attempts made")
+
+    for attempt in range(settings.max_agent_attempts):
+        try:
+            response = await client.messages.create(
+                model=settings.claude_model,
+                max_tokens=4096,
+                messages=[{"role": "user", "content": prompt}],
+            )
+            raw = response.content[0].text.strip()
+            parsed: list[dict] = json.loads(raw)
+            result: dict[str, _ClaudeMessage] = {}
+            for item in parsed:
+                msg = _ClaudeMessage(
+                    message=item["message"],
+                    tone=item["tone"],
+                    recommended_action=item["recommended_action"],
+                    reasoning=item["reasoning"],
+                )
+                result[item["invoice_number"]] = msg
+            return result
+        except (anthropic.APIStatusError, anthropic.APIConnectionError) as exc:
+            last_exc = exc
+            if attempt < settings.max_agent_attempts - 1:
+                await asyncio.sleep(settings.backoff_seconds * (attempt + 1))
+        except (json.JSONDecodeError, KeyError, ValueError) as exc:
+            raise ValueError(f"Claude returned unparseable response for tone={tone}: {exc}") from exc
+
+    raise RuntimeError(
+        f"Claude API failed after {settings.max_agent_attempts} attempts for tone={tone}: {last_exc}"
+    ) from last_exc
+
+
+async def _execute_collections(
+    tenant_id: str,
+    worker_id: str,
+    execution_id: str,
+) -> dict[str, Any]:
+    db = get_db()
+    settings = get_settings()
+    today = date.today()
+
+    worker_record = await db.worker.find_first(
+        where={"id": worker_id, "tenant_id": tenant_id}
+    )
+    if worker_record is None:
+        raise ValueError(f"Worker {worker_id} not found for tenant {tenant_id}")
+
+    raw_config: dict = worker_record.config_json or {}
+    cfg = _WorkerConfig(
+        first_reminder_days=raw_config.get("first_reminder_days", 7),
+        escalate_days=raw_config.get("escalate_days", 30),
+        legal_days=raw_config.get("legal_days", 60),
+    )
+
+    raw_invoices = await db.invoice.find_many(
+        where={
+            "tenant_id": tenant_id,
+            "due_date": {"lt": today},
+            "status": {"not_in": ["paid", "cancelled"]},
+        }
+    )
+
+    if not raw_invoices:
+        reasoning_trace: dict[str, Any] = {
+            "total_overdue_count": 0,
+            "actions_by_tone": {"reminder": [], "escalation": [], "legal": []},
+            "invoice_ids_processed": [],
+            "worker_config": cfg.model_dump(),
+        }
+        await write_audit_log(
+            tenant_id=tenant_id,
+            actor=ACTOR,
+            action="collections_run",
+            reasoning_trace=reasoning_trace,
+            model_version=MODEL_VERSION,
+            execution_id=execution_id,
         )
-        return WorkerOutput(
-            worker_type=self.WORKER_TYPE,
-            decision=result.action,
-            confidence=result.confidence,
-            reasoning=result.reasoning,
-            actions_taken=[],
-            output_data=result.model_dump(),
+        return {
+            "decision": "auto_approved",
+            "confidence": CONFIDENCE,
+            "reasoning": "No overdue invoices",
+            "actions_taken": [],
+            "total_overdue": 0,
+        }
+
+    buckets: dict[Tone, list[_InvoiceRow]] = {
+        "reminder": [],
+        "escalation": [],
+        "legal": [],
+    }
+
+    for inv in raw_invoices:
+        days_overdue = (today - inv.due_date).days
+        classified = _classify_tone(days_overdue, cfg)
+        if classified is None:
+            continue
+        tone, action = classified
+        buckets[tone].append(
+            _InvoiceRow(
+                id=inv.id,
+                vendor=inv.vendor,
+                invoice_number=inv.invoice_number,
+                amount_minor=inv.amount_minor,
+                currency=inv.currency,
+                due_date=inv.due_date,
+                days_overdue=days_overdue,
+                tone=tone,
+                recommended_action=action,
+            )
         )
+
+    all_actionable = buckets["reminder"] + buckets["escalation"] + buckets["legal"]
+
+    if not all_actionable:
+        reasoning_trace = {
+            "total_overdue_count": len(raw_invoices),
+            "actions_by_tone": {"reminder": [], "escalation": [], "legal": []},
+            "invoice_ids_processed": [],
+            "note": "All overdue invoices are within the first_reminder_days threshold",
+            "worker_config": cfg.model_dump(),
+        }
+        await write_audit_log(
+            tenant_id=tenant_id,
+            actor=ACTOR,
+            action="collections_run",
+            reasoning_trace=reasoning_trace,
+            model_version=MODEL_VERSION,
+            execution_id=execution_id,
+        )
+        return {
+            "decision": "auto_approved",
+            "confidence": CONFIDENCE,
+            "reasoning": "No invoices have reached the first reminder threshold",
+            "actions_taken": [],
+            "total_overdue": len(raw_invoices),
+        }
+
+    client = anthropic.AsyncAnthropic(api_key=settings.anthropic_api_key)
+    claude_results: dict[str, _ClaudeMessage] = {}
+
+    for tone, invoice_list in buckets.items():
+        if not invoice_list:
+            continue
+        batch_result = await _call_claude_batch(invoice_list, tone, client, settings)
+        claude_results.update(batch_result)
+
+    actions_taken: list[str] = []
+    actions_by_tone: dict[str, list[str]] = {"reminder": [], "escalation": [], "legal": []}
+    processed_ids: list[str] = []
+
+    for inv in all_actionable:
+        msg_data = claude_results.get(inv.invoice_number)
+        action_label = (
+            msg_data.recommended_action if msg_data else inv.recommended_action
+        )
+        summary = (
+            f"{inv.invoice_number}: {action_label.replace('_', ' ')} "
+            f"({inv.days_overdue} days overdue)"
+        )
+        actions_taken.append(summary)
+        actions_by_tone[inv.tone].append(inv.invoice_number)
+        processed_ids.append(inv.id)
+
+    if processed_ids:
+        await db.invoice.update_many(
+            where={"id": {"in": processed_ids}, "tenant_id": tenant_id},
+            data={"status": "overdue"},
+        )
+
+    has_legal = bool(buckets["legal"])
+    has_escalation = bool(buckets["escalation"])
+
+    if has_legal:
+        overall_decision = "blocked"
+    elif has_escalation:
+        overall_decision = "approval_required"
+    else:
+        overall_decision = "auto_approved"
+
+    reasoning_trace = {
+        "total_overdue_count": len(raw_invoices),
+        "total_actionable_count": len(all_actionable),
+        "actions_by_tone": {
+            "reminder": actions_by_tone["reminder"],
+            "escalation": actions_by_tone["escalation"],
+            "legal": actions_by_tone["legal"],
+        },
+        "invoice_ids_processed": processed_ids,
+        "overall_decision": overall_decision,
+        "worker_config": cfg.model_dump(),
+    }
+
+    await write_audit_log(
+        tenant_id=tenant_id,
+        actor=ACTOR,
+        action="collections_run",
+        reasoning_trace=reasoning_trace,
+        model_version=MODEL_VERSION,
+        execution_id=execution_id,
+    )
+
+    reasoning_summary = (
+        f"Processed {len(all_actionable)} overdue invoice(s): "
+        f"{len(buckets['reminder'])} reminder(s), "
+        f"{len(buckets['escalation'])} escalation(s), "
+        f"{len(buckets['legal'])} legal notice(s)."
+    )
+
+    return {
+        "decision": overall_decision,
+        "confidence": CONFIDENCE,
+        "reasoning": reasoning_summary,
+        "actions_taken": actions_taken,
+        "total_overdue": len(raw_invoices),
+        "actions_by_tone": actions_by_tone,
+    }
+
+
+async def run_collections_job(
+    ctx: dict,
+    *,
+    execution_id: str,
+    tenant_id: str,
+    worker_id: str,
+) -> dict:
+    db = get_db()
+    start_ms = int(time.time() * 1000)
+    try:
+        result = await _execute_collections(tenant_id, worker_id, execution_id)
+        duration_ms = int(time.time() * 1000) - start_ms
+
+        await db.execution.update(
+            where={"id": execution_id},
+            data={
+                "status": "completed",
+                "decision": result["decision"],
+                "confidence": result["confidence"],
+                "duration_ms": duration_ms,
+            },
+        )
+
+        if result["decision"] == "approval_required":
+            settings = get_settings()
+            await db.approval.create(
+                data={
+                    "tenant_id": tenant_id,
+                    "execution_id": execution_id,
+                    "expires_at": datetime.now(UTC) + timedelta(seconds=settings.approval_ttl_seconds),
+                    "status": "pending",
+                }
+            )
+
+        _logger.info(
+            "collections_job_completed",
+            extra={
+                "tenant_id": tenant_id,
+                "execution_id": execution_id,
+                "decision": result["decision"],
+                "duration_ms": duration_ms,
+            },
+        )
+        return result
+
+    except Exception as exc:
+        try:
+            await db.execution.update(
+                where={"id": execution_id},
+                data={"status": "failed", "decision": "failed"},
+            )
+        except Exception:
+            pass
+
+        if ctx.get("job_try", 1) >= 3:
+            await push_to_dlq(
+                job_id=str(ctx.get("job_id", "unknown")),
+                function_name="run_collections_job",
+                error=str(exc),
+            )
+
+        _logger.error(
+            "collections_job_failed",
+            extra={
+                "tenant_id": tenant_id,
+                "execution_id": execution_id,
+                "error": str(exc),
+            },
+        )
+        raise

@@ -21,6 +21,11 @@ from app.workers.invoice_processing import run_invoice_job
 from app.workers.receipt_processing import run_receipt_job
 from app.api.v1.parse.invoice import run_parse_invoice_job
 from app.api.v1.parse.receipt import run_parse_receipt_job
+from app.workers.fraud_detection import run_fraud_detection_job
+from app.workers.collections import run_collections_job
+from app.workers.revenue_recognition import run_revenue_recognition_job
+from app.workers.credit_underwriting import run_credit_underwriting_job
+from app.workers.compliance import run_compliance_job
 
 logger = get_logger(__name__)
 
@@ -56,6 +61,58 @@ async def run_orchestrator_job(
             decision, confidence, reasoning = await _orchestrate_invoice_received(
                 payload, tenant_id, worker_id
             )
+        elif event_type == "fraud_check_requested":
+            transaction_ids = payload.get("transaction_ids", [])
+            if not transaction_ids:
+                decision, confidence, reasoning = "blocked", 0.0, "No transaction_ids in payload"
+            else:
+                pool = await get_queue_pool()
+                await pool.enqueue_job(
+                    "run_fraud_detection_job",
+                    execution_id=execution_id,
+                    tenant_id=tenant_id,
+                    worker_id=worker_id,
+                    transaction_ids=transaction_ids,
+                )
+                decision, confidence, reasoning = (
+                    "routed",
+                    1.0,
+                    f"Routed {len(transaction_ids)} transactions to Fraud Detection",
+                )
+
+        elif event_type == "collection_triggered":
+            pool = await get_queue_pool()
+            await pool.enqueue_job(
+                "run_collections_job",
+                execution_id=execution_id,
+                tenant_id=tenant_id,
+                worker_id=worker_id,
+            )
+            decision, confidence, reasoning = "routed", 1.0, "Routed to Collections worker"
+
+        elif event_type == "revenue_recognition_run":
+            pool = await get_queue_pool()
+            await pool.enqueue_job(
+                "run_revenue_recognition_job",
+                execution_id=execution_id,
+                tenant_id=tenant_id,
+                worker_id=worker_id,
+                contract_data=payload,
+            )
+            decision, confidence, reasoning = "routed", 1.0, "Routed to Revenue Recognition worker"
+
+        elif event_type == "compliance_check_requested":
+            pool = await get_queue_pool()
+            await pool.enqueue_job(
+                "run_compliance_job",
+                execution_id=execution_id,
+                tenant_id=tenant_id,
+                worker_id=worker_id,
+                transaction_ids=payload.get("transaction_ids", []),
+                frameworks=payload.get("frameworks", ["AML", "KYC"]),
+            )
+            decision, confidence, reasoning = "routed", 1.0, "Routed to Compliance worker"
+
         else:
             decision = "queued"
             confidence = 1.0
@@ -258,6 +315,11 @@ class WorkerSettings:
         run_receipt_job,
         run_parse_invoice_job,
         run_parse_receipt_job,
+        run_fraud_detection_job,
+        run_collections_job,
+        run_revenue_recognition_job,
+        run_credit_underwriting_job,
+        run_compliance_job,
     ]
     on_startup = startup
     on_shutdown = shutdown
