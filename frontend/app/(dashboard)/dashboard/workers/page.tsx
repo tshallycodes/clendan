@@ -8,7 +8,10 @@ export default async function WorkersPage() {
 
   try {
     const token = await getBackendToken()
-    if (token) workers = await apiGet<Worker[]>('/v1/workers', token)
+    if (token) {
+      const res = await apiGet<{ workers: Worker[] }>('/v1/workers', token)
+      workers = res.workers ?? []
+    }
   } catch { /* backend not running — show empty state */ }
 
   return <WorkersClient initialWorkers={workers} />
