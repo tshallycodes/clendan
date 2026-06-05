@@ -261,7 +261,14 @@ function OnboardingInner() {
                 <p className="text-[10px] font-mono text-brand-muted">Stored as {threshold} pence</p>
               </div>
             )}
-            {error && <p className="text-xs font-mono text-[#ff4d6d]">{error}</p>}
+            {error && (
+              <div className="space-y-1">
+                <p className="text-xs font-mono text-[#ff4d6d]">{error}</p>
+                <p className="text-[10px] font-mono text-brand-muted">
+                  Start the backend: <span className="text-brand-text">cd backend &amp;&amp; uvicorn app.main:app --reload</span>
+                </p>
+              </div>
+            )}
             <button
               type="button"
               onClick={handleDeploy}
@@ -269,6 +276,13 @@ function OnboardingInner() {
               className="w-full bg-brand-green text-black hover:bg-[#00a844] active:scale-[0.97] rounded-sm px-4 py-2.5 text-xs font-mono font-medium transition-all disabled:opacity-50"
             >
               {loading ? 'Deploying…' : 'Deploy Worker'}
+            </button>
+            <button
+              type="button"
+              onClick={() => router.push('/dashboard')}
+              className="w-full text-xs font-mono text-brand-muted hover:text-brand-text transition-colors py-2"
+            >
+              Skip for now — deploy workers from the dashboard
             </button>
           </div>
         )}
