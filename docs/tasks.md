@@ -1,5 +1,25 @@
 # Clendan — Upcoming Tasks
 
+## Worker Build Plan
+
+3 workers are production-ready (Invoice Processing, AI Accountant, Receipt Processing). 8 stubs remain.
+
+| Worker | Owner | Status |
+|---|---|---|
+| Fraud Detection | You | To build |
+| Collections | You | To build |
+| Revenue Recognition | You | To build |
+| Credit Underwriting | You | To build |
+| Compliance | You | To build |
+| Orchestrator (advanced) | You | Base live — multi-step chaining + conflict resolution to build |
+| Reconciliation | Coworker | To build |
+| Treasury | Coworker | To build |
+| Expense Control | Unassigned | Deprioritised |
+
+> **Note:** The base orchestrator (`POST /v1/events`, `run_orchestrator_job`, webhook wiring) is already live. What remains is advanced orchestration: multi-worker chaining (e.g. Invoice → Fraud Detection → Policy), conflict resolution when two workers return contradictory outputs, and parallel worker invocation.
+
+---
+
 ## Integrations
 
 ### Xero
