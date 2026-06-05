@@ -11,7 +11,25 @@ function createClerkHandler() {
   }
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { clerkMiddleware, createRouteMatcher } = require('@clerk/nextjs/server') as typeof import('@clerk/nextjs/server')
-  const isPublicRoute = createRouteMatcher(['/', '/sign-in(.*)', '/sign-up(.*)'])
+  const isPublicRoute = createRouteMatcher([
+    '/',
+    '/sign-in(.*)',
+    '/sign-up(.*)',
+    '/about(.*)',
+    '/pricing(.*)',
+    '/blog(.*)',
+    '/changelog(.*)',
+    '/docs(.*)',
+    '/how-it-works(.*)',
+    '/integrations(.*)',
+    '/workers(.*)',
+    '/security(.*)',
+    '/privacy(.*)',
+    '/terms(.*)',
+    '/security-policy(.*)',
+    '/maintenance(.*)',
+    '/api-tools(.*)',
+  ])
   return clerkMiddleware((auth, request) => {
     if (!isPublicRoute(request)) {
       auth.protect()
