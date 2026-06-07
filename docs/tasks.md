@@ -15,7 +15,7 @@
 | Compliance | Done ✅ |
 | Orchestrator (advanced) | Done ✅ — sequential chaining, parallel invocation, conflict resolution |
 
-### Coworker — 6 workers
+### Cofounder — 6 workers
 
 | Worker | Status |
 |---|---|

@@ -9,9 +9,9 @@ Last updated: 2026-06-07
 
 | Worker | File | arq Job | Owner |
 |---|---|---|---|
-| Invoice Processing | `workers/invoice_processing.py` | `run_invoice_job` | Coworker ✅ |
-| AI Accountant | `workers/ai_accountant.py` | `run_ai_accountant` | Coworker ✅ |
-| Receipt Processing | `workers/receipt_processing.py` | `run_receipt_job` | Coworker ✅ |
+| Invoice Processing | `workers/invoice_processing.py` | `run_invoice_job` | Cofounder ✅ |
+| AI Accountant | `workers/ai_accountant.py` | `run_ai_accountant` | Cofounder ✅ |
+| Receipt Processing | `workers/receipt_processing.py` | `run_receipt_job` | Cofounder ✅ |
 | Fraud Detection | `workers/fraud_detection.py` | `run_fraud_detection_job` | You ✅ |
 | Collections | `workers/collections.py` | `run_collections_job` | You ✅ |
 | Revenue Recognition | `workers/revenue_recognition.py` | `run_revenue_recognition_job` | You ✅ |
