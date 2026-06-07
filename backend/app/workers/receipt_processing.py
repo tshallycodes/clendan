@@ -9,6 +9,7 @@ import json
 from typing import Any
 
 import anthropic
+from pydantic import BaseModel
 
 from app.audit.logger import write_audit_log
 from app.core.config import get_settings
@@ -21,6 +22,29 @@ _logger = get_logger(__name__)
 WORKER_TYPE = "receipt_processing"
 WORKER_VERSION = 1
 MIN_CONFIDENCE = 0.5
+
+
+class _WorkerPolicy(BaseModel):
+    # Existing field
+    allowed_categories: list[str] = []
+    # New fields
+    receipt_required_above: int = 2500
+    submission_deadline_days: int = 30
+    max_receipt_age_days: int = 90
+    ocr_confidence_min: float = 0.82
+    duplicate_receipt_window_days: int = 365
+    currency_conversion_enabled: bool = True
+    fx_rate_tolerance_pct: float = 0.03
+    auto_approve_below: int = 1000
+    image_min_quality_score: float = 0.60
+    personal_expense_detection: bool = True
+    vat_extraction_enabled: bool = True
+    missing_receipt_grace_period_days: int = 7
+
+
+def _parse_policy(raw: dict[str, Any]) -> _WorkerPolicy:
+    """Parse raw policy config dict into a validated _WorkerPolicy model."""
+    return _WorkerPolicy(**{k: v for k, v in raw.items() if k in _WorkerPolicy.model_fields})
 
 _RECEIPT_PROMPT = f"""You are a receipt data extraction system. Extract fields from this receipt image and return ONLY a valid JSON object.
 

@@ -34,9 +34,25 @@ _MODEL_VERSION = "treasury-v1"
 
 
 class _WorkerPolicy(BaseModel):
-    min_balance_alert: int = 1000000          # pence — alert if total balance below this
-    cash_runway_warning_days: int = 90        # alert if forecast runway < this many days
-    forecast_horizon_days: int = 30           # look this far back for spending rate
+    min_balance_alert: int = 1000000                      # pence — alert if total balance below this
+    cash_runway_warning_days: int = 90                    # alert if forecast runway < this many days
+    forecast_horizon_days: int = 30                       # look this far back for spending rate
+    minimum_operating_balance_alert_days: int = 45        # days of expenses — better than fixed amount
+    critical_balance_alert_days: int = 14
+    runway_alert_days: int = 90
+    runway_critical_days: int = 30
+    forecast_update_frequency: str = "weekly"             # "daily" | "weekly" | "monthly"
+    forecast_method: str = "hybrid"                       # "simple_moving_avg" | "weighted_moving_avg" | "ml_forecast" | "hybrid"
+    cash_sweep_enabled: bool = False                      # Dangerous if miscalibrated — off by default
+    cash_sweep_threshold: int = 50000000                  # minor units ($500,000)
+    cash_sweep_retain_minimum: int = 10000000             # minor units ($100,000)
+    bank_counterparty_limit: int = 25000000               # minor units ($250,000) — FDIC ceiling
+    bank_counterparty_count_min: int = 2
+    investment_max_single_counterparty_pct: float = 0.25
+    fx_exposure_alert_pct: float = 0.20
+    ar_aging_visibility_enabled: bool = True
+    payroll_reserve_days: int = 5
+    daily_reconciliation_enabled: bool = True
 
 
 # ---------------------------------------------------------------------------
@@ -81,6 +97,22 @@ def _parse_policy(config_json: dict) -> _WorkerPolicy:
         min_balance_alert=raw.get("min_balance_alert", 1000000),
         cash_runway_warning_days=raw.get("cash_runway_warning_days", 90),
         forecast_horizon_days=raw.get("forecast_horizon_days", 30),
+        minimum_operating_balance_alert_days=raw.get("minimum_operating_balance_alert_days", 45),
+        critical_balance_alert_days=raw.get("critical_balance_alert_days", 14),
+        runway_alert_days=raw.get("runway_alert_days", 90),
+        runway_critical_days=raw.get("runway_critical_days", 30),
+        forecast_update_frequency=raw.get("forecast_update_frequency", "weekly"),
+        forecast_method=raw.get("forecast_method", "hybrid"),
+        cash_sweep_enabled=raw.get("cash_sweep_enabled", False),
+        cash_sweep_threshold=raw.get("cash_sweep_threshold", 50000000),
+        cash_sweep_retain_minimum=raw.get("cash_sweep_retain_minimum", 10000000),
+        bank_counterparty_limit=raw.get("bank_counterparty_limit", 25000000),
+        bank_counterparty_count_min=raw.get("bank_counterparty_count_min", 2),
+        investment_max_single_counterparty_pct=raw.get("investment_max_single_counterparty_pct", 0.25),
+        fx_exposure_alert_pct=raw.get("fx_exposure_alert_pct", 0.20),
+        ar_aging_visibility_enabled=raw.get("ar_aging_visibility_enabled", True),
+        payroll_reserve_days=raw.get("payroll_reserve_days", 5),
+        daily_reconciliation_enabled=raw.get("daily_reconciliation_enabled", True),
     )
 
 

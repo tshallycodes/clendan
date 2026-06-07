@@ -10,6 +10,7 @@ from datetime import datetime, UTC
 from typing import Any
 
 import anthropic
+from pydantic import BaseModel
 
 from app.core.config import get_settings
 from app.core.db import get_db
@@ -27,6 +28,31 @@ ALLOWED_CATEGORIES = {
 
 AUTO_CONFIDENCE_THRESHOLD = 0.85
 APPROVE_CONFIDENCE_THRESHOLD = 0.50
+
+
+class _WorkerPolicy(BaseModel):
+    # Existing thresholds (mirrored from module-level constants for config-driven overrides)
+    auto_confidence_threshold: float = AUTO_CONFIDENCE_THRESHOLD
+    approve_confidence_threshold: float = APPROVE_CONFIDENCE_THRESHOLD
+    # New fields
+    auto_categorise_confidence_min: float = 0.90
+    human_review_confidence_min: float = 0.70
+    learn_from_corrections: bool = True
+    correction_propagation_enabled: bool = True
+    correction_propagation_lookback_days: int = 90
+    split_transaction_enabled: bool = True
+    max_split_lines: int = 10
+    tax_code_validation: bool = True
+    strict_coa_mode: bool = True
+    bulk_categorise_batch_size: int = 500
+    recategorise_cooldown_hours: int = 24
+    uncategorised_alert_threshold: int = 50
+    model_retrain_frequency_days: int = 30
+
+
+def _parse_policy(raw: dict[str, Any]) -> _WorkerPolicy:
+    """Parse raw policy config dict into a validated _WorkerPolicy model."""
+    return _WorkerPolicy(**{k: v for k, v in raw.items() if k in _WorkerPolicy.model_fields})
 
 
 @dataclass

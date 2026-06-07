@@ -14,13 +14,13 @@ from typing import Literal
 
 from anthropic import APIConnectionError, APIStatusError, AsyncAnthropic
 from pydantic import BaseModel
-
 from app.audit.logger import write_audit_log
 from app.core.config import get_settings
 from app.core.db import get_db
 from app.core.logging import get_logger
 from app.queue.pool import push_to_dlq
 from app.workers.base import BaseWorker, WorkerOutput, WorkerType
+from app.workers.compliance_policy import _WorkerConfig, _parse_config
 
 logger = get_logger(__name__)
 
@@ -36,11 +36,6 @@ _PII_PATTERN = re.compile(
 # ---------------------------------------------------------------------------
 # Internal data models
 # ---------------------------------------------------------------------------
-
-
-class _WorkerConfig(BaseModel):
-    report_above_minor: int = 1_000_000
-    frameworks: str = "AML, KYC"
 
 
 class _TransactionRecord(BaseModel):
@@ -75,13 +70,6 @@ class _ClaudeResponse(BaseModel):
 # ---------------------------------------------------------------------------
 # Config helpers
 # ---------------------------------------------------------------------------
-
-
-def _parse_config(config_json: dict) -> _WorkerConfig:
-    return _WorkerConfig(
-        report_above_minor=config_json.get("report_above_minor", 1_000_000),
-        frameworks=config_json.get("frameworks", "AML, KYC"),
-    )
 
 
 def _active_frameworks(config: _WorkerConfig, requested: list[str]) -> list[str]:

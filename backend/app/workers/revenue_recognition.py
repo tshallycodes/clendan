@@ -51,6 +51,39 @@ class ClaudeRecognitionResult(BaseModel):
     reasoning: str
 
 
+class _WorkerPolicy(BaseModel):
+    accounting_standard: str = "ASC 606"
+    recognition_method: str = "over-time"
+    recognition_frequency: str = "daily"                          # "daily" | "monthly"
+    variable_consideration_method: str = "expected_value"         # "expected_value" | "most_likely_amount"
+    variable_consideration_constraint_enabled: bool = True        # ASC 606 legal requirement
+    variable_consideration_review_frequency: str = "each_reporting_date"
+    ssp_estimation_method: str = "adjusted_market"                # "adjusted_market" | "expected_cost_plus" | "residual"
+    contract_modification_handling: str = "prospective"           # "prospective" | "cumulative_catch_up"
+    material_right_tracking_enabled: bool = True
+    milestone_completion_threshold_pct: float = 1.00
+    auto_close_completed_obligations: bool = True
+    period_lock_enforcement: bool = True
+
+
+def _parse_policy(config_json: dict) -> _WorkerPolicy:
+    raw = config_json.get("policy", config_json)
+    return _WorkerPolicy(
+        accounting_standard=raw.get("accounting_standard", "ASC 606"),
+        recognition_method=raw.get("recognition_method", "over-time"),
+        recognition_frequency=raw.get("recognition_frequency", "daily"),
+        variable_consideration_method=raw.get("variable_consideration_method", "expected_value"),
+        variable_consideration_constraint_enabled=raw.get("variable_consideration_constraint_enabled", True),
+        variable_consideration_review_frequency=raw.get("variable_consideration_review_frequency", "each_reporting_date"),
+        ssp_estimation_method=raw.get("ssp_estimation_method", "adjusted_market"),
+        contract_modification_handling=raw.get("contract_modification_handling", "prospective"),
+        material_right_tracking_enabled=raw.get("material_right_tracking_enabled", True),
+        milestone_completion_threshold_pct=raw.get("milestone_completion_threshold_pct", 1.00),
+        auto_close_completed_obligations=raw.get("auto_close_completed_obligations", True),
+        period_lock_enforcement=raw.get("period_lock_enforcement", True),
+    )
+
+
 class ContractInput(BaseModel):
     contract_id: str
     contract_text: str

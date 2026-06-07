@@ -52,6 +52,19 @@ class _ApplicationInput(BaseModel):
 class _WorkerPolicy(BaseModel):
     min_credit_score: int = 650
     max_dti_ratio: float = 0.43
+    auto_approve_score_min: int = 720
+    manual_review_score_min: int = 620
+    max_ltv_ratio: float = 0.80
+    min_employment_months: int = 6
+    min_annual_income: int = 2000000              # minor units ($20,000)
+    max_loan_amount: int = 50000000               # minor units ($500,000)
+    min_loan_amount: int = 100000                 # minor units ($1,000)
+    max_term_months: int = 84
+    max_open_derogatory_marks: int = 0
+    bankruptcy_lookback_years: int = 7
+    fraud_check_enabled: bool = True
+    income_verification_required_above: int = 5000000  # minor units ($50,000)
+    adverse_action_notice_auto: bool = True       # ECOA legal requirement
 
 
 class _ClaudeRiskResult(BaseModel):
@@ -75,6 +88,19 @@ def _parse_policy(config_json: dict) -> _WorkerPolicy:
     return _WorkerPolicy(
         min_credit_score=raw.get("min_credit_score", 650),
         max_dti_ratio=raw.get("max_dti_ratio", 0.43),
+        auto_approve_score_min=raw.get("auto_approve_score_min", 720),
+        manual_review_score_min=raw.get("manual_review_score_min", 620),
+        max_ltv_ratio=raw.get("max_ltv_ratio", 0.80),
+        min_employment_months=raw.get("min_employment_months", 6),
+        min_annual_income=raw.get("min_annual_income", 2000000),
+        max_loan_amount=raw.get("max_loan_amount", 50000000),
+        min_loan_amount=raw.get("min_loan_amount", 100000),
+        max_term_months=raw.get("max_term_months", 84),
+        max_open_derogatory_marks=raw.get("max_open_derogatory_marks", 0),
+        bankruptcy_lookback_years=raw.get("bankruptcy_lookback_years", 7),
+        fraud_check_enabled=raw.get("fraud_check_enabled", True),
+        income_verification_required_above=raw.get("income_verification_required_above", 5000000),
+        adverse_action_notice_auto=raw.get("adverse_action_notice_auto", True),
     )
 
 

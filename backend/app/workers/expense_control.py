@@ -35,6 +35,20 @@ class _WorkerPolicy(BaseModel):
     monthly_limit_per_employee: int = 100000  # pence
     receipt_required_above: int = 2500        # pence
     blocked_categories: list[str] = []
+    per_transaction_limit: int = 50000                # minor units ($500)
+    daily_spend_limit: int = 200000                   # minor units ($2,000)
+    monthly_spend_limit: int = 500000                 # minor units ($5,000)
+    pre_approval_required_above: int = 100000         # minor units ($1,000)
+    blocked_mcc_allow_override: bool = False
+    weekend_spend_enabled: bool = True
+    international_spend_enabled: bool = True
+    cash_advance_enabled: bool = False                # Primary fraud vector — off by default
+    atm_withdrawal_enabled: bool = False
+    meals_per_diem_limit: int = 10000                 # minor units ($100)
+    hotel_daily_rate_limit: int = 35000               # minor units ($350)
+    entertainment_monthly_limit: int = 25000          # minor units ($250)
+    policy_violation_warning_count: int = 3
+    policy_violation_suspend_count: int = 5
 
 
 class _TransactionRecord(BaseModel):
@@ -76,6 +90,20 @@ def _parse_policy(config_json: dict) -> _WorkerPolicy:
         monthly_limit_per_employee=raw.get("monthly_limit_per_employee", 100000),
         receipt_required_above=raw.get("receipt_required_above", 2500),
         blocked_categories=raw.get("blocked_categories", []),
+        per_transaction_limit=raw.get("per_transaction_limit", 50000),
+        daily_spend_limit=raw.get("daily_spend_limit", 200000),
+        monthly_spend_limit=raw.get("monthly_spend_limit", 500000),
+        pre_approval_required_above=raw.get("pre_approval_required_above", 100000),
+        blocked_mcc_allow_override=raw.get("blocked_mcc_allow_override", False),
+        weekend_spend_enabled=raw.get("weekend_spend_enabled", True),
+        international_spend_enabled=raw.get("international_spend_enabled", True),
+        cash_advance_enabled=raw.get("cash_advance_enabled", False),
+        atm_withdrawal_enabled=raw.get("atm_withdrawal_enabled", False),
+        meals_per_diem_limit=raw.get("meals_per_diem_limit", 10000),
+        hotel_daily_rate_limit=raw.get("hotel_daily_rate_limit", 35000),
+        entertainment_monthly_limit=raw.get("entertainment_monthly_limit", 25000),
+        policy_violation_warning_count=raw.get("policy_violation_warning_count", 3),
+        policy_violation_suspend_count=raw.get("policy_violation_suspend_count", 5),
     )
 
 

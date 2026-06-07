@@ -37,6 +37,20 @@ class _WorkerPolicy(BaseModel):
     risk_score_block: float = 0.85
     velocity_max_txns: int = 10
     velocity_window_minutes: int = 60
+    review_score_threshold: float = 0.65
+    velocity_max_amount: int = 500000            # minor units ($5,000)
+    single_transaction_max: int = 1000000        # minor units ($10,000)
+    new_merchant_risk_boost: float = 0.15
+    geo_velocity_max_kmph: int = 800
+    unusual_hours_start: int = 0
+    unusual_hours_end: int = 5
+    unusual_hours_risk_boost: float = 0.10
+    card_not_present_risk_boost: float = 0.12
+    round_amount_risk_boost: float = 0.08
+    ip_reputation_check_enabled: bool = True
+    device_fingerprint_enabled: bool = True
+    model_retrain_frequency_days: int = 14
+    sca_required_above: int = 3000               # minor units (~€30)
 
 
 class _TransactionRecord(BaseModel):
@@ -81,6 +95,20 @@ def _parse_policy(config_json: dict) -> _WorkerPolicy:
         risk_score_block=raw.get("risk_score_block", 0.85),
         velocity_max_txns=raw.get("velocity_max_txns", 10),
         velocity_window_minutes=raw.get("velocity_window_minutes", 60),
+        review_score_threshold=raw.get("review_score_threshold", 0.65),
+        velocity_max_amount=raw.get("velocity_max_amount", 500000),
+        single_transaction_max=raw.get("single_transaction_max", 1000000),
+        new_merchant_risk_boost=raw.get("new_merchant_risk_boost", 0.15),
+        geo_velocity_max_kmph=raw.get("geo_velocity_max_kmph", 800),
+        unusual_hours_start=raw.get("unusual_hours_start", 0),
+        unusual_hours_end=raw.get("unusual_hours_end", 5),
+        unusual_hours_risk_boost=raw.get("unusual_hours_risk_boost", 0.10),
+        card_not_present_risk_boost=raw.get("card_not_present_risk_boost", 0.12),
+        round_amount_risk_boost=raw.get("round_amount_risk_boost", 0.08),
+        ip_reputation_check_enabled=raw.get("ip_reputation_check_enabled", True),
+        device_fingerprint_enabled=raw.get("device_fingerprint_enabled", True),
+        model_retrain_frequency_days=raw.get("model_retrain_frequency_days", 14),
+        sca_required_above=raw.get("sca_required_above", 3000),
     )
 
 

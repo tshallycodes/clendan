@@ -36,6 +36,19 @@ _MODEL_VERSION = "reconciliation-v1"
 class _WorkerPolicy(BaseModel):
     amount_tolerance_pence: int = 100
     staleness_days: int = 30
+    auto_match_confidence_min: float = 0.95
+    amount_tolerance_minor_units: int = 150      # $1.50 — Numeric guide
+    amount_tolerance_pct: float = 0.0003         # 0.03%
+    date_tolerance_days: int = 5
+    partial_match_enabled: bool = True
+    partial_match_max_lines: int = 20
+    reconciliation_frequency: str = "daily"      # "real_time" | "daily" | "weekly"
+    unmatched_alert_days: int = 5
+    forex_tolerance_pct: float = 0.02
+    intercompany_auto_eliminate: bool = False
+    stale_open_item_days: int = 90
+    period_lock_respect: bool = True
+    segregation_of_duties_enforced: bool = True
 
 
 class _TransactionRecord(BaseModel):
@@ -80,6 +93,19 @@ def _parse_policy(config_json: dict) -> _WorkerPolicy:
     return _WorkerPolicy(
         amount_tolerance_pence=raw.get("amount_tolerance_pence", 100),
         staleness_days=raw.get("staleness_days", 30),
+        auto_match_confidence_min=raw.get("auto_match_confidence_min", 0.95),
+        amount_tolerance_minor_units=raw.get("amount_tolerance_minor_units", 150),
+        amount_tolerance_pct=raw.get("amount_tolerance_pct", 0.0003),
+        date_tolerance_days=raw.get("date_tolerance_days", 5),
+        partial_match_enabled=raw.get("partial_match_enabled", True),
+        partial_match_max_lines=raw.get("partial_match_max_lines", 20),
+        reconciliation_frequency=raw.get("reconciliation_frequency", "daily"),
+        unmatched_alert_days=raw.get("unmatched_alert_days", 5),
+        forex_tolerance_pct=raw.get("forex_tolerance_pct", 0.02),
+        intercompany_auto_eliminate=raw.get("intercompany_auto_eliminate", False),
+        stale_open_item_days=raw.get("stale_open_item_days", 90),
+        period_lock_respect=raw.get("period_lock_respect", True),
+        segregation_of_duties_enforced=raw.get("segregation_of_duties_enforced", True),
     )
 
 

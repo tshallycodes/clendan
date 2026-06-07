@@ -6,6 +6,7 @@ from typing import Any
 
 import anthropic
 import fitz  # PyMuPDF
+from pydantic import BaseModel
 
 from app.audit.logger import write_audit_log
 from app.core.config import get_settings
@@ -19,6 +20,35 @@ _logger = get_logger(__name__)
 
 WORKER_TYPE = "invoice_processing"
 WORKER_VERSION = 1
+
+
+class _WorkerPolicy(BaseModel):
+    # Existing fields
+    verified_suppliers: list[str] = []
+    allowed_currencies: list[str] = ["GBP", "USD", "EUR"]
+    auto_threshold_minor: int = 50000
+    block_threshold_minor: int = 1_000_000
+    # New fields
+    auto_approve_threshold: int = 50000
+    po_match_required: bool = True
+    po_tolerance_pct: float = 0.03
+    po_tolerance_abs: int = 500
+    duplicate_window_days: int = 90
+    max_invoice_age_days: int = 180
+    new_vendor_flag_enabled: bool = True
+    new_vendor_hold_days: int = 3
+    approval_tier_1_limit: int = 100000
+    approval_tier_2_limit: int = 1000000
+    approval_tier_3_limit: int = 10000000
+    tax_validation_enabled: bool = True
+    payment_terms_default_days: int = 30
+    blocked_vendor_auto_reject: bool = True
+    ocr_confidence_min: float = 0.85
+
+
+def _parse_policy(raw: dict[str, Any]) -> _WorkerPolicy:
+    """Parse raw policy config dict into a validated _WorkerPolicy model."""
+    return _WorkerPolicy(**{k: v for k, v in raw.items() if k in _WorkerPolicy.model_fields})
 
 _INVOICE_PROMPT = """You are an invoice data extraction system. Extract fields from this invoice and return ONLY a valid JSON object.
 

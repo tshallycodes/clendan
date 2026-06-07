@@ -51,6 +51,23 @@ class _WorkerConfig(BaseModel):
     first_reminder_days: int = 7
     escalate_days: int = 30
     legal_days: int = 60
+    reminder_1_days_overdue: int = 3
+    reminder_2_days_overdue: int = 14
+    reminder_3_days_overdue: int = 30
+    final_notice_days_overdue: int = 60
+    do_not_contact_start: int = 21               # 9pm — LEGAL REQUIREMENT (CFPB Reg F)
+    do_not_contact_end: int = 8                  # 8am — LEGAL REQUIREMENT (CFPB Reg F)
+    max_calls_per_debt_per_week: int = 7         # LEGAL MAXIMUM (CFPB Reg F)
+    late_fee_enabled: bool = True
+    late_fee_fixed_amount: int = 4000            # minor units ($40)
+    late_fee_rate_annual_bps: int = 1800         # 18% annualised
+    late_fee_max_per_invoice_pct: float = 0.15
+    payment_plan_enabled: bool = True
+    payment_plan_min_installments: int = 2
+    payment_plan_max_months: int = 12
+    dispute_hold_enabled: bool = True
+    dispute_resolution_days: int = 30
+    minimum_balance_for_collections: int = 5000  # minor units ($50)
 
 
 def _amount_display(amount_minor: int, currency: str) -> str:
@@ -171,6 +188,23 @@ async def _execute_collections(
         first_reminder_days=raw_config.get("first_reminder_days", 7),
         escalate_days=raw_config.get("escalate_days", 30),
         legal_days=raw_config.get("legal_days", 60),
+        reminder_1_days_overdue=raw_config.get("reminder_1_days_overdue", 3),
+        reminder_2_days_overdue=raw_config.get("reminder_2_days_overdue", 14),
+        reminder_3_days_overdue=raw_config.get("reminder_3_days_overdue", 30),
+        final_notice_days_overdue=raw_config.get("final_notice_days_overdue", 60),
+        do_not_contact_start=raw_config.get("do_not_contact_start", 21),
+        do_not_contact_end=raw_config.get("do_not_contact_end", 8),
+        max_calls_per_debt_per_week=raw_config.get("max_calls_per_debt_per_week", 7),
+        late_fee_enabled=raw_config.get("late_fee_enabled", True),
+        late_fee_fixed_amount=raw_config.get("late_fee_fixed_amount", 4000),
+        late_fee_rate_annual_bps=raw_config.get("late_fee_rate_annual_bps", 1800),
+        late_fee_max_per_invoice_pct=raw_config.get("late_fee_max_per_invoice_pct", 0.15),
+        payment_plan_enabled=raw_config.get("payment_plan_enabled", True),
+        payment_plan_min_installments=raw_config.get("payment_plan_min_installments", 2),
+        payment_plan_max_months=raw_config.get("payment_plan_max_months", 12),
+        dispute_hold_enabled=raw_config.get("dispute_hold_enabled", True),
+        dispute_resolution_days=raw_config.get("dispute_resolution_days", 30),
+        minimum_balance_for_collections=raw_config.get("minimum_balance_for_collections", 5000),
     )
 
     raw_invoices = await db.invoice.find_many(
