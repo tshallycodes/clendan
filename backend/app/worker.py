@@ -26,6 +26,9 @@ from app.workers.collections import run_collections_job
 from app.workers.revenue_recognition import run_revenue_recognition_job
 from app.workers.credit_underwriting import run_credit_underwriting_job
 from app.workers.compliance import run_compliance_job
+from app.workers.reconciliation import run_reconciliation_job
+from app.workers.expense_control import run_expense_control_job
+from app.workers.treasury import run_treasury_job
 
 logger = get_logger(__name__)
 
@@ -112,6 +115,38 @@ async def run_orchestrator_job(
                 frameworks=payload.get("frameworks", ["AML", "KYC"]),
             )
             decision, confidence, reasoning = "routed", 1.0, "Routed to Compliance worker"
+
+        elif event_type == "reconciliation_run":
+            pool = await get_queue_pool()
+            await pool.enqueue_job(
+                "run_reconciliation_job",
+                execution_id=execution_id,
+                tenant_id=tenant_id,
+                worker_id=worker_id,
+                period_days=payload.get("period_days", 30),
+            )
+            decision, confidence, reasoning = "routed", 1.0, "Routed to Reconciliation worker"
+
+        elif event_type == "expense_control_run":
+            pool = await get_queue_pool()
+            await pool.enqueue_job(
+                "run_expense_control_job",
+                execution_id=execution_id,
+                tenant_id=tenant_id,
+                worker_id=worker_id,
+                transaction_ids=payload.get("transaction_ids", []),
+            )
+            decision, confidence, reasoning = "routed", 1.0, "Routed to Expense Control worker"
+
+        elif event_type == "treasury_run":
+            pool = await get_queue_pool()
+            await pool.enqueue_job(
+                "run_treasury_job",
+                execution_id=execution_id,
+                tenant_id=tenant_id,
+                worker_id=worker_id,
+            )
+            decision, confidence, reasoning = "routed", 1.0, "Routed to Treasury worker"
 
         else:
             decision = "queued"
@@ -320,6 +355,9 @@ class WorkerSettings:
         run_revenue_recognition_job,
         run_credit_underwriting_job,
         run_compliance_job,
+        run_reconciliation_job,
+        run_expense_control_job,
+        run_treasury_job,
     ]
     on_startup = startup
     on_shutdown = shutdown

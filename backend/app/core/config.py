@@ -40,6 +40,8 @@ class Settings(BaseSettings):
     plaid_env: str = "sandbox"  # sandbox | development | production
     plaid_webhook_secret: str = ""
 
+    stripe_webhook_secret: str = ""
+
 
 @lru_cache()
 def get_settings() -> Settings:

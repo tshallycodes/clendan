@@ -49,13 +49,17 @@ async def list_executions(
     limit: int = Query(50, le=200),
     offset: int = Query(0, ge=0),
     status: str | None = Query(None),
+    worker_id: str | None = Query(None),
 ):
-    """Lists executions for the tenant, newest first."""
+    """Lists executions for the tenant, newest first. Optionally filter by worker_id."""
     tenant_id = await _tenant_id(payload, db)
     where: dict = {"tenant_id": tenant_id}
     if status:
         where["status"] = status
+    if worker_id:
+        where["worker_id"] = worker_id
 
+    total = await db.execution.count(where=where)
     executions = await db.execution.find_many(
         where=where,
         order={"created_at": "desc"},
@@ -68,15 +72,18 @@ async def list_executions(
         "executions": [
             {
                 "id": e.id,
+                "worker_id": e.worker_id,
                 "worker_type": e.worker.type if e.worker else "unknown",
                 "decision": e.decision,
                 "confidence": e.confidence,
                 "status": e.status,
                 "duration_ms": e.duration_ms,
                 "created_at": e.created_at.isoformat(),
+                "input_ref": e.input_ref,
             }
             for e in executions
         ],
+        "total": total,
         "limit": limit,
         "offset": offset,
     })
@@ -144,6 +151,7 @@ async def list_audit(
                 "model_version": e.model_version,
                 "created_at": e.created_at.isoformat(),
                 "execution_id": e.execution_id,
+                "reasoning_trace_json": e.reasoning_trace_json,
             }
             for e in entries
         ],
