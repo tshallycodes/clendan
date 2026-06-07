@@ -9,8 +9,12 @@ import { HowItWorks } from '@/components/marketing/HowItWorks'
 import { WorkerShowcase } from '@/components/marketing/WorkerShowcase'
 
 export default async function HomePage() {
-  const { userId } = await auth()
-  if (userId) redirect('/onboarding')
+  // Guard: auth() throws when Clerk keys are not configured (proxy.ts dev fallback).
+  const hasClerk = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY?.startsWith('pk_')
+  if (hasClerk) {
+    const { userId } = await auth()
+    if (userId) redirect('/onboarding')
+  }
 
   return (
     <div className="flex flex-col min-h-screen bg-brand-bg">
