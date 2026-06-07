@@ -1,104 +1,136 @@
 # Clendan — Session Handoff
-Last updated: 2026-06-06
+Last updated: 2026-06-07
 
 ---
 
 ## What Was Done (Cumulative)
 
-### Backend — Workers
-All 5 of the user's workers are production-ready:
+### Backend — All 8 Workers Complete
 
-| Worker | File | arq Job |
-|---|---|---|
-| Fraud Detection | `backend/app/workers/fraud_detection.py` | `run_fraud_detection_job` |
-| Collections | `backend/app/workers/collections.py` | `run_collections_job` |
-| Revenue Recognition | `backend/app/workers/revenue_recognition.py` | `run_revenue_recognition_job` |
-| Credit Underwriting | `backend/app/workers/credit_underwriting.py` | `run_credit_underwriting_job` |
-| Compliance | `backend/app/workers/compliance.py` | `run_compliance_job` |
+| Worker | File | arq Job | Owner |
+|---|---|---|---|
+| Invoice Processing | `workers/invoice_processing.py` | `run_invoice_job` | Coworker ✅ |
+| AI Accountant | `workers/ai_accountant.py` | `run_ai_accountant` | Coworker ✅ |
+| Receipt Processing | `workers/receipt_processing.py` | `run_receipt_job` | Coworker ✅ |
+| Fraud Detection | `workers/fraud_detection.py` | `run_fraud_detection_job` | You ✅ |
+| Collections | `workers/collections.py` | `run_collections_job` | You ✅ |
+| Revenue Recognition | `workers/revenue_recognition.py` | `run_revenue_recognition_job` | You ✅ |
+| Credit Underwriting | `workers/credit_underwriting.py` | `run_credit_underwriting_job` | You ✅ |
+| Compliance | `workers/compliance.py` | `run_compliance_job` | You ✅ |
+| **Reconciliation** | `workers/reconciliation.py` | `run_reconciliation_job` | You ✅ NEW |
+| **Expense Control** | `workers/expense_control.py` | `run_expense_control_job` | You ✅ NEW |
+| **Treasury** | `workers/treasury.py` | `run_treasury_job` | You ✅ NEW |
 
-All 5 follow the mandatory flow: receive → validate → Claude call → policy → audit FIRST → execution update.
-All 5 are registered in `WorkerSettings.functions` in `backend/app/worker.py`.
+All 11 workers follow the mandatory flow: receive → validate → Claude → policy → audit FIRST → DB update.
+All 11 registered in `WorkerSettings.functions` in `backend/app/worker.py`.
 
-Coworker's workers (Reconciliation, Expense Control, Treasury) are still stubs.
+### Backend — Orchestrator Event Routing
+`run_orchestrator_job` in `worker.py` routes these event types:
 
-### Backend — Workers API (latest fixes)
-- `POST /v1/workers` — fixed: now uses `Json(config)` wrapper and `tenant: {connect: {id}}` relation syntax (raw dict + tenant_id scalar both caused Prisma 500)
-- `PATCH /v1/workers/{id}` — config update (uses `Json()` wrapper)
-- `PATCH /v1/workers/{id}/pause` — new endpoint, toggles active ↔ inactive
-- `DELETE /v1/workers/{id}` — new endpoint, permanently deletes the row (previously only deactivated)
+| Event Type | Worker |
+|---|---|
+| `transaction_posted` | AI Accountant |
+| `invoice_received` | Invoice Processing (full QB flow) |
+| `fraud_check_requested` | Fraud Detection |
+| `collection_triggered` | Collections |
+| `revenue_recognition_run` | Revenue Recognition |
+| `compliance_check_requested` | Compliance |
+| `reconciliation_run` | Reconciliation |
+| `expense_control_run` | Expense Control |
+| `treasury_run` | Treasury |
 
-### Backend — Orchestrator
-`backend/app/orchestrator/orchestrator.py` upgraded with:
-- `invoke_workers_sequential` — chain workers, stop on blocked
-- `invoke_workers_parallel` — asyncio.gather fan-out
-- `resolve_conflict` — blocked > approval_required > highest confidence
-- `handle_invoice_with_fraud_check` — Invoice Processing → Fraud Detection chain
+### Backend — Integrations
+- **QuickBooks**: OAuth + webhook (`/v1/webhooks/quickbooks`) + sync job
+- **Plaid**: Link flow + webhook + transaction sync + reconciliation job
+- **Stripe** (NEW): Webhook only at `POST /v1/webhooks/stripe`
+  - Verifies `stripe-signature` header (HMAC-SHA256, 5-min replay window)
+  - `invoice.payment_succeeded` / `invoice.finalized` → `invoice_received`
+  - `charge.succeeded` / `payment_intent.succeeded` → `transaction_posted`
+  - Requires `STRIPE_WEBHOOK_SECRET=whsec_...` in backend `.env`
 
-### Backend — Events + Webhooks
-- `POST /v1/events` — single orchestrator entry point, all event types routable
-- `backend/app/api/v1/webhooks/quickbooks.py` — QB webhook, HMAC-SHA256 verified
-- QB webhook routes Invoice/Bill creates → `invoice_received` events
-- Plaid sync emits `transaction_posted` events after new transactions land
-- `backend/app/orchestrator/events.py` — shared `enqueue_orchestrator_event` helper
-- `backend/app/integrations/quickbooks/client.py` — added `get_invoice` and `get_bill`
+### Backend — Workers API
+- `POST /v1/workers` — deploy worker (uses `Json()` wrapper, `tenant: {connect}` syntax)
+- `PATCH /v1/workers/{id}` — update config
+- `PATCH /v1/workers/{id}/pause` — toggle active ↔ inactive
+- `DELETE /v1/workers/{id}` — permanently delete row
+- `GET /v1/dashboard/executions?worker_id={id}` — filter by worker (added)
 
-### Frontend — Auth Flow
-- `frontend/proxy.ts` — IS the middleware (not middleware.ts). Public routes list extended.
-- `<SignUp />` — `forceRedirectUrl="/onboarding"` + `fallbackRedirectUrl="/onboarding"`
-- `<SignIn />` — `forceRedirectUrl="/dashboard"` + `fallbackRedirectUrl="/dashboard"`
-- Onboarding layout — checks if already onboarded, redirects to `/dashboard` if so
-- Root `/` — unauthenticated → `/sign-in`. Authenticated → `/onboarding` (layout skips to `/dashboard` if done).
-- `POST /v1/onboarding` fires on step 1 (company name), not step 3
-- Sign out button in sidebar
-
-### Frontend — Onboarding
-- **← Back** button — appears on steps 2 and 3, returns to previous step
-- **Sign out** button — top-right on all steps except success screen
-- **Skip for now** — on step 3 (worker deploy), goes straight to `/dashboard`. Tenant already created on step 1 so this is safe.
-- Error on step 3 now shows `cd backend && uvicorn app.main:app --reload` hint
+### Backend — Security Fix
+`POST /v1/approvals/{id}/respond` previously accepted `X-Tenant-ID` header (unauthenticated).
+Now uses `RequireAuth` (Clerk JWT) — tenant_id and responder_id derived from verified token.
 
 ### Frontend — Workers Page
-- Removed the available workers grid
-- Single Deploy Worker button → modal with `DeployWorkerForm`
-- Per-worker config fields (`WorkerConfigFields.tsx`) — each worker type has distinct settings
-- All 11 worker types deployable
-- Fixed: workers list `.map is not a function` — backend returns `{data: {workers: [...]}}`, page now unwraps `.workers`
-- **Delete worker** — inline confirm/cancel button on each WorkerCard
-- Fixed: WorkerCard had wrong API port 8001 → corrected to 8000
-- Pause/Resume now hits `PATCH /v1/workers/{id}/pause` (dedicated endpoint)
+- Deploy Worker button → modal with per-type config form
+- Worker type name is a link to `/dashboard/workers/[id]`
+- **Run test** button per card — sends test event to `POST /v1/events`, shows result inline (auto-dismisses 8s)
+- Pause / Resume — hits `PATCH /v1/workers/{id}/pause`
+- Delete — inline confirm → `DELETE /v1/workers/{id}`
 
-### Frontend — Dashboard Layout
-- Shows amber warning banner when backend is unreachable
-- Redirects to `/onboarding` when backend returns 404 on `/v1/tenants/me`
+### Frontend — Worker Detail Page (`/dashboard/workers/[id]`)
+- Server component fetches `GET /v1/workers/{id}` + `GET /v1/dashboard/executions?worker_id={id}&limit=20`
+- Shows: header (status, autonomy, version), config key-value panel, recent executions table
+- Run test button inline in header
+- Empty state when no executions yet
+
+### Frontend — Dashboard Page Fixes
+- **Executions**: filter tabs now compare `e.decision` (was `e.status`), badge mapper fixed, stats bar fixed, approve/reject now uses `approval_id`
+- **Approvals**: dead code removed, request body fixed
+- **Audit**: `reasoning_trace_json` now included in API response, Fragment key warning fixed
+- **Settings**: already correct, no changes needed
+
+### Frontend — Light / Dark Mode
+- `globals.css`: CSS variables for light + dark in `:root` / `.dark`, `@theme` references them
+- `Providers.tsx`: `ThemeProvider` wrapper (`defaultTheme="dark"`, `enableSystem`)
+- `ThemeToggle.tsx`: sun/moon icon button, mounted guard prevents hydration flash
+- `layout.tsx`: wrapped with `Providers`, `suppressHydrationWarning` on `<html>`
+- Toggle appears in: marketing Navbar (next to Sign in) + Sidebar (next to Back to site)
+- Persists via localStorage. Respects OS preference. Default is dark.
+
+Light mode palette: `#f5faf5` bg, `#ffffff` surface, green-tinted borders/text.
+Dark mode palette: unchanged from original design.
+
+### Frontend — Auth Flow
+- `proxy.ts` IS the middleware (not middleware.ts)
+- `<SignUp />` — `forceRedirectUrl="/onboarding"` + `fallbackRedirectUrl="/onboarding"`
+- `<SignIn />` — `forceRedirectUrl="/dashboard"` + `fallbackRedirectUrl="/dashboard"`
+- Root `/` — unauthenticated → `/sign-in`. Authenticated → `/onboarding` (layout skips to `/dashboard` if done).
+- Onboarding: back button (steps 2+3), skip button (step 3), sign out top-right
+- `POST /v1/onboarding` fires on step 1 (company name entry), not step 3
+- Sign out button in sidebar + onboarding
 
 ---
 
 ## Current State
 
 ### What Works
-- All API routes registered and serving
-- Auth flow: sign-up → onboarding → dashboard (root redirects to sign-in)
-- 8 workers production-ready (Invoice, AI Accountant, Receipt, Fraud, Collections, Rev Rec, Credit Underwriting, Compliance)
-- Orchestrator event routing for all event types
-- QB + Plaid webhooks wired into orchestrator
-- Worker deploy / pause / delete from UI
-- Sign in / sign out
+- All 11 workers production-ready (backend)
+- All 11 deployable from UI
+- Run test button on each worker card
+- Worker detail page per worker
+- Executions, Approvals, Audit, Settings pages — verified and fixed
+- Auth flow: sign-up → onboarding → dashboard
+- Light / dark mode toggle
+- Stripe webhook
+- QuickBooks + Plaid integrations
 
-### What's Broken / Not Verified
-- **Onboarding redirect via SSO (Google/GitHub)** — Clerk Dashboard redirect URLs must be manually set. Component props alone don't control SSO redirects.
-- **Workers not yet end-to-end tested** — workers are built but no test run has been done to verify execution records + audit logs are written correctly. Next step is testing each worker in order, starting with Fraud Detection.
-- **Coworker's workers** — Reconciliation, Expense Control, Treasury are still stubs in `backend/app/workers/`
+### What's NOT Done
+- **GoCardless, Square, PayPal** — V2, not started
+- **Excel Add-in** — separate product, not started (`excel-addin/` package)
+- **Xero integration** — not started (highest priority remaining integration)
+- **End-to-end worker testing** — workers are built but no live test run has been done
+
+### Known Prisma Gotchas (avoid repeating)
+- Json fields: always `Json(value)` from `from prisma import Json` — raw dict causes 500
+- Relation fields on create: `{"tenant": {"connect": {"id": tenant_id}}}` — not `"tenant_id": ...`
 
 ---
 
-## Critical Setup Required (Do This First)
+## Critical Setup
 
 ### 1. Clerk Dashboard Redirects
-Go to **clerk.com → your app → Configure → Paths** and set:
+Go to **clerk.com → Configure → Paths**:
 - Sign-in redirect: `http://localhost:3000/dashboard`
 - Sign-up redirect: `http://localhost:3000/onboarding`
-
-Without this, Google/GitHub SSO redirects to `/sign-in` instead of `/onboarding`.
 
 ### 2. Frontend `.env.local`
 ```
@@ -118,6 +150,7 @@ REDIS_URL=redis://localhost:6379/0
 ANTHROPIC_API_KEY=sk-ant-...
 CLERK_FRONTEND_API=musical-crayfish-14.clerk.accounts.dev
 QUICKBOOKS_WEBHOOK_VERIFIER_TOKEN=...
+STRIPE_WEBHOOK_SECRET=whsec_...
 ```
 
 ### 4. Start Order
@@ -125,86 +158,22 @@ QUICKBOOKS_WEBHOOK_VERIFIER_TOKEN=...
 # Terminal 1 — Backend
 cd backend && uvicorn app.main:app --reload
 
-# Terminal 2 — arq worker (for background jobs)
+# Terminal 2 — arq worker
 cd backend && python -m arq app.worker.WorkerSettings
 
 # Terminal 3 — Frontend
 cd frontend && npm run dev
 ```
 
-### 5. First Run
-1. Go to `http://localhost:3000` → redirects to `/sign-in`
-2. Sign up → lands on `/onboarding`
-3. Enter company name → click Next (creates tenant + user in DB via `POST /v1/onboarding`)
-4. Step 2: integrations (skip for now)
-5. Step 3: deploy a worker OR click "Skip for now"
-6. Dashboard loads
-
----
-
-## Testing Workers (Next Priority)
-
-Test each worker in this order. For each: deploy via UI → trigger via curl → verify execution + audit log in DB.
-
-### Fraud Detection
-```bash
-# Trigger a fraud check event
-curl -X POST http://localhost:8000/v1/events \
-  -H "Authorization: Bearer <token>" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "event_type": "fraud_check_requested",
-    "payload": {"transaction_ids": ["<txn_id>"]},
-    "idempotency_key": "test-fraud-001"
-  }'
-```
-Verify: `SELECT * FROM executions ORDER BY created_at DESC LIMIT 1;`
-Verify: `SELECT * FROM audit_logs ORDER BY created_at DESC LIMIT 1;`
-
-### Collections
-Event type: `collection_triggered`
-Payload: `{"invoice_ids": ["<invoice_id>"]}`
-
-### Revenue Recognition
-Event type: `revenue_recognition_run`
-Payload: `{"invoice_ids": ["<invoice_id>"]}`
-
-### Credit Underwriting
-Event type: (check `orchestrator.py` EVENT_TO_WORKER map)
-
-### Compliance
-Event type: `compliance_check_requested`
-Payload: `{"transaction_ids": ["<txn_id>"]}`
-
----
-
-## Architecture Reminder
-
-```
-External trigger (QB webhook, Plaid, Stripe, manual)
-  → POST /v1/events
-  → enqueue_orchestrator_event() creates Execution record
-  → run_orchestrator_job (arq)
-    → routes by event_type to appropriate worker job
-    → worker: Claude call → policy → audit → execution update
-```
-
-Event type → worker mapping in `backend/app/orchestrator/orchestrator.py` → `EVENT_TO_WORKER`.
-
-Workers NEVER call each other directly. All coordination through orchestrator.
-
-**Prisma Python notes (avoid repeating these bugs):**
-- Json fields: always wrap with `Json(value)` from `from prisma import Json`
-- Relation fields on create: use `{"tenant": {"connect": {"id": tenant_id}}}`, not `"tenant_id": tenant_id`
-
 ---
 
 ## What's Next (Priority Order)
 
-1. **Test all 5 workers end-to-end** — in order: Fraud Detection → Collections → Revenue Recognition → Credit Underwriting → Compliance
-2. **Coworker's workers** — Reconciliation, Expense Control, Treasury (still stubs)
-3. **Integrations** — Xero (highest priority, UK market), Stripe, GoCardless, Square/PayPal
-4. **Excel Add-in** — `excel-addin/` package, React + Office.js, auth via API keys
+1. **Xero integration** — OAuth + webhook + sync job. Near-identical to QuickBooks. UK market priority.
+2. **End-to-end worker test** — deploy a worker, hit Run test, verify execution + audit log in DB
+3. **GoCardless** — UK direct debit (V2)
+4. **Square / PayPal** — (V2)
+5. **Excel Add-in** — new package `excel-addin/`, React + Office.js, auth via API keys
 
 ---
 
@@ -215,18 +184,28 @@ Workers NEVER call each other directly. All coordination through orchestrator.
 | All API routes | `backend/app/api/v1/router.py` |
 | Workers API | `backend/app/api/v1/workers.py` |
 | Events endpoint | `backend/app/api/v1/events.py` |
-| Orchestrator | `backend/app/orchestrator/orchestrator.py` |
-| Event enqueueing helper | `backend/app/orchestrator/events.py` |
-| arq job registration | `backend/app/worker.py` |
+| Orchestrator + routing | `backend/app/worker.py` (`run_orchestrator_job`) |
+| arq job registration | `backend/app/worker.py` (`WorkerSettings.functions`) |
 | Policy engine | `backend/app/policy/engine.py` |
 | Audit logger | `backend/app/audit/logger.py` |
 | QB webhook | `backend/app/api/v1/webhooks/quickbooks.py` |
 | Plaid webhook | `backend/app/api/v1/webhooks/plaid.py` |
+| Stripe webhook | `backend/app/api/v1/webhooks/stripe.py` |
+| Stripe client | `backend/app/integrations/stripe/client.py` |
 | Clerk middleware | `frontend/proxy.ts` |
+| Theme provider | `frontend/components/Providers.tsx` |
+| Theme toggle | `frontend/components/ThemeToggle.tsx` |
+| CSS tokens | `frontend/app/globals.css` |
+| Root layout | `frontend/app/layout.tsx` |
 | Dashboard layout | `frontend/app/(dashboard)/layout.tsx` |
 | Onboarding page | `frontend/app/onboarding/page.tsx` |
 | Workers page | `frontend/app/(dashboard)/dashboard/workers/` |
-| Worker card (pause/delete) | `frontend/components/dashboard/workers/WorkerCard.tsx` |
-| Worker deploy form | `frontend/components/dashboard/workers/DeployWorkerForm.tsx` |
+| Worker detail page | `frontend/app/(dashboard)/dashboard/workers/[id]/page.tsx` |
+| Worker card | `frontend/components/dashboard/workers/WorkerCard.tsx` |
+| Worker detail UI | `frontend/components/dashboard/workers/WorkerDetail.tsx` |
+| Run test hook | `frontend/components/dashboard/workers/useRunTest.ts` |
+| Test payloads | `frontend/components/dashboard/workers/workerTestPayloads.ts` |
+| Deploy form | `frontend/components/dashboard/workers/DeployWorkerForm.tsx` |
 | Per-worker config | `frontend/components/dashboard/workers/WorkerConfigFields.tsx` |
 | Sidebar | `frontend/components/dashboard/Sidebar.tsx` |
+| Marketing Navbar | `frontend/components/marketing/Navbar.tsx` |
