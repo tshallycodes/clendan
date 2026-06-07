@@ -124,9 +124,8 @@ export function AuditTable({ entries, searchQuery, dateFrom, dateTo }: Props) {
           {filtered.map(e => {
             const isExpanded = expandedId === e.id
             return (
-              <>
+              <Fragment key={e.id}>
                 <tr
-                  key={e.id}
                   onClick={() => setExpandedId(isExpanded ? null : e.id)}
                   className="hover:bg-brand-elevated transition-colors cursor-pointer"
                 >
@@ -153,7 +152,7 @@ export function AuditTable({ entries, searchQuery, dateFrom, dateTo }: Props) {
                   </td>
                 </tr>
                 {isExpanded && (
-                  <tr key={`${e.id}-expanded`} className="bg-brand-bg">
+                  <tr className="bg-brand-bg">
                     <td colSpan={6} className="px-5 py-4">
                       <pre className="bg-brand-bg border border-brand-border rounded-sm p-4 text-xs font-mono text-brand-secondary overflow-x-auto whitespace-pre-wrap break-all">
                         {e.reasoning_trace_json
@@ -163,7 +162,7 @@ export function AuditTable({ entries, searchQuery, dateFrom, dateTo }: Props) {
                     </td>
                   </tr>
                 )}
-              </>
+              </Fragment>
             )
           })}
         </tbody>

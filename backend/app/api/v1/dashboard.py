@@ -65,7 +65,7 @@ async def list_executions(
         order={"created_at": "desc"},
         take=limit,
         skip=offset,
-        include={"worker": True},
+        include={"worker": True, "approval": True},
     )
 
     return standard_response(data={
@@ -80,6 +80,7 @@ async def list_executions(
                 "duration_ms": e.duration_ms,
                 "created_at": e.created_at.isoformat(),
                 "input_ref": e.input_ref,
+                "approval_id": e.approval.id if e.approval else None,
             }
             for e in executions
         ],

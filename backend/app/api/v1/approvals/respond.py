@@ -1,13 +1,16 @@
 from datetime import datetime, UTC
 from enum import Enum
+from typing import Annotated
 
-from fastapi import APIRouter, Header, HTTPException, Path
+from fastapi import APIRouter, Depends, HTTPException, Path
+from prisma import Prisma
 from pydantic import BaseModel
 
 from app.audit.logger import write_audit_log
-from app.core.db import get_db
+from app.core.db import get_db_dep
 from app.core.logging import get_logger
 from app.core.responses import standard_response
+from app.core.security import RequireAuth, extract_clerk_user_id
 
 _logger = get_logger(__name__)
 
@@ -21,23 +24,32 @@ class ApprovalAction(str, Enum):
 
 class RespondRequest(BaseModel):
     action: ApprovalAction
-    responder_id: str
+
+
+async def _get_tenant_id(payload: dict, db: Prisma) -> tuple[str, str]:
+    """Returns (tenant_id, clerk_user_id) from JWT payload."""
+    clerk_user_id = extract_clerk_user_id(payload)
+    user = await db.user.find_unique(where={"clerk_user_id": clerk_user_id})
+    if not user:
+        raise HTTPException(status_code=404, detail="Complete onboarding first")
+    return user.tenant_id, clerk_user_id
 
 
 @router.post("/{approval_id}/respond")
 async def respond_to_approval(
+    payload: RequireAuth,
+    db: Annotated[Prisma, Depends(get_db_dep)],
     approval_id: str = Path(...),
     body: RespondRequest = ...,
-    x_tenant_id: str = Header(..., alias="X-Tenant-ID"),
 ):
     """
     Approve or reject a pending approval. Enforces expiry TTL — stale approvals are rejected.
-    Scoped to tenant: only approvals belonging to the requesting tenant are accessible.
+    Scoped to tenant via JWT: only approvals belonging to the authenticated user's tenant are accessible.
     """
-    db = get_db()
+    tenant_id, clerk_user_id = await _get_tenant_id(payload, db)
 
     approval = await db.approval.find_first(
-        where={"id": approval_id, "tenant_id": x_tenant_id}
+        where={"id": approval_id, "tenant_id": tenant_id}
     )
     if not approval:
         raise HTTPException(status_code=404, detail="Approval not found")
@@ -59,12 +71,12 @@ async def respond_to_approval(
     new_decision = "approved" if body.action == ApprovalAction.APPROVE else "rejected"
 
     # Update approval record
-    updated_approval = await db.approval.update(
+    await db.approval.update(
         where={"id": approval_id},
         data={
             "status": new_status,
             "responded_at": now,
-            "responder_id": body.responder_id,
+            "responder_id": clerk_user_id,
         },
     )
 
@@ -79,7 +91,7 @@ async def respond_to_approval(
         _logger.info(
             "mock_accounting_write_on_approval",
             extra={
-                "tenant_id": x_tenant_id,
+                "tenant_id": tenant_id,
                 "approval_id": approval_id,
                 "execution_id": approval.execution_id,
             },
@@ -87,14 +99,13 @@ async def respond_to_approval(
 
     # Audit log — must succeed for operation to complete
     await write_audit_log(
-        tenant_id=x_tenant_id,
-        actor=f"user:{body.responder_id}",
+        tenant_id=tenant_id,
+        actor=f"user:{clerk_user_id}",
         action=f"approval_{new_status}",
         reasoning_trace={
             "approval_id": approval_id,
             "execution_id": approval.execution_id,
             "action": body.action,
-            "responder_id": body.responder_id,
         },
         model_version="human",
         execution_id=approval.execution_id,
@@ -105,7 +116,7 @@ async def respond_to_approval(
         extra={
             "approval_id": approval_id,
             "action": body.action,
-            "tenant_id": x_tenant_id,
+            "tenant_id": tenant_id,
         },
     )
 

@@ -26,9 +26,6 @@ const TABS: { key: Tab; label: string }[] = [
   { key: 'rejected', label: 'Rejected' },
 ]
 
-function formatWorkerLabel(type: string): string {
-  return type.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
-}
 
 function getExpiryDisplay(expiresAt: string): { label: string; urgent: boolean } {
   const now = Date.now()
@@ -195,15 +192,12 @@ function ResolvedCard({ approval }: { approval: Approval }) {
   )
 }
 
-// suppress unused import warning
-void formatWorkerLabel
-
 interface Props {
   initialApprovals: Approval[]
 }
 
 export function ApprovalsClient({ initialApprovals }: Props) {
-  const { userId, getToken } = useAuth()
+  const { getToken } = useAuth()
   const [approvals, setApprovals] = useState<Approval[]>(initialApprovals)
   const [activeTab, setActiveTab] = useState<Tab>('pending')
   const [loadingMap, setLoadingMap] = useState<Record<string, 'approve' | 'reject' | null>>({})
@@ -216,7 +210,7 @@ export function ApprovalsClient({ initialApprovals }: Props) {
       const res = await fetch(`${API_BASE}/v1/approvals/${id}/respond`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action, responder_id: userId }),
+        body: JSON.stringify({ action }),
       })
       if (res.ok) {
         setApprovals((prev) =>

@@ -18,16 +18,26 @@ export interface Execution {
   input_ref?: string | null
   trace_id?: string | null
   version?: string | null
+  approval_id?: string | null
 }
 
-type StatusFilter = 'all' | 'auto' | 'pending' | 'blocked'
+type DecisionFilter = 'all' | 'auto_approved' | 'approval_required' | 'blocked'
 
-const STATUS_FILTERS: { key: StatusFilter; label: string }[] = [
+const STATUS_FILTERS: { key: DecisionFilter; label: string }[] = [
   { key: 'all', label: 'All' },
-  { key: 'auto', label: 'Auto' },
-  { key: 'pending', label: 'Pending' },
+  { key: 'auto_approved', label: 'Auto' },
+  { key: 'approval_required', label: 'Pending' },
   { key: 'blocked', label: 'Blocked' },
 ]
+
+/** Map backend decision values to StatusBadge status keys */
+function decisionToBadge(decision: string): string {
+  if (decision === 'auto_approved') return 'auto'
+  if (decision === 'approval_required') return 'pending'
+  if (decision === 'blocked') return 'blocked'
+  if (decision === 'failed') return 'blocked'
+  return 'inactive'
+}
 
 function toWorkerLabel(type: string): string {
   return type.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
@@ -42,9 +52,9 @@ function formatTs(iso: string): string {
 
 function StatsBar({ executions }: { executions: Execution[] }) {
   const total = executions.length
-  const autoCount = executions.filter((e) => e.status === 'auto').length
+  const autoCount = executions.filter((e) => e.decision === 'auto_approved').length
   const autoPct = total > 0 ? Math.round((autoCount / total) * 100) : 0
-  const blocked = executions.filter((e) => e.status === 'blocked').length
+  const blocked = executions.filter((e) => e.decision === 'blocked').length
   const durations = executions.filter((e) => e.duration_ms != null).map((e) => e.duration_ms as number)
   const avgDuration =
     durations.length > 0 ? Math.round(durations.reduce((a, b) => a + b, 0) / durations.length) : null
@@ -129,7 +139,7 @@ function ExecutionDrawer({ execution, onClose, onAction, loadingState }: DrawerP
 
           <div>
             <div className="text-[10px] font-mono text-brand-muted uppercase tracking-widest mb-1">Status</div>
-            <StatusBadge status={execution.status} />
+            <StatusBadge status={decisionToBadge(execution.decision)} />
           </div>
 
           <div>
@@ -163,7 +173,7 @@ function ExecutionDrawer({ execution, onClose, onAction, loadingState }: DrawerP
             </div>
           )}
 
-          {execution.status === 'pending' && (
+          {execution.decision === 'approval_required' && (
             <div className="pt-2 border-t border-brand-border">
               <div className="text-[10px] font-mono text-brand-muted uppercase tracking-widest mb-3">Actions</div>
               <div className="flex gap-2">
@@ -198,9 +208,9 @@ interface Props {
 }
 
 export function ExecutionsClient({ initialExecutions, total }: Props) {
-  const { getToken, userId } = useAuth()
+  const { getToken } = useAuth()
   const [executions, setExecutions] = useState<Execution[]>(initialExecutions)
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
+  const [statusFilter, setStatusFilter] = useState<DecisionFilter>('all')
   const [search, setSearch] = useState('')
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [loadingMap, setLoadingMap] = useState<Record<string, 'approve' | 'reject' | null>>({})
@@ -208,32 +218,37 @@ export function ExecutionsClient({ initialExecutions, total }: Props) {
   const [offset, setOffset] = useState(initialExecutions.length)
 
   const filtered = executions.filter((e) => {
-    const matchStatus = statusFilter === 'all' || e.status === statusFilter
+    const matchStatus = statusFilter === 'all' || e.decision === statusFilter
     const matchSearch = search === '' || e.decision.toLowerCase().includes(search.toLowerCase())
     return matchStatus && matchSearch
   })
 
   const selected = executions.find((e) => e.id === selectedId) ?? null
 
-  async function handleAction(id: string, action: 'approve' | 'reject') {
-    setLoadingMap((prev) => ({ ...prev, [id]: action }))
+  async function handleAction(executionId: string, action: 'approve' | 'reject') {
+    const execution = executions.find((e) => e.id === executionId)
+    if (!execution?.approval_id) return
+    const approvalId = execution.approval_id
+    setLoadingMap((prev) => ({ ...prev, [executionId]: action }))
     try {
       const token = await getToken()
       if (!token) return
-      const res = await fetch(`${API_BASE}/v1/approvals/${id}/respond`, {
+      const res = await fetch(`${API_BASE}/v1/approvals/${approvalId}/respond`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action, responder_id: userId }),
+        body: JSON.stringify({ action }),
       })
       if (res.ok) {
         setExecutions((prev) =>
           prev.map((e) =>
-            e.id === id ? { ...e, status: action === 'approve' ? 'auto' : 'blocked' } : e,
+            e.id === executionId
+              ? { ...e, decision: action === 'approve' ? 'auto_approved' : 'blocked' }
+              : e,
           ),
         )
       }
     } finally {
-      setLoadingMap((prev) => ({ ...prev, [id]: null }))
+      setLoadingMap((prev) => ({ ...prev, [executionId]: null }))
     }
   }
 
@@ -328,7 +343,7 @@ export function ExecutionsClient({ initialExecutions, total }: Props) {
                       {e.decision}
                     </td>
                     <td className="px-5 py-3">
-                      <StatusBadge status={e.status} />
+                      <StatusBadge status={decisionToBadge(e.decision)} />
                     </td>
                     <td
                       className={cn(
