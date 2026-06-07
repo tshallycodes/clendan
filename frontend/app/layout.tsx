@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { Syne, IBM_Plex_Mono } from 'next/font/google'
 import { ClerkProvider } from '@clerk/nextjs'
+import { Providers } from '@/components/Providers'
 import './globals.css'
 
 const syne = Syne({
@@ -25,8 +26,10 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <ClerkProvider>
-      <html lang="en" className={`${syne.variable} ${ibmPlexMono.variable} h-full`}>
-        <body className="min-h-full bg-brand-bg text-brand-text">{children}</body>
+      <html lang="en" className={`${syne.variable} ${ibmPlexMono.variable} h-full`} suppressHydrationWarning>
+        <body className="min-h-full bg-brand-bg text-brand-text">
+          <Providers>{children}</Providers>
+        </body>
       </html>
     </ClerkProvider>
   )

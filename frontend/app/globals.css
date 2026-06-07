@@ -1,21 +1,48 @@
 @import "tailwindcss";
 
-@theme inline {
-  --color-brand-bg: #0a0a0f;
-  --color-brand-surface: #111118;
-  --color-brand-elevated: #1a1a28;
-  --color-brand-border: #1a2a1a;
-  --color-brand-border-subtle: #1e1e2e;
-  --color-brand-text: #e8f0e8;
-  --color-brand-secondary: #a0b8a0;
-  --color-brand-muted: #4a6a4a;
-  --color-brand-green: #00C853;
-  --color-brand-danger: #ff4d6d;
-  --color-brand-info: #00a8cc;
+/* ─── Light mode (default) ─────────────────────────────────────────────── */
+:root {
+  --brand-bg:             #f5faf5;
+  --brand-surface:        #ffffff;
+  --brand-elevated:       #eef4ee;
+  --brand-border:         #d0e4d0;
+  --brand-border-subtle:  #e4f0e4;
+  --brand-text:           #0d1a0d;
+  --brand-secondary:      #355a35;
+  --brand-muted:          #7a9a7a;
+}
+
+/* ─── Dark mode ─────────────────────────────────────────────────────────── */
+.dark {
+  --brand-bg:             #0a0a0f;
+  --brand-surface:        #111118;
+  --brand-elevated:       #1a1a28;
+  --brand-border:         #1a2a1a;
+  --brand-border-subtle:  #1e1e2e;
+  --brand-text:           #e8f0e8;
+  --brand-secondary:      #a0b8a0;
+  --brand-muted:          #4a6a4a;
+}
+
+/* ─── Tailwind tokens (reference the switchable CSS vars) ────────────────── */
+@theme {
+  --color-brand-bg:           var(--brand-bg);
+  --color-brand-surface:      var(--brand-surface);
+  --color-brand-elevated:     var(--brand-elevated);
+  --color-brand-border:       var(--brand-border);
+  --color-brand-border-subtle:var(--brand-border-subtle);
+  --color-brand-text:         var(--brand-text);
+  --color-brand-secondary:    var(--brand-secondary);
+  --color-brand-muted:        var(--brand-muted);
+
+  /* Semantic — same in both modes */
+  --color-brand-green:   #00C853;
+  --color-brand-danger:  #ff4d6d;
+  --color-brand-info:    #00a8cc;
   --color-brand-warning: #f5a623;
 
   --font-heading: var(--font-syne);
-  --font-mono: var(--font-ibm-plex-mono);
+  --font-mono:    var(--font-ibm-plex-mono);
 }
 
 * {
@@ -23,8 +50,8 @@
 }
 
 body {
-  background-color: #0a0a0f;
-  color: #e8f0e8;
+  background-color: var(--brand-bg);
+  color: var(--brand-text);
   font-family: var(--font-ibm-plex-mono), "IBM Plex Mono", monospace;
 }
 

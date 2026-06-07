@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { ThemeToggle } from '@/components/ThemeToggle'
 
 const NAV_LINKS = [
   { label: 'How It Works', href: '/how-it-works' },
@@ -41,7 +42,7 @@ function LogoMark() {
           fontWeight: 700,
           fontSize: 13,
           letterSpacing: '0.18em',
-          color: '#e8f0e8',
+          color: 'var(--brand-text)',
         }}
       >
         CLENDAN
@@ -55,7 +56,7 @@ function MobileMenu({ open }: { open: boolean }) {
   return (
     <div
       className="md:hidden absolute top-full left-0 right-0 border-b border-brand-border"
-      style={{ background: '#0a0a0f' }}
+      style={{ background: 'var(--brand-bg)' }}
     >
       <nav className="flex flex-col px-6 py-4 gap-1">
         {NAV_LINKS.map((link) => (
@@ -101,7 +102,7 @@ export function Navbar() {
     <header
       className="sticky top-0 z-50 transition-all duration-200"
       style={{
-        background: scrolled ? 'rgba(10,10,15,0.95)' : 'transparent',
+        background: scrolled ? 'var(--brand-surface)' : 'transparent',
         borderBottom: scrolled ? '1px solid #1a2a1a' : '1px solid transparent',
         backdropFilter: scrolled ? 'blur(8px)' : 'none',
       }}
@@ -124,6 +125,7 @@ export function Navbar() {
         </nav>
 
         <div className="hidden md:flex items-center gap-2">
+          <ThemeToggle />
           <Link
             href="/sign-in"
             className="text-sm font-mono text-brand-muted hover:text-brand-text transition-colors px-3 py-2.5"

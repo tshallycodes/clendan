@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation'
 import { Home, CheckSquare, List, Plug, BarChart2, Code2, Cpu, Settings, LogOut } from 'lucide-react'
 import { useClerk } from '@clerk/nextjs'
 import { cn } from '@/lib/utils'
+import { ThemeToggle } from '@/components/ThemeToggle'
 
 const NAV = [
   { icon: Home,        label: 'Dashboard',    href: '/dashboard' },
@@ -53,9 +54,12 @@ export function Sidebar() {
       </nav>
 
       <div className="p-4 border-t border-brand-border space-y-2">
-        <Link href="/" className="w-full text-xs font-mono text-brand-muted hover:text-brand-text transition-colors flex items-center justify-center gap-2 border border-brand-border px-3 py-2 rounded-sm">
-          ← Back to site
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link href="/" className="flex-1 text-xs font-mono text-brand-muted hover:text-brand-text transition-colors flex items-center justify-center gap-2 border border-brand-border px-3 py-2 rounded-sm">
+            ← Back to site
+          </Link>
+          <ThemeToggle />
+        </div>
         <button
           type="button"
           onClick={() => signOut({ redirectUrl: '/sign-in' })}
