@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useAuth } from '@clerk/nextjs'
 import { Copy, Check, Plus, X } from 'lucide-react'
+import { useCanConfigure } from '@/lib/auth-client'
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001'
 
@@ -13,6 +14,7 @@ interface ApiKey {
 
 export function ApiKeysSection() {
   const { getToken } = useAuth()
+  const canConfigure = useCanConfigure()
   const [keys, setKeys] = useState<ApiKey[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
@@ -78,17 +80,17 @@ export function ApiKeysSection() {
           <p className="text-[10px] font-mono uppercase tracking-widest text-brand-green">New API key — copy it now. It will not be shown again.</p>
           <div className="flex items-center gap-3 bg-brand-bg border border-brand-border rounded-sm px-3 py-2">
             <code className="flex-1 text-xs font-mono text-brand-text break-all">{revealedKey}</code>
-            <button onClick={copyKey} className="shrink-0 text-brand-muted hover:text-brand-text transition-colors">
+            <button type="button" onClick={copyKey} aria-label="Copy API key" className="shrink-0 text-brand-muted hover:text-brand-text transition-colors">
               {copied ? <Check className="w-4 h-4 text-brand-green" /> : <Copy className="w-4 h-4" />}
             </button>
           </div>
-          <button onClick={() => setRevealedKey(null)} className="text-xs font-mono text-brand-muted hover:text-brand-text transition-colors">
+          <button type="button" onClick={() => setRevealedKey(null)} className="text-xs font-mono text-brand-muted hover:text-brand-text transition-colors">
             I've copied it — dismiss
           </button>
         </div>
       )}
 
-      {showForm && (
+      {showForm && canConfigure && (
         <div className="flex items-center gap-3 bg-brand-surface border border-brand-border rounded-sm p-3">
           <input
             autoFocus value={newName} onChange={(e) => setNewName(e.target.value)}
@@ -96,11 +98,11 @@ export function ApiKeysSection() {
             placeholder="Key name (e.g. Production, CI/CD)"
             className="flex-1 bg-brand-bg border border-brand-border focus:border-brand-green text-brand-text placeholder:text-brand-muted rounded-sm px-3 py-2 text-xs font-mono outline-none"
           />
-          <button onClick={handleCreate} disabled={creating || !newName.trim()}
+          <button type="button" onClick={handleCreate} disabled={creating || !newName.trim()}
             className="bg-brand-green text-black hover:bg-[#00a844] rounded-sm px-4 py-2 text-xs font-mono disabled:opacity-40 transition-colors">
             {creating ? 'Generating...' : 'Generate'}
           </button>
-          <button onClick={() => { setShowForm(false); setNewName('') }} className="text-brand-muted hover:text-brand-text transition-colors">
+          <button type="button" aria-label="Cancel" onClick={() => { setShowForm(false); setNewName('') }} className="text-brand-muted hover:text-brand-text transition-colors">
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -124,8 +126,8 @@ export function ApiKeysSection() {
               <span className="text-[10px] font-mono text-brand-muted hidden sm:block">
                 {new Date(k.created_at).toLocaleDateString()}
               </span>
-              {k.status === 'active' && (
-                <button onClick={() => handleRevoke(k.id)}
+              {k.status === 'active' && canConfigure && (
+                <button type="button" onClick={() => handleRevoke(k.id)}
                   className="text-[10px] font-mono text-brand-danger border border-brand-danger/30 bg-brand-danger/08 hover:bg-brand-danger/15 rounded-sm px-2 py-0.5 transition-colors">
                   Revoke
                 </button>
@@ -135,8 +137,8 @@ export function ApiKeysSection() {
         </div>
       )}
 
-      {!showForm && (
-        <button onClick={() => setShowForm(true)}
+      {!showForm && canConfigure && (
+        <button type="button" onClick={() => setShowForm(true)}
           className="flex items-center gap-2 text-xs font-mono border border-brand-border text-brand-text hover:bg-brand-surface rounded-sm px-3 py-2 transition-colors">
           <Plus className="w-3.5 h-3.5" />
           Generate API Key

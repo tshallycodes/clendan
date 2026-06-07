@@ -5,27 +5,20 @@ from prisma import Prisma
 from app.core.db import get_db_dep
 from app.core.logging import get_logger
 from app.core.responses import standard_response
-from app.core.security import RequireAuth, extract_clerk_user_id
+from app.core.security import RequireOrgAuth, CurrentUser
 from fastapi import HTTPException, status
 
 logger = get_logger(__name__)
 router = APIRouter(tags=["dashboard"])
 
 
-async def _tenant_id(payload: dict, db: Prisma) -> str:
-    user = await db.user.find_unique(where={"clerk_user_id": extract_clerk_user_id(payload)})
-    if not user:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Complete onboarding first")
-    return user.tenant_id
-
-
 @router.get("/dashboard/stats")
 async def dashboard_stats(
-    payload: RequireAuth,
+    current_user: RequireOrgAuth,
     db: Annotated[Prisma, Depends(get_db_dep)],
 ):
     """Overview counts for the dashboard header cards."""
-    tenant_id = await _tenant_id(payload, db)
+    tenant_id = current_user.tenant_id
 
     execution_count = await db.execution.count(where={"tenant_id": tenant_id})
     pending_approvals = await db.approval.count(where={"tenant_id": tenant_id, "status": "pending"})
@@ -44,7 +37,7 @@ async def dashboard_stats(
 
 @router.get("/dashboard/executions")
 async def list_executions(
-    payload: RequireAuth,
+    current_user: RequireOrgAuth,
     db: Annotated[Prisma, Depends(get_db_dep)],
     limit: int = Query(50, le=200),
     offset: int = Query(0, ge=0),
@@ -52,7 +45,7 @@ async def list_executions(
     worker_id: str | None = Query(None),
 ):
     """Lists executions for the tenant, newest first. Optionally filter by worker_id."""
-    tenant_id = await _tenant_id(payload, db)
+    tenant_id = current_user.tenant_id
     where: dict = {"tenant_id": tenant_id}
     if status:
         where["status"] = status
@@ -92,13 +85,13 @@ async def list_executions(
 
 @router.get("/dashboard/approvals")
 async def list_approvals(
-    payload: RequireAuth,
+    current_user: RequireOrgAuth,
     db: Annotated[Prisma, Depends(get_db_dep)],
     limit: int = Query(20, le=100),
     offset: int = Query(0, ge=0),
 ):
     """Lists pending approvals for the tenant."""
-    tenant_id = await _tenant_id(payload, db)
+    tenant_id = current_user.tenant_id
 
     approvals = await db.approval.find_many(
         where={"tenant_id": tenant_id, "status": "pending"},
@@ -128,13 +121,13 @@ async def list_approvals(
 
 @router.get("/dashboard/audit")
 async def list_audit(
-    payload: RequireAuth,
+    current_user: RequireOrgAuth,
     db: Annotated[Prisma, Depends(get_db_dep)],
     limit: int = Query(50, le=200),
     offset: int = Query(0, ge=0),
 ):
     """Lists audit log entries for the tenant. Immutable — read only."""
-    tenant_id = await _tenant_id(payload, db)
+    tenant_id = current_user.tenant_id
 
     entries = await db.auditlog.find_many(
         where={"tenant_id": tenant_id},
@@ -163,11 +156,11 @@ async def list_audit(
 
 @router.get("/dashboard/workers")
 async def list_workers(
-    payload: RequireAuth,
+    current_user: RequireOrgAuth,
     db: Annotated[Prisma, Depends(get_db_dep)],
 ):
     """Lists all workers for the tenant."""
-    tenant_id = await _tenant_id(payload, db)
+    tenant_id = current_user.tenant_id
 
     workers = await db.worker.find_many(
         where={"tenant_id": tenant_id},

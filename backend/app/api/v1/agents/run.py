@@ -1,4 +1,5 @@
 import base64
+from typing import Annotated
 
 from fastapi import APIRouter, Header, HTTPException, Path
 from pydantic import BaseModel
@@ -6,6 +7,7 @@ from pydantic import BaseModel
 from app.core.db import get_db
 from app.core.logging import get_logger
 from app.core.responses import standard_response
+from app.core.security import RequireOrgAuth, CurrentUser
 from app.queue.pool import get_queue_pool
 
 _logger = get_logger(__name__)
@@ -20,9 +22,9 @@ class RunRequest(BaseModel):
 
 @router.post("/{worker_id}/run")
 async def run_agent(
+    current_user: RequireOrgAuth,
     worker_id: str = Path(...),
     body: RunRequest = ...,
-    x_tenant_id: str = Header(..., alias="X-Tenant-ID"),
     idempotency_key: str = Header(..., alias="Idempotency-Key"),
 ):
     """
@@ -31,10 +33,11 @@ async def run_agent(
     Tenant isolation enforced at application layer; RLS enforced at DB layer (Phase 2).
     """
     db = get_db()
+    tenant_id = current_user.tenant_id
 
     # Validate worker belongs to tenant
     worker = await db.worker.find_first(
-        where={"id": worker_id, "tenant_id": x_tenant_id}
+        where={"id": worker_id, "tenant_id": tenant_id}
     )
     if not worker:
         raise HTTPException(status_code=404, detail="Worker not found")
@@ -45,7 +48,7 @@ async def run_agent(
     # Idempotency: check for existing execution with this key (stored in input_ref)
     existing = await db.execution.find_first(
         where={
-            "tenant_id": x_tenant_id,
+            "tenant_id": tenant_id,
             "worker_id": worker_id,
             "input_ref": idempotency_key,
         }
@@ -81,7 +84,7 @@ async def run_agent(
     # Create execution record (status: queued)
     execution = await db.execution.create(
         data={
-            "tenant_id": x_tenant_id,
+            "tenant_id": tenant_id,
             "worker_id": worker_id,
             "input_ref": idempotency_key,
             "decision": "pending",
@@ -95,7 +98,7 @@ async def run_agent(
     await pool.enqueue_job(
         "run_invoice_job",
         execution_id=execution.id,
-        tenant_id=x_tenant_id,
+        tenant_id=tenant_id,
         worker_id=worker_id,
         file_bytes=file_bytes,
         content_type=body.content_type,
@@ -104,7 +107,7 @@ async def run_agent(
 
     _logger.info(
         "execution_queued",
-        extra={"execution_id": execution.id, "worker_id": worker_id, "tenant_id": x_tenant_id},
+        extra={"execution_id": execution.id, "worker_id": worker_id, "tenant_id": tenant_id},
     )
 
     return standard_response(

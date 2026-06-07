@@ -7,6 +7,16 @@ import time
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 
+from app.core.security import CurrentUser
+
+FAKE_USER = CurrentUser(
+    user_id="user_test",
+    org_id="org_test",
+    tenant_id="tenant_test",
+    email="test@example.com",
+    role="owner",
+)
+
 
 # ---------------------------------------------------------------------------
 # Rate limiter
@@ -104,7 +114,7 @@ async def test_dlq_list_returns_parsed_entries():
 
     with patch("app.api.v1.dlq.get_queue_pool", AsyncMock(return_value=mock_pool)):
         from app.api.v1.dlq import list_dlq
-        result = await list_dlq(payload={"sub": "u1"}, db=MagicMock())
+        result = await list_dlq(current_user=FAKE_USER)
 
     assert result["data"]["count"] == 1
     assert result["data"]["jobs"][0]["job_id"] == "j1"
@@ -122,7 +132,7 @@ async def test_dlq_replay_removes_job():
 
     with patch("app.api.v1.dlq.get_queue_pool", AsyncMock(return_value=mock_pool)):
         from app.api.v1.dlq import replay_job
-        result = await replay_job("j1", payload={"sub": "u1"}, db=MagicMock())
+        result = await replay_job("j1", current_user=FAKE_USER)
 
     mock_pool.lrem.assert_called_once_with("clendan:dlq", 1, raw)
     assert result["data"]["status"] == "removed_from_dlq"

@@ -9,34 +9,20 @@ from prisma import Prisma
 from app.core.db import get_db_dep
 from app.core.logging import get_logger
 from app.core.responses import standard_response
-from app.core.security import RequireAuth, extract_clerk_user_id
+from app.core.security import RequireOrgAuth, CurrentUser
 from app.integrations.quickbooks import client as qb
 
 logger = get_logger(__name__)
 router = APIRouter(tags=["integrations"])
 
 
-async def _get_tenant_id(payload: dict, db: Prisma) -> str:
-    """Resolves tenant_id from Clerk JWT payload. Raises 404 if user not onboarded."""
-    clerk_user_id = extract_clerk_user_id(payload)
-    user = await db.user.find_unique(where={"clerk_user_id": clerk_user_id})
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found — complete onboarding via POST /v1/onboarding",
-        )
-    return user.tenant_id
-
-
 @router.get("/integrations/quickbooks/connect")
 async def quickbooks_connect(
-    payload: RequireAuth,
+    current_user: RequireOrgAuth,
     db: Annotated[Prisma, Depends(get_db_dep)],
 ):
     """Returns the QuickBooks OAuth authorization URL. Frontend redirects user here."""
-    tenant_id = await _get_tenant_id(payload, db)
-    # State encodes tenant_id so callback can identify the tenant
-    state = f"{tenant_id}:{secrets.token_urlsafe(16)}"
+    state = f"{current_user.tenant_id}:{secrets.token_urlsafe(16)}"
     auth_url = qb.build_auth_url(state=state)
     return standard_response(data={"auth_url": auth_url})
 
@@ -138,13 +124,12 @@ async def quickbooks_callback(
 
 @router.get("/integrations/quickbooks/status")
 async def quickbooks_status(
-    payload: RequireAuth,
+    current_user: RequireOrgAuth,
     db: Annotated[Prisma, Depends(get_db_dep)],
 ):
     """Returns current QuickBooks connection status for the authenticated tenant."""
-    tenant_id = await _get_tenant_id(payload, db)
     integration = await db.integration.find_first(
-        where={"tenant_id": tenant_id, "type": "quickbooks"}
+        where={"tenant_id": current_user.tenant_id, "type": "quickbooks"}
     )
     if not integration:
         return standard_response(data={"status": "not_connected"})
@@ -164,13 +149,12 @@ async def quickbooks_status(
 
 @router.delete("/integrations/quickbooks/disconnect")
 async def quickbooks_disconnect(
-    payload: RequireAuth,
+    current_user: RequireOrgAuth,
     db: Annotated[Prisma, Depends(get_db_dep)],
 ):
     """Revokes QuickBooks tokens and marks integration as disconnected."""
-    tenant_id = await _get_tenant_id(payload, db)
     integration = await db.integration.find_first(
-        where={"tenant_id": tenant_id, "type": "quickbooks", "status": "connected"}
+        where={"tenant_id": current_user.tenant_id, "type": "quickbooks", "status": "connected"}
     )
     if not integration:
         raise HTTPException(

@@ -17,7 +17,7 @@ from pydantic import BaseModel, field_validator
 from app.core.db import get_db_dep
 from app.core.logging import get_logger
 from app.core.responses import standard_response
-from app.core.security import RequireAuth, extract_clerk_user_id
+from app.core.security import RequireOrgAuth, CurrentUser
 
 logger = get_logger(__name__)
 router = APIRouter(prefix="/api-keys", tags=["api-keys"])
@@ -74,26 +74,14 @@ def _hash_key(key: str) -> str:
     return hashlib.sha256(key.encode()).hexdigest()
 
 
-async def _get_tenant_id(payload: dict, db: Prisma) -> str:
-    user = await db.user.find_unique(
-        where={"clerk_user_id": extract_clerk_user_id(payload)}
-    )
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Complete onboarding first",
-        )
-    return user.tenant_id
-
-
 @router.post("", status_code=status.HTTP_201_CREATED)
 async def create_api_key(
     body: CreateApiKeyRequest,
-    payload: RequireAuth,
+    current_user: RequireOrgAuth,
     db: Annotated[Prisma, Depends(get_db_dep)],
 ):
     """Create a new API key for the tenant. The full key is returned once and never retrievable again."""
-    tenant_id = await _get_tenant_id(payload, db)
+    tenant_id = current_user.tenant_id
 
     full_key = _generate_key()
     key_prefix = full_key[:KEY_PREFIX_LEN]
@@ -130,11 +118,11 @@ async def create_api_key(
 
 @router.get("")
 async def list_api_keys(
-    payload: RequireAuth,
+    current_user: RequireOrgAuth,
     db: Annotated[Prisma, Depends(get_db_dep)],
 ):
     """List all API keys for the tenant. Never returns key_hash or the full key."""
-    tenant_id = await _get_tenant_id(payload, db)
+    tenant_id = current_user.tenant_id
 
     keys = await db.apikey.find_many(
         where={"tenant_id": tenant_id},
@@ -162,11 +150,11 @@ async def list_api_keys(
 @router.delete("/{key_id}")
 async def revoke_api_key(
     key_id: str,
-    payload: RequireAuth,
+    current_user: RequireOrgAuth,
     db: Annotated[Prisma, Depends(get_db_dep)],
 ):
     """Revoke an API key. Sets status=revoked — does not delete the row."""
-    tenant_id = await _get_tenant_id(payload, db)
+    tenant_id = current_user.tenant_id
 
     api_key = await db.apikey.find_first(
         where={"id": key_id, "tenant_id": tenant_id}

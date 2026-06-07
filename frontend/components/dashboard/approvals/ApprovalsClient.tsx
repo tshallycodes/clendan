@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useAuth } from '@clerk/nextjs'
 import { StatusBadge } from '@/components/dashboard/StatusBadge'
 import { cn } from '@/lib/utils'
+import { useCanApprove } from '@/lib/auth-client'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001'
 
@@ -89,6 +90,7 @@ interface ApprovalCardProps {
 
 function PendingCard({ approval, onAction, loadingState }: ApprovalCardProps) {
   const [traceOpen, setTraceOpen] = useState(false)
+  const canApprove = useCanApprove()
   const expiry = getExpiryDisplay(approval.expires_at)
   const waiting = getWaitingLabel(approval.requested_at)
 
@@ -122,23 +124,28 @@ function PendingCard({ approval, onAction, loadingState }: ApprovalCardProps) {
           )}
         </div>
         <div className="flex flex-col items-end gap-2">
-          <div className="flex gap-2">
-            <button
-              onClick={() => onAction(approval.id, 'approve')}
-              disabled={loadingState !== null}
-              className="text-[10px] font-mono px-3 py-1.5 bg-brand-green text-black font-medium hover:bg-[#00a844] active:scale-[0.97] transition-all rounded-sm disabled:opacity-40"
-            >
-              {loadingState === 'approve' ? '...' : 'Approve'}
-            </button>
-            <button
-              onClick={() => onAction(approval.id, 'reject')}
-              disabled={loadingState !== null}
-              className="text-[10px] font-mono px-3 py-1.5 border border-[#ff4d6d] text-[#ff4d6d] bg-[rgba(255,77,109,0.08)] hover:bg-[rgba(255,77,109,0.12)] active:scale-[0.97] transition-all rounded-sm disabled:opacity-40"
-            >
-              {loadingState === 'reject' ? '...' : 'Reject'}
-            </button>
-          </div>
+          {canApprove && (
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => onAction(approval.id, 'approve')}
+                disabled={loadingState !== null}
+                className="text-[10px] font-mono px-3 py-1.5 bg-brand-green text-black font-medium hover:bg-[#00a844] active:scale-[0.97] transition-all rounded-sm disabled:opacity-40"
+              >
+                {loadingState === 'approve' ? '...' : 'Approve'}
+              </button>
+              <button
+                type="button"
+                onClick={() => onAction(approval.id, 'reject')}
+                disabled={loadingState !== null}
+                className="text-[10px] font-mono px-3 py-1.5 border border-[#ff4d6d] text-[#ff4d6d] bg-[rgba(255,77,109,0.08)] hover:bg-[rgba(255,77,109,0.12)] active:scale-[0.97] transition-all rounded-sm disabled:opacity-40"
+              >
+                {loadingState === 'reject' ? '...' : 'Reject'}
+              </button>
+            </div>
+          )}
           <button
+            type="button"
             onClick={() => setTraceOpen((v) => !v)}
             className="text-[10px] font-mono text-brand-muted hover:text-brand-text transition-colors"
           >
@@ -179,6 +186,7 @@ function ResolvedCard({ approval }: { approval: Approval }) {
           )}
         </div>
         <button
+          type="button"
           onClick={() => setTraceOpen((v) => !v)}
           className="text-[10px] font-mono text-brand-muted hover:text-brand-text transition-colors self-start"
         >
@@ -246,6 +254,7 @@ export function ApprovalsClient({ initialApprovals }: Props) {
       <div className="flex gap-1">
         {TABS.map((tab) => (
           <button
+            type="button"
             key={tab.key}
             onClick={() => setActiveTab(tab.key)}
             className={cn(

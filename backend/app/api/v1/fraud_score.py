@@ -6,7 +6,7 @@ from fastapi import APIRouter
 from pydantic import BaseModel
 
 from app.core.responses import standard_response
-from app.core.security import RequireAuth
+from app.core.security import RequireOrgAuth
 
 router = APIRouter(tags=["fraud"])
 
@@ -20,7 +20,7 @@ class FraudScoreRequest(BaseModel):
 
 
 @router.post("/fraud/score")
-async def score_fraud(body: FraudScoreRequest, payload: RequireAuth) -> dict:
+async def score_fraud(body: FraudScoreRequest, current_user: RequireOrgAuth) -> dict:
     """Score a transaction for fraud risk. Stub — FraudDetectionWorker not yet wired."""
     return standard_response(
         data={

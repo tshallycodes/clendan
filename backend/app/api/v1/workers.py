@@ -1,13 +1,13 @@
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Depends, HTTPException, Path, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from prisma import Json, Prisma
 from pydantic import BaseModel, field_validator
 
 from app.core.db import get_db_dep
 from app.core.logging import get_logger
 from app.core.responses import standard_response
-from app.core.security import RequireAuth, extract_clerk_user_id
+from app.core.security import RequireOrgAuth, CurrentUser
 
 logger = get_logger(__name__)
 router = APIRouter(prefix="/workers", tags=["workers"])
@@ -68,18 +68,6 @@ class PatchWorkerRequest(BaseModel):
         return v
 
 
-async def _get_tenant_id(payload: dict, db: Prisma) -> str:
-    user = await db.user.find_unique(
-        where={"clerk_user_id": extract_clerk_user_id(payload)}
-    )
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Complete onboarding first",
-        )
-    return user.tenant_id
-
-
 def _serialize_worker(w: Any) -> dict:
     return {
         "id": w.id,
@@ -94,11 +82,11 @@ def _serialize_worker(w: Any) -> dict:
 @router.post("", status_code=status.HTTP_201_CREATED)
 async def deploy_worker(
     body: DeployWorkerRequest,
-    payload: RequireAuth,
+    current_user: RequireOrgAuth,
     db: Annotated[Prisma, Depends(get_db_dep)],
 ):
     """Deploy a new worker for the tenant."""
-    tenant_id = await _get_tenant_id(payload, db)
+    tenant_id = current_user.tenant_id
 
     worker = await db.worker.create(
         data={
@@ -121,11 +109,11 @@ async def deploy_worker(
 
 @router.get("")
 async def list_workers(
-    payload: RequireAuth,
+    current_user: RequireOrgAuth,
     db: Annotated[Prisma, Depends(get_db_dep)],
 ):
     """List all workers for the tenant."""
-    tenant_id = await _get_tenant_id(payload, db)
+    tenant_id = current_user.tenant_id
 
     workers = await db.worker.find_many(
         where={"tenant_id": tenant_id},
@@ -140,11 +128,11 @@ async def list_workers(
 @router.get("/{worker_id}")
 async def get_worker(
     worker_id: str,
-    payload: RequireAuth,
+    current_user: RequireOrgAuth,
     db: Annotated[Prisma, Depends(get_db_dep)],
 ):
     """Get a single worker scoped to the tenant."""
-    tenant_id = await _get_tenant_id(payload, db)
+    tenant_id = current_user.tenant_id
 
     worker = await db.worker.find_first(
         where={"id": worker_id, "tenant_id": tenant_id}
@@ -159,11 +147,11 @@ async def get_worker(
 async def update_worker(
     worker_id: str,
     body: PatchWorkerRequest,
-    payload: RequireAuth,
+    current_user: RequireOrgAuth,
     db: Annotated[Prisma, Depends(get_db_dep)],
 ):
     """Partially update a worker. Bumps version on any change."""
-    tenant_id = await _get_tenant_id(payload, db)
+    tenant_id = current_user.tenant_id
 
     worker = await db.worker.find_first(
         where={"id": worker_id, "tenant_id": tenant_id}
@@ -199,11 +187,11 @@ async def update_worker(
 @router.patch("/{worker_id}/pause")
 async def pause_worker(
     worker_id: str,
-    payload: RequireAuth,
+    current_user: RequireOrgAuth,
     db: Annotated[Prisma, Depends(get_db_dep)],
 ):
     """Toggle a worker between active and inactive."""
-    tenant_id = await _get_tenant_id(payload, db)
+    tenant_id = current_user.tenant_id
 
     worker = await db.worker.find_first(
         where={"id": worker_id, "tenant_id": tenant_id}
@@ -224,11 +212,11 @@ async def pause_worker(
 @router.delete("/{worker_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_worker(
     worker_id: str,
-    payload: RequireAuth,
+    current_user: RequireOrgAuth,
     db: Annotated[Prisma, Depends(get_db_dep)],
 ):
     """Permanently delete a worker and all associated executions."""
-    tenant_id = await _get_tenant_id(payload, db)
+    tenant_id = current_user.tenant_id
 
     worker = await db.worker.find_first(
         where={"id": worker_id, "tenant_id": tenant_id}

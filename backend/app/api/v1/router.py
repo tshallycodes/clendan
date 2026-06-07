@@ -15,9 +15,11 @@ from app.api.v1.api_keys import router as api_keys_router
 from app.api.v1.reconcile import router as reconcile_router
 from app.api.v1.fraud_score import router as fraud_score_router
 from app.api.v1.parse_contract import router as parse_contract_router
+from app.api.v1.organisations import router as organisations_router
 
 v1_router = APIRouter()
 v1_router.include_router(onboarding.router)
+v1_router.include_router(organisations_router)
 v1_router.include_router(tenants.router)
 v1_router.include_router(integrations.router)
 v1_router.include_router(plaid.router)

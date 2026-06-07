@@ -12,7 +12,7 @@ from pydantic import BaseModel, field_validator
 from app.core.db import get_db_dep
 from app.core.logging import get_logger
 from app.core.responses import standard_response
-from app.core.security import RequireAuth, extract_clerk_user_id
+from app.core.security import RequireOrgAuth
 from app.orchestrator.events import enqueue_orchestrator_event
 from app.orchestrator.orchestrator import EVENT_TO_WORKER
 
@@ -37,7 +37,7 @@ class EventRequest(BaseModel):
 @router.post("", status_code=status.HTTP_202_ACCEPTED)
 async def submit_event(
     body: EventRequest,
-    auth: RequireAuth,
+    current_user: RequireOrgAuth,
     db: Annotated[Prisma, Depends(get_db_dep)],
     idempotency_key: str = Header(..., alias="Idempotency-Key"),
 ):
@@ -45,17 +45,9 @@ async def submit_event(
     Submit a financial event to the orchestrator.
     Idempotent via Idempotency-Key header — same key returns the existing execution.
     """
-    clerk_user_id = extract_clerk_user_id(auth)
-    user = await db.user.find_unique(where={"clerk_user_id": clerk_user_id})
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Complete onboarding first via POST /v1/onboarding",
-        )
-
     # Idempotency check before creating anything
     existing = await db.execution.find_first(
-        where={"tenant_id": user.tenant_id, "input_ref": idempotency_key}
+        where={"tenant_id": current_user.tenant_id, "input_ref": idempotency_key}
     )
     if existing and existing.status != "failed":
         return standard_response(data={
@@ -66,7 +58,7 @@ async def submit_event(
         })
 
     execution_id = await enqueue_orchestrator_event(
-        tenant_id=user.tenant_id,
+        tenant_id=current_user.tenant_id,
         event_type=body.event_type,
         payload=body.payload,
         idempotency_key=idempotency_key,

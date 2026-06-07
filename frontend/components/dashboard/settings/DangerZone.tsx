@@ -2,11 +2,13 @@
 
 import { useState } from 'react'
 import { useAuth } from '@clerk/nextjs'
+import { useIsOwner } from '@/lib/auth-client'
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001'
 
 export function DangerZone() {
   const { getToken } = useAuth()
+  const isOwner = useIsOwner()
   const [pauseConfirm, setPauseConfirm] = useState(false)
   const [pausing, setPausing] = useState(false)
   const [pauseDone, setPauseDone] = useState(false)
@@ -38,6 +40,12 @@ export function DangerZone() {
     } finally {
       setPausing(false)
     }
+  }
+
+  if (!isOwner) {
+    return (
+      <p className="text-xs font-mono text-brand-muted">Only the organisation owner can access danger zone actions.</p>
+    )
   }
 
   return (

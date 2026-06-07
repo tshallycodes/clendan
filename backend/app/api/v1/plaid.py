@@ -9,7 +9,7 @@ from prisma import Prisma
 from app.core.db import get_db_dep
 from app.core.logging import get_logger
 from app.core.responses import standard_response
-from app.core.security import RequireAuth, extract_clerk_user_id
+from app.core.security import RequireOrgAuth, CurrentUser
 from app.integrations.plaid import client as plaid
 from app.integrations.plaid.sync import enqueue_plaid_sync
 
@@ -21,25 +21,14 @@ class ExchangeTokenRequest(BaseModel):
     public_token: str
 
 
-async def _get_tenant_id(payload: dict, db: Prisma) -> str:
-    clerk_user_id = extract_clerk_user_id(payload)
-    user = await db.user.find_unique(where={"clerk_user_id": clerk_user_id})
-    if not user:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Complete onboarding first")
-    return user.tenant_id
-
-
 @router.post("/integrations/plaid/link-token")
 async def create_link_token(
-    payload: RequireAuth,
+    current_user: RequireOrgAuth,
     db: Annotated[Prisma, Depends(get_db_dep)],
 ):
     """Creates a Plaid Link token. Frontend passes this to the Plaid Link widget."""
-    clerk_user_id = extract_clerk_user_id(payload)
-    tenant_id = await _get_tenant_id(payload, db)
-
     try:
-        link_token = await plaid.create_link_token(user_id=clerk_user_id, tenant_id=tenant_id)
+        link_token = await plaid.create_link_token(user_id=current_user.user_id, tenant_id=current_user.tenant_id)
     except Exception as exc:
         logger.error("Plaid link token creation failed: %s", type(exc).__name__)
         raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail="Failed to create Plaid link token")
@@ -50,7 +39,7 @@ async def create_link_token(
 @router.post("/integrations/plaid/exchange-token")
 async def exchange_token(
     body: ExchangeTokenRequest,
-    payload: RequireAuth,
+    current_user: RequireOrgAuth,
     db: Annotated[Prisma, Depends(get_db_dep)],
 ):
     """
@@ -58,7 +47,7 @@ async def exchange_token(
     Triggers initial transaction sync via background job.
     All steps required — partial completion is a failure.
     """
-    tenant_id = await _get_tenant_id(payload, db)
+    tenant_id = current_user.tenant_id
 
     try:
         creds = await plaid.exchange_public_token(body.public_token)
@@ -104,11 +93,11 @@ async def exchange_token(
 
 @router.get("/integrations/plaid/status")
 async def plaid_status(
-    payload: RequireAuth,
+    current_user: RequireOrgAuth,
     db: Annotated[Prisma, Depends(get_db_dep)],
 ):
     """Returns Plaid connection status and transaction count for the tenant."""
-    tenant_id = await _get_tenant_id(payload, db)
+    tenant_id = current_user.tenant_id
 
     integration = await db.integration.find_first(
         where={"tenant_id": tenant_id, "type": "plaid"}
@@ -131,14 +120,14 @@ async def plaid_status(
 
 @router.get("/integrations/plaid/transactions")
 async def list_transactions(
-    payload: RequireAuth,
+    current_user: RequireOrgAuth,
     db: Annotated[Prisma, Depends(get_db_dep)],
     status_filter: str | None = Query(None, alias="status"),
     limit: int = Query(50, le=200),
     offset: int = Query(0, ge=0),
 ):
     """Lists bank transactions for the tenant. Scoped to tenant — never leaks cross-tenant data."""
-    tenant_id = await _get_tenant_id(payload, db)
+    tenant_id = current_user.tenant_id
 
     where: dict = {"tenant_id": tenant_id}
     if status_filter:
@@ -175,11 +164,11 @@ async def list_transactions(
 
 @router.delete("/integrations/plaid/disconnect")
 async def disconnect_plaid(
-    payload: RequireAuth,
+    current_user: RequireOrgAuth,
     db: Annotated[Prisma, Depends(get_db_dep)],
 ):
     """Marks Plaid integration as disconnected. Credentials wiped."""
-    tenant_id = await _get_tenant_id(payload, db)
+    tenant_id = current_user.tenant_id
 
     integration = await db.integration.find_first(
         where={"tenant_id": tenant_id, "type": "plaid", "status": "connected"}

@@ -25,7 +25,7 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <ClerkProvider>
+    <ClerkProvider afterSignInUrl="/dashboard" afterSignUpUrl="/onboarding">
       <html lang="en" className={`${syne.variable} ${ibmPlexMono.variable} h-full`} suppressHydrationWarning>
         <body className="min-h-full bg-brand-bg text-brand-text">
           <Providers>{children}</Providers>

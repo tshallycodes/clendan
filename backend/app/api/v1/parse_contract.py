@@ -6,7 +6,7 @@ from fastapi import APIRouter
 from pydantic import BaseModel
 
 from app.core.responses import standard_response
-from app.core.security import RequireAuth
+from app.core.security import RequireOrgAuth
 
 router = APIRouter(tags=["contract"])
 
@@ -17,7 +17,7 @@ class ParseContractRequest(BaseModel):
 
 
 @router.post("/parse/contract")
-async def parse_contract(body: ParseContractRequest, payload: RequireAuth) -> dict:
+async def parse_contract(body: ParseContractRequest, current_user: RequireOrgAuth) -> dict:
     """Parse a contract document. Stub — contract extraction model not yet wired."""
     return standard_response(
         data={

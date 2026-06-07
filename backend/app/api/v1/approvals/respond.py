@@ -10,7 +10,7 @@ from app.audit.logger import write_audit_log
 from app.core.db import get_db_dep
 from app.core.logging import get_logger
 from app.core.responses import standard_response
-from app.core.security import RequireAuth, extract_clerk_user_id
+from app.core.security import RequireOrgAuth
 
 _logger = get_logger(__name__)
 
@@ -26,18 +26,9 @@ class RespondRequest(BaseModel):
     action: ApprovalAction
 
 
-async def _get_tenant_id(payload: dict, db: Prisma) -> tuple[str, str]:
-    """Returns (tenant_id, clerk_user_id) from JWT payload."""
-    clerk_user_id = extract_clerk_user_id(payload)
-    user = await db.user.find_unique(where={"clerk_user_id": clerk_user_id})
-    if not user:
-        raise HTTPException(status_code=404, detail="Complete onboarding first")
-    return user.tenant_id, clerk_user_id
-
-
 @router.post("/{approval_id}/respond")
 async def respond_to_approval(
-    payload: RequireAuth,
+    current_user: RequireOrgAuth,
     db: Annotated[Prisma, Depends(get_db_dep)],
     approval_id: str = Path(...),
     body: RespondRequest = ...,
@@ -46,7 +37,8 @@ async def respond_to_approval(
     Approve or reject a pending approval. Enforces expiry TTL — stale approvals are rejected.
     Scoped to tenant via JWT: only approvals belonging to the authenticated user's tenant are accessible.
     """
-    tenant_id, clerk_user_id = await _get_tenant_id(payload, db)
+    tenant_id = current_user.tenant_id
+    clerk_user_id = current_user.user_id
 
     approval = await db.approval.find_first(
         where={"id": approval_id, "tenant_id": tenant_id}

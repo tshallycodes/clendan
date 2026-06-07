@@ -9,16 +9,23 @@ Auth is bypassed by overriding the require_auth dependency.
 """
 import pytest
 from fastapi.testclient import TestClient
-from unittest.mock import patch
 
 from app.main import app
-from app.core.security import require_auth
+from app.core.security import require_auth, get_current_user, CurrentUser
 
 FAKE_PAYLOAD = {"sub": "user_test", "email": "test@example.com"}
+FAKE_USER = CurrentUser(
+    user_id="user_test",
+    org_id="org_test",
+    tenant_id="tenant_test",
+    email="test@example.com",
+    role="owner",
+)
 
 
 def _make_client() -> TestClient:
     app.dependency_overrides[require_auth] = lambda: FAKE_PAYLOAD
+    app.dependency_overrides[get_current_user] = lambda: FAKE_USER
     return TestClient(app)
 
 

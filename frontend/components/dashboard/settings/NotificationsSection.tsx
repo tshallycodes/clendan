@@ -2,8 +2,6 @@
 
 import { useState } from 'react'
 
-// TODO: wire to notifications API
-
 interface ToggleRow {
   id: string
   label: string
@@ -33,18 +31,19 @@ export function NotificationsSection() {
           <button
             type="button"
             role="switch"
-            aria-checked={values[row.id]}
+            aria-checked={values[row.id] ? 'true' : 'false'}
+            aria-label={row.label}
             onClick={() => toggle(row.id)}
             className={[
-              'relative w-10 h-5 rounded-full transition-colors border',
+              'relative w-10 h-5 rounded-full transition-colors overflow-hidden',
               values[row.id]
-                ? 'bg-brand-green border-brand-green'
-                : 'bg-brand-bg border-brand-border',
+                ? 'bg-brand-green'
+                : 'bg-brand-border',
             ].join(' ')}
           >
             <span
               className={[
-                'absolute top-0.5 h-4 w-4 rounded-full bg-black transition-transform',
+                'absolute top-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform',
                 values[row.id] ? 'translate-x-5' : 'translate-x-0.5',
               ].join(' ')}
             />

@@ -4,6 +4,8 @@ import { OrgNameForm } from '@/components/dashboard/settings/OrgNameForm'
 import { ApiKeysSection } from '@/components/dashboard/settings/ApiKeysSection'
 import { NotificationsSection } from '@/components/dashboard/settings/NotificationsSection'
 import { DangerZone } from '@/components/dashboard/settings/DangerZone'
+import { IntegrationsSection } from '@/components/dashboard/settings/IntegrationsSection'
+import { TeamSection } from '@/components/dashboard/settings/TeamSection'
 
 interface TenantData {
   tenant: { id: string; name: string; created_at: string }
@@ -77,6 +79,21 @@ export default async function SettingsPage() {
             ) : <p className="text-xs font-mono text-brand-muted">—</p>}
           </div>
         </div>
+      </section>
+
+      {/* Team */}
+      <section className="space-y-4">
+        <h2 className="text-[10px] font-mono uppercase tracking-widest text-brand-muted border-b border-brand-border pb-2">Team</h2>
+        <TeamSection />
+      </section>
+
+      {/* Integrations */}
+      <section className="space-y-4">
+        <div className="border-b border-brand-border pb-2 flex items-baseline justify-between">
+          <h2 className="text-[10px] font-mono uppercase tracking-widest text-brand-muted">Integrations</h2>
+          <p className="text-[10px] font-mono text-brand-muted">External systems connected to your workers</p>
+        </div>
+        <IntegrationsSection />
       </section>
 
       {/* API Keys */}

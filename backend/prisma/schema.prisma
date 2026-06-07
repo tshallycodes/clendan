@@ -24,6 +24,14 @@ model Tenant {
   bank_accounts    BankAccount[]
   bank_transactions BankTransaction[]
   api_keys     ApiKey[]
+  clerk_org_id        String?  @unique
+  industry            String?
+  size                String?
+  domain              String?
+  domain_matching     Boolean  @default(false)
+  onboarding_complete Boolean  @default(false)
+  members             Member[]
+  invitations         Invitation[]
 }
 
 model User {
@@ -204,4 +212,48 @@ model ApiKey {
 
   @@index([tenant_id])
   @@index([key_hash])
+}
+
+enum Role {
+  OWNER
+  ADMIN
+  APPROVER
+  VIEWER
+}
+
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  EXPIRED
+  REVOKED
+}
+
+model Member {
+  id            String   @id @default(cuid())
+  tenant_id     String
+  clerk_user_id String   @unique
+  email         String
+  role          Role     @default(VIEWER)
+  joined_at     DateTime @default(now())
+
+  tenant        Tenant   @relation(fields: [tenant_id], references: [id])
+
+  @@index([tenant_id])
+  @@index([clerk_user_id])
+}
+
+model Invitation {
+  id                  String           @id @default(cuid())
+  tenant_id           String
+  email               String
+  role                Role
+  status              InvitationStatus @default(PENDING)
+  clerk_invitation_id String?
+  invited_by          String
+  created_at          DateTime         @default(now())
+  expires_at          DateTime
+
+  tenant              Tenant           @relation(fields: [tenant_id], references: [id])
+
+  @@index([tenant_id])
 }

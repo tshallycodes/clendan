@@ -6,7 +6,7 @@ from fastapi import APIRouter
 from pydantic import BaseModel
 
 from app.core.responses import standard_response
-from app.core.security import RequireAuth
+from app.core.security import RequireOrgAuth
 
 router = APIRouter(tags=["reconciliation"])
 
@@ -17,7 +17,7 @@ class ReconcileRequest(BaseModel):
 
 
 @router.post("/reconcile")
-async def reconcile_documents(body: ReconcileRequest, payload: RequireAuth) -> dict:
+async def reconcile_documents(body: ReconcileRequest, current_user: RequireOrgAuth) -> dict:
     """Reconcile two datasets. Stub — ReconciliationWorker not yet wired."""
     return standard_response(
         data={

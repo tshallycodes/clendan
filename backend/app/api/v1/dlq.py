@@ -3,15 +3,12 @@ Dead-letter queue management — list and replay failed arq jobs.
 Protected by auth; scoped to admins only in production.
 """
 import json
-from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, status
-from prisma import Prisma
+from fastapi import APIRouter, HTTPException
 
-from app.core.db import get_db_dep
 from app.core.logging import get_logger
 from app.core.responses import standard_response
-from app.core.security import RequireAuth, extract_clerk_user_id
+from app.core.security import RequireOrgAuth
 from app.queue.pool import DLQ_KEY, get_queue_pool
 
 _logger = get_logger(__name__)
@@ -20,10 +17,7 @@ router = APIRouter(prefix="/dlq", tags=["dlq"])
 
 
 @router.get("")
-async def list_dlq(
-    payload: RequireAuth,
-    db: Annotated[Prisma, Depends(get_db_dep)],
-):
+async def list_dlq(current_user: RequireOrgAuth):
     """List all jobs currently in the dead-letter queue."""
     pool = await get_queue_pool()
     raw_entries = await pool.lrange(DLQ_KEY, 0, -1)
@@ -39,11 +33,7 @@ async def list_dlq(
 
 
 @router.post("/replay/{job_id}")
-async def replay_job(
-    job_id: str,
-    payload: RequireAuth,
-    db: Annotated[Prisma, Depends(get_db_dep)],
-):
+async def replay_job(job_id: str, current_user: RequireOrgAuth):
     """
     Replay a specific failed job from the DLQ by job_id.
     Removes the entry from DLQ and re-enqueues the job.
@@ -83,7 +73,7 @@ async def replay_job(
 
 
 @router.delete("/flush")
-async def flush_dlq(payload: RequireAuth):
+async def flush_dlq(current_user: RequireOrgAuth):
     """Delete all entries from the DLQ. Irreversible."""
     pool = await get_queue_pool()
     count = await pool.llen(DLQ_KEY)

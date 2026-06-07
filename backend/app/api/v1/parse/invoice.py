@@ -11,6 +11,7 @@ from pydantic import ValidationError
 from app.core.config import get_settings
 from app.core.logging import get_logger
 from app.core.responses import standard_response
+from app.core.security import RequireOrgAuth
 from app.models.invoice_parse import ParsedInvoice
 from app.queue.pool import get_queue_pool, push_to_dlq
 
@@ -112,8 +113,8 @@ async def run_parse_invoice_job(
 
 @router.post("/invoice")
 async def parse_invoice(
+    current_user: RequireOrgAuth,
     file: UploadFile = File(...),
-    x_tenant_id: str = Header(..., alias="X-Tenant-ID"),
     idempotency_key: Optional[str] = Header(None, alias="Idempotency-Key"),
 ):
     """
@@ -131,7 +132,7 @@ async def parse_invoice(
 
     # Idempotency: return existing parse_id if same key already submitted
     if idempotency_key:
-        idem_key = f"{IDEMPOTENCY_PREFIX}{x_tenant_id}:{idempotency_key}"
+        idem_key = f"{IDEMPOTENCY_PREFIX}{current_user.tenant_id}:{idempotency_key}"
         existing = await pool.get(idem_key)
         if existing:
             parse_id = existing.decode() if isinstance(existing, bytes) else existing
@@ -150,7 +151,7 @@ async def parse_invoice(
     await pool.enqueue_job(
         "run_parse_invoice_job",
         parse_id=parse_id,
-        tenant_id=x_tenant_id,
+        tenant_id=current_user.tenant_id,
         file_bytes=file_bytes,
         content_type=file.content_type,
     )
@@ -158,15 +159,15 @@ async def parse_invoice(
     if idempotency_key:
         await pool.set(idem_key, parse_id, ex=IDEMPOTENCY_TTL)
 
-    _logger.info("parse_invoice_enqueued", extra={"parse_id": parse_id, "tenant_id": x_tenant_id})
+    _logger.info("parse_invoice_enqueued", extra={"parse_id": parse_id, "tenant_id": current_user.tenant_id})
 
     return standard_response(data={"parse_id": parse_id, "status": "queued"})
 
 
 @router.get("/invoice/{parse_id}")
 async def get_invoice_parse_result(
+    current_user: RequireOrgAuth,
     parse_id: str = Path(...),
-    x_tenant_id: str = Header(..., alias="X-Tenant-ID"),
 ):
     """Poll for the result of a previously enqueued invoice parse."""
     pool = await get_queue_pool()

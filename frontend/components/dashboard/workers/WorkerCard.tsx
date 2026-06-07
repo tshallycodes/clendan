@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useAuth } from '@clerk/nextjs'
 import { WorkerTestResult } from './WorkerTestResult'
 import { useRunTest } from './useRunTest'
+import { useCanConfigure } from '@/lib/auth-client'
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
@@ -35,6 +36,7 @@ interface Props {
 
 export function WorkerCard({ worker, onConfigure, onStatusChange }: Props) {
   const { getToken } = useAuth()
+  const canConfigure = useCanConfigure()
   const [toggling, setToggling]           = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [deleting, setDeleting]           = useState(false)
@@ -103,42 +105,48 @@ export function WorkerCard({ worker, onConfigure, onStatusChange }: Props) {
             </span>
           </div>
 
-          <button type="button" onClick={onConfigure} className="text-xs font-mono border border-brand-border text-brand-text hover:bg-brand-elevated rounded-sm px-2.5 py-1 transition-colors">
-            Configure
-          </button>
+          {canConfigure && (
+            <button type="button" onClick={onConfigure} className="text-xs font-mono border border-brand-border text-brand-text hover:bg-brand-elevated rounded-sm px-2.5 py-1 transition-colors">
+              Configure
+            </button>
+          )}
 
           <button type="button" onClick={run} disabled={running} className="text-xs font-mono border border-brand-border text-brand-text hover:bg-brand-elevated rounded-sm px-2.5 py-1 transition-colors disabled:opacity-50">
             {running ? 'Running…' : 'Run test'}
           </button>
 
-          <button
-            type="button"
-            onClick={handleToggle}
-            disabled={toggling}
-            className={[
-              'text-xs font-mono rounded-sm px-2.5 py-1 transition-colors disabled:opacity-50',
-              isActive
-                ? 'border border-brand-border text-brand-muted hover:text-brand-text hover:bg-brand-elevated'
-                : 'border border-brand-border text-brand-green hover:bg-brand-elevated',
-            ].join(' ')}
-          >
-            {toggling ? '…' : isActive ? 'Pause' : 'Resume'}
-          </button>
-
-          {confirmDelete ? (
-            <div className="flex items-center gap-1.5">
-              <span className="text-[10px] font-mono text-brand-muted">Delete?</span>
-              <button type="button" onClick={handleDelete} disabled={deleting} className="text-xs font-mono bg-[rgba(255,77,109,0.1)] border border-[#ff4d6d] text-[#ff4d6d] hover:bg-[rgba(255,77,109,0.2)] rounded-sm px-2.5 py-1 transition-colors disabled:opacity-50">
-                {deleting ? '…' : 'Confirm'}
-              </button>
-              <button type="button" onClick={() => setConfirmDelete(false)} className="text-xs font-mono border border-brand-border text-brand-muted hover:text-brand-text rounded-sm px-2.5 py-1 transition-colors">
-                Cancel
-              </button>
-            </div>
-          ) : (
-            <button type="button" onClick={() => setConfirmDelete(true)} className="text-xs font-mono text-brand-muted hover:text-[#ff4d6d] transition-colors px-1">
-              Delete
+          {canConfigure && (
+            <button
+              type="button"
+              onClick={handleToggle}
+              disabled={toggling}
+              className={[
+                'text-xs font-mono rounded-sm px-2.5 py-1 transition-colors disabled:opacity-50',
+                isActive
+                  ? 'border border-brand-border text-brand-muted hover:text-brand-text hover:bg-brand-elevated'
+                  : 'border border-brand-border text-brand-green hover:bg-brand-elevated',
+              ].join(' ')}
+            >
+              {toggling ? '…' : isActive ? 'Pause' : 'Resume'}
             </button>
+          )}
+
+          {canConfigure && (
+            confirmDelete ? (
+              <div className="flex items-center gap-1.5">
+                <span className="text-[10px] font-mono text-brand-muted">Delete?</span>
+                <button type="button" onClick={handleDelete} disabled={deleting} className="text-xs font-mono bg-[rgba(255,77,109,0.1)] border border-[#ff4d6d] text-[#ff4d6d] hover:bg-[rgba(255,77,109,0.2)] rounded-sm px-2.5 py-1 transition-colors disabled:opacity-50">
+                  {deleting ? '…' : 'Confirm'}
+                </button>
+                <button type="button" onClick={() => setConfirmDelete(false)} className="text-xs font-mono border border-brand-border text-brand-muted hover:text-brand-text rounded-sm px-2.5 py-1 transition-colors">
+                  Cancel
+                </button>
+              </div>
+            ) : (
+              <button type="button" onClick={() => setConfirmDelete(true)} className="text-xs font-mono text-brand-muted hover:text-[#ff4d6d] transition-colors px-1">
+                Delete
+              </button>
+            )
           )}
         </div>
       </div>
