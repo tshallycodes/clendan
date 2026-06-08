@@ -103,7 +103,7 @@ export function Navbar() {
       className="sticky top-0 z-50 transition-all duration-200"
       style={{
         background: scrolled ? 'var(--brand-surface)' : 'transparent',
-        borderBottom: scrolled ? '1px solid #1a2a1a' : '1px solid transparent',
+        borderBottom: scrolled ? '1px solid var(--brand-border)' : '1px solid transparent',
         backdropFilter: scrolled ? 'blur(8px)' : 'none',
       }}
     >

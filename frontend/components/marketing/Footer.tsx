@@ -49,7 +49,7 @@ function LogoMark() {
           C
         </span>
       </div>
-      <span style={{ fontFamily: 'var(--font-syne)', fontWeight: 700, fontSize: 13, letterSpacing: '0.18em', color: '#e8f0e8' }}>
+      <span style={{ fontFamily: 'var(--font-syne)', fontWeight: 700, fontSize: 13, letterSpacing: '0.18em', color: 'var(--brand-text)' }}>
         CLENDAN
       </span>
     </div>
@@ -71,7 +71,7 @@ export function Footer() {
               <div key={col.heading} className="flex flex-col gap-3">
                 <p
                   className="text-xs font-mono font-medium uppercase tracking-widest"
-                  style={{ color: '#e8f0e8', letterSpacing: '0.12em' }}
+                  style={{ color: 'var(--brand-text)', letterSpacing: '0.12em' }}
                 >
                   {col.heading}
                 </p>

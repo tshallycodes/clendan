@@ -13,7 +13,7 @@ from app.core.config import get_settings
 from app.core.db import get_db
 from app.core.logging import get_logger
 from app.models.invoice_parse import ParsedInvoice
-from app.policy.engine import Decision, PolicyResult, evaluate_policy
+from app.policy.engine import Decision, PolicyResult, evaluate_invoice_policy
 from app.queue.pool import push_to_dlq
 
 _logger = get_logger(__name__)
@@ -23,32 +23,20 @@ WORKER_VERSION = 1
 
 
 class _WorkerPolicy(BaseModel):
-    # Existing fields
     verified_suppliers: list[str] = []
     allowed_currencies: list[str] = ["GBP", "USD", "EUR"]
-    auto_threshold_minor: int = 50000
+    auto_threshold_minor: int = 50_000
     block_threshold_minor: int = 1_000_000
-    # New fields
-    auto_approve_threshold: int = 50000
-    po_match_required: bool = True
-    po_tolerance_pct: float = 0.03
-    po_tolerance_abs: int = 500
+    min_ocr_confidence: float = 0.85
     duplicate_window_days: int = 90
     max_invoice_age_days: int = 180
-    new_vendor_flag_enabled: bool = True
-    new_vendor_hold_days: int = 3
-    approval_tier_1_limit: int = 100000
-    approval_tier_2_limit: int = 1000000
-    approval_tier_3_limit: int = 10000000
-    tax_validation_enabled: bool = True
-    payment_terms_default_days: int = 30
-    blocked_vendor_auto_reject: bool = True
-    ocr_confidence_min: float = 0.85
+    approval_tier_1_minor: int = 100_000
+    approval_tier_2_minor: int = 1_000_000
 
 
 def _parse_policy(raw: dict[str, Any]) -> _WorkerPolicy:
-    """Parse raw policy config dict into a validated _WorkerPolicy model."""
     return _WorkerPolicy(**{k: v for k, v in raw.items() if k in _WorkerPolicy.model_fields})
+
 
 _INVOICE_PROMPT = """You are an invoice data extraction system. Extract fields from this invoice and return ONLY a valid JSON object.
 
@@ -64,8 +52,6 @@ Fields:
 - confidence (float): Extraction confidence 0.0–1.0
 
 Return ONLY the JSON object. No markdown, no explanation."""
-
-MIN_CONFIDENCE = 0.5
 
 
 def _pdf_to_images(pdf_bytes: bytes) -> list[bytes]:
@@ -107,21 +93,36 @@ async def _extract_invoice(file_bytes: bytes, content_type: str) -> ParsedInvoic
             return ParsedInvoice(**data)
         except (anthropic.APIStatusError, anthropic.APIConnectionError) as exc:
             last_exc = exc
+            _logger.warning(
+                "invoice_extract_transient_error",
+                extra={"attempt": attempt + 1, "error": str(exc)},
+            )
             if attempt < settings.max_agent_attempts - 1:
                 await asyncio.sleep(settings.backoff_seconds * (attempt + 1))
         except (json.JSONDecodeError, Exception) as exc:
             raise ValueError(f"Claude returned unparseable response: {exc}") from exc
 
-    raise RuntimeError(f"Claude API failed after {settings.max_agent_attempts} attempts: {last_exc}") from last_exc
+    raise RuntimeError(
+        f"Claude API failed after {settings.max_agent_attempts} attempts: {last_exc}"
+    ) from last_exc
 
 
-async def _mock_accounting_write(parsed: ParsedInvoice, tenant_id: str, execution_id: str) -> None:
-    """Simulated accounting write. Phase 3 replaces this with the real QuickBooks client."""
-    # Log only the execution_id trace reference — no financial amounts in logs
-    _logger.info(
-        "mock_accounting_write",
-        extra={"tenant_id": tenant_id, "execution_id": execution_id},
+async def _check_duplicate(
+    tenant_id: str,
+    invoice_number: str,
+    duplicate_window_days: int,
+) -> bool:
+    """Return True if this invoice_number already exists within the duplicate window."""
+    db = get_db()
+    cutoff = datetime.now(UTC) - timedelta(days=duplicate_window_days)
+    existing = await db.invoice.find_first(
+        where={
+            "tenant_id": tenant_id,
+            "invoice_number": invoice_number,
+            "created_at": {"gte": cutoff},
+        }
     )
+    return existing is not None
 
 
 async def execute_invoice_worker(
@@ -135,38 +136,53 @@ async def execute_invoice_worker(
 ) -> dict[str, Any]:
     """
     Full invoice processing flow:
-    parse → policy check (includes supplier validation) → audit → accounting write → return
+    parse → duplicate check → policy → audit → accounting write → return
 
     Audit is written BEFORE any external write (CLAUDE.md hard requirement).
     Accounting write only occurs for AUTO_APPROVED decisions.
     """
-    # 1. Parse
-    parsed = await _extract_invoice(file_bytes, content_type)
-    if parsed.confidence < MIN_CONFIDENCE:
-        raise ValueError(
-            f"Invoice extraction confidence {parsed.confidence} is below minimum {MIN_CONFIDENCE}"
-        )
+    policy = _parse_policy(policy_config)
 
-    # 2. Policy check (currency + amount + supplier)
-    policy_result: PolicyResult = evaluate_policy(
+    # 1. Parse invoice with Claude vision
+    parsed = await _extract_invoice(file_bytes, content_type)
+
+    # 2. Duplicate detection (DB check — cannot be done in pure policy function)
+    is_duplicate = await _check_duplicate(
+        tenant_id=tenant_id,
+        invoice_number=parsed.invoice_number,
+        duplicate_window_days=policy.duplicate_window_days,
+    )
+
+    # 3. Policy evaluation (OCR confidence, duplicate, age, amount, currency, supplier)
+    invoice_date = parsed.due_date  # best proxy for invoice age; use due_date if issue_date absent
+    policy_result: PolicyResult = evaluate_invoice_policy(
         amount_minor=parsed.amount_minor,
         currency=parsed.currency,
         vendor=parsed.vendor,
-        verified_suppliers=policy_config.get("verified_suppliers", []),
-        allowed_currencies=policy_config.get("allowed_currencies", ["GBP", "USD", "EUR"]),
-        auto_threshold_minor=policy_config.get("auto_threshold_minor", 50000),
-        block_threshold_minor=policy_config.get("block_threshold_minor", 1_000_000),
+        verified_suppliers=policy.verified_suppliers,
+        allowed_currencies=policy.allowed_currencies,
+        auto_threshold_minor=policy.auto_threshold_minor,
+        block_threshold_minor=policy.block_threshold_minor,
+        ocr_confidence=parsed.confidence,
+        min_ocr_confidence=policy.min_ocr_confidence,
+        is_duplicate=is_duplicate,
+        invoice_date=invoice_date,
+        max_invoice_age_days=policy.max_invoice_age_days,
+        approval_tier_1_minor=policy.approval_tier_1_minor,
+        approval_tier_2_minor=policy.approval_tier_2_minor,
     )
 
     reasoning_trace: dict[str, Any] = {
         "parsed_invoice": parsed.model_dump(mode="json"),
+        "is_duplicate": is_duplicate,
         "policy_decision": policy_result.decision,
         "policy_reason": policy_result.reason,
         "policy_rule_triggered": policy_result.rule_triggered,
         "accounting_write_performed": False,
+        "worker_version": WORKER_VERSION,
     }
 
-    # 3. Audit FIRST — operation fails if audit cannot be recorded
+    # 4. Audit FIRST — operation fails if audit cannot be recorded (CLAUDE.md hard requirement)
     await write_audit_log(
         tenant_id=tenant_id,
         actor=f"worker:{WORKER_TYPE}:v{WORKER_VERSION}",
@@ -176,9 +192,13 @@ async def execute_invoice_worker(
         execution_id=execution_id,
     )
 
-    # 4. Accounting write AFTER audit — only for auto-approved invoices
+    # 5. Accounting write AFTER audit — only for auto-approved invoices
     if policy_result.decision == Decision.AUTO_APPROVED:
-        await _mock_accounting_write(parsed, tenant_id, execution_id)
+        # TODO(phase-3): replace with real QuickBooks bill creation via qb.create_bill()
+        _logger.info(
+            "invoice_accounting_write_pending",
+            extra={"tenant_id": tenant_id, "execution_id": execution_id},
+        )
 
     return {
         "decision": policy_result.decision,
@@ -233,6 +253,10 @@ async def run_invoice_job(
         return result
 
     except Exception as exc:
+        _logger.error(
+            "invoice_job_failed",
+            extra={"execution_id": execution_id, "error": str(exc)},
+        )
         await db.execution.update(
             where={"id": execution_id},
             data={"status": "failed", "decision": "failed"},

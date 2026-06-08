@@ -2,14 +2,14 @@
 
 /* ─── Light mode (default) ─────────────────────────────────────────────── */
 :root {
-  --brand-bg:             #f5faf5;
+  --brand-bg:             #f5f6f5;
   --brand-surface:        #ffffff;
-  --brand-elevated:       #eef4ee;
-  --brand-border:         #d0e4d0;
-  --brand-border-subtle:  #e4f0e4;
-  --brand-text:           #0d1a0d;
-  --brand-secondary:      #355a35;
-  --brand-muted:          #7a9a7a;
+  --brand-elevated:       #eef2ee;
+  --brand-border:         #d8e4d8;
+  --brand-border-subtle:  #e6eee6;
+  --brand-text:           #0e160e;
+  --brand-secondary:      #3a5c3a;
+  --brand-muted:          #82a082;
 }
 
 /* ─── Dark mode ─────────────────────────────────────────────────────────── */
@@ -65,3 +65,20 @@ body {
     transform: translateY(0);
   }
 }
+
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+
+@keyframes cursorBlink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0; }
+}
+
+.terminal-cursor {
+  animation: cursorBlink 1s step-end infinite;
+}
+
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }

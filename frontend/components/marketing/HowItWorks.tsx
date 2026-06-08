@@ -1,3 +1,8 @@
+'use client'
+
+import { motion } from 'framer-motion'
+import { FadeInUp, StaggerContainer, StaggerItem } from './AnimationWrappers'
+
 const STEPS = [
   { num: '01', title: 'Connect', desc: 'Link your bank, ERP, and accounting tools via OAuth in minutes.' },
   { num: '02', title: 'Configure', desc: 'Set policy rules, approval thresholds, and worker permissions.' },
@@ -8,40 +13,49 @@ const STEPS = [
 export function HowItWorks() {
   return (
     <section className="max-w-6xl mx-auto px-6 md:px-8 py-20">
-      <p className="text-xs font-mono text-brand-muted uppercase tracking-widest mb-3">How it works</p>
-      <h2 className="font-heading text-2xl font-bold text-brand-text mb-12">
-        From Invoice to Payment in Under 30 Seconds
-      </h2>
+      <FadeInUp>
+        <p className="text-xs font-mono text-brand-muted uppercase tracking-widest mb-3">How it works</p>
+        <h2 className="font-heading text-2xl font-bold text-brand-text mb-12">
+          From Invoice to Payment in Under 30 Seconds
+        </h2>
+      </FadeInUp>
 
       <div className="relative">
-        {/* Desktop connector line */}
-        <div
-          className="hidden md:block absolute top-6 left-0 right-0 h-px"
-          style={{
-            background: 'repeating-linear-gradient(to right, #1a2a1a 0px, #1a2a1a 6px, transparent 6px, transparent 14px)',
-            zIndex: 0,
-          }}
+        {/* Animated connector line — desktop only */}
+        <motion.div
+          className="hidden md:block absolute top-6 left-0 right-0 h-px border-t border-dashed border-brand-border"
+          style={{ transformOrigin: 'left', zIndex: 0 }}
+          initial={{ scaleX: 0 }}
+          whileInView={{ scaleX: 1 }}
+          viewport={{ once: true, margin: '-60px' }}
+          transition={{ duration: 0.9, ease: [0.25, 0.1, 0.25, 1], delay: 0.2 }}
           aria-hidden
         />
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 relative z-10">
+        <StaggerContainer
+          className="grid grid-cols-1 md:grid-cols-4 gap-8 relative z-10"
+          delay={0.3}
+        >
           {STEPS.map((step) => (
-            <div key={step.num} className="flex flex-col gap-4">
-              <div
-                className="w-12 h-12 flex items-center justify-center rounded-sm shrink-0"
-                style={{ background: '#0a0a0f', border: '1px solid #1a2a1a' }}
-              >
-                <span className="font-heading text-sm font-bold" style={{ color: '#00C853' }}>
-                  {step.num}
-                </span>
+            <StaggerItem key={step.num}>
+              <div className="flex flex-col gap-4">
+                <motion.div
+                  className="w-12 h-12 flex items-center justify-center rounded-sm shrink-0 bg-brand-bg border border-brand-border"
+                  whileHover={{ borderColor: 'rgba(0,200,83,0.4)', scale: 1.05 }}
+                  transition={{ duration: 0.15 }}
+                >
+                  <span className="font-heading text-sm font-bold" style={{ color: '#00C853' }}>
+                    {step.num}
+                  </span>
+                </motion.div>
+                <div>
+                  <h3 className="font-heading text-sm font-semibold text-brand-text mb-1.5">{step.title}</h3>
+                  <p className="text-xs font-mono text-brand-muted leading-relaxed">{step.desc}</p>
+                </div>
               </div>
-              <div>
-                <h3 className="font-heading text-sm font-semibold text-brand-text mb-1.5">{step.title}</h3>
-                <p className="text-xs font-mono text-brand-muted leading-relaxed">{step.desc}</p>
-              </div>
-            </div>
+            </StaggerItem>
           ))}
-        </div>
+        </StaggerContainer>
       </div>
     </section>
   )

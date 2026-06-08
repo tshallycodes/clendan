@@ -1,5 +1,7 @@
 'use client'
 
+import { useEffect, useState } from 'react'
+
 const LOG_LINES: { time: string; text: string; color?: string }[] = [
   { time: '09:14:52', text: 'Invoice received: Acme Supplies Ltd £1,240.00', color: '#e8f0e8' },
   { time: '09:14:52', text: 'Extracting data... confidence: 0.97', color: '#a0b8a0' },
@@ -9,9 +11,20 @@ const LOG_LINES: { time: string; text: string; color?: string }[] = [
   { time: '09:14:58', text: 'Bill created in QuickBooks — BILL-4421', color: '#00C853' },
 ]
 
+// Total animation duration: 0.3 + (5 * 0.55) + 0.4 ≈ 3.45s visible, then pause before replay
+const CYCLE_DURATION = 9000
+
 export function HeroTerminal() {
+  const [cycle, setCycle] = useState(0)
+
+  useEffect(() => {
+    const timer = setTimeout(() => setCycle((c) => c + 1), CYCLE_DURATION)
+    return () => clearTimeout(timer)
+  }, [cycle])
+
   return (
     <div
+      key={cycle}
       className="w-full max-w-2xl mx-auto mt-10 rounded-sm overflow-hidden"
       style={{ background: '#0a0a0f', border: '1px solid #1a2a1a' }}
     >
@@ -39,6 +52,18 @@ export function HeroTerminal() {
             <span style={{ color: line.color ?? '#e8f0e8' }}>{line.text}</span>
           </div>
         ))}
+        {/* Blinking cursor appears after last line */}
+        <div
+          className="flex items-center gap-3 text-xs font-mono"
+          style={{
+            opacity: 0,
+            animation: `terminalFadeIn 0.4s ease-out forwards`,
+            animationDelay: `${0.3 + LOG_LINES.length * 0.55}s`,
+          }}
+        >
+          <span style={{ color: '#4a6a4a' }}>{'>'}</span>
+          <span className="terminal-cursor" style={{ color: '#00C853' }}>█</span>
+        </div>
       </div>
     </div>
   )

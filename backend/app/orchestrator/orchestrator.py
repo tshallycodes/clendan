@@ -10,6 +10,7 @@ from typing import Literal
 
 from pydantic import BaseModel
 
+from app.core.config import get_settings as _get_settings
 from app.core.logging import get_logger
 from app.orchestrator.registry import get_worker
 from app.workers.base import WorkerOutput, WorkerType
@@ -81,16 +82,41 @@ class FinancialOrchestrator:
         tenant_id: str,
     ) -> WorkerOutput:
         """
-        Call a sub-agent worker as a tool.
+        Call a sub-agent worker as a tool with timeout and exponential-backoff retry.
         All worker invocations go through here — never directly.
-        # TODO: add retries, circuit breaker, timeout handling
         """
         worker = get_worker(worker_type)
-        logger.info(
-            "invoking_worker",
-            extra={"worker_type": worker_type, "tenant_id": tenant_id},
-        )
-        return await worker.execute(input_data, tenant_id)
+        settings = _get_settings()
+        timeout = 30.0
+
+        last_exc: Exception = RuntimeError("No attempts made")
+        for attempt in range(settings.max_agent_attempts):
+            logger.info(
+                "invoking_worker",
+                extra={"worker_type": worker_type, "tenant_id": tenant_id, "attempt": attempt + 1},
+            )
+            try:
+                return await asyncio.wait_for(
+                    worker.execute(input_data, tenant_id),
+                    timeout=timeout,
+                )
+            except asyncio.TimeoutError:
+                last_exc = RuntimeError(
+                    f"Worker {worker_type} timed out after {timeout}s on attempt {attempt + 1}"
+                )
+                logger.warning("worker_timeout", extra={"worker_type": worker_type, "attempt": attempt + 1})
+            except Exception as exc:
+                last_exc = exc
+                logger.warning(
+                    "worker_error",
+                    extra={"worker_type": worker_type, "attempt": attempt + 1, "error": str(exc)},
+                )
+            if attempt < settings.max_agent_attempts - 1:
+                await asyncio.sleep(settings.backoff_seconds * (attempt + 1))
+
+        raise RuntimeError(
+            f"Worker {worker_type} failed after {settings.max_agent_attempts} attempts: {last_exc}"
+        ) from last_exc
 
     async def _compile_output(
         self,
