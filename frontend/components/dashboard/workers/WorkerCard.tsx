@@ -82,7 +82,7 @@ export function WorkerCard({ worker, onConfigure, onStatusChange }: Props) {
       <div className="flex items-center gap-4">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <Link href={`/workers/${worker.id}`} className="text-sm font-mono text-brand-text font-medium hover:text-brand-green transition-colors">
+            <Link href={`/dashboard/workers/${worker.id}`} className="text-sm font-mono text-brand-text font-medium hover:text-brand-green transition-colors">
               {formatType(worker.type)}
             </Link>
             <span className={`text-[10px] font-mono px-2 py-0.5 rounded-sm ${badge.className}`}>{badge.label}</span>

@@ -41,7 +41,7 @@ export function WorkerDetail({ worker, executions }: Props) {
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div className="space-y-2">
-          <Link href="/workers" className="text-[11px] font-mono text-[#4a6a4a] hover:text-[#a0b8a0] transition-colors">
+          <Link href="/dashboard/workers" className="text-[11px] font-mono text-[#4a6a4a] hover:text-[#a0b8a0] transition-colors">
             ← Workers
           </Link>
           <div className="flex items-center gap-3 flex-wrap">
