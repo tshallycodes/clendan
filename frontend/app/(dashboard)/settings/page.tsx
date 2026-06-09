@@ -6,6 +6,7 @@ import { NotificationsSection } from '@/components/dashboard/settings/Notificati
 import { DangerZone } from '@/components/dashboard/settings/DangerZone'
 import { IntegrationsSection } from '@/components/dashboard/settings/IntegrationsSection'
 import { TeamSection } from '@/components/dashboard/settings/TeamSection'
+import { InviteLinksSection } from '@/components/dashboard/settings/team/InviteLinksSection'
 
 interface TenantData {
   tenant: { id: string; name: string; created_at: string }
@@ -87,6 +88,12 @@ export default async function SettingsPage() {
       <section className="space-y-4">
         <h2 className="text-[10px] font-mono uppercase tracking-widest text-brand-muted border-b border-brand-border pb-2">Team</h2>
         <TeamSection />
+      </section>
+
+      {/* Invite Links */}
+      <section className="space-y-4">
+        <h2 className="text-[10px] font-mono uppercase tracking-widest text-brand-muted border-b border-brand-border pb-2">Invite Links</h2>
+        <InviteLinksSection />
       </section>
 
       {/* Integrations */}

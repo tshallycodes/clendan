@@ -99,7 +99,7 @@ export async function RecentExecutionsTable() {
                     </td>
                     <td className="px-5 py-3 text-right">
                       <Link
-                        href="/dashboard/executions"
+                        href="/executions"
                         className="text-brand-muted hover:text-brand-text transition-colors"
                         aria-label="View executions"
                       >

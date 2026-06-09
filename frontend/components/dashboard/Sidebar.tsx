@@ -9,13 +9,13 @@ import { ThemeToggle } from '@/components/ThemeToggle'
 
 const NAV = [
   { icon: Home,        label: 'Dashboard',    href: '/dashboard' },
-  { icon: CheckSquare, label: 'Approvals',    href: '/dashboard/approvals' },
-  { icon: BarChart2,   label: 'Executions',   href: '/dashboard/executions' },
-  { icon: List,        label: 'Audit Trail',  href: '/dashboard/audit' },
-  { icon: Plug,        label: 'Integrations', href: '/dashboard/integrations' },
-  { icon: Cpu,         label: 'Workers',      href: '/dashboard/workers' },
-  { icon: Settings,    label: 'Settings',     href: '/dashboard/settings' },
-  { icon: Code2,       label: 'Developer API', href: '/dashboard/api' },
+  { icon: CheckSquare, label: 'Approvals',    href: '/approvals' },
+  { icon: BarChart2,   label: 'Executions',   href: '/executions' },
+  { icon: List,        label: 'Audit Trail',  href: '/audit' },
+  { icon: Plug,        label: 'Integrations', href: '/integrations' },
+  { icon: Cpu,         label: 'Workers',      href: '/workers' },
+  { icon: Settings,    label: 'Settings',     href: '/settings' },
+  { icon: Code2,       label: 'Developer API', href: '/api' },
 ]
 
 export function Sidebar() {
