@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { useAuth } from '@clerk/nextjs'
 import { ThemeToggle } from '@/components/ThemeToggle'
 
 const NAV_LINKS = [
@@ -51,7 +52,7 @@ function LogoMark() {
   )
 }
 
-function MobileMenu({ open }: { open: boolean }) {
+function MobileMenu({ open, isSignedIn }: { open: boolean; isSignedIn: boolean | null | undefined }) {
   if (!open) return null
   return (
     <div
@@ -69,19 +70,31 @@ function MobileMenu({ open }: { open: boolean }) {
           </Link>
         ))}
         <div className="flex flex-col gap-2 mt-3 pt-3 border-t border-brand-border">
-          <Link
-            href="/sign-in"
-            className="text-center border border-brand-border text-brand-text hover:bg-brand-surface rounded-sm px-5 py-2.5 text-sm font-mono transition-colors"
-          >
-            Sign in
-          </Link>
-          <Link
-            href="/sign-up"
-            className="text-center rounded-sm px-5 py-2.5 text-sm font-mono font-medium transition-colors"
-            style={{ background: '#00C853', color: '#000' }}
-          >
-            Get started
-          </Link>
+          {isSignedIn ? (
+            <Link
+              href="/dashboard"
+              className="text-center rounded-sm px-5 py-2.5 text-sm font-mono font-medium transition-colors"
+              style={{ background: '#00C853', color: '#000' }}
+            >
+              Dashboard →
+            </Link>
+          ) : (
+            <>
+              <Link
+                href="/sign-in"
+                className="text-center border border-brand-border text-brand-text hover:bg-brand-surface rounded-sm px-5 py-2.5 text-sm font-mono transition-colors"
+              >
+                Sign in
+              </Link>
+              <Link
+                href="/sign-up"
+                className="text-center rounded-sm px-5 py-2.5 text-sm font-mono font-medium transition-colors"
+                style={{ background: '#00C853', color: '#000' }}
+              >
+                Get started
+              </Link>
+            </>
+          )}
         </div>
       </nav>
     </div>
@@ -89,6 +102,7 @@ function MobileMenu({ open }: { open: boolean }) {
 }
 
 export function Navbar() {
+  const { isSignedIn } = useAuth()
   const [scrolled, setScrolled] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
 
@@ -126,19 +140,31 @@ export function Navbar() {
 
         <div className="hidden md:flex items-center gap-2">
           <ThemeToggle />
-          <Link
-            href="/sign-in"
-            className="text-sm font-mono text-brand-muted hover:text-brand-text transition-colors px-3 py-2.5"
-          >
-            Sign in
-          </Link>
-          <Link
-            href="/sign-up"
-            className="rounded-sm px-5 py-2.5 text-sm font-mono font-medium transition-colors"
-            style={{ background: '#00C853', color: '#000' }}
-          >
-            Get started
-          </Link>
+          {isSignedIn ? (
+            <Link
+              href="/dashboard"
+              className="rounded-sm px-5 py-2.5 text-sm font-mono font-medium transition-colors"
+              style={{ background: '#00C853', color: '#000' }}
+            >
+              Dashboard →
+            </Link>
+          ) : (
+            <>
+              <Link
+                href="/sign-in"
+                className="text-sm font-mono text-brand-muted hover:text-brand-text transition-colors px-3 py-2.5"
+              >
+                Sign in
+              </Link>
+              <Link
+                href="/sign-up"
+                className="rounded-sm px-5 py-2.5 text-sm font-mono font-medium transition-colors"
+                style={{ background: '#00C853', color: '#000' }}
+              >
+                Get started
+              </Link>
+            </>
+          )}
         </div>
 
         <button
@@ -151,7 +177,7 @@ export function Navbar() {
         </button>
       </div>
 
-      <MobileMenu open={mobileOpen} />
+      <MobileMenu open={mobileOpen} isSignedIn={isSignedIn} />
     </header>
   )
 }
