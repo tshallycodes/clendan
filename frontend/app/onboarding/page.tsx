@@ -2,12 +2,13 @@
 
 import { useState } from 'react'
 import { StepProgress } from './_components/StepProgress'
+import { StepName } from './_components/StepName'
 import { Step1 } from './_components/Step1'
 import { Step2 } from './_components/Step2'
 import { Step3 } from './_components/Step3'
 import { Step4 } from './_components/Step4'
 
-const TOTAL_STEPS = 4
+const TOTAL_STEPS = 5
 
 export default function OnboardingPage() {
   const [step, setStep] = useState(1)
@@ -46,10 +47,11 @@ export default function OnboardingPage() {
 
         <StepProgress current={step} total={TOTAL_STEPS} />
 
-        {step === 1 && <Step1 onNext={next} />}
-        {step === 2 && <Step2 onNext={next} onSkip={next} />}
-        {step === 3 && <Step3 onNext={next} onSkip={next} />}
-        {step === 4 && <Step4 onBack={back} />}
+        {step === 1 && <StepName onNext={next} />}
+        {step === 2 && <Step1 onNext={next} />}
+        {step === 3 && <Step2 onNext={next} onSkip={next} />}
+        {step === 4 && <Step3 onNext={next} onSkip={next} />}
+        {step === 5 && <Step4 onBack={back} />}
       </div>
     </div>
   )

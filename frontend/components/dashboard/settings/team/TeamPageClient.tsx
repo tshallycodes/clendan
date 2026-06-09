@@ -7,6 +7,7 @@ import { MembersTable } from './MembersTable'
 import { InvitationsTable } from './InvitationsTable'
 import { InviteForm } from './InviteForm'
 import { DomainMatchingToggle } from './DomainMatchingToggle'
+import { InviteLinksSection } from './InviteLinksSection'
 import type { Member, Invitation } from './types'
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001'
@@ -110,7 +111,7 @@ export function TeamPageClient() {
         ) : members.length === 0 ? (
           <p className="text-xs font-mono text-brand-muted">No members found.</p>
         ) : (
-          <MembersTable members={members} onChanged={fetchMembers} />
+          <MembersTable members={members} isCurrentUserOwner={isOwner} onChanged={fetchMembers} />
         )}
       </section>
 
@@ -131,6 +132,15 @@ export function TeamPageClient() {
             Invite Team Member
           </h2>
           <InviteForm onInvited={fetchInvitations} />
+        </section>
+      )}
+
+      {canConfigure && (
+        <section className="space-y-4">
+          <h2 className="text-[10px] font-mono uppercase tracking-widest text-brand-muted border-b border-brand-border pb-2">
+            Invite Links
+          </h2>
+          <InviteLinksSection />
         </section>
       )}
 

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useAuth } from '@clerk/nextjs'
+import { useAuth, useUser } from '@clerk/nextjs'
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001'
 
@@ -25,24 +25,28 @@ const LABEL = 'text-[10px] font-mono text-brand-muted uppercase tracking-widest'
 
 export function Step1({ onNext }: Step1Props) {
   const { getToken } = useAuth()
+  const { user } = useUser()
   const [data, setData] = useState<Step1Data>({ name: '', industry: INDUSTRIES[0], size: COMPANY_SIZES[0], useCase: USE_CASES[0] })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
+    if (!user) return
     async function provisionOrg() {
       try {
         const token = await getToken()
+        const email = user?.primaryEmailAddress?.emailAddress ?? ''
         await fetch(`${API}/v1/organisations`, {
           method: 'POST',
           headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email }),
         })
       } catch {
         // idempotent provision — ignore errors on mount
       }
     }
     provisionOrg()
-  }, [getToken])
+  }, [getToken, user])
 
   async function handleSubmit() {
     if (!data.name.trim()) return

@@ -6,13 +6,30 @@ import { HeroSection } from '@/components/marketing/HeroSection'
 import { SocialProofStrip, ProblemStatement, SolutionOverview, CTABanner } from '@/components/marketing/LandingSections'
 import { HowItWorks } from '@/components/marketing/HowItWorks'
 import { WorkerShowcase } from '@/components/marketing/WorkerShowcase'
+import { getBackendToken } from '@/lib/auth'
+import { apiGet } from '@/lib/api'
+
+interface OnboardingStatus {
+  onboarding_complete: boolean
+  org_provisioned: boolean
+}
 
 export default async function HomePage() {
-  // Guard: auth() throws when Clerk keys are not configured (proxy.ts dev fallback).
   const hasClerk = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY?.startsWith('pk_')
   if (hasClerk) {
     const { userId } = await auth()
-    if (userId) redirect('/onboarding')
+    if (userId) {
+      try {
+        const token = await getBackendToken()
+        if (token) {
+          const status = await apiGet<OnboardingStatus>('/v1/onboarding/status', token)
+          redirect(status.onboarding_complete ? '/dashboard' : '/onboarding')
+        }
+      } catch {
+        // Backend unreachable or user has no tenant yet — send to onboarding
+      }
+      redirect('/onboarding')
+    }
   }
 
   return (

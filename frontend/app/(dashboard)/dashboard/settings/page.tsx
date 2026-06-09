@@ -20,9 +20,11 @@ export default async function SettingsPage() {
   } catch { /* backend not running — show empty state */ }
 
   const ROLE_COLORS: Record<string, string> = {
-    owner:  'text-brand-green border-brand-green/30 bg-brand-green/08',
-    admin:  'text-[#00a8cc] border-[#00a8cc]/30 bg-[#00a8cc]/08',
-    member: 'text-brand-muted border-brand-border',
+    owner:    'text-brand-green border-brand-green/30 bg-[rgba(0,200,83,0.08)]',
+    admin:    'text-[#00a8cc] border-[#00a8cc]/30 bg-[rgba(0,168,204,0.08)]',
+    approver: 'text-[#f5a623] border-[#f5a623]/30 bg-[rgba(245,166,35,0.08)]',
+    viewer:   'text-brand-muted border-brand-border bg-transparent',
+    member:   'text-brand-muted border-brand-border bg-transparent',
   }
 
   return (
@@ -73,8 +75,8 @@ export default async function SettingsPage() {
           <div>
             <p className="text-[10px] font-mono text-brand-muted mb-1.5 uppercase tracking-wide">Role</p>
             {data ? (
-              <span className={`text-[10px] font-mono px-2 py-0.5 rounded-sm border ${ROLE_COLORS[data.user.role] ?? ROLE_COLORS.member}`}>
-                {data.user.role}
+              <span className={`text-[10px] font-mono px-2 py-0.5 rounded-sm border ${ROLE_COLORS[data.user.role.toLowerCase()] ?? ROLE_COLORS.member}`}>
+                {data.user.role.charAt(0).toUpperCase() + data.user.role.slice(1).toLowerCase()}
               </span>
             ) : <p className="text-xs font-mono text-brand-muted">—</p>}
           </div>

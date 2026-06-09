@@ -10,8 +10,8 @@ interface ToggleRow {
 
 const ROWS: ToggleRow[] = [
   { id: 'email_approval', label: 'Email on approval request', defaultOn: true },
-  { id: 'email_blocked', label: 'Email on blocked execution', defaultOn: true },
-  { id: 'weekly_summary', label: 'Weekly execution summary', defaultOn: false },
+  { id: 'email_blocked', label: 'Email on blocked execution', defaultOn: false },
+  { id: 'weekly_summary', label: 'Weekly execution summary', defaultOn: true },
 ]
 
 export function NotificationsSection() {
@@ -35,16 +35,14 @@ export function NotificationsSection() {
             aria-label={row.label}
             onClick={() => toggle(row.id)}
             className={[
-              'relative w-10 h-5 rounded-full transition-colors overflow-hidden',
-              values[row.id]
-                ? 'bg-brand-green'
-                : 'bg-brand-border',
+              'relative w-10 h-5 rounded-full transition-colors duration-200',
+              values[row.id] ? 'bg-brand-green' : 'bg-[#2a3a2a]',
             ].join(' ')}
           >
             <span
               className={[
-                'absolute top-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform',
-                values[row.id] ? 'translate-x-5' : 'translate-x-0.5',
+                'absolute top-[2px] left-[2px] h-4 w-4 rounded-full bg-white shadow-sm transition-transform duration-200',
+                values[row.id] ? 'translate-x-[20px]' : 'translate-x-0',
               ].join(' ')}
             />
           </button>

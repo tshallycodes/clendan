@@ -1,23 +1,35 @@
 'use client'
 
-import { useOrganization } from '@clerk/nextjs'
+import { useState, useEffect } from 'react'
+import { useAuth } from '@clerk/nextjs'
 
-export function useRole(): string {
-  const { membership } = useOrganization()
-  return (membership?.role ?? 'org:viewer') as string
+const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001'
+
+export function useCurrentUserRole(): string {
+  const { getToken } = useAuth()
+  const [role, setRole] = useState('viewer')
+
+  useEffect(() => {
+    getToken().then((token) => {
+      if (!token) return
+      fetch(`${API}/v1/tenants/me`, { headers: { Authorization: `Bearer ${token}` } })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((j) => { if (j?.data?.user?.role) setRole(j.data.user.role) })
+        .catch(() => {})
+    })
+  }, [getToken])
+
+  return role
 }
 
 export function useCanApprove(): boolean {
-  const role = useRole()
-  return ['org:owner', 'org:admin', 'org:approver'].includes(role)
+  return ['owner', 'admin', 'approver'].includes(useCurrentUserRole())
 }
 
 export function useCanConfigure(): boolean {
-  const role = useRole()
-  return ['org:owner', 'org:admin'].includes(role)
+  return ['owner', 'admin'].includes(useCurrentUserRole())
 }
 
 export function useIsOwner(): boolean {
-  const role = useRole()
-  return role === 'org:owner'
+  return useCurrentUserRole() === 'owner'
 }

@@ -32,6 +32,7 @@ model Tenant {
   onboarding_complete Boolean  @default(false)
   members             Member[]
   invitations         Invitation[]
+  invite_links        InviteLink[]
 }
 
 model User {
@@ -256,4 +257,19 @@ model Invitation {
   tenant              Tenant           @relation(fields: [tenant_id], references: [id])
 
   @@index([tenant_id])
+}
+
+model InviteLink {
+  id         String   @id @default(cuid())
+  tenant_id  String
+  token      String   @unique @default(cuid())
+  role       Role     @default(VIEWER)
+  created_by String
+  created_at DateTime @default(now())
+  expires_at DateTime
+
+  tenant     Tenant   @relation(fields: [tenant_id], references: [id])
+
+  @@index([tenant_id])
+  @@index([token])
 }

@@ -113,13 +113,23 @@ async def onboard(
 
 @router.get("/onboarding/status")
 async def get_onboarding_status(
-    current_user: RequireOrgAuth,
+    payload: RequireAuth,
     db: Annotated[Prisma, Depends(get_db_dep)],
 ):
-    """Return onboarding completion flags for the current organisation."""
-    tenant = await db.tenant.find_unique(where={"id": current_user.tenant_id})
+    """Return onboarding completion flags. Uses plain user auth so it works without an active Clerk org in the JWT."""
+    clerk_user_id = extract_clerk_user_id(payload)
+
+    member = await db.member.find_unique(where={"clerk_user_id": clerk_user_id})
+    if not member:
+        return standard_response(
+            data=OnboardingStatusResponse(onboarding_complete=False, org_provisioned=False).model_dump()
+        )
+
+    tenant = await db.tenant.find_unique(where={"id": member.tenant_id})
     if not tenant:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Organisation not found")
+        return standard_response(
+            data=OnboardingStatusResponse(onboarding_complete=False, org_provisioned=False).model_dump()
+        )
 
     return standard_response(
         data=OnboardingStatusResponse(

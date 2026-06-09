@@ -58,10 +58,35 @@ class MemberResponse(BaseModel):
     email: str
     role: str
     joined_at: datetime
+    is_self: bool = False
 
 
 class MemberRoleUpdateRequest(BaseModel):
-    role: Literal["ADMIN", "APPROVER", "VIEWER"]
+    role: Literal["admin", "approver", "viewer"]
+
+
+class TransferOwnershipRequest(BaseModel):
+    new_owner_id: str
+
+
+class CreateInviteLinkRequest(BaseModel):
+    role: Literal["admin", "approver", "viewer"] = "viewer"
+    expires_in_hours: int = 168  # 7 days default
+
+    @field_validator("expires_in_hours")
+    @classmethod
+    def valid_expiry(cls, v: int) -> int:
+        if v not in (1, 24, 168, 720, 8760):
+            raise ValueError("expires_in_hours must be 1, 24, 168, 720, or 8760")
+        return v
+
+
+class InviteLinkResponse(BaseModel):
+    id: str
+    token: str
+    role: str
+    created_at: datetime
+    expires_at: datetime
 
 
 class InvitationRequest(BaseModel):
@@ -83,56 +108,83 @@ class DomainSettingsRequest(BaseModel):
     domain_matching: bool
 
 
+class ProvisionRequest(BaseModel):
+    email: Optional[str] = None
+
+
 # ---------------------------------------------------------------------------
 # Endpoints
 # ---------------------------------------------------------------------------
 
 @router.post("", status_code=status.HTTP_201_CREATED)
 async def provision_org(
+    body: ProvisionRequest,
     payload: RequireAuth,
     db: Annotated[Prisma, Depends(get_db_dep)],
 ):
-    """Provision org on first signup. Idempotent. Uses raw JWT — tenant may not exist yet."""
+    """
+    Provision org on first signup. Idempotent.
+    If org_id is present in JWT, links tenant to Clerk org.
+    If not (Clerk Organizations disabled), provisions using user sub alone.
+    Email is taken from request body (most reliable), falling back to JWT claims.
+    """
     clerk_user_id = extract_clerk_user_id(payload)
     org_id: str = payload.get("org_id", "")
-    if not org_id:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="No org_id in token — ensure Clerk organisation is active",
-        )
+    email: str = body.email or payload.get("email", "") or payload.get("email_address", "")
 
-    email: str = payload.get("email", "") or payload.get("email_address", "")
+    if org_id:
+        existing = await db.tenant.find_unique(where={"clerk_org_id": org_id})
+        if existing:
+            logger.info("Org already provisioned", extra={"org_id": org_id})
+            if email:
+                await db.member.update_many(
+                    where={"clerk_user_id": clerk_user_id, "email": ""},
+                    data={"email": email},
+                )
+            return standard_response(
+                data=OrgProvisionResponse(
+                    tenant_id=existing.id,
+                    clerk_org_id=org_id,
+                    name=existing.name,
+                    created_at=existing.created_at,
+                ).model_dump()
+            )
+        async with db.tx() as tx:
+            tenant = await tx.tenant.create(data={"name": "My Organisation", "clerk_org_id": org_id})
+            await tx.member.create(
+                data={"tenant_id": tenant.id, "clerk_user_id": clerk_user_id, "email": email, "role": "OWNER"}
+            )
+    else:
+        # Clerk Organizations not configured — provision by user identity
+        existing_member = await db.member.find_unique(where={"clerk_user_id": clerk_user_id})
+        if existing_member:
+            tenant = await db.tenant.find_unique(where={"id": existing_member.tenant_id})
+            if tenant:
+                logger.info("Org already provisioned (no-org flow)", extra={"tenant_id": tenant.id})
+                if email and not existing_member.email:
+                    await db.member.update(
+                        where={"clerk_user_id": clerk_user_id},
+                        data={"email": email},
+                    )
+                return standard_response(
+                    data=OrgProvisionResponse(
+                        tenant_id=tenant.id,
+                        clerk_org_id=tenant.clerk_org_id or "",
+                        name=tenant.name,
+                        created_at=tenant.created_at,
+                    ).model_dump()
+                )
+        async with db.tx() as tx:
+            tenant = await tx.tenant.create(data={"name": "My Organisation"})
+            await tx.member.create(
+                data={"tenant_id": tenant.id, "clerk_user_id": clerk_user_id, "email": email, "role": "OWNER"}
+            )
 
-    existing = await db.tenant.find_unique(where={"clerk_org_id": org_id})
-    if existing:
-        logger.info("Org already provisioned", extra={"org_id": org_id})
-        return standard_response(
-            data=OrgProvisionResponse(
-                tenant_id=existing.id,
-                clerk_org_id=org_id,
-                name=existing.name,
-                created_at=existing.created_at,
-            ).model_dump()
-        )
-
-    async with db.tx() as tx:
-        tenant = await tx.tenant.create(
-            data={"name": "My Organisation", "clerk_org_id": org_id}
-        )
-        await tx.member.create(
-            data={
-                "tenant_id": tenant.id,
-                "clerk_user_id": clerk_user_id,
-                "email": email,
-                "role": "OWNER",
-            }
-        )
-
-    logger.info("Org provisioned", extra={"tenant_id": tenant.id, "org_id": org_id})
+    logger.info("Org provisioned", extra={"tenant_id": tenant.id, "org_id": org_id or "(none)"})
     return standard_response(
         data=OrgProvisionResponse(
             tenant_id=tenant.id,
-            clerk_org_id=org_id,
+            clerk_org_id=tenant.clerk_org_id or "",
             name=tenant.name,
             created_at=tenant.created_at,
         ).model_dump()
@@ -204,8 +256,9 @@ async def list_members(
                 id=m.id,
                 clerk_user_id=m.clerk_user_id,
                 email=m.email,
-                role=m.role.value,
+                role=(m.role if isinstance(m.role, str) else m.role.value).lower(),
                 joined_at=m.joined_at,
+                is_self=m.clerk_user_id == current_user.user_id,
             ).model_dump()
             for m in members
         ]
@@ -228,7 +281,7 @@ async def remove_member(
     if member.clerk_user_id == current_user.user_id:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Cannot remove yourself")
 
-    if member.role.value == "OWNER":
+    if (member.role if isinstance(member.role, str) else member.role.value) == "OWNER":
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Cannot remove the organisation owner")
 
     await db.member.delete(where={"id": member_id})
@@ -250,12 +303,12 @@ async def update_member_role(
     if not member:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Member not found")
 
-    if member.role.value == "OWNER":
+    if (member.role if isinstance(member.role, str) else member.role.value) == "OWNER":
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Cannot change the owner's role")
 
     updated = await db.member.update(
         where={"id": member_id},
-        data={"role": body.role},
+        data={"role": body.role.upper()},
     )
     logger.info("Member role updated", extra={"tenant_id": current_user.tenant_id, "member_id": member_id, "role": body.role})
     return standard_response(
@@ -263,10 +316,43 @@ async def update_member_role(
             id=updated.id,
             clerk_user_id=updated.clerk_user_id,
             email=updated.email,
-            role=updated.role.value,
+            role=(updated.role if isinstance(updated.role, str) else updated.role.value).lower(),
             joined_at=updated.joined_at,
+            is_self=updated.clerk_user_id == current_user.user_id,
         ).model_dump()
     )
+
+
+@router.post("/me/transfer-ownership", status_code=status.HTTP_200_OK)
+async def transfer_ownership(
+    body: TransferOwnershipRequest,
+    current_user: Annotated[CurrentUser, require_role("owner")],
+    db: Annotated[Prisma, Depends(get_db_dep)],
+):
+    """Transfer ownership to another member. Current owner becomes admin. Owner only."""
+    new_owner = await db.member.find_first(
+        where={"id": body.new_owner_id, "tenant_id": current_user.tenant_id}
+    )
+    if not new_owner:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Member not found")
+    if new_owner.clerk_user_id == current_user.user_id:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="You are already the owner")
+
+    async with db.tx() as tx:
+        await tx.member.update(
+            where={"clerk_user_id": current_user.user_id},
+            data={"role": "ADMIN"},
+        )
+        await tx.member.update(
+            where={"id": body.new_owner_id},
+            data={"role": "OWNER"},
+        )
+
+    logger.info(
+        "Ownership transferred",
+        extra={"tenant_id": current_user.tenant_id, "from": current_user.user_id, "to": body.new_owner_id},
+    )
+    return standard_response(data={"transferred": True})
 
 
 @router.post("/me/invitations", status_code=status.HTTP_201_CREATED)
@@ -309,8 +395,8 @@ async def create_invitation(
         data=InvitationResponse(
             id=invitation.id,
             email=invitation.email,
-            role=invitation.role.value,
-            status=invitation.status.value,
+            role=invitation.role if isinstance(invitation.role, str) else invitation.role.value,
+            status=invitation.status if isinstance(invitation.status, str) else invitation.status.value,
             invited_by=invitation.invited_by,
             created_at=invitation.created_at,
             expires_at=invitation.expires_at,
@@ -332,8 +418,8 @@ async def list_invitations(
             InvitationResponse(
                 id=inv.id,
                 email=inv.email,
-                role=inv.role.value,
-                status=inv.status.value,
+                role=inv.role if isinstance(inv.role, str) else inv.role.value,
+                status=inv.status if isinstance(inv.status, str) else inv.status.value,
                 invited_by=inv.invited_by,
                 created_at=inv.created_at,
                 expires_at=inv.expires_at,
@@ -362,6 +448,79 @@ async def revoke_invitation(
     await db.invitation.update(where={"id": inv_id}, data={"status": "REVOKED"})
     logger.info("Invitation revoked", extra={"tenant_id": current_user.tenant_id, "inv_id": inv_id})
     return standard_response(data={"revoked": inv_id})
+
+
+@router.post("/me/invite-links", status_code=status.HTTP_201_CREATED)
+async def create_invite_link(
+    body: CreateInviteLinkRequest,
+    current_user: Annotated[CurrentUser, require_role("owner", "admin")],
+    db: Annotated[Prisma, Depends(get_db_dep)],
+):
+    """Generate a shareable invite link for the organisation."""
+    expires_at = datetime.now(UTC) + timedelta(hours=body.expires_in_hours)
+    link = await db.invitelink.create(
+        data={
+            "tenant_id": current_user.tenant_id,
+            "role": body.role.upper(),
+            "created_by": current_user.user_id,
+            "expires_at": expires_at,
+        }
+    )
+    logger.info("Invite link created", extra={"tenant_id": current_user.tenant_id, "link_id": link.id})
+    return standard_response(
+        data=InviteLinkResponse(
+            id=link.id,
+            token=link.token,
+            role=link.role if isinstance(link.role, str) else link.role.value,
+            created_at=link.created_at,
+            expires_at=link.expires_at,
+        ).model_dump()
+    )
+
+
+@router.get("/me/invite-links")
+async def list_invite_links(
+    current_user: Annotated[CurrentUser, require_role("owner", "admin")],
+    db: Annotated[Prisma, Depends(get_db_dep)],
+):
+    """List all active (non-expired) invite links for the organisation."""
+    links = await db.invitelink.find_many(
+        where={
+            "tenant_id": current_user.tenant_id,
+            "expires_at": {"gt": datetime.now(UTC)},
+        },
+        order={"created_at": "desc"},
+    )
+    return standard_response(
+        data=[
+            InviteLinkResponse(
+                id=lnk.id,
+                token=lnk.token,
+                role=lnk.role if isinstance(lnk.role, str) else lnk.role.value,
+                created_at=lnk.created_at,
+                expires_at=lnk.expires_at,
+            ).model_dump()
+            for lnk in links
+        ]
+    )
+
+
+@router.delete("/me/invite-links/{link_id}", status_code=status.HTTP_200_OK)
+async def delete_invite_link(
+    link_id: str,
+    current_user: Annotated[CurrentUser, require_role("owner", "admin")],
+    db: Annotated[Prisma, Depends(get_db_dep)],
+):
+    """Delete (revoke) an invite link."""
+    link = await db.invitelink.find_first(
+        where={"id": link_id, "tenant_id": current_user.tenant_id}
+    )
+    if not link:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Invite link not found")
+
+    await db.invitelink.delete(where={"id": link_id})
+    logger.info("Invite link deleted", extra={"tenant_id": current_user.tenant_id, "link_id": link_id})
+    return standard_response(data={"deleted": link_id})
 
 
 @router.patch("/me/settings")

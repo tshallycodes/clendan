@@ -78,9 +78,10 @@ async def get_current_user(
     db: Prisma = Depends(get_db_dep),
 ) -> CurrentUser:
     """
-    Verifies JWT, extracts org_id, resolves internal tenant_id.
-    Never reads org_id from request body or headers — only from verified JWT.
-    403 if org not provisioned in DB yet.
+    Verifies JWT and resolves internal tenant_id.
+    Primary: org_id from JWT → tenant via clerk_org_id (Clerk Organizations flow).
+    Fallback: sub from JWT → tenant via Member.clerk_user_id (no-org flow).
+    403 if no tenant can be resolved.
     """
     payload = await _verify_jwt(credentials.credentials)
 
@@ -88,23 +89,33 @@ async def get_current_user(
     if not user_id:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token: missing sub claim")
 
-    org_id = payload.get("org_id", "")
-    if not org_id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="No organisation found — complete onboarding",
-        )
-
     email = payload.get("email", "") or payload.get("email_address", "")
-    org_role = payload.get("org_role", "org:viewer")
-    role: str = ROLE_MAP.get(org_role, "viewer")
+    org_id: str = payload.get("org_id", "")
 
-    tenant = await db.tenant.find_unique(where={"clerk_org_id": org_id})
-    if not tenant:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Organisation not provisioned — complete onboarding",
-        )
+    if org_id:
+        org_role = payload.get("org_role", "org:viewer")
+        role: str = ROLE_MAP.get(org_role, "viewer")
+        tenant = await db.tenant.find_unique(where={"clerk_org_id": org_id})
+        if not tenant:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Organisation not provisioned — complete onboarding",
+            )
+    else:
+        # Clerk Organizations not active — resolve tenant via Member table
+        member = await db.member.find_unique(where={"clerk_user_id": user_id})
+        if not member:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="No organisation found — complete onboarding",
+            )
+        tenant = await db.tenant.find_unique(where={"id": member.tenant_id})
+        if not tenant:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Organisation not found",
+            )
+        role = member.role.lower()
 
     return CurrentUser(
         user_id=user_id,
