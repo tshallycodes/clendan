@@ -23,6 +23,7 @@ if "prisma" not in sys.modules:
 # python-jose — JWT library, requires C extensions
 _stub("jose")
 _stub("jose.jwt")
+_stub("jose.exceptions")
 
 # PyMuPDF — C extension for PDF rendering
 _stub("fitz")

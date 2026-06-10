@@ -33,6 +33,7 @@ model Tenant {
   members             Member[]
   invitations         Invitation[]
   invite_links        InviteLink[]
+  sync_logs           IntegrationSyncLog[]
 }
 
 model User {
@@ -57,9 +58,29 @@ model Integration {
   status                String    @default("pending")
   connected_at          DateTime?
 
-  tenant Tenant @relation(fields: [tenant_id], references: [id])
+  tenant    Tenant               @relation(fields: [tenant_id], references: [id])
+  sync_logs IntegrationSyncLog[]
 
   @@index([tenant_id])
+}
+
+model IntegrationSyncLog {
+  id             String   @id @default(cuid())
+  tenant_id      String
+  integration_id String
+  entity_type    String
+  status         String
+  records_synced Int      @default(0)
+  error_message  String?
+  duration_ms    Int?
+  created_at     DateTime @default(now())
+
+  tenant      Tenant      @relation(fields: [tenant_id], references: [id])
+  integration Integration @relation(fields: [integration_id], references: [id])
+
+  @@index([tenant_id])
+  @@index([integration_id])
+  @@index([tenant_id, integration_id])
 }
 
 model Worker {

@@ -14,6 +14,17 @@ from app.core.db import connect_db, disconnect_db, get_db
 from app.core.logging import get_logger
 from app.integrations.plaid.sync import reconcile_plaid_transactions, sync_plaid_transactions
 from app.integrations.quickbooks.sync import sync_quickbooks_connection
+from app.integrations.xero.sync import sync_xero_connection
+from app.integrations.stripe.sync import sync_stripe_connection
+from app.integrations.gocardless.sync import sync_gocardless_connection
+from app.integrations.truelayer.sync import sync_truelayer_connection
+from app.integrations.codat.sync import sync_codat_connection
+from app.integrations.codat.sync import poll_codat_status
+from app.integrations.hubspot.sync import sync_hubspot_connection
+from app.integrations.google.sync_gmail import sync_gmail_connection
+from app.integrations.google.sync_drive import sync_drive_connection
+from app.integrations.outlook.sync import sync_outlook_connection
+from app.integrations.outlook.sync import renew_outlook_subscriptions
 from app.policy.engine import Decision, evaluate_policy
 from app.queue.pool import get_queue_pool, push_to_dlq
 from app.workers.ai_accountant import run_ai_accountant
@@ -358,6 +369,17 @@ class WorkerSettings:
         run_reconciliation_job,
         run_expense_control_job,
         run_treasury_job,
+        sync_xero_connection,
+        sync_stripe_connection,
+        sync_gocardless_connection,
+        sync_truelayer_connection,
+        sync_codat_connection,
+        poll_codat_status,
+        sync_hubspot_connection,
+        sync_gmail_connection,
+        sync_drive_connection,
+        sync_outlook_connection,
+        renew_outlook_subscriptions,
     ]
     on_startup = startup
     on_shutdown = shutdown

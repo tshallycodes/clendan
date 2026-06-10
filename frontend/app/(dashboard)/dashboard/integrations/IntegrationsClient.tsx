@@ -1,189 +1,425 @@
 'use client'
 
-import { useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useAuth } from '@clerk/nextjs'
-import { useRouter } from 'next/navigation'
-import { StatusBadge } from '@/components/dashboard/StatusBadge'
+import { usePlaidLink } from 'react-plaid-link'
+import { IntegrationDef, IntegrationStatus, XeroOrg } from './types'
+import { IntegrationCard } from './IntegrationCard'
+import { CredentialsDrawer } from './CredentialsDrawer'
+import { XeroOrgModal } from './XeroOrgModal'
+import { SyncLogDrawer } from './SyncLogDrawer'
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001'
 
-const AVAILABLE = [
-  { name: 'QuickBooks', category: 'Accounting', desc: 'Full AP/AR sync', connectType: 'oauth' as const, available: true },
-  { name: 'Xero', category: 'Accounting', desc: 'Bills, invoices, payments', connectType: 'oauth' as const, available: false },
-  { name: 'FreshBooks', category: 'Accounting', desc: 'Invoice and payment sync', connectType: 'oauth' as const, available: false },
-  { name: 'Plaid', category: 'Banking', desc: 'Bank feeds and transactions', connectType: 'plaid_link' as const, available: true },
-  { name: 'TrueLayer', category: 'Banking', desc: 'Open banking (UK/EU)', connectType: 'oauth' as const, available: false },
-  { name: 'Stripe', category: 'Payments', desc: 'Revenue and charges', connectType: 'oauth' as const, available: false },
-  { name: 'GoCardless', category: 'Payments', desc: 'Direct debit', connectType: 'oauth' as const, available: false },
-  { name: 'NetSuite', category: 'ERP', desc: 'Full ERP sync', connectType: 'oauth' as const, available: false },
+const INTEGRATIONS: IntegrationDef[] = [
+  // Accounting
+  { name: 'QuickBooks', slug: 'quickbooks', category: 'Accounting', desc: 'Full AP/AR sync', connectType: 'oauth' },
+  { name: 'Xero', slug: 'xero', category: 'Accounting', desc: 'Bills, invoices, payments', connectType: 'oauth' },
+  { name: 'FreshBooks', slug: 'freshbooks', category: 'Accounting', desc: 'Invoice and payment sync', connectType: 'oauth' },
+  { name: 'Sage', slug: 'sage', category: 'Accounting', desc: 'Accounting and payroll', connectType: 'oauth' },
+  { name: 'Wave', slug: 'wave', category: 'Accounting', desc: 'Free accounting for SMBs', connectType: 'oauth' },
+  // Banking
+  { name: 'Plaid', slug: 'plaid', category: 'Banking', desc: 'Bank feeds and transactions', connectType: 'plaid_link' },
+  { name: 'TrueLayer', slug: 'truelayer', category: 'Banking', desc: 'Open banking (UK/EU)', connectType: 'oauth' },
+  { name: 'Codat', slug: 'codat', category: 'Banking', desc: '50+ accounting platforms via one connection', connectType: 'codat_link' },
+  { name: 'Nordigen', slug: 'nordigen', category: 'Banking', desc: 'EU bank data', connectType: 'api_key' },
+  // Payments
+  { name: 'Stripe', slug: 'stripe', category: 'Payments', desc: 'Revenue and charges', connectType: 'oauth' },
+  { name: 'GoCardless', slug: 'gocardless', category: 'Payments', desc: 'Direct debit', connectType: 'api_key' },
+  { name: 'Adyen', slug: 'adyen', category: 'Payments', desc: 'Global payment processing', connectType: 'api_key' },
+  { name: 'Wise', slug: 'wise', category: 'Payments', desc: 'International transfers', connectType: 'oauth' },
+  // ERP
+  { name: 'NetSuite', slug: 'netsuite', category: 'ERP', desc: 'Full ERP sync', connectType: 'api_key' },
+  { name: 'SAP', slug: 'sap', category: 'ERP', desc: 'Enterprise ERP', connectType: 'api_key' },
+  { name: 'Microsoft Dynamics 365', slug: 'dynamics365', category: 'ERP', desc: 'ERP and CRM', connectType: 'oauth' },
+  { name: 'Sage Intacct', slug: 'sage-intacct', category: 'ERP', desc: 'Cloud ERP', connectType: 'api_key' },
+  // CRM
+  { name: 'Salesforce', slug: 'salesforce', category: 'CRM', desc: 'Customer and pipeline data', connectType: 'oauth' },
+  { name: 'HubSpot', slug: 'hubspot', category: 'CRM', desc: 'CRM and deal sync', connectType: 'oauth' },
+  // Document & Email
+  { name: 'Gmail', slug: 'gmail', category: 'Document & Email', desc: 'Invoice ingestion from email', connectType: 'oauth' },
+  { name: 'Outlook', slug: 'outlook', category: 'Document & Email', desc: 'Invoice ingestion from email', connectType: 'oauth' },
+  { name: 'Google Drive', slug: 'google-drive', category: 'Document & Email', desc: 'Document storage and ingestion', connectType: 'oauth' },
+  { name: 'Dropbox', slug: 'dropbox', category: 'Document & Email', desc: 'Document storage', connectType: 'oauth' },
+  { name: 'OneDrive', slug: 'onedrive', category: 'Document & Email', desc: 'Document storage', connectType: 'oauth' },
 ]
 
-interface Props {
-  qbStatus: string
-  plaidStatus: string
-  plaidAccounts: number
-  plaidTransactions: number
-}
+const STATUSABLE_SLUGS = [
+  'quickbooks', 'plaid', 'xero', 'stripe', 'gocardless',
+  'truelayer', 'codat', 'hubspot', 'gmail', 'outlook', 'google-drive',
+  'freshbooks', 'sage', 'wave', 'nordigen', 'adyen', 'wise',
+  'netsuite', 'sap', 'dynamics365', 'sage-intacct', 'salesforce', 'dropbox', 'onedrive',
+]
 
-interface ConnectedIntegration {
-  name: string
-  description: string
-  status: string
-  summary: string
-  disconnectPath: string
-}
+const CATEGORIES = Array.from(new Set(INTEGRATIONS.map((i) => i.category)))
 
-export function IntegrationsClient({ qbStatus, plaidStatus, plaidAccounts, plaidTransactions }: Props) {
+export function IntegrationsClient() {
   const { getToken } = useAuth()
-  const router = useRouter()
+  const [statuses, setStatuses] = useState<Record<string, IntegrationStatus>>({})
+  const [loading, setLoading] = useState(true)
+  const [connecting, setConnecting] = useState<string | null>(null)
   const [confirming, setConfirming] = useState<string | null>(null)
-  const [disconnecting, setDisconnecting] = useState<string | null>(null)
+  const [toast, setToast] = useState<string | null>(null)
+  const [plaidToken, setPlaidToken] = useState<string | null>(null)
 
-  const connected: ConnectedIntegration[] = []
-  if (qbStatus === 'connected') {
-    connected.push({ name: 'QuickBooks', description: 'Full AP/AR sync', status: 'connected', summary: '', disconnectPath: '/v1/integrations/quickbooks/disconnect' })
-  }
-  if (plaidStatus === 'connected') {
-    connected.push({ name: 'Plaid', description: 'Bank feeds and transactions', status: 'connected', summary: `${plaidAccounts} accounts · ${plaidTransactions} transactions`, disconnectPath: '/v1/integrations/plaid/disconnect' })
+  // Drawers / modals
+  const [showCredentialsDrawer, setShowCredentialsDrawer] = useState(false)
+  const [activeCredentialSlug, setActiveCredentialSlug] = useState<string | null>(null)
+  const [showXeroModal, setShowXeroModal] = useState(false)
+  const [xeroOrgs, setXeroOrgs] = useState<XeroOrg[]>([])
+  const [pendingXeroIntegrationId, setPendingXeroIntegrationId] = useState<string | null>(null)
+  const [showSyncLog, setShowSyncLog] = useState<string | null>(null)
+
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  const { open: openPlaidLink, ready: plaidReady } = usePlaidLink({
+    token: plaidToken ?? '',
+    onSuccess: useCallback(async (public_token: string) => {
+      setStatus('plaid', 'syncing')
+      setPlaidToken(null)
+      try {
+        const authToken = await getToken()
+        await fetch(`${API}/v1/integrations/plaid/exchange-token`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${authToken}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ public_token }),
+        })
+        showToast('Plaid connected — syncing bank data')
+      } catch {
+        setStatus('plaid', 'error')
+      }
+    }, [getToken]), // eslint-disable-line react-hooks/exhaustive-deps
+    onExit: useCallback(() => {
+      setPlaidToken(null)
+      setConnecting(null)
+    }, []),
+  })
+
+  function showToast(msg: string) {
+    setToast(msg)
+    setTimeout(() => setToast(null), 4000)
   }
 
-  async function handleDisconnect(intg: ConnectedIntegration) {
-    if (confirming !== intg.name) {
-      setConfirming(intg.name)
+  function setStatus(slug: string, status: IntegrationStatus) {
+    setStatuses((prev) => ({ ...prev, [slug]: status }))
+  }
+
+  async function fetchAllStatuses() {
+    const token = await getToken()
+    const results = await Promise.allSettled(
+      STATUSABLE_SLUGS.map(async (slug) => {
+        const res = await fetch(`${API}/v1/integrations/${slug}/status`, {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+        if (!res.ok) return { slug, status: 'not_connected' as IntegrationStatus }
+        const json = await res.json()
+        const raw: string = json.data?.status ?? json.status ?? 'not_connected'
+        return { slug, status: raw as IntegrationStatus }
+      }),
+    )
+    const next: Record<string, IntegrationStatus> = {}
+    for (const r of results) {
+      if (r.status === 'fulfilled') {
+        next[r.value.slug] = r.value.status
+      }
+    }
+    setStatuses(next)
+  }
+
+  // Initial load + URL param handling
+  useEffect(() => {
+    async function init() {
+      setLoading(true)
+      await fetchAllStatuses()
+      setLoading(false)
+
+      if (typeof window !== 'undefined') {
+        const params = new URLSearchParams(window.location.search)
+        const connected = params.get('connected')
+        if (connected) {
+          setStatus(connected, 'syncing')
+          showToast(`${connected} connected — syncing data`)
+          params.delete('connected')
+          const newSearch = params.toString()
+          window.history.replaceState(null, '', newSearch ? `?${newSearch}` : window.location.pathname)
+        }
+      }
+    }
+    init()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // Open Plaid Link once token is fetched and widget is ready
+  useEffect(() => {
+    if (plaidToken && plaidReady) {
+      openPlaidLink()
+    }
+  }, [plaidToken, plaidReady, openPlaidLink])
+
+  // Polling when any integration is connecting or syncing
+  useEffect(() => {
+    const needsPoll = Object.values(statuses).some(
+      (s) => s === 'connecting' || s === 'syncing',
+    )
+    if (needsPoll && !pollRef.current) {
+      pollRef.current = setInterval(async () => {
+        await fetchAllStatuses()
+      }, 3000)
+    } else if (!needsPoll && pollRef.current) {
+      clearInterval(pollRef.current)
+      pollRef.current = null
+    }
+    return () => {
+      if (pollRef.current) {
+        clearInterval(pollRef.current)
+        pollRef.current = null
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [statuses])
+
+  async function handleConnect(intg: IntegrationDef) {
+    if (connecting) return
+
+    if (intg.connectType === 'api_key') {
+      setActiveCredentialSlug(intg.slug)
+      setShowCredentialsDrawer(true)
       return
     }
-    setDisconnecting(intg.name)
+
+    if (intg.connectType === 'plaid_link') {
+      setConnecting('plaid')
+      try {
+        const authToken = await getToken()
+        const res = await fetch(`${API}/v1/integrations/plaid/link-token`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${authToken}` },
+        })
+        if (!res.ok) throw new Error('Failed to create Plaid link token')
+        const json = await res.json()
+        const token: string = json.data?.link_token ?? json.link_token
+        setPlaidToken(token)
+      } catch {
+        setStatus('plaid', 'error')
+        setConnecting(null)
+      }
+      return
+    }
+
+    if (intg.connectType === 'codat_link') {
+      setConnecting(intg.slug)
+      try {
+        const token = await getToken()
+        const res = await fetch(`${API}/v1/integrations/codat/connect`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` },
+        })
+        if (!res.ok) throw new Error('Failed to get Codat link')
+        const json = await res.json()
+        const url: string = json.data?.link_url ?? json.link_url
+        window.open(url, '_blank', 'noopener,noreferrer')
+        setStatus(intg.slug, 'connecting')
+      } catch {
+        setStatus(intg.slug, 'error')
+      } finally {
+        setConnecting(null)
+      }
+      return
+    }
+
+    // oauth
+    setConnecting(intg.slug)
     try {
       const token = await getToken()
-      await fetch(`${API}${intg.disconnectPath}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } })
-      router.refresh()
-    } finally {
-      setDisconnecting(null)
-      setConfirming(null)
+      const res = await fetch(`${API}/v1/integrations/${intg.slug}/connect`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      if (!res.ok) throw new Error('Failed to get auth URL')
+      const json = await res.json()
+      const url: string = json.data?.auth_url ?? json.auth_url
+
+      if (intg.slug === 'xero') {
+        // Xero may return orgs list for multi-org
+        const orgs: XeroOrg[] = json.data?.orgs ?? json.orgs ?? []
+        const integrationId: string = json.data?.integration_id ?? json.integration_id ?? ''
+        if (orgs.length > 1) {
+          setXeroOrgs(orgs)
+          setPendingXeroIntegrationId(integrationId)
+          setShowXeroModal(true)
+          setConnecting(null)
+          return
+        }
+      }
+
+      setStatus(intg.slug, 'connecting')
+      window.location.href = url
+    } catch {
+      setStatus(intg.slug, 'error')
+      setConnecting(null)
     }
   }
 
-  async function handleConnect(name: string, connectType: string) {
-    if (connectType === 'plaid_link') {
-      alert('Coming soon — use Plaid Link widget')
+  async function handleCredentialsSubmit(slug: string, credentials: Record<string, string>) {
+    const token = await getToken()
+    const res = await fetch(`${API}/v1/integrations/${slug}/connect`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(credentials),
+    })
+    if (!res.ok) {
+      const json = await res.json().catch(() => ({}))
+      throw new Error(json.detail ?? json.error ?? 'Connection failed')
+    }
+    setShowCredentialsDrawer(false)
+    setActiveCredentialSlug(null)
+    setStatus(slug, 'syncing')
+    showToast(`${slug} connected — syncing data`)
+  }
+
+  async function handleXeroOrgConfirm(xeroTenantId: string) {
+    if (!pendingXeroIntegrationId) return
+    const token = await getToken()
+    const res = await fetch(`${API}/v1/integrations/xero/select-tenant`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ integration_id: pendingXeroIntegrationId, xero_tenant_id: xeroTenantId }),
+    })
+    if (!res.ok) {
+      const json = await res.json().catch(() => ({}))
+      throw new Error(json.error ?? 'Failed to select organisation')
+    }
+    setShowXeroModal(false)
+    setXeroOrgs([])
+    setPendingXeroIntegrationId(null)
+    setStatus('xero', 'syncing')
+    showToast('Xero connected — syncing data')
+  }
+
+  async function handleDisconnect(slug: string) {
+    if (confirming !== slug) {
+      setConfirming(slug)
       return
     }
-    const token = await getToken()
-    const res = await fetch(`${API}/v1/integrations/quickbooks/connect`, { headers: { Authorization: `Bearer ${token}` } })
-    if (res.ok) {
-      const json = await res.json()
-      window.location.href = json.data?.url ?? json.url
+    setConfirming(null)
+    try {
+      const token = await getToken()
+      await fetch(`${API}/v1/integrations/${slug}/disconnect`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      setStatus(slug, 'disconnected')
+    } catch {
+      // leave status unchanged on error
     }
   }
 
-  const categories = Array.from(new Set(AVAILABLE.map((i) => i.category)))
-  const connectedNames = new Set(connected.map((c) => c.name))
-  const availableToShow = AVAILABLE.filter((i) => !connectedNames.has(i.name))
+  async function handleResync(slug: string) {
+    try {
+      const token = await getToken()
+      await fetch(`${API}/v1/integrations/${slug}/sync`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      setStatus(slug, 'syncing')
+    } catch {
+      // silent fail — status poll will correct
+    }
+  }
+
+  function getStatusForSlug(slug: string): IntegrationStatus {
+    return statuses[slug] ?? 'not_connected'
+  }
+
+  const syncLogIntg = showSyncLog
+    ? (INTEGRATIONS.find((i) => i.slug === showSyncLog) ?? null)
+    : null
 
   return (
-    <div className="p-6 space-y-8">
+    <div className="p-6 space-y-8 relative">
+      {/* Page header */}
       <div>
-        <h1 className="font-heading font-bold text-2xl text-brand-text">Integrations</h1>
-        <p className="text-brand-muted text-xs font-mono mt-1">Connect your financial systems</p>
+        <h1 className="font-heading font-bold text-2xl text-[#e8f0e8]">Integrations</h1>
+        <p className="text-[10px] font-mono text-[#4a6a4a] mt-1 uppercase tracking-widest">
+          Connect your financial systems
+        </p>
       </div>
 
-      {connected.length > 0 && (
-        <section className="space-y-3">
-          <h2 className="text-[10px] font-mono uppercase tracking-widest text-brand-muted border-b border-brand-border pb-2">
-            Connected
-          </h2>
-          {connected.map((intg) => (
-            <div key={intg.name} className="bg-brand-surface border border-brand-border border-l-[3px] border-l-brand-green rounded-sm p-5">
-              <div className="flex items-start justify-between gap-4">
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-mono text-brand-text font-medium">{intg.name}</span>
-                    <StatusBadge status="connected" />
-                  </div>
-                  <p className="text-xs font-mono text-brand-muted">{intg.description}</p>
-                  <p className="text-[10px] font-mono text-brand-secondary">Last synced: just now</p>
-                  {intg.summary && <p className="text-[10px] font-mono text-brand-muted">{intg.summary}</p>}
-                </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  <div className="relative group">
-                    <button
-                      disabled
-                      className="text-xs font-mono border border-brand-border text-brand-muted rounded-sm px-3 py-1.5 disabled:opacity-40 cursor-not-allowed"
-                    >
-                      Resync
-                    </button>
-                    <span className="absolute bottom-full right-0 mb-1 hidden group-hover:block text-[10px] font-mono text-brand-muted bg-brand-elevated border border-brand-border rounded-sm px-2 py-1 whitespace-nowrap">
-                      Manual sync coming soon
-                    </span>
-                  </div>
-                  {confirming === intg.name ? (
-                    <div className="flex items-center gap-2">
-                      <span className="text-[10px] font-mono text-brand-danger">Disconnect from {intg.name}?</span>
-                      <button
-                        onClick={() => handleDisconnect(intg)}
-                        disabled={disconnecting === intg.name}
-                        className="text-[10px] font-mono bg-[rgba(255,77,109,0.1)] border border-[#ff4d6d] text-[#ff4d6d] rounded-sm px-2 py-1 hover:bg-[rgba(255,77,109,0.2)] transition-colors disabled:opacity-50"
-                      >
-                        {disconnecting === intg.name ? 'Disconnecting…' : 'Confirm'}
-                      </button>
-                      <button
-                        onClick={() => setConfirming(null)}
-                        className="text-[10px] font-mono text-brand-muted hover:text-brand-text transition-colors"
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  ) : (
-                    <button
-                      onClick={() => handleDisconnect(intg)}
-                      className="text-xs font-mono bg-[rgba(255,77,109,0.1)] border border-[#ff4d6d] text-[#ff4d6d] rounded-sm px-3 py-1.5 hover:bg-[rgba(255,77,109,0.2)] transition-colors"
-                    >
-                      Disconnect
-                    </button>
-                  )}
-                </div>
-              </div>
-            </div>
+      {/* Loading skeleton */}
+      {loading && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <div key={i} className="h-24 bg-[#111118] border border-[#1a2a1a] rounded-sm animate-pulse" />
           ))}
-        </section>
+        </div>
       )}
 
-      <section className="space-y-6">
-        <h2 className="text-[10px] font-mono uppercase tracking-widest text-brand-muted border-b border-brand-border pb-2">
-          Available Integrations
-        </h2>
-        {categories.map((cat) => {
-          const items = availableToShow.filter((i) => i.category === cat)
-          if (items.length === 0) return null
-          return (
-            <div key={cat} className="space-y-3">
-              <h3 className="text-[10px] font-mono uppercase tracking-widest text-brand-secondary">{cat}</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                {items.map((intg) => (
-                  <div key={intg.name} className="bg-brand-surface border border-brand-border rounded-sm p-4 flex flex-col gap-3">
-                    <div>
-                      <div className="text-sm font-mono text-brand-text font-medium">{intg.name}</div>
-                      <div className="text-xs font-mono text-brand-muted mt-0.5">{intg.desc}</div>
-                    </div>
-                    {intg.available ? (
-                      <button
-                        onClick={() => handleConnect(intg.name, intg.connectType)}
-                        className="self-start bg-brand-green text-black hover:bg-[#00a844] active:scale-[0.97] rounded-sm px-3 py-1.5 text-xs font-mono font-medium transition-all"
-                      >
-                        Connect
-                      </button>
-                    ) : (
-                      <span className="self-start text-[10px] font-mono text-brand-muted border border-brand-border rounded-sm px-2 py-0.5">
-                        Coming soon
-                      </span>
-                    )}
-                  </div>
-                ))}
-              </div>
+      {/* Integration sections by category */}
+      {!loading && CATEGORIES.map((cat) => {
+        const items = INTEGRATIONS.filter((i) => i.category === cat)
+        return (
+          <section key={cat} className="space-y-3">
+            <h2 className="text-[10px] font-mono uppercase tracking-widest text-[#4a6a4a] border-b border-[#1a2a1a] pb-2">
+              {cat}
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {items.map((intg) => {
+                const status = getStatusForSlug(intg.slug)
+                return (
+                  <IntegrationCard
+                    key={intg.slug}
+                    intg={intg}
+                    status={status}
+                    onConnect={() => handleConnect(intg)}
+                    onDisconnect={() => handleDisconnect(intg.slug)}
+                    onResync={() => handleResync(intg.slug)}
+                    onViewLog={() => setShowSyncLog(intg.slug)}
+                    confirming={confirming === intg.slug}
+                    onCancelConfirm={() => setConfirming(null)}
+                    connecting={connecting === intg.slug}
+                  />
+                )
+              })}
             </div>
-          )
-        })}
-      </section>
+          </section>
+        )
+      })}
+
+      {/* API key / credentials drawer */}
+      <CredentialsDrawer
+        slug={activeCredentialSlug}
+        open={showCredentialsDrawer}
+        onClose={() => { setShowCredentialsDrawer(false); setActiveCredentialSlug(null) }}
+        onSubmit={handleCredentialsSubmit}
+      />
+
+      {/* Xero org selector */}
+      <XeroOrgModal
+        open={showXeroModal}
+        orgs={xeroOrgs}
+        onConfirm={handleXeroOrgConfirm}
+        onClose={() => {
+          setShowXeroModal(false)
+          setPendingXeroIntegrationId(null)
+          setXeroOrgs([])
+        }}
+      />
+
+      {/* Sync log drawer */}
+      <SyncLogDrawer
+        slug={showSyncLog}
+        integrationName={syncLogIntg?.name ?? ''}
+        onClose={() => setShowSyncLog(null)}
+      />
+
+      {/* Toast notification */}
+      {toast && (
+        <div className="fixed bottom-6 right-6 bg-[#111118] border border-[#1a2a1a] rounded-sm px-4 py-3 z-50 shadow-none">
+          <p className="text-xs font-mono text-[#e8f0e8]">{toast}</p>
+        </div>
+      )}
     </div>
   )
 }
