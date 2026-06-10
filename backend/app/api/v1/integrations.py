@@ -23,7 +23,14 @@ async def quickbooks_connect(
 ):
     """Returns the QuickBooks OAuth authorization URL. Frontend redirects user here."""
     state = f"{current_user.tenant_id}:{secrets.token_urlsafe(16)}"
-    auth_url = qb.build_auth_url(state=state)
+    try:
+        auth_url = qb.build_auth_url(state=state)
+    except ValueError as exc:
+        logger.error("QB connect misconfigured: %s", exc)
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="QuickBooks integration is not configured on this server",
+        )
     return standard_response(data={"auth_url": auth_url})
 
 

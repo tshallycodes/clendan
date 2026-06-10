@@ -29,6 +29,8 @@ def get_api_base(sandbox: bool = True) -> str:
 
 def build_auth_url(state: str) -> str:
     settings = get_settings()
+    if not settings.quickbooks_client_id:
+        raise ValueError("QUICKBOOKS_CLIENT_ID is not configured")
     params = {
         "client_id": settings.quickbooks_client_id,
         "response_type": "code",
