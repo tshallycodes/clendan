@@ -1,0 +1,45 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "clendan-mcp"
+version = "0.1.0"
+description = "MCP server for Clendan AI Financial Agent OS"
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "MIT" }
+keywords = ["mcp", "finance", "ai", "clendan", "invoices", "accounting"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3.12",
+]
+dependencies = [
+    "mcp>=1.0.0",
+    "httpx>=0.27.0",
+    "python-multipart>=0.0.9",
+    "anyio>=4.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.2.0",
+    "pytest-asyncio>=0.23.6",
+    "respx>=0.21.0",
+]
+
+[project.scripts]
+clendan-mcp = "clendan_mcp.server:main"
+
+[project.urls]
+Homepage = "https://clendan.com"
+Documentation = "https://docs.clendan.com/mcp"
+Repository = "https://github.com/clendan/clendan-mcp"
+
+[tool.hatch.build.targets.wheel]
+packages = ["clendan_mcp"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]

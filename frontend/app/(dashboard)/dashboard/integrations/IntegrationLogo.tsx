@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Image from 'next/image'
 import type { SimpleIcon } from 'simple-icons'
 import * as SimpleIcons from 'simple-icons'
 import type { LucideIcon } from 'lucide-react'
@@ -83,12 +84,12 @@ function ClearbitLogo({ slug, domain, size, fallback: Fallback }: {
   }
 
   return (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img
+    <Image
       src={`https://logo.clearbit.com/${domain}`}
       alt={slug}
       width={size}
       height={size}
+      unoptimized
       onError={() => setFailed(true)}
       className="shrink-0 rounded-sm"
     />

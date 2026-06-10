@@ -41,7 +41,7 @@ async def get_my_tenant(
     """Returns authenticated user's tenant. Checks Member table first, falls back to User table."""
     tenant = await db.tenant.find_unique(where={"id": current_user.tenant_id})
     if not tenant:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Tenant not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Tenant not found")
 
     member = await db.member.find_unique(where={"clerk_user_id": current_user.user_id})
     if member:
