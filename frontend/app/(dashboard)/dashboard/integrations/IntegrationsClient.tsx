@@ -341,8 +341,8 @@ export function IntegrationsClient() {
     <div className="p-6 space-y-8 relative">
       {/* Page header */}
       <div>
-        <h1 className="font-heading font-bold text-2xl text-[#e8f0e8]">Integrations</h1>
-        <p className="text-[10px] font-mono text-[#4a6a4a] mt-1 uppercase tracking-widest">
+        <h1 className="font-heading font-bold text-2xl text-brand-text">Integrations</h1>
+        <p className="text-[10px] font-mono text-brand-muted mt-1 uppercase tracking-widest">
           Connect your financial systems
         </p>
       </div>
@@ -351,7 +351,7 @@ export function IntegrationsClient() {
       {loading && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {[1, 2, 3, 4, 5, 6].map((i) => (
-            <div key={i} className="h-24 bg-[#111111] border border-[#1a2a1a] rounded-sm animate-pulse" />
+            <div key={i} className="h-24 bg-brand-surface border border-brand-border rounded-sm animate-pulse" />
           ))}
         </div>
       )}
@@ -361,7 +361,7 @@ export function IntegrationsClient() {
         const items = INTEGRATIONS.filter((i) => i.category === cat)
         return (
           <section key={cat} className="space-y-3">
-            <h2 className="text-[10px] font-mono uppercase tracking-widest text-[#4a6a4a] border-b border-[#1a2a1a] pb-2">
+            <h2 className="text-[10px] font-mono uppercase tracking-widest text-brand-muted border-b border-brand-border pb-2">
               {cat}
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -416,8 +416,8 @@ export function IntegrationsClient() {
 
       {/* Toast notification */}
       {toast && (
-        <div className="fixed bottom-6 right-6 bg-[#111111] border border-[#1a2a1a] rounded-sm px-4 py-3 z-50 shadow-none">
-          <p className="text-xs font-mono text-[#e8f0e8]">{toast}</p>
+        <div className="fixed bottom-6 right-6 bg-brand-surface border border-brand-border rounded-sm px-4 py-3 z-50 shadow-none">
+          <p className="text-xs font-mono text-brand-text">{toast}</p>
         </div>
       )}
     </div>
