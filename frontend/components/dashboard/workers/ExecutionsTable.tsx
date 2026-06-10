@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import type { Execution } from './WorkerDetail'
 
@@ -10,7 +10,7 @@ const DECISION_BADGE: Record<string, string> = {
 }
 
 function formatDuration(ms: number | null): string {
-  if (ms === null) return '—'
+  if (ms === null) return 'â€”'
   return ms >= 1000 ? `${(ms / 1000).toFixed(1)}s` : `${ms}ms`
 }
 
@@ -43,7 +43,7 @@ export function ExecutionsTable({ executions }: Props) {
         </thead>
         <tbody>
           {executions.map((e) => (
-            <tr key={e.id} className="border-b border-[#1a2a1a] last:border-0 hover:bg-[#1a1a28] transition-colors">
+            <tr key={e.id} className="border-b border-[#1a2a1a] last:border-0 hover:bg-[#1a1a1a] transition-colors">
               <td className="px-3 py-2 text-[#4a6a4a]">{formatDate(e.created_at)}</td>
               <td className="px-3 py-2">
                 <span className={`text-[10px] px-2 py-0.5 rounded-sm ${DECISION_BADGE[e.decision] ?? 'text-[#a0b8a0] border border-[#1a2a1a]'}`}>
@@ -51,7 +51,7 @@ export function ExecutionsTable({ executions }: Props) {
                 </span>
               </td>
               <td className="px-3 py-2 text-[#a0b8a0]">
-                {e.confidence !== null ? `${(e.confidence * 100).toFixed(1)}%` : '—'}
+                {e.confidence !== null ? `${(e.confidence * 100).toFixed(1)}%` : 'â€”'}
               </td>
               <td className="px-3 py-2 text-[#a0b8a0]">{formatDuration(e.duration_ms)}</td>
               <td className="px-3 py-2 text-[#a0b8a0]">{e.status}</td>

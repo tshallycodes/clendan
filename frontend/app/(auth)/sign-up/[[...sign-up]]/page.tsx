@@ -1,4 +1,4 @@
-import { SignUp } from '@clerk/nextjs'
+﻿import { SignUp } from '@clerk/nextjs'
 
 export default function SignUpPage() {
   return (
@@ -11,10 +11,10 @@ export default function SignUpPage() {
         <SignUp
           appearance={{
             variables: {
-              colorBackground: '#111118',
+              colorBackground: '#111111',
               colorText: '#e8f0e8',
               colorPrimary: '#00C853',
-              colorInputBackground: '#0a0a0f',
+              colorInputBackground: '#0a0a0a',
               colorInputText: '#e8f0e8',
               borderRadius: '4px',
             },

@@ -100,9 +100,6 @@
 
 | MCP Name | What It Does | Relevant To | URL | Stars | Cost |
 |---|---|---|---|---|---|
-| **Ruflo** | Orchestrates intelligent multi-agent swarms for Claude, coordinating autonomous workflows | Financial Orchestrator architecture — multi-agent coordination pattern | https://mcpmarket.com/server/ruflo | ⭐ 52.8k | Free/OSS |
-| **Superpowers** | Comprehensive and structured software development workflow for AI coding agents | Development workflow for building Clendan workers | https://mcpmarket.com/server/superpowers | ⭐ 197k | Free/OSS |
-| **OpenSpec** | Facilitates spec-driven development between humans and AI coding assistants | Clendan API design — spec-first development for financial APIs | https://mcpmarket.com/server/openspec | ⭐ 48.9k | Free/OSS |
 | **Alex** | Multi-agent AI financial planning platform: equity portfolio analysis, reports, retirement projections | Reference architecture for Clendan's financial agent design | https://mcpmarket.com/search?q=clerk+auth | – | Free/OSS |
 | **Kamy** | Generates professional PDFs (invoices, receipts, contracts) programmatically via API | Invoice/receipt PDF generation in Clendan's document pipeline | https://mcpmarket.com/search?q=posthog | – | Free/OSS |
 

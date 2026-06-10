@@ -310,11 +310,11 @@ docker-compose up --build
 
 | Token | Value | Usage |
 |-------|-------|-------|
-| `background` | `#0a0a0f` | Page background — darkest layer |
-| `surface` | `#111118` | Cards, panels, sidebars |
-| `surface-elevated` | `#1a1a28` | Modals, dropdowns, popovers |
+| `background` | `#0a0a0a` | Page background — darkest layer |
+| `surface` | `#111111` | Cards, panels, sidebars |
+| `surface-elevated` | `#1a1a1a` | Modals, dropdowns, popovers |
 | `border` | `#1a2a1a` | Card borders, dividers |
-| `border-subtle` | `#1e1e2e` | Subtle separators |
+| `border-subtle` | `#1e1e1e` | Subtle separators |
 | `text` | `#e8f0e8` | Primary text |
 | `text-secondary` | `#a0b8a0` | Labels, metadata |
 | `text-muted` | `#4a6a4a` | Timestamps, captions |
@@ -404,14 +404,14 @@ Clendan is sharp-edged — infrastructure product aesthetic. Default: `sm`. Max:
 
 **Cards:** background `#111118`, border `1px solid #1a2a1a`, radius `sm`, padding `md`. No shadows — flat is correct.
 
-**Inputs:** background `#0a0a0f`, border `1px solid #1a2a1a`, focus border `1px solid #00C853`, text `#e8f0e8`, placeholder `#4a6a4a`, radius `sm`.
+**Inputs:** background `#0a0a0a`, border `1px solid #1a2a1a`, focus border `1px solid #00C853`, text `#e8f0e8`, placeholder `#4a6a4a`, radius `sm`.
 
 **Status Badge:**
 - Auto: background `rgba(0,200,83,0.08)`, text `#00C853`, border `1px solid rgba(0,200,83,0.2)`
 - Pending: background `rgba(0,168,204,0.08)`, text `#00a8cc`, border `1px solid rgba(0,168,204,0.2)`
 - Blocked: background `rgba(255,77,109,0.08)`, text `#ff4d6d`, border `1px solid rgba(255,77,109,0.2)`
 
-**API Code Block:** background `#0a0a0f`, border `1px solid #1a2a1a`, font IBM Plex Mono 12px. Keywords: `#f5a623`. Strings: `#00C853`. Comments: `#4a6a4a`. Copy button top-right.
+**API Code Block:** background `#0a0a0a`, border `1px solid #1a2a1a`, font IBM Plex Mono 12px. Keywords: `#f5a623`. Strings: `#00C853`. Comments: `#4a6a4a`. Copy button top-right.
 
 **Audit Trail Row:** background `#111118`, hover background `#1a1a28`, expandable. Expanded state shows full reasoning trace in monospace. Trace IDs in `#4a6a4a`.
 

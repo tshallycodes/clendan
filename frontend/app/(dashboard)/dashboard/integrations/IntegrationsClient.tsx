@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useAuth } from '@clerk/nextjs'
@@ -84,7 +84,7 @@ export function IntegrationsClient() {
           headers: { Authorization: `Bearer ${authToken}`, 'Content-Type': 'application/json' },
           body: JSON.stringify({ public_token }),
         })
-        showToast('Plaid connected — syncing bank data')
+        showToast('Plaid connected â€” syncing bank data')
       } catch {
         setStatus('plaid', 'error')
       }
@@ -138,7 +138,7 @@ export function IntegrationsClient() {
         const connected = params.get('connected')
         if (connected) {
           setStatus(connected, 'syncing')
-          showToast(`${connected} connected — syncing data`)
+          showToast(`${connected} connected â€” syncing data`)
           params.delete('connected')
           const newSearch = params.toString()
           window.history.replaceState(null, '', newSearch ? `?${newSearch}` : window.location.pathname)
@@ -273,7 +273,7 @@ export function IntegrationsClient() {
     setShowCredentialsDrawer(false)
     setActiveCredentialSlug(null)
     setStatus(slug, 'syncing')
-    showToast(`${slug} connected — syncing data`)
+    showToast(`${slug} connected â€” syncing data`)
   }
 
   async function handleXeroOrgConfirm(xeroTenantId: string) {
@@ -295,7 +295,7 @@ export function IntegrationsClient() {
     setXeroOrgs([])
     setPendingXeroIntegrationId(null)
     setStatus('xero', 'syncing')
-    showToast('Xero connected — syncing data')
+    showToast('Xero connected â€” syncing data')
   }
 
   async function handleDisconnect(slug: string) {
@@ -325,7 +325,7 @@ export function IntegrationsClient() {
       })
       setStatus(slug, 'syncing')
     } catch {
-      // silent fail — status poll will correct
+      // silent fail â€” status poll will correct
     }
   }
 
@@ -351,7 +351,7 @@ export function IntegrationsClient() {
       {loading && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {[1, 2, 3, 4, 5, 6].map((i) => (
-            <div key={i} className="h-24 bg-[#111118] border border-[#1a2a1a] rounded-sm animate-pulse" />
+            <div key={i} className="h-24 bg-[#111111] border border-[#1a2a1a] rounded-sm animate-pulse" />
           ))}
         </div>
       )}
@@ -416,7 +416,7 @@ export function IntegrationsClient() {
 
       {/* Toast notification */}
       {toast && (
-        <div className="fixed bottom-6 right-6 bg-[#111118] border border-[#1a2a1a] rounded-sm px-4 py-3 z-50 shadow-none">
+        <div className="fixed bottom-6 right-6 bg-[#111111] border border-[#1a2a1a] rounded-sm px-4 py-3 z-50 shadow-none">
           <p className="text-xs font-mono text-[#e8f0e8]">{toast}</p>
         </div>
       )}

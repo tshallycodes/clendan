@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -50,7 +50,7 @@ export function XeroOrgModal({ open, orgs, onConfirm, onClose }: XeroOrgModalPro
             transition={{ duration: 0.2 }}
             className="fixed inset-0 z-50 flex items-center justify-center p-4"
           >
-            <div className="bg-[#111118] border border-[#1a2a1a] rounded-sm w-full max-w-md">
+            <div className="bg-[#111111] border border-[#1a2a1a] rounded-sm w-full max-w-md">
               <div className="px-6 py-4 border-b border-[#1a2a1a]">
                 <h2 className="font-heading font-bold text-base text-[#e8f0e8]">
                   Select Xero Organisation
@@ -64,7 +64,7 @@ export function XeroOrgModal({ open, orgs, onConfirm, onClose }: XeroOrgModalPro
                 {orgs.map((org) => (
                   <label
                     key={org.xero_tenant_id}
-                    className="flex items-center gap-3 cursor-pointer p-3 rounded-sm border border-[#1a2a1a] hover:border-[#1e1e2e] transition-colors"
+                    className="flex items-center gap-3 cursor-pointer p-3 rounded-sm border border-[#1a2a1a] hover:border-[#1e1e1e] transition-colors"
                   >
                     <input
                       type="radio"
@@ -102,7 +102,7 @@ export function XeroOrgModal({ open, orgs, onConfirm, onClose }: XeroOrgModalPro
                 <button
                   onClick={onClose}
                   disabled={loading}
-                  className="flex-1 border border-[#1a2a1a] text-[#e8f0e8] font-mono text-sm rounded-sm py-2 hover:bg-[#1a1a28] transition-colors disabled:opacity-40"
+                  className="flex-1 border border-[#1a2a1a] text-[#e8f0e8] font-mono text-sm rounded-sm py-2 hover:bg-[#1a1a1a] transition-colors disabled:opacity-40"
                 >
                   Cancel
                 </button>

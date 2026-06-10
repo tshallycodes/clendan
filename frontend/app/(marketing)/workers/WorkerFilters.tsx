@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState } from 'react'
 import type { Worker } from './page'
@@ -52,7 +52,7 @@ function WorkerCard({ worker }: { worker: Worker }) {
             key={tool}
             className="font-mono text-[10px] px-2 py-0.5 rounded-sm"
             style={{
-              background: '#0a0a0f',
+              background: '#0a0a0a',
               border: '1px solid #1a2a1a',
               color: '#4a6a4a',
             }}
@@ -82,7 +82,7 @@ function WorkerCard({ worker }: { worker: Worker }) {
             </button>
             <span
               className="absolute bottom-full left-0 mb-1.5 hidden group-hover:block font-mono text-[10px] whitespace-nowrap rounded-sm px-2 py-1 z-10"
-              style={{ background: '#1a1a28', border: '1px solid #1a2a1a', color: '#a0b8a0' }}
+              style={{ background: '#1a1a1a', border: '1px solid #1a2a1a', color: '#a0b8a0' }}
             >
               Coming soon
             </span>
@@ -108,7 +108,7 @@ export function WorkerFilters({ workers }: { workers: Worker[] }) {
             onClick={() => setActive(tab)}
             className="font-mono text-xs px-4 py-2 rounded-sm transition-colors"
             style={{
-              background: active === tab ? '#1a1a28' : 'transparent',
+              background: active === tab ? '#1a1a1a' : 'transparent',
               color: active === tab ? '#e8f0e8' : '#4a6a4a',
               border: active === tab ? '1px solid #1a2a1a' : '1px solid transparent',
             }}

@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import Link from 'next/link'
 import { WorkerTestResult } from './WorkerTestResult'
@@ -21,7 +21,7 @@ export interface Execution {
 const AUTONOMY_LABEL: Record<Worker['autonomy_level'], { label: string; className: string }> = {
   auto:    { label: 'Auto',    className: 'bg-[rgba(0,200,83,0.08)] text-[#00C853] border border-[rgba(0,200,83,0.2)]' },
   approve: { label: 'Approve', className: 'bg-[rgba(0,168,204,0.08)] text-[#00a8cc] border border-[rgba(0,168,204,0.2)]' },
-  suggest: { label: 'Suggest', className: 'bg-[#111118] text-[#4a6a4a] border border-[#1a2a1a]' },
+  suggest: { label: 'Suggest', className: 'bg-[#111111] text-[#4a6a4a] border border-[#1a2a1a]' },
 }
 
 interface Props {
@@ -42,7 +42,7 @@ export function WorkerDetail({ worker, executions }: Props) {
       <div className="flex items-start justify-between gap-4">
         <div className="space-y-2">
           <Link href="/dashboard/workers" className="text-[11px] font-mono text-[#4a6a4a] hover:text-[#a0b8a0] transition-colors">
-            ← Workers
+            â† Workers
           </Link>
           <div className="flex items-center gap-3 flex-wrap">
             <h1 className="font-heading font-bold text-2xl text-[#e8f0e8]">{formatType(worker.type)}</h1>
@@ -67,9 +67,9 @@ export function WorkerDetail({ worker, executions }: Props) {
           type="button"
           onClick={run}
           disabled={running}
-          className="text-xs font-mono border border-[#1a2a1a] text-[#e8f0e8] hover:bg-[#1a1a28] rounded-sm px-3 py-1.5 transition-colors disabled:opacity-50 shrink-0"
+          className="text-xs font-mono border border-[#1a2a1a] text-[#e8f0e8] hover:bg-[#1a1a1a] rounded-sm px-3 py-1.5 transition-colors disabled:opacity-50 shrink-0"
         >
-          {running ? 'Running…' : 'Run test'}
+          {running ? 'Runningâ€¦' : 'Run test'}
         </button>
       </div>
 
@@ -79,7 +79,7 @@ export function WorkerDetail({ worker, executions }: Props) {
       {configEntries.length > 0 && (
         <section>
           <h2 className="font-heading font-semibold text-sm text-[#e8f0e8] mb-3">Configuration</h2>
-          <div className="bg-[#111118] border border-[#1a2a1a] rounded-sm p-4 space-y-2">
+          <div className="bg-[#111111] border border-[#1a2a1a] rounded-sm p-4 space-y-2">
             {configEntries.map(([k, v]) => (
               <div key={k} className="flex gap-4 text-xs font-mono">
                 <span className="text-[#4a6a4a] min-w-[140px] shrink-0">{k}</span>

@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -79,7 +79,7 @@ export function SyncLogDrawer({ slug, integrationName, onClose }: SyncLogDrawerP
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'tween', duration: 0.25 }}
-            className="fixed right-0 top-0 h-full w-[480px] max-w-full bg-[#111118] border-l border-[#1a2a1a] z-50 flex flex-col"
+            className="fixed right-0 top-0 h-full w-[480px] max-w-full bg-[#111111] border-l border-[#1a2a1a] z-50 flex flex-col"
           >
             <div className="flex items-center justify-between px-6 py-4 border-b border-[#1a2a1a]">
               <div>
@@ -101,7 +101,7 @@ export function SyncLogDrawer({ slug, integrationName, onClose }: SyncLogDrawerP
               {loading && (
                 <div className="space-y-2">
                   {[1, 2, 3].map((i) => (
-                    <div key={i} className="h-12 bg-[#1a1a28] rounded-sm animate-pulse" />
+                    <div key={i} className="h-12 bg-[#1a1a1a] rounded-sm animate-pulse" />
                   ))}
                 </div>
               )}
@@ -129,7 +129,7 @@ export function SyncLogDrawer({ slug, integrationName, onClose }: SyncLogDrawerP
                       initial={{ opacity: 0, y: 4 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: idx * 0.05, duration: 0.15 }}
-                      className="bg-[#0a0a0f] border border-[#1a2a1a] rounded-sm px-4 py-3"
+                      className="bg-[#0a0a0a] border border-[#1a2a1a] rounded-sm px-4 py-3"
                     >
                       <div className="flex items-center justify-between gap-4">
                         <div className="min-w-0">

@@ -1,4 +1,4 @@
-import Link from 'next/link'
+﻿import Link from 'next/link'
 
 // ─── Syntax helpers ────────────────────────────────────────────────────────────
 
@@ -21,7 +21,7 @@ function CodeBlock({ children }: { children: React.ReactNode }) {
   return (
     <pre
       className="rounded-sm p-4 text-xs font-mono overflow-x-auto leading-relaxed"
-      style={{ background: '#0a0a0f', border: '1px solid #1a2a1a' }}
+      style={{ background: '#0a0a0a', border: '1px solid #1a2a1a' }}
     >
       {children}
     </pre>
