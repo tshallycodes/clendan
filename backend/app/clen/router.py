@@ -99,6 +99,9 @@ class ClenChatRequest(BaseModel):
 # Streaming generator
 # ---------------------------------------------------------------------------
 
+_MAX_TOOL_ROUNDS = 5  # prevents infinite tool-use loops
+
+
 async def _generate(
     messages: list[dict],
     mode: str,
@@ -112,32 +115,60 @@ async def _generate(
     system = await build_system_prompt(mode, tenant_id, db)
     tools = ACCOUNT_TOOLS if mode == "account" else []
 
-    kwargs: dict = {
-        "model": settings.claude_model,
-        "max_tokens": 1024,
-        "system": system,
-        "messages": messages[-20:],
-    }
-    if tools:
-        kwargs["tools"] = tools
+    # Mutable copy so we can append tool results for multi-turn agentic loop
+    current_messages: list[dict] = list(messages[-20:])
 
     try:
-        async with client.messages.stream(**kwargs) as stream:
-            async for text in stream.text_stream:
-                yield f"data: {json.dumps({'type': 'text', 'content': text})}\n\n"
+        for _ in range(_MAX_TOOL_ROUNDS):
+            kwargs: dict = {
+                "model": settings.claude_model,
+                "max_tokens": 1024,
+                "system": system,
+                "messages": current_messages,
+            }
+            if tools:
+                kwargs["tools"] = tools
 
-            final = await stream.get_final_message()
+            async with client.messages.stream(**kwargs) as stream:
+                async for text in stream.text_stream:
+                    yield f"data: {json.dumps({'type': 'text', 'content': text})}\n\n"
+                final = await stream.get_final_message()
+
+            # No tool calls — Claude is done
+            if final.stop_reason != "tool_use":
+                break
+
+            # Build assistant content block list for message history
+            assistant_content: list[dict] = []
             for block in final.content:
-                if block.type == "tool_use":
-                    yield f"data: {json.dumps({'type': 'tool_call', 'tool': block.name, 'input': block.input})}\n\n"
-                    result = await execute_tool(
-                        block.name,
-                        block.input,
-                        tenant_id or "",
-                        user_id,
-                        db,
-                    )
-                    yield f"data: {json.dumps({'type': 'tool_result', 'tool': block.name, 'result': result})}\n\n"
+                if block.type == "text":
+                    assistant_content.append({"type": "text", "text": block.text})
+                elif block.type == "tool_use":
+                    assistant_content.append({
+                        "type": "tool_use",
+                        "id": block.id,
+                        "name": block.name,
+                        "input": block.input,
+                    })
+
+            # Execute each tool call and collect results
+            tool_results: list[dict] = []
+            for block in final.content:
+                if block.type != "tool_use":
+                    continue
+                yield f"data: {json.dumps({'type': 'tool_call', 'tool': block.name, 'input': block.input})}\n\n"
+                result = await execute_tool(block.name, block.input, tenant_id or "", user_id, db)
+                yield f"data: {json.dumps({'type': 'tool_result', 'tool': block.name, 'result': result})}\n\n"
+                tool_results.append({
+                    "type": "tool_result",
+                    "tool_use_id": block.id,
+                    "content": json.dumps(result),
+                })
+
+            # Append assistant + tool results so Claude can form its natural language response
+            current_messages.append({"role": "assistant", "content": assistant_content})
+            current_messages.append({"role": "user", "content": tool_results})
+
     except anthropic.APIError as exc:
         logger.error("clen_stream_api_error error=%s", type(exc).__name__)
         yield f"data: {json.dumps({'type': 'error', 'content': 'Clen encountered an error — please try again'})}\n\n"

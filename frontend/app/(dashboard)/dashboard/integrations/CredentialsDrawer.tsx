@@ -23,13 +23,6 @@ const CONFIGS: Record<string, IntegrationCredConfig> = {
       { name: 'environment', label: 'Environment', type: 'select', options: ['sandbox', 'live'] },
     ],
   },
-  nordigen: {
-    title: 'Nordigen (GoCardless for Banks)',
-    fields: [
-      { name: 'secret_id', label: 'Secret ID', type: 'text', placeholder: 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx' },
-      { name: 'secret_key', label: 'Secret Key', type: 'password', placeholder: '' },
-    ],
-  },
   adyen: {
     title: 'Adyen',
     fields: [

@@ -9,7 +9,7 @@ export default async function ToolsPage() {
   try {
     const token = await getBackendToken()
     if (token) {
-      const res = await apiGet<{ workers: Worker[] }>('/v1/workers', token)
+      const res = await apiGet<{ workers: Worker[] }>('/v1/tools', token)
       workers = res.workers ?? []
     }
   } catch { /* backend not running — show empty state */ }

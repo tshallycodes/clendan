@@ -2,12 +2,16 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useAuth } from '@clerk/nextjs'
-import { usePlaidLink } from 'react-plaid-link'
+import { usePlaidLink, PlaidLinkOnSuccessMetadata } from 'react-plaid-link'
 import { IntegrationDef, IntegrationStatus, XeroOrg } from './types'
-import { IntegrationCard } from './IntegrationCard'
+import { IntegrationIconGrid } from './IntegrationIconGrid'
 import { CredentialsDrawer } from './CredentialsDrawer'
 import { XeroOrgModal } from './XeroOrgModal'
 import { SyncLogDrawer } from './SyncLogDrawer'
+import { IntegrationDetailDrawer } from './IntegrationDetailDrawer'
+import { BankPicker } from './BankPicker'
+import { BankDetailDrawer } from './BankDetailDrawer'
+import { BankDef } from './banks-data'
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001'
 
@@ -18,11 +22,6 @@ const INTEGRATIONS: IntegrationDef[] = [
   { name: 'FreshBooks', slug: 'freshbooks', category: 'Accounting', desc: 'Invoice and payment sync', connectType: 'oauth' },
   { name: 'Sage', slug: 'sage', category: 'Accounting', desc: 'Accounting and payroll', connectType: 'oauth' },
   { name: 'Wave', slug: 'wave', category: 'Accounting', desc: 'Free accounting for SMBs', connectType: 'oauth' },
-  // Banking
-  { name: 'Plaid', slug: 'plaid', category: 'Banking', desc: 'Bank feeds and transactions', connectType: 'plaid_link' },
-  { name: 'TrueLayer', slug: 'truelayer', category: 'Banking', desc: 'Open banking (UK/EU)', connectType: 'oauth' },
-  { name: 'Codat', slug: 'codat', category: 'Banking', desc: '50+ accounting platforms via one connection', connectType: 'codat_link' },
-  { name: 'Nordigen', slug: 'nordigen', category: 'Banking', desc: 'EU bank data', connectType: 'api_key' },
   // Payments
   { name: 'Stripe', slug: 'stripe', category: 'Payments', desc: 'Revenue and charges', connectType: 'oauth' },
   { name: 'GoCardless', slug: 'gocardless', category: 'Payments', desc: 'Direct debit', connectType: 'api_key' },
@@ -46,8 +45,8 @@ const INTEGRATIONS: IntegrationDef[] = [
 
 const STATUSABLE_SLUGS = [
   'quickbooks', 'plaid', 'xero', 'stripe', 'gocardless',
-  'truelayer', 'codat', 'hubspot', 'gmail', 'outlook', 'google-drive',
-  'freshbooks', 'sage', 'wave', 'nordigen', 'adyen', 'wise',
+  'codat', 'hubspot', 'gmail', 'outlook', 'google-drive',
+  'freshbooks', 'sage', 'wave', 'adyen', 'wise',
   'netsuite', 'sap', 'dynamics365', 'sage-intacct', 'salesforce', 'dropbox', 'onedrive',
 ]
 
@@ -59,8 +58,7 @@ export function IntegrationsClient() {
   const [lastSyncedAt, setLastSyncedAt] = useState<Record<string, string | null>>({})
   const [loading, setLoading] = useState(true)
   const [connecting, setConnecting] = useState<string | null>(null)
-  const [confirming, setConfirming] = useState<string | null>(null)
-  const [disconnecting, setDisconnecting] = useState<string | null>(null)
+  const [connectedBankId, setConnectedBankId] = useState<string | null>(null)
   const [toast, setToast] = useState<string | null>(null)
   const [plaidToken, setPlaidToken] = useState<string | null>(null)
 
@@ -71,12 +69,16 @@ export function IntegrationsClient() {
   const [xeroOrgs, setXeroOrgs] = useState<XeroOrg[]>([])
   const [pendingXeroIntegrationId, setPendingXeroIntegrationId] = useState<string | null>(null)
   const [showSyncLog, setShowSyncLog] = useState<string | null>(null)
+  const [detailSlug, setDetailSlug] = useState<string | null>(null)
+  const [bankDetailBank, setBankDetailBank] = useState<BankDef | null>(null)
 
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const { open: openPlaidLink, ready: plaidReady } = usePlaidLink({
     token: plaidToken ?? '',
-    onSuccess: useCallback(async (public_token: string) => {
+    onSuccess: useCallback(async (public_token: string, metadata: PlaidLinkOnSuccessMetadata) => {
+      const institution_id = metadata.institution?.institution_id ?? null
+      const institution_name = metadata.institution?.name ?? null
       setStatus('plaid', 'syncing')
       setPlaidToken(null)
       try {
@@ -84,9 +86,10 @@ export function IntegrationsClient() {
         await fetch(`${API}/v1/integrations/plaid/exchange-token`, {
           method: 'POST',
           headers: { Authorization: `Bearer ${authToken}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ public_token }),
+          body: JSON.stringify({ public_token, institution_id, institution_name }),
         })
-        showToast('Plaid connected â€” syncing bank data')
+        if (institution_id) setConnectedBankId(institution_id)
+        showToast('Bank connected — syncing transactions')
       } catch {
         setStatus('plaid', 'error')
       }
@@ -113,11 +116,12 @@ export function IntegrationsClient() {
         const res = await fetch(`${API}/v1/integrations/${slug}/status`, {
           headers: { Authorization: `Bearer ${token}` },
         })
-        if (!res.ok) return { slug, status: 'not_connected' as IntegrationStatus, last_synced_at: null }
+        if (!res.ok) return { slug, status: 'not_connected' as IntegrationStatus, last_synced_at: null, institution_id: null }
         const json = await res.json()
         const raw: string = json.data?.status ?? json.status ?? 'not_connected'
         const synced: string | null = json.data?.last_synced_at ?? null
-        return { slug, status: raw as IntegrationStatus, last_synced_at: synced }
+        const institutionId: string | null = slug === 'plaid' ? (json.data?.institution_id ?? null) : null
+        return { slug, status: raw as IntegrationStatus, last_synced_at: synced, institution_id: institutionId }
       }),
     )
     const nextStatuses: Record<string, IntegrationStatus> = {}
@@ -126,6 +130,9 @@ export function IntegrationsClient() {
       if (r.status === 'fulfilled') {
         nextStatuses[r.value.slug] = r.value.status
         nextSynced[r.value.slug] = r.value.last_synced_at
+        if (r.value.slug === 'plaid' && r.value.institution_id) {
+          setConnectedBankId(r.value.institution_id)
+        }
       }
     }
     setStatuses(nextStatuses)
@@ -204,25 +211,6 @@ export function IntegrationsClient() {
       return
     }
 
-    if (intg.connectType === 'plaid_link') {
-      setConnecting('plaid')
-      try {
-        const authToken = await getToken()
-        const res = await fetch(`${API}/v1/integrations/plaid/link-token`, {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${authToken}` },
-        })
-        if (!res.ok) throw new Error('Failed to create Plaid link token')
-        const json = await res.json()
-        const token: string = json.data?.link_token ?? json.link_token
-        setPlaidToken(token)
-      } catch {
-        setStatus('plaid', 'error')
-        setConnecting(null)
-      }
-      return
-    }
-
     if (intg.connectType === 'codat_link') {
       setConnecting(intg.slug)
       try {
@@ -276,6 +264,49 @@ export function IntegrationsClient() {
     }
   }
 
+  async function handleConnectBank(bank: BankDef) {
+    if (connecting) return
+    if (bank.provider === 'truelayer') {
+      showToast('TrueLayer EU banks coming soon')
+      return
+    }
+    setBankDetailBank(null)
+    setConnecting('plaid')
+    try {
+      const authToken = await getToken()
+      const res = await fetch(`${API}/v1/integrations/plaid/link-token`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${authToken}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ institution_id: bank.institution_id ?? null }),
+      })
+      if (!res.ok) throw new Error('Failed to create Plaid link token')
+      const json = await res.json()
+      const token: string = json.data?.link_token ?? json.link_token
+      setPlaidToken(token)
+    } catch {
+      setStatus('plaid', 'error')
+      setConnecting(null)
+    }
+  }
+
+  async function handleDisconnectDirect(slug: string) {
+    try {
+      const token = await getToken()
+      const res = await fetch(`${API}/v1/integrations/${slug}/disconnect`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      if (!res.ok) {
+        const json = await res.json().catch(() => ({}))
+        throw new Error(json.detail ?? json.error ?? 'Disconnect failed')
+      }
+      setStatus(slug, 'disconnected')
+      if (slug === 'plaid') { setConnectedBankId(null); setBankDetailBank(null) }
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'Disconnect failed')
+    }
+  }
+
   async function handleCredentialsSubmit(slug: string, credentials: Record<string, string>) {
     const token = await getToken()
     const res = await fetch(`${API}/v1/integrations/${slug}/connect`, {
@@ -315,31 +346,6 @@ export function IntegrationsClient() {
     showToast('Xero connected â€” syncing data')
   }
 
-  async function handleDisconnect(slug: string) {
-    if (confirming !== slug) {
-      setConfirming(slug)
-      return
-    }
-    setConfirming(null)
-    setDisconnecting(slug)
-    try {
-      const token = await getToken()
-      const res = await fetch(`${API}/v1/integrations/${slug}/disconnect`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      if (!res.ok) {
-        const json = await res.json().catch(() => ({}))
-        throw new Error(json.detail ?? json.error ?? 'Disconnect failed')
-      }
-      setStatus(slug, 'disconnected')
-    } catch (err) {
-      showToast(err instanceof Error ? err.message : 'Disconnect failed')
-    } finally {
-      setDisconnecting(null)
-    }
-  }
-
   async function handleResync(slug: string) {
     setStatus(slug, 'syncing')
     try {
@@ -353,12 +359,15 @@ export function IntegrationsClient() {
     }
   }
 
-  function getStatusForSlug(slug: string): IntegrationStatus {
-    return statuses[slug] ?? 'not_connected'
-  }
-
   const syncLogIntg = showSyncLog
     ? (INTEGRATIONS.find((i) => i.slug === showSyncLog) ?? null)
+    : null
+  const syncLogName = showSyncLog === 'plaid' && bankDetailBank
+    ? bankDetailBank.name
+    : (syncLogIntg?.name ?? showSyncLog ?? '')
+
+  const detailIntg = detailSlug
+    ? (INTEGRATIONS.find((i) => i.slug === detailSlug) ?? null)
     : null
 
   return (
@@ -381,37 +390,38 @@ export function IntegrationsClient() {
       )}
 
       {/* Integration sections by category */}
-      {!loading && CATEGORIES.map((cat) => {
-        const items = INTEGRATIONS.filter((i) => i.category === cat)
-        return (
-          <section key={cat} className="space-y-3">
+      {!loading && (
+        <>
+          {/* Banking — always first, uses BankPicker */}
+          <section className="space-y-3">
             <h2 className="text-[10px] font-mono uppercase tracking-widest text-brand-muted border-b border-brand-border pb-2">
-              {cat}
+              Banking
             </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              {items.map((intg) => {
-                const status = getStatusForSlug(intg.slug)
-                return (
-                  <IntegrationCard
-                    key={intg.slug}
-                    intg={intg}
-                    status={status}
-                    lastSyncedAt={lastSyncedAt[intg.slug] ?? null}
-                    onConnect={() => handleConnect(intg)}
-                    onDisconnect={() => handleDisconnect(intg.slug)}
-                    onResync={() => handleResync(intg.slug)}
-                    onViewLog={() => setShowSyncLog(intg.slug)}
-                    confirming={confirming === intg.slug}
-                    onCancelConfirm={() => setConfirming(null)}
-                    connecting={connecting === intg.slug}
-                    disconnecting={disconnecting === intg.slug}
-                  />
-                )
-              })}
-            </div>
+            <BankPicker
+              connectedInstitutionId={connectedBankId}
+              connecting={connecting === 'plaid'}
+              onViewDetail={setBankDetailBank}
+            />
           </section>
-        )
-      })}
+
+          {/* All other categories */}
+          {CATEGORIES.map((cat) => {
+            const items = INTEGRATIONS.filter((i) => i.category === cat)
+            return (
+              <section key={cat} className="space-y-3">
+                <h2 className="text-[10px] font-mono uppercase tracking-widest text-brand-muted border-b border-brand-border pb-2">
+                  {cat}
+                </h2>
+                <IntegrationIconGrid
+                  integrations={items}
+                  statuses={statuses}
+                  onViewDetail={(intg) => setDetailSlug(intg.slug)}
+                />
+              </section>
+            )
+          })}
+        </>
+      )}
 
       {/* API key / credentials drawer */}
       <CredentialsDrawer
@@ -433,11 +443,44 @@ export function IntegrationsClient() {
         }}
       />
 
+      {/* Bank detail drawer */}
+      <BankDetailDrawer
+        bank={bankDetailBank}
+        plaidStatus={statuses['plaid'] ?? 'not_connected'}
+        connectedInstitutionId={connectedBankId}
+        onClose={() => setBankDetailBank(null)}
+        onConnect={handleConnectBank}
+        onDisconnect={() => handleDisconnectDirect('plaid')}
+        onResync={() => { handleResync('plaid'); setBankDetailBank(null) }}
+        onSyncLog={() => { setShowSyncLog('plaid'); setBankDetailBank(null) }}
+      />
+
       {/* Sync log drawer */}
       <SyncLogDrawer
         slug={showSyncLog}
-        integrationName={syncLogIntg?.name ?? ''}
+        integrationName={syncLogName}
         onClose={() => setShowSyncLog(null)}
+      />
+
+      {/* Integration detail drawer */}
+      <IntegrationDetailDrawer
+        slug={detailSlug}
+        intg={detailIntg}
+        status={detailSlug ? (statuses[detailSlug] ?? 'not_connected') : 'not_connected'}
+        lastSyncedAt={detailSlug ? (lastSyncedAt[detailSlug] ?? null) : null}
+        onClose={() => setDetailSlug(null)}
+        onConnect={() => {
+          if (detailIntg) { setDetailSlug(null); handleConnect(detailIntg) }
+        }}
+        onDisconnect={() => {
+          if (detailSlug) { handleDisconnectDirect(detailSlug); setDetailSlug(null) }
+        }}
+        onResync={() => {
+          if (detailSlug) handleResync(detailSlug)
+        }}
+        onSyncLog={() => {
+          if (detailSlug) { setShowSyncLog(detailSlug); setDetailSlug(null) }
+        }}
       />
 
       {/* Toast notification */}

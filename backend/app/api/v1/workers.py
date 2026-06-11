@@ -10,7 +10,7 @@ from app.core.responses import standard_response
 from app.core.security import RequireOrgAuth, CurrentUser
 
 logger = get_logger(__name__)
-router = APIRouter(prefix="/workers", tags=["workers"])
+router = APIRouter(prefix="/tools", tags=["tools"])
 
 VALID_TYPES = {
     "invoice_processing", "ai_accountant", "receipt_processing",

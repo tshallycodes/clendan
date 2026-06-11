@@ -17,7 +17,7 @@ export default async function WorkerDetailPage({ params }: PageProps) {
   let executions: Execution[] = []
 
   try {
-    worker = await apiGet<Worker>(`/v1/workers/${params.id}`, token)
+    worker = await apiGet<Worker>(`/v1/tools/${params.id}`, token)
   } catch {
     notFound()
   }

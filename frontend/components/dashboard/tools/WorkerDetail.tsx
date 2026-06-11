@@ -40,7 +40,7 @@ export function WorkerDetail({ worker, executions }: Props) {
     <div className="p-6 space-y-6">
       <div className="flex items-start justify-between gap-4">
         <div className="space-y-2">
-          <Link href="/tools" className="text-[11px] font-mono text-[#4a6a4a] hover:text-[#a0b8a0] transition-colors">
+          <Link href="/dashboard/tools" className="text-[11px] font-mono text-[#4a6a4a] hover:text-[#a0b8a0] transition-colors">
             &larr; Tools
           </Link>
           <div className="flex items-center gap-3 flex-wrap">

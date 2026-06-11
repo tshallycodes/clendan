@@ -52,7 +52,7 @@ export function DeployWorkerForm({ onDeployed }: DeployWorkerFormProps) {
     setError(null)
     try {
       const token = await getToken()
-      const res = await fetch(`${API_BASE}/v1/workers`, {
+      const res = await fetch(`${API_BASE}/v1/tools`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ type: workerType, autonomy_level: autonomyLevel, config }),

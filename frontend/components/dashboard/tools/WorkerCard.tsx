@@ -49,7 +49,7 @@ export function WorkerCard({ worker, onConfigure, onStatusChange }: Props) {
     setToggling(true)
     try {
       const token = await getToken()
-      await fetch(`${API}/v1/workers/${worker.id}/pause`, {
+      await fetch(`${API}/v1/tools/${worker.id}/pause`, {
         method: 'PATCH',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
       })
@@ -63,7 +63,7 @@ export function WorkerCard({ worker, onConfigure, onStatusChange }: Props) {
     setDeleting(true)
     try {
       const token = await getToken()
-      await fetch(`${API}/v1/workers/${worker.id}`, {
+      await fetch(`${API}/v1/tools/${worker.id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       })

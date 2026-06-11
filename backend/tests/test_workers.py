@@ -59,7 +59,7 @@ def _make_worker(
 
 
 # ---------------------------------------------------------------------------
-# POST /v1/workers — deploy_worker
+# POST /v1/tools — deploy_worker
 # ---------------------------------------------------------------------------
 
 class TestDeployWorker:
@@ -124,7 +124,7 @@ class TestDeployWorker:
 
 
 # ---------------------------------------------------------------------------
-# GET /v1/workers — list_workers
+# GET /v1/tools — list_workers
 # ---------------------------------------------------------------------------
 
 class TestListWorkers:
@@ -162,7 +162,7 @@ class TestListWorkers:
 
 
 # ---------------------------------------------------------------------------
-# GET /v1/workers/{worker_id} — get_worker
+# GET /v1/tools/{worker_id} — get_worker
 # ---------------------------------------------------------------------------
 
 class TestGetWorker:
@@ -209,7 +209,7 @@ class TestGetWorker:
 
 
 # ---------------------------------------------------------------------------
-# PATCH /v1/workers/{worker_id} — update_worker
+# PATCH /v1/tools/{worker_id} — update_worker
 # ---------------------------------------------------------------------------
 
 class TestPatchWorker:
@@ -287,7 +287,7 @@ class TestPatchWorker:
 
 
 # ---------------------------------------------------------------------------
-# PATCH /v1/workers/{worker_id}/pause — pause_worker (soft deactivation)
+# PATCH /v1/tools/{worker_id}/pause — pause_worker (soft deactivation)
 # ---------------------------------------------------------------------------
 
 class TestDeactivateWorker:

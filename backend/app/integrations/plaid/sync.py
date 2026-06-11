@@ -3,7 +3,8 @@ Plaid sync job — runs via arq worker.
 Fetches and stores bank accounts + transactions for a connected Plaid item.
 """
 import json
-from datetime import datetime
+import time
+from datetime import datetime, UTC
 
 from app.core.db import get_db
 from app.core.logging import get_logger
@@ -36,6 +37,7 @@ async def sync_plaid_transactions(ctx: dict, integration_id: str, tenant_id: str
         return {"status": "error", "reason": "incomplete_credentials"}
 
     try:
+        _start = time.monotonic()
         # Sync accounts first
         accounts_data = await plaid.get_accounts(encrypted_access)
         accounts_synced = 0
@@ -138,6 +140,29 @@ async def sync_plaid_transactions(ctx: dict, integration_id: str, tenant_id: str
             except Exception as exc:
                 logger.error("plaid_sync_event_enqueue_failed", extra={"error": str(exc)})
 
+        elapsed_ms = int((time.monotonic() - _start) * 1000)
+
+        await db.integrationsynclog.create(data={
+            "tenant_id": tenant_id,
+            "integration_id": integration_id,
+            "entity_type": "accounts",
+            "status": "success",
+            "records_synced": accounts_synced,
+            "duration_ms": elapsed_ms // 2,
+        })
+        await db.integrationsynclog.create(data={
+            "tenant_id": tenant_id,
+            "integration_id": integration_id,
+            "entity_type": "transactions",
+            "status": "success",
+            "records_synced": total_added,
+            "duration_ms": elapsed_ms // 2,
+        })
+        await db.integration.update(
+            where={"id": integration_id},
+            data={"last_synced_at": datetime.now(UTC)},
+        )
+
         logger.info(
             "Plaid sync done: tenant=%s accounts=%d txns_added=%d",
             tenant_id,
@@ -147,6 +172,16 @@ async def sync_plaid_transactions(ctx: dict, integration_id: str, tenant_id: str
         return {"status": "ok", "accounts_synced": accounts_synced, "transactions_added": total_added}
 
     except Exception as exc:
+        elapsed_ms = int((time.monotonic() - _start) * 1000)
+        await db.integrationsynclog.create(data={
+            "tenant_id": tenant_id,
+            "integration_id": integration_id,
+            "entity_type": "transactions",
+            "status": "error",
+            "records_synced": 0,
+            "duration_ms": elapsed_ms,
+            "error_message": type(exc).__name__,
+        })
         logger.error("Plaid sync failed for integration %s: %s", integration_id, type(exc).__name__)
         return {"status": "error", "reason": type(exc).__name__}
 

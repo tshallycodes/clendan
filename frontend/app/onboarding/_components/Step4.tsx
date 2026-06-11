@@ -36,7 +36,7 @@ export function Step4({ onBack }: Step4Props) {
     setError(null)
     try {
       const token = await getToken()
-      const workerRes = await fetch(`${API}/v1/workers`, {
+      const workerRes = await fetch(`${API}/v1/tools`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ type: 'invoice_processing', autonomy_level: autonomy }),

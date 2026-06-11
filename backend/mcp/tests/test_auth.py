@@ -103,11 +103,11 @@ async def test_api_get_success(monkeypatch):
     auth_module.CLENDAN_API_KEY = "test_key"
     auth_module.CLENDAN_API_BASE = "https://api.clendan.com"
 
-    respx.get("https://api.clendan.com/v1/workers").mock(
+    respx.get("https://api.clendan.com/v1/tools").mock(
         return_value=httpx.Response(200, json={"data": {"workers": []}})
     )
 
-    result = await api_get("/v1/workers")
+    result = await api_get("/v1/tools")
     assert result == {"data": {"workers": []}}
 
 
@@ -118,12 +118,12 @@ async def test_api_get_401_raises_mcp_error(monkeypatch):
     auth_module.CLENDAN_API_KEY = "bad_key"
     auth_module.CLENDAN_API_BASE = "https://api.clendan.com"
 
-    respx.get("https://api.clendan.com/v1/workers").mock(
+    respx.get("https://api.clendan.com/v1/tools").mock(
         return_value=httpx.Response(401)
     )
 
     with pytest.raises(MCPError) as exc_info:
-        await api_get("/v1/workers")
+        await api_get("/v1/tools")
     assert exc_info.value.status_code == 401
     assert "invalid" in str(exc_info.value).lower() or "authentication" in str(exc_info.value).lower()
 
@@ -150,9 +150,9 @@ async def test_api_patch_success(monkeypatch):
     auth_module.CLENDAN_API_KEY = "test_key"
     auth_module.CLENDAN_API_BASE = "https://api.clendan.com"
 
-    respx.patch("https://api.clendan.com/v1/workers/w_1/pause").mock(
+    respx.patch("https://api.clendan.com/v1/tools/w_1/pause").mock(
         return_value=httpx.Response(200, json={"data": {"status": "inactive"}})
     )
 
-    result = await api_patch("/v1/workers/w_1/pause")
+    result = await api_patch("/v1/tools/w_1/pause")
     assert result == {"data": {"status": "inactive"}}

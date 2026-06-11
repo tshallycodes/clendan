@@ -117,7 +117,7 @@ export function WorkerFilters({ workers }: { workers: Worker[] }) {
           </button>
         ))}
         <span className="ml-auto font-mono text-xs text-brand-muted">
-          {filtered.length} worker{filtered.length !== 1 ? 's' : ''}
+          {filtered.length} tool{filtered.length !== 1 ? 's' : ''}
         </span>
       </div>
 

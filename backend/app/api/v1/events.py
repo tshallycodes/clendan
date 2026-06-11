@@ -71,7 +71,7 @@ async def submit_event(
             status_code=status.HTTP_409_CONFLICT,
             detail=(
                 f"No active '{worker_type.value}' worker deployed for your tenant. "
-                "Deploy one via POST /v1/workers."
+                "Deploy one via POST /v1/tools."
             ),
         )
 

@@ -22,7 +22,7 @@ function createClerkHandler() {
     '/docs(.*)',
     '/how-it-works(.*)',
     '/integrations(.*)',
-    '/workers(.*)',
+    '/tools(.*)',
     '/security(.*)',
     '/privacy(.*)',
     '/terms(.*)',

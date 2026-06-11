@@ -33,7 +33,7 @@ async def _find_worker_by_type(worker_type: str) -> dict[str, Any]:
             f"Unknown worker type '{worker_type}'. "
             f"Valid types: {', '.join(sorted(VALID_WORKER_TYPES))}"
         )
-    response = await api_get("/v1/workers")
+    response = await api_get("/v1/tools")
     body = response.get("data", response)
     workers = body.get("workers", [])
     match = next((w for w in workers if w.get("type") == worker_type), None)
@@ -60,7 +60,7 @@ async def list_workers() -> list[dict[str, Any]]:
 
     Returns an empty list if no workers are deployed.
     """
-    response = await api_get("/v1/workers")
+    response = await api_get("/v1/tools")
     body = response.get("data", response)
     return body.get("workers", [])
 
@@ -117,7 +117,7 @@ async def pause_worker(worker_type: str) -> dict[str, Any]:
             "Call resume_worker() to restart it."
         )
 
-    response = await api_patch(f"/v1/workers/{worker_id}/pause")
+    response = await api_patch(f"/v1/tools/{worker_id}/pause")
     return response.get("data", response)
 
 
@@ -145,7 +145,7 @@ async def resume_worker(worker_type: str) -> dict[str, Any]:
             "Call pause_worker() to stop it."
         )
 
-    response = await api_patch(f"/v1/workers/{worker_id}/pause")
+    response = await api_patch(f"/v1/tools/{worker_id}/pause")
     return response.get("data", response)
 
 

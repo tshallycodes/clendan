@@ -30,7 +30,7 @@ export function ConfigDrawer({ worker, onClose, onSaved }: Props) {
     setError(null)
     try {
       const token = await getToken()
-      const res = await fetch(`${API}/v1/workers/${worker.id}`, {
+      const res = await fetch(`${API}/v1/tools/${worker.id}`, {
         method: 'PATCH',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({

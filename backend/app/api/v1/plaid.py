@@ -26,6 +26,12 @@ ALLOWED_CATEGORIES = frozenset({
 
 class ExchangeTokenRequest(BaseModel):
     public_token: str
+    institution_id: str | None = None
+    institution_name: str | None = None
+
+
+class LinkTokenRequest(BaseModel):
+    institution_id: str | None = None
 
 
 class CategoryUpdateRequest(BaseModel):
@@ -34,12 +40,17 @@ class CategoryUpdateRequest(BaseModel):
 
 @router.post("/integrations/plaid/link-token")
 async def create_link_token(
+    body: LinkTokenRequest,
     current_user: RequireOrgAuth,
     db: Annotated[Prisma, Depends(get_db_dep)],
 ):
     """Creates a Plaid Link token. Frontend passes this to the Plaid Link widget."""
     try:
-        link_token = await plaid.create_link_token(user_id=current_user.user_id, tenant_id=current_user.tenant_id)
+        link_token = await plaid.create_link_token(
+            user_id=current_user.user_id,
+            tenant_id=current_user.tenant_id,
+            institution_id=body.institution_id,
+        )
     except Exception as exc:
         logger.error("Plaid link token creation failed: %s", type(exc).__name__)
         raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail="Failed to create Plaid link token")
@@ -66,7 +77,11 @@ async def exchange_token(
         logger.error("Plaid token exchange failed: %s", type(exc).__name__)
         raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail="Plaid token exchange failed")
 
-    credentials_json = json.dumps(creds)
+    credentials_json = json.dumps({
+        **creds,
+        "institution_id": body.institution_id,
+        "institution_name": body.institution_name,
+    })
 
     existing = await db.integration.find_first(
         where={"tenant_id": tenant_id, "type": "plaid"}
@@ -119,14 +134,44 @@ async def plaid_status(
     txn_count = await db.banktransaction.count(where={"tenant_id": tenant_id})
     account_count = await db.bankaccount.count(where={"tenant_id": tenant_id})
 
+    creds = json.loads(integration.encrypted_credentials or '{}')
+    institution_id = creds.get('institution_id')
+    institution_name = creds.get('institution_name')
+
     return standard_response(
         data={
             "status": integration.status,
             "connected_at": integration.connected_at.isoformat() if integration.connected_at else None,
+            "last_synced_at": integration.last_synced_at.isoformat() if integration.last_synced_at else None,
+            "institution_id": institution_id,
+            "institution_name": institution_name,
             "accounts": account_count,
             "transactions": txn_count,
         }
     )
+
+
+@router.get("/integrations/plaid/accounts")
+async def list_accounts(
+    current_user: RequireOrgAuth,
+    db: Annotated[Prisma, Depends(get_db_dep)],
+):
+    """Lists bank accounts for the tenant."""
+    accounts = await db.bankaccount.find_many(
+        where={"tenant_id": current_user.tenant_id},
+        order={"created_at": "asc"},
+    )
+    return standard_response(data=[
+        {
+            "id": a.id,
+            "name": a.name,
+            "type": a.type,
+            "subtype": a.subtype or "",
+            "current_balance_minor": a.current_balance_minor,
+            "currency": a.currency,
+        }
+        for a in accounts
+    ])
 
 
 @router.get("/integrations/plaid/transactions")
@@ -203,6 +248,27 @@ async def update_transaction_category(
         data={"ai_category": body.category, "status": "categorised"},
     )
     return standard_response(data={"id": updated.id, "ai_category": updated.ai_category, "status": updated.status})
+
+
+@router.post("/integrations/plaid/sync")
+async def plaid_sync(
+    current_user: RequireOrgAuth,
+    db: Annotated[Prisma, Depends(get_db_dep)],
+):
+    """Triggers an inline Plaid transaction sync. Used by the Resync button."""
+    integration = await db.integration.find_first(
+        where={"tenant_id": current_user.tenant_id, "type": "plaid", "status": "connected"}
+    )
+    if not integration:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No connected Plaid integration found")
+
+    from app.integrations.plaid.sync import sync_plaid_transactions
+    result = await sync_plaid_transactions(
+        ctx={},
+        integration_id=integration.id,
+        tenant_id=current_user.tenant_id,
+    )
+    return standard_response(data={"result": result, "integration_id": integration.id})
 
 
 @router.delete("/integrations/plaid/disconnect")

@@ -67,7 +67,7 @@ export function HeroSection() {
           variants={item}
           className="text-base font-mono text-brand-secondary max-w-xl leading-relaxed mb-8"
         >
-          Deploy AI workers that connect to your financial systems, execute tasks autonomously,
+          Deploy AI tools that connect to your financial systems, execute tasks autonomously,
           and produce full audit trails for every action. Not a dashboard. Execution infrastructure.
         </motion.p>
 
@@ -77,7 +77,7 @@ export function HeroSection() {
             className="rounded-sm px-5 py-2.5 text-sm font-mono font-medium transition-colors active:scale-[0.97]"
             style={{ background: '#00C853', color: '#000' }}
           >
-            Deploy Your First Worker
+            Deploy Your First Tool
           </Link>
           <Link
             href="/how-it-works"

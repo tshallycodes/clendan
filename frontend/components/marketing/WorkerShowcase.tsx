@@ -47,9 +47,9 @@ export function WorkerShowcase() {
     <section className="border-y border-brand-border bg-brand-surface">
       <div className="max-w-6xl mx-auto px-6 md:px-8 py-20">
         <FadeInUp>
-          <p className="text-xs font-mono text-brand-muted uppercase tracking-widest mb-3">Workers</p>
+          <p className="text-xs font-mono text-brand-muted uppercase tracking-widest mb-3">Tools</p>
           <h2 className="font-heading text-2xl font-bold text-brand-text mb-10">
-            10 AI Workers. Every Finance Function Covered.
+            10 AI Tools. Every Finance Function Covered.
           </h2>
         </FadeInUp>
         <StaggerContainer className="grid grid-cols-2 md:grid-cols-4 gap-3">

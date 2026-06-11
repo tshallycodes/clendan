@@ -14,7 +14,7 @@ const NAV = [
   { icon: Receipt,     label: 'Transactions', href: '/transactions' },
   { icon: List,        label: 'Audit Trail',  href: '/audit' },
   { icon: Plug,        label: 'Integrations', href: '/dashboard/integrations' },
-  { icon: Cpu,         label: 'Tools',        href: '/tools' },
+  { icon: Cpu,         label: 'Tools',        href: '/dashboard/tools' },
   { icon: Settings,    label: 'Settings',     href: '/settings' },
   { icon: Code2,       label: 'Developer API', href: '/api' },
 ]

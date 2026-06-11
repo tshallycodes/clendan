@@ -67,8 +67,8 @@ export function ProblemStatement() {
 // ─── Solution Overview ─────────────────────────────────────────────────────
 
 const SOLUTIONS = [
-  { icon: Zap, title: 'Deploy AI Workers', desc: 'Autonomous agents that execute real financial tasks, not just surface insights.' },
-  { icon: Link2, title: 'Connect Your Tools', desc: 'Native integrations with Xero, QuickBooks, Plaid, Stripe, and your ERP.' },
+  { icon: Zap, title: 'Deploy AI Tools', desc: 'Autonomous agents that execute real financial tasks, not just surface insights.' },
+  { icon: Link2, title: 'Connect Your Stack', desc: 'Native integrations with Xero, QuickBooks, Plaid, Stripe, and your ERP.' },
   { icon: ShieldCheck, title: 'Full Audit Trail', desc: 'Every action logged, every decision explained. Policy-enforced by default.' },
 ]
 
@@ -78,7 +78,7 @@ export function SolutionOverview() {
       <div className="max-w-6xl mx-auto px-6 md:px-8 py-20">
         <FadeInUp>
           <h2 className="font-heading text-xl font-bold text-brand-text mb-2 max-w-2xl">
-            Deploy AI Workers. Connect Your Tools. Execute With a Full Audit Trail.
+            Deploy AI Tools. Connect Your Stack. Execute With a Full Audit Trail.
           </h2>
           <p className="text-sm font-mono text-brand-muted mb-10">Infrastructure, not a dashboard.</p>
         </FadeInUp>
@@ -118,7 +118,7 @@ export function CTABanner() {
             Ready to Automate Your Finance Stack?
           </h2>
           <p className="text-sm font-mono text-brand-secondary max-w-sm">
-            Deploy your first AI worker in under 10 minutes.
+            Deploy your first AI tool in under 10 minutes.
           </p>
           <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }} transition={{ duration: 0.15 }}>
             <Link
