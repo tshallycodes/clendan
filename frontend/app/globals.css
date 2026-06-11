@@ -9,19 +9,19 @@
   --brand-border-subtle:  #e6eee6;
   --brand-text:           #0e160e;
   --brand-secondary:      #3a5c3a;
-  --brand-muted:          #82a082;
+  --brand-muted:          #4a6a4a;
 }
 
 /* ─── Dark mode ─────────────────────────────────────────────────────────── */
 .dark {
-  --brand-bg:             #0a0a0f;
-  --brand-surface:        #111118;
-  --brand-elevated:       #1a1a28;
+  --brand-bg:             #0a0a0a;
+  --brand-surface:        #111111;
+  --brand-elevated:       #1a1a1a;
   --brand-border:         #1a2a1a;
-  --brand-border-subtle:  #1e1e2e;
+  --brand-border-subtle:  #1e1e1e;
   --brand-text:           #e8f0e8;
   --brand-secondary:      #a0b8a0;
-  --brand-muted:          #4a6a4a;
+  --brand-muted:          #6e8c6e;
 }
 
 /* ─── Tailwind tokens (reference the switchable CSS vars) ────────────────── */

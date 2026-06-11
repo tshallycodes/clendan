@@ -59,11 +59,11 @@ export default async function DashboardPage() {
 
       <div className="bg-brand-surface border border-brand-border rounded-sm overflow-hidden">
         <div className="px-5 py-4 border-b border-brand-border">
-          <h2 className="font-heading font-semibold text-brand-text text-sm">Active Workers</h2>
+          <h2 className="font-heading font-semibold text-brand-text text-sm">Active Tools</h2>
         </div>
         <div className="divide-y divide-brand-border">
           {s.active_workers === 0 ? (
-            <p className="px-5 py-8 text-xs font-mono text-brand-muted text-center">No active workers — deploy workers to begin</p>
+            <p className="px-5 py-8 text-xs font-mono text-brand-muted text-center">No active tools — deploy tools to begin</p>
           ) : (
             <div className="px-5 py-4 flex items-center gap-4">
               <span className="relative flex h-2.5 w-2.5">
@@ -71,7 +71,7 @@ export default async function DashboardPage() {
                 <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-brand-green" />
               </span>
               <div className="flex-1 text-xs font-mono text-brand-text">
-                {s.active_workers} worker{s.active_workers !== 1 ? 's' : ''} running
+                {s.active_workers} tool{s.active_workers !== 1 ? 's' : ''} running
               </div>
               <StatusBadge status="active" />
             </div>

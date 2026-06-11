@@ -194,11 +194,25 @@ async def execute_invoice_worker(
 
     # 5. Accounting write AFTER audit — only for auto-approved invoices
     if policy_result.decision == Decision.AUTO_APPROVED:
-        # TODO(phase-3): replace with real QuickBooks bill creation via qb.create_bill()
-        _logger.info(
-            "invoice_accounting_write_pending",
-            extra={"tenant_id": tenant_id, "execution_id": execution_id},
-        )
+        try:
+            from app.integrations.quickbooks.write import write_bill_to_quickbooks
+            qb_result = await write_bill_to_quickbooks(
+                tenant_id=tenant_id,
+                execution_id=execution_id,
+                vendor=parsed.vendor,
+                invoice_number=parsed.invoice_number,
+                amount_minor=parsed.amount_minor,
+                currency=parsed.currency,
+                due_date=parsed.due_date,
+                line_items=[item.model_dump() for item in (parsed.line_items or [])],
+            )
+            reasoning_trace["accounting_write_performed"] = True
+            reasoning_trace["qb_bill_id"] = qb_result["qb_bill_id"]
+        except Exception as exc:
+            _logger.warning(
+                "invoice_qb_write_failed",
+                extra={"tenant_id": tenant_id, "execution_id": execution_id, "error": str(exc)},
+            )
 
     return {
         "decision": policy_result.decision,

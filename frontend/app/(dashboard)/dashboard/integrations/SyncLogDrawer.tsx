@@ -106,18 +106,10 @@ export function SyncLogDrawer({ slug, integrationName, onClose }: SyncLogDrawerP
                 </div>
               )}
 
-              {!loading && !supportsLog && (
-                <div className="flex flex-col items-center justify-center h-40 gap-2">
-                  <p className="text-sm font-mono text-[#4a6a4a]">Sync history coming soon</p>
-                  <p className="text-[10px] font-mono text-[#4a6a4a]">
-                    Detailed sync logs will be available in a future release
-                  </p>
-                </div>
-              )}
-
-              {!loading && supportsLog && events.length === 0 && (
-                <div className="flex flex-col items-center justify-center h-40">
-                  <p className="text-sm font-mono text-[#4a6a4a]">No sync events yet</p>
+              {!loading && (!supportsLog || events.length === 0) && (
+                <div className="flex flex-col items-center justify-center h-40 gap-1">
+                  <p className="text-xs font-mono text-[#a0b8a0]">No sync events yet</p>
+                  <p className="text-[10px] font-mono text-[#4a6a4a]">Events will appear here after the first sync</p>
                 </div>
               )}
 

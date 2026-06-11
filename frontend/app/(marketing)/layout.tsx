@@ -1,5 +1,6 @@
 import { Navbar } from '@/components/marketing/Navbar'
 import { Footer } from '@/components/marketing/Footer'
+import { ClenButton } from '@/components/clen/ClenButton'
 
 export default function MarketingLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -7,6 +8,7 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
       <Navbar />
       <main className="flex-1">{children}</main>
       <Footer />
+      <ClenButton />
     </div>
   )
 }

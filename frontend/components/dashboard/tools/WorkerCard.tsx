@@ -3,8 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useAuth } from '@clerk/nextjs'
-import { WorkerTestResult } from './WorkerTestResult'
-import { useRunTest } from './useRunTest'
+import { RunDrawer } from './RunDrawer'
 import { useCanConfigure } from '@/lib/auth-client'
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
@@ -37,10 +36,11 @@ interface Props {
 export function WorkerCard({ worker, onConfigure, onStatusChange }: Props) {
   const { getToken } = useAuth()
   const canConfigure = useCanConfigure()
-  const [toggling, setToggling]           = useState(false)
-  const [confirmDelete, setConfirmDelete] = useState(false)
-  const [deleting, setDeleting]           = useState(false)
-  const { run, running, result, dismiss } = useRunTest(worker.id, worker.type)
+  const [toggling, setToggling]               = useState(false)
+  const [confirmDelete, setConfirmDelete]     = useState(false)
+  const [deleting, setDeleting]               = useState(false)
+  const [showRun, setShowRun]                 = useState(false)
+  const [lastExecutionId, setLastExecutionId] = useState<string | null>(null)
 
   const isActive = worker.status === 'active'
   const badge    = AUTONOMY_BADGE[worker.autonomy_level]
@@ -75,6 +75,7 @@ export function WorkerCard({ worker, onConfigure, onStatusChange }: Props) {
   }
 
   return (
+    <>
     <div className={[
       'bg-brand-surface border border-brand-border rounded-sm p-4',
       isActive ? 'border-l-[3px] border-l-brand-green' : 'border-l-[3px] border-l-brand-muted',
@@ -82,7 +83,7 @@ export function WorkerCard({ worker, onConfigure, onStatusChange }: Props) {
       <div className="flex items-center gap-4">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <Link href={`/dashboard/workers/${worker.id}`} className="text-sm font-mono text-brand-text font-medium hover:text-brand-green transition-colors">
+            <Link href={`/tools/${worker.id}`} className="text-sm font-mono text-brand-text font-medium hover:text-brand-green transition-colors">
               {formatType(worker.type)}
             </Link>
             <span className={`text-[10px] font-mono px-2 py-0.5 rounded-sm ${badge.className}`}>{badge.label}</span>
@@ -111,9 +112,7 @@ export function WorkerCard({ worker, onConfigure, onStatusChange }: Props) {
             </button>
           )}
 
-          <button type="button" onClick={run} disabled={running} className="text-xs font-mono border border-brand-border text-brand-text hover:bg-brand-elevated rounded-sm px-2.5 py-1 transition-colors disabled:opacity-50">
-            {running ? 'Running…' : 'Run test'}
-          </button>
+          <button type="button" onClick={() => setShowRun(true)} disabled={!isActive} className="text-xs font-mono border border-brand-border text-brand-text hover:bg-brand-elevated rounded-sm px-2.5 py-1 transition-colors disabled:opacity-50">Run</button>
 
           {canConfigure && (
             <button
@@ -151,7 +150,23 @@ export function WorkerCard({ worker, onConfigure, onStatusChange }: Props) {
         </div>
       </div>
 
-      {result && <WorkerTestResult result={result} onDismiss={dismiss} />}
     </div>
+
+    {lastExecutionId && (
+      <div className="mt-2 flex items-center gap-3 bg-[rgba(0,200,83,0.08)] border border-[rgba(0,200,83,0.2)] rounded-sm px-3 py-2">
+        <span className="text-[10px] font-mono text-brand-green">Queued — execution {lastExecutionId.slice(0, 8)}…</span>
+        <Link href="/executions" className="text-[10px] font-mono text-brand-green underline underline-offset-2">View</Link>
+        <button type="button" onClick={() => setLastExecutionId(null)} className="ml-auto text-[#4a6a4a] hover:text-brand-muted text-xs leading-none">✕</button>
+      </div>
+    )}
+
+    {showRun && (
+      <RunDrawer
+        worker={worker}
+        onClose={() => setShowRun(false)}
+        onQueued={(id) => { setLastExecutionId(id); setShowRun(false) }}
+      />
+    )}
+  </>
   )
 }

@@ -17,6 +17,8 @@ from app.integrations.quickbooks.sync import sync_quickbooks_connection
 from app.integrations.xero.sync import sync_xero_connection
 from app.integrations.stripe.sync import sync_stripe_connection
 from app.integrations.gocardless.sync import sync_gocardless_connection
+from app.integrations.square.sync import sync_square_connection
+from app.integrations.paypal.sync import sync_paypal_connection
 from app.integrations.truelayer.sync import sync_truelayer_connection
 from app.integrations.codat.sync import sync_codat_connection
 from app.integrations.codat.sync import poll_codat_status
@@ -372,6 +374,8 @@ class WorkerSettings:
         sync_xero_connection,
         sync_stripe_connection,
         sync_gocardless_connection,
+        sync_square_connection,
+        sync_paypal_connection,
         sync_truelayer_connection,
         sync_codat_connection,
         poll_codat_status,

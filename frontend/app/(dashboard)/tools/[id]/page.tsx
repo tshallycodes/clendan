@@ -1,9 +1,9 @@
 import { notFound } from 'next/navigation'
 import { getBackendToken } from '@/lib/auth'
 import { apiGet } from '@/lib/api'
-import { WorkerDetail } from '@/components/dashboard/workers/WorkerDetail'
-import type { Worker } from '@/components/dashboard/workers/WorkerCard'
-import type { Execution } from '@/components/dashboard/workers/WorkerDetail'
+import { WorkerDetail } from '@/components/dashboard/tools/WorkerDetail'
+import type { Worker } from '@/components/dashboard/tools/WorkerCard'
+import type { Execution } from '@/components/dashboard/tools/WorkerDetail'
 
 interface PageProps {
   params: { id: string }

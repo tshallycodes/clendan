@@ -12,9 +12,11 @@ interface IntegrationCardProps {
   onDisconnect: () => void
   onResync: () => void
   onViewLog: () => void
+  lastSyncedAt: string | null
   confirming: boolean
   onCancelConfirm: () => void
   connecting: boolean
+  disconnecting: boolean
 }
 
 export function IntegrationCard({
@@ -24,9 +26,11 @@ export function IntegrationCard({
   onDisconnect,
   onResync,
   onViewLog,
+  lastSyncedAt,
   confirming,
   onCancelConfirm,
   connecting,
+  disconnecting,
 }: IntegrationCardProps) {
   const isActive = status !== 'not_connected' && status !== 'disconnected'
 
@@ -60,8 +64,12 @@ export function IntegrationCard({
       <AnimatePresence mode="wait">
         {status === 'connected' && (
           <motion.div key="connected-actions" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }} className="space-y-2">
-            <p className="text-[10px] font-mono text-brand-muted">Last sync: —</p>
-            {confirming ? (
+            <p className="text-[10px] font-mono text-brand-muted">
+              Last sync: {lastSyncedAt ? new Date(lastSyncedAt).toLocaleString() : '—'}
+            </p>
+            {disconnecting ? (
+              <p className="text-[10px] font-mono text-[#4a6a4a]">Disconnecting...</p>
+            ) : confirming ? (
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="text-[10px] font-mono text-[#ff4d6d]">Disconnect {intg.name}?</span>
                 <button type="button" onClick={onDisconnect} className="text-[10px] font-mono bg-[rgba(255,77,109,0.1)] border border-[#ff4d6d] text-[#ff4d6d] rounded-sm px-2 py-0.5 hover:bg-[rgba(255,77,109,0.2)] transition-colors">

@@ -31,7 +31,14 @@ from app.api.v1.webhooks.codat import router as codat_webhook_router
 from app.api.v1.webhooks.gmail import router as gmail_webhook_router
 from app.api.v1.webhooks.google_drive import router as google_drive_webhook_router
 from app.api.v1.webhooks.outlook import router as outlook_webhook_router
+from app.api.v1.execute import router as execute_router
+from app.api.v1.execute_stats import router as execute_stats_router
+from app.api.v1.square import router as square_router
+from app.api.v1.paypal import router as paypal_router
+from app.api.v1.webhooks.square import router as square_webhook_router
+from app.api.v1.webhooks.paypal import router as paypal_webhook_router
 from app.api.v1.generic import router as generic_router
+from app.clen.router import router as clen_router
 
 v1_router = APIRouter()
 v1_router.include_router(onboarding.router)
@@ -70,4 +77,11 @@ v1_router.include_router(codat_webhook_router)
 v1_router.include_router(gmail_webhook_router)
 v1_router.include_router(google_drive_webhook_router)
 v1_router.include_router(outlook_webhook_router)
+v1_router.include_router(execute_router)
+v1_router.include_router(execute_stats_router)
+v1_router.include_router(square_router)
+v1_router.include_router(paypal_router)
+v1_router.include_router(square_webhook_router)
+v1_router.include_router(paypal_webhook_router)
+v1_router.include_router(clen_router)
 v1_router.include_router(generic_router)  # must be last — uses {slug} path params

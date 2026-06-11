@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Home, CheckSquare, List, Plug, BarChart2, Code2, Cpu, Settings, LogOut } from 'lucide-react'
+import { Home, CheckSquare, List, Plug, BarChart2, Code2, Cpu, Settings, LogOut, Receipt } from 'lucide-react'
 import { useClerk } from '@clerk/nextjs'
 import { cn } from '@/lib/utils'
 import { ThemeToggle } from '@/components/ThemeToggle'
@@ -11,9 +11,10 @@ const NAV = [
   { icon: Home,        label: 'Dashboard',    href: '/dashboard' },
   { icon: CheckSquare, label: 'Approvals',    href: '/approvals' },
   { icon: BarChart2,   label: 'Executions',   href: '/executions' },
+  { icon: Receipt,     label: 'Transactions', href: '/transactions' },
   { icon: List,        label: 'Audit Trail',  href: '/audit' },
   { icon: Plug,        label: 'Integrations', href: '/dashboard/integrations' },
-  { icon: Cpu,         label: 'Workers',      href: '/dashboard/workers' },
+  { icon: Cpu,         label: 'Tools',        href: '/tools' },
   { icon: Settings,    label: 'Settings',     href: '/settings' },
   { icon: Code2,       label: 'Developer API', href: '/api' },
 ]

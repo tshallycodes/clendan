@@ -1,9 +1,9 @@
 import { getBackendToken } from '@/lib/auth'
 import { apiGet } from '@/lib/api'
-import type { Worker } from '@/components/dashboard/workers/WorkerCard'
-import { WorkersClient } from './WorkersClient'
+import type { Worker } from '@/components/dashboard/tools/WorkerCard'
+import { ToolsClient } from './ToolsClient'
 
-export default async function WorkersPage() {
+export default async function ToolsPage() {
   let workers: Worker[] = []
 
   try {
@@ -14,5 +14,5 @@ export default async function WorkersPage() {
     }
   } catch { /* backend not running — show empty state */ }
 
-  return <WorkersClient initialWorkers={workers} />
+  return <ToolsClient initialWorkers={workers} />
 }

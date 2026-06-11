@@ -17,8 +17,19 @@ logger = get_logger(__name__)
 router = APIRouter(tags=["plaid"])
 
 
+ALLOWED_CATEGORIES = frozenset({
+    "advertising", "bank_fees", "consulting", "equipment", "insurance",
+    "legal", "meals", "office_supplies", "payroll", "rent", "software",
+    "tax", "travel", "utilities", "other",
+})
+
+
 class ExchangeTokenRequest(BaseModel):
     public_token: str
+
+
+class CategoryUpdateRequest(BaseModel):
+    category: str
 
 
 @router.post("/integrations/plaid/link-token")
@@ -133,11 +144,14 @@ async def list_transactions(
     if status_filter:
         where["status"] = status_filter
 
-    transactions = await db.banktransaction.find_many(
-        where=where,
-        order={"date": "desc"},
-        take=limit,
-        skip=offset,
+    transactions, total = await db.batch_(
+        db.banktransaction.find_many(
+            where=where,
+            order={"date": "desc"},
+            take=limit,
+            skip=offset,
+        ),
+        db.banktransaction.count(where=where),
     )
 
     return standard_response(
@@ -150,16 +164,45 @@ async def list_transactions(
                     "merchant_name": t.merchant_name,
                     "description": t.description,
                     "date": t.date.isoformat(),
-                    "category": t.ai_category or t.category,
+                    "ai_category": t.ai_category,
+                    "plaid_category": t.category,
                     "status": t.status,
                     "matched_invoice_id": t.matched_invoice_id,
                 }
                 for t in transactions
             ],
+            "total": total,
             "limit": limit,
             "offset": offset,
         }
     )
+
+
+@router.patch("/integrations/plaid/transactions/{transaction_id}/category")
+async def update_transaction_category(
+    transaction_id: str,
+    body: CategoryUpdateRequest,
+    current_user: RequireOrgAuth,
+    db: Annotated[Prisma, Depends(get_db_dep)],
+):
+    """Manually correct an AI-assigned category. Only updates transactions owned by this tenant."""
+    if body.category not in ALLOWED_CATEGORIES:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid category. Allowed: {sorted(ALLOWED_CATEGORIES)}",
+        )
+
+    txn = await db.banktransaction.find_first(
+        where={"id": transaction_id, "tenant_id": current_user.tenant_id}
+    )
+    if not txn:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Transaction not found")
+
+    updated = await db.banktransaction.update(
+        where={"id": transaction_id},
+        data={"ai_category": body.category, "status": "categorised"},
+    )
+    return standard_response(data={"id": updated.id, "ai_category": updated.ai_category, "status": updated.status})
 
 
 @router.delete("/integrations/plaid/disconnect")

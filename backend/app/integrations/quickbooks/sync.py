@@ -40,6 +40,10 @@ async def sync_quickbooks_connection(ctx: dict, integration_id: str, tenant_id: 
             realm_id=realm_id,
             sandbox=settings.quickbooks_sandbox,
         )
+        await db.integration.update(
+            where={"id": integration_id},
+            data={"last_synced_at": datetime.now(UTC)},
+        )
         logger.info("QB sync OK: tenant=%s company=%s", tenant_id, company.get("company_name"))
         return {"status": "ok", "company": company}
 

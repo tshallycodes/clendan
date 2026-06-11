@@ -187,6 +187,166 @@ async def get_bill(encrypted_access: str, realm_id: str, bill_id: str, sandbox: 
     }
 
 
+async def find_or_create_vendor(encrypted_access: str, realm_id: str, vendor_name: str, sandbox: bool = True) -> str:
+    """Returns QB Vendor entity ID, creating the vendor if not found."""
+    access_token = decrypt(encrypted_access)
+
+    async def _call():
+        async with httpx.AsyncClient() as client:
+            safe_name = vendor_name.replace("'", "\\'")
+            res = await client.get(
+                f"{get_api_base(sandbox)}/{realm_id}/query",
+                params={"query": f"SELECT * FROM Vendor WHERE DisplayName = '{safe_name}' MAXRESULTS 1"},
+                headers={"Authorization": f"Bearer {access_token}", "Accept": "application/json"},
+                timeout=15.0,
+            )
+            res.raise_for_status()
+            vendors = res.json().get("QueryResponse", {}).get("Vendor", [])
+            if vendors:
+                return vendors[0]["Id"]
+
+            create = await client.post(
+                f"{get_api_base(sandbox)}/{realm_id}/vendor",
+                json={"DisplayName": vendor_name},
+                headers={
+                    "Authorization": f"Bearer {access_token}",
+                    "Accept": "application/json",
+                    "Content-Type": "application/json",
+                },
+                timeout=15.0,
+            )
+            create.raise_for_status()
+            return create.json()["Vendor"]["Id"]
+
+    return await _retry(_call)
+
+
+async def get_expense_account_id(encrypted_access: str, realm_id: str, sandbox: bool = True) -> str:
+    """Returns the ID of the first Expense account in QB. Used as default for bill line items."""
+    settings = get_settings()
+    if settings.quickbooks_default_account_id:
+        return settings.quickbooks_default_account_id
+
+    access_token = decrypt(encrypted_access)
+
+    async def _call():
+        async with httpx.AsyncClient() as client:
+            res = await client.get(
+                f"{get_api_base(sandbox)}/{realm_id}/query",
+                params={"query": "SELECT * FROM Account WHERE AccountType = 'Expense' MAXRESULTS 1"},
+                headers={"Authorization": f"Bearer {access_token}", "Accept": "application/json"},
+                timeout=15.0,
+            )
+            res.raise_for_status()
+            accounts = res.json().get("QueryResponse", {}).get("Account", [])
+            if not accounts:
+                raise ValueError("No Expense accounts found in QuickBooks")
+            return accounts[0]["Id"]
+
+    return await _retry(_call)
+
+
+async def create_bill(
+    encrypted_access: str,
+    realm_id: str,
+    vendor_id: str,
+    account_id: str,
+    invoice_number: str,
+    amount_minor: int,
+    currency: str,
+    due_date: str | None,
+    line_items: list[dict],
+    sandbox: bool = True,
+) -> dict:
+    """
+    Creates a Bill in QuickBooks from a parsed invoice.
+    Idempotent — returns existing bill if DocNumber + VendorRef already exists.
+    Amounts are passed in minor units (pence/cents) and converted to decimal here.
+    """
+    access_token = decrypt(encrypted_access)
+    api_base = get_api_base(sandbox)
+
+    async def _check_existing():
+        async with httpx.AsyncClient() as client:
+            safe_num = invoice_number.replace("'", "\\'")
+            res = await client.get(
+                f"{api_base}/{realm_id}/query",
+                params={"query": f"SELECT * FROM Bill WHERE DocNumber = '{safe_num}' MAXRESULTS 1"},
+                headers={"Authorization": f"Bearer {access_token}", "Accept": "application/json"},
+                timeout=15.0,
+            )
+            res.raise_for_status()
+            bills = res.json().get("QueryResponse", {}).get("Bill", [])
+            return bills[0] if bills else None
+
+    existing = await _retry(_check_existing)
+    if existing:
+        return {
+            "qb_bill_id": existing["Id"],
+            "qb_sync_token": existing["SyncToken"],
+            "doc_number": existing.get("DocNumber", invoice_number),
+            "total_amount": float(existing.get("TotalAmt", amount_minor / 100)),
+            "created": False,
+        }
+
+    lines = (
+        [
+            {
+                "Amount": round(item["total_minor"] / 100, 2),
+                "DetailType": "AccountBasedExpenseLineDetail",
+                "AccountBasedExpenseLineDetail": {"AccountRef": {"value": account_id}},
+                "Description": item.get("description", ""),
+            }
+            for item in line_items
+        ]
+        if line_items
+        else [
+            {
+                "Amount": round(amount_minor / 100, 2),
+                "DetailType": "AccountBasedExpenseLineDetail",
+                "AccountBasedExpenseLineDetail": {"AccountRef": {"value": account_id}},
+            }
+        ]
+    )
+
+    payload: dict = {
+        "VendorRef": {"value": vendor_id},
+        "Line": lines,
+        "CurrencyRef": {"value": currency},
+        "DocNumber": invoice_number,
+    }
+    if due_date:
+        payload["DueDate"] = due_date
+
+    async def _call():
+        async with httpx.AsyncClient() as client:
+            res = await client.post(
+                f"{api_base}/{realm_id}/bill",
+                json=payload,
+                headers={
+                    "Authorization": f"Bearer {access_token}",
+                    "Accept": "application/json",
+                    "Content-Type": "application/json",
+                },
+                timeout=15.0,
+            )
+            res.raise_for_status()
+            return res.json()
+
+    raw = await _circuit.call(_retry, _call)
+    bill = raw.get("Bill", {})
+    if not bill:
+        raise ValueError("QuickBooks returned empty Bill response after creation")
+
+    return {
+        "qb_bill_id": bill["Id"],
+        "qb_sync_token": bill["SyncToken"],
+        "doc_number": bill.get("DocNumber", invoice_number),
+        "total_amount": float(bill.get("TotalAmt", amount_minor / 100)),
+        "created": True,
+    }
+
+
 async def revoke_token(encrypted_token: str) -> None:
     """Revokes a QuickBooks token."""
     settings = get_settings()

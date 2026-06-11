@@ -56,9 +56,11 @@ const CATEGORIES = Array.from(new Set(INTEGRATIONS.map((i) => i.category)))
 export function IntegrationsClient() {
   const { getToken } = useAuth()
   const [statuses, setStatuses] = useState<Record<string, IntegrationStatus>>({})
+  const [lastSyncedAt, setLastSyncedAt] = useState<Record<string, string | null>>({})
   const [loading, setLoading] = useState(true)
   const [connecting, setConnecting] = useState<string | null>(null)
   const [confirming, setConfirming] = useState<string | null>(null)
+  const [disconnecting, setDisconnecting] = useState<string | null>(null)
   const [toast, setToast] = useState<string | null>(null)
   const [plaidToken, setPlaidToken] = useState<string | null>(null)
 
@@ -111,19 +113,23 @@ export function IntegrationsClient() {
         const res = await fetch(`${API}/v1/integrations/${slug}/status`, {
           headers: { Authorization: `Bearer ${token}` },
         })
-        if (!res.ok) return { slug, status: 'not_connected' as IntegrationStatus }
+        if (!res.ok) return { slug, status: 'not_connected' as IntegrationStatus, last_synced_at: null }
         const json = await res.json()
         const raw: string = json.data?.status ?? json.status ?? 'not_connected'
-        return { slug, status: raw as IntegrationStatus }
+        const synced: string | null = json.data?.last_synced_at ?? null
+        return { slug, status: raw as IntegrationStatus, last_synced_at: synced }
       }),
     )
-    const next: Record<string, IntegrationStatus> = {}
+    const nextStatuses: Record<string, IntegrationStatus> = {}
+    const nextSynced: Record<string, string | null> = {}
     for (const r of results) {
       if (r.status === 'fulfilled') {
-        next[r.value.slug] = r.value.status
+        nextStatuses[r.value.slug] = r.value.status
+        nextSynced[r.value.slug] = r.value.last_synced_at
       }
     }
-    setStatuses(next)
+    setStatuses(nextStatuses)
+    setLastSyncedAt(nextSynced)
   }
 
   // Initial load + URL param handling
@@ -304,15 +310,22 @@ export function IntegrationsClient() {
       return
     }
     setConfirming(null)
+    setDisconnecting(slug)
     try {
       const token = await getToken()
-      await fetch(`${API}/v1/integrations/${slug}/disconnect`, {
+      const res = await fetch(`${API}/v1/integrations/${slug}/disconnect`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       })
+      if (!res.ok) {
+        const json = await res.json().catch(() => ({}))
+        throw new Error(json.detail ?? json.error ?? 'Disconnect failed')
+      }
       setStatus(slug, 'disconnected')
-    } catch {
-      // leave status unchanged on error
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'Disconnect failed')
+    } finally {
+      setDisconnecting(null)
     }
   }
 
@@ -372,6 +385,7 @@ export function IntegrationsClient() {
                     key={intg.slug}
                     intg={intg}
                     status={status}
+                    lastSyncedAt={lastSyncedAt[intg.slug] ?? null}
                     onConnect={() => handleConnect(intg)}
                     onDisconnect={() => handleDisconnect(intg.slug)}
                     onResync={() => handleResync(intg.slug)}
@@ -379,6 +393,7 @@ export function IntegrationsClient() {
                     confirming={confirming === intg.slug}
                     onCancelConfirm={() => setConfirming(null)}
                     connecting={connecting === intg.slug}
+                    disconnecting={disconnecting === intg.slug}
                   />
                 )
               })}

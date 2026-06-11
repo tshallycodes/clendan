@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import Link from 'next/link'
 import { WorkerTestResult } from './WorkerTestResult'
@@ -32,17 +32,16 @@ interface Props {
 export function WorkerDetail({ worker, executions }: Props) {
   const { run, running, result, dismiss } = useRunTest(worker.id, worker.type)
 
-  const isActive     = worker.status === 'active'
-  const autonomy     = AUTONOMY_LABEL[worker.autonomy_level]
+  const isActive      = worker.status === 'active'
+  const autonomy      = AUTONOMY_LABEL[worker.autonomy_level]
   const configEntries = Object.entries(worker.config_json ?? {})
 
   return (
     <div className="p-6 space-y-6">
-      {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div className="space-y-2">
-          <Link href="/dashboard/workers" className="text-[11px] font-mono text-[#4a6a4a] hover:text-[#a0b8a0] transition-colors">
-            â† Workers
+          <Link href="/tools" className="text-[11px] font-mono text-[#4a6a4a] hover:text-[#a0b8a0] transition-colors">
+            &larr; Tools
           </Link>
           <div className="flex items-center gap-3 flex-wrap">
             <h1 className="font-heading font-bold text-2xl text-[#e8f0e8]">{formatType(worker.type)}</h1>
@@ -69,13 +68,12 @@ export function WorkerDetail({ worker, executions }: Props) {
           disabled={running}
           className="text-xs font-mono border border-[#1a2a1a] text-[#e8f0e8] hover:bg-[#1a1a1a] rounded-sm px-3 py-1.5 transition-colors disabled:opacity-50 shrink-0"
         >
-          {running ? 'Runningâ€¦' : 'Run test'}
+          {running ? 'Running…' : 'Run test'}
         </button>
       </div>
 
       {result && <WorkerTestResult result={result} onDismiss={dismiss} />}
 
-      {/* Config panel */}
       {configEntries.length > 0 && (
         <section>
           <h2 className="font-heading font-semibold text-sm text-[#e8f0e8] mb-3">Configuration</h2>
@@ -90,7 +88,6 @@ export function WorkerDetail({ worker, executions }: Props) {
         </section>
       )}
 
-      {/* Executions */}
       <section>
         <h2 className="font-heading font-semibold text-sm text-[#e8f0e8] mb-3">Recent Executions</h2>
         <ExecutionsTable executions={executions} />

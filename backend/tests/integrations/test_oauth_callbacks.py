@@ -2,9 +2,9 @@
 Tests for OAuth callback and API-key connect endpoints.
 
 Covers:
-- QuickBooks callback: successful code exchange → integration created, status "connected"
-- QuickBooks callback: invalid state (no colon) → 400
-- QuickBooks callback: tenant not found → 404
+- QuickBooks callback: successful code exchange → 302 redirect with connected=quickbooks
+- QuickBooks callback: invalid state (no colon) → 302 redirect with error=invalid_state
+- QuickBooks callback: tenant not found → 302 redirect with error=tenant_not_found
 - GoCardless connect: valid API key → 200 with status "syncing"
 - GoCardless connect: invalid API key (401 from GoCardless) → 400
 """
@@ -68,7 +68,8 @@ def _get_client_with_overrides(extra_overrides: dict | None = None) -> TestClien
     if extra_overrides:
         app.dependency_overrides.update(extra_overrides)
 
-    return TestClient(app, raise_server_exceptions=False)
+    # follow_redirects=False so redirect responses are asserted directly
+    return TestClient(app, raise_server_exceptions=False, follow_redirects=False)
 
 
 # ---------------------------------------------------------------------------
@@ -76,13 +77,13 @@ def _get_client_with_overrides(extra_overrides: dict | None = None) -> TestClien
 # ---------------------------------------------------------------------------
 
 def test_quickbooks_callback_success():
-    """Valid code + state → integration created with status 'connected'."""
+    """Valid code + state → 302 redirect to frontend with connected=quickbooks."""
     tenant_mock = _make_tenant_mock()
     integration_mock = _make_integration_mock()
 
     db_mock = AsyncMock()
     db_mock.tenant.find_unique.return_value = tenant_mock
-    db_mock.integration.find_first.return_value = None  # no existing integration
+    db_mock.integration.find_first.return_value = None
     db_mock.integration.create.return_value = integration_mock
 
     fake_tokens = {
@@ -101,14 +102,12 @@ def test_quickbooks_callback_success():
             f"/v1/integrations/quickbooks/callback?code=auth_code&state={TENANT_ID}:nonce_abc&realmId=realm_123"
         )
 
-    assert response.status_code == 200
-    body = response.json()
-    assert body["data"]["status"] == "connected"
-    assert body["data"]["realm_id"] == "realm_123"
+    assert response.status_code in (302, 307)
+    assert "connected=quickbooks" in response.headers["location"]
 
 
 def test_quickbooks_callback_invalid_state():
-    """State without colon separator → 400."""
+    """State without colon separator → 302 redirect with error=invalid_state."""
     db_mock = AsyncMock()
 
     client = _get_client_with_overrides({get_db_dep: lambda: db_mock})
@@ -116,11 +115,12 @@ def test_quickbooks_callback_invalid_state():
         "/v1/integrations/quickbooks/callback?code=auth_code&state=invalidsate&realmId=realm_123"
     )
 
-    assert response.status_code == 400
+    assert response.status_code in (302, 307)
+    assert "error=invalid_state" in response.headers["location"]
 
 
 def test_quickbooks_callback_tenant_not_found():
-    """Tenant lookup returns None → 404."""
+    """Tenant lookup returns None → 302 redirect with error=tenant_not_found."""
     db_mock = AsyncMock()
     db_mock.tenant.find_unique.return_value = None
 
@@ -129,7 +129,8 @@ def test_quickbooks_callback_tenant_not_found():
         f"/v1/integrations/quickbooks/callback?code=auth_code&state={TENANT_ID}:nonce&realmId=realm_123"
     )
 
-    assert response.status_code == 404
+    assert response.status_code in (302, 307)
+    assert "error=tenant_not_found" in response.headers["location"]
 
 
 # ---------------------------------------------------------------------------

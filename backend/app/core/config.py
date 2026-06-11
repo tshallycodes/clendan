@@ -34,6 +34,7 @@ class Settings(BaseSettings):
     quickbooks_redirect_uri: str = "http://localhost:8000/v1/integrations/quickbooks/callback"
     quickbooks_sandbox: bool = True
     quickbooks_webhook_verifier_token: str = ""
+    quickbooks_default_account_id: str = ""  # optional override; falls back to querying first Expense account
 
     plaid_client_id: str = ""
     plaid_secret: str = ""
@@ -74,7 +75,19 @@ class Settings(BaseSettings):
 
     integration_master_secret: str = ""
 
+    square_client_id: str = ""
+    square_client_secret: str = ""
+    square_redirect_uri: str = "http://localhost:8000/v1/integrations/square/callback"
+    square_webhook_signature_key: str = ""
+
+    paypal_client_id: str = ""
+    paypal_client_secret: str = ""
+    paypal_redirect_uri: str = "http://localhost:8000/v1/integrations/paypal/callback"
+    paypal_webhook_id: str = ""
+    paypal_env: str = "sandbox"  # sandbox | live
+
     backend_base_url: str = "http://localhost:8000"
+    frontend_url: str = "http://localhost:3000"
 
     freshbooks_client_id: str = ""
     freshbooks_client_secret: str = ""

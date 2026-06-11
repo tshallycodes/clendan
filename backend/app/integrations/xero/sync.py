@@ -120,7 +120,7 @@ async def sync_xero_connection(ctx: dict, integration_id: str, tenant_id: str) -
     if accounts_status == "success" or contacts_status == "success":
         await db.integration.update(
             where={"id": integration_id},
-            data={"status": "connected", "connected_at": datetime.now(UTC)},
+            data={"status": "connected", "connected_at": datetime.now(UTC), "last_synced_at": datetime.now(UTC)},
         )
         logger.info(
             "xero_sync_ok tenant=%s accounts=%d contacts=%d",
