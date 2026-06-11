@@ -9,7 +9,7 @@ import hashlib
 import random
 import secrets
 import time
-from urllib.parse import urlencode
+from urllib.parse import urlencode, quote
 
 import httpx
 
@@ -23,7 +23,14 @@ logger = get_logger(__name__)
 XERO_AUTH_URL = "https://login.xero.com/identity/connect/authorize"
 XERO_TOKEN_URL = "https://identity.xero.com/connect/token"
 XERO_CONNECTIONS_URL = "https://api.xero.com/connections"
-XERO_SCOPES = "openid offline_access"
+XERO_SCOPES = (
+    "openid offline_access "
+    "accounting.settings.read "
+    "accounting.contacts accounting.contacts.read "
+    "accounting.invoices accounting.invoices.read "
+    "accounting.banktransactions accounting.banktransactions.read "
+    "accounting.payments accounting.payments.read"
+)
 
 # Access token lifetime: 30 min. Refresh 60s early.
 ACCESS_TOKEN_TTL_SECONDS = 1800
@@ -116,7 +123,7 @@ def build_auth_url(state: str, tenant_id: str) -> str:
         "code_challenge": challenge,
         "code_challenge_method": "S256",
     }
-    return f"{XERO_AUTH_URL}?{urlencode(params)}"
+    return f"{XERO_AUTH_URL}?{urlencode(params, quote_via=quote)}"
 
 
 async def exchange_code(code: str, state: str, tenant_id: str) -> dict:

@@ -76,6 +76,16 @@ body {
   50%       { opacity: 0; }
 }
 
+@keyframes clen-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.55; }
+}
+
+@keyframes clen-dot {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.3; }
+}
+
 .terminal-cursor {
   animation: cursorBlink 1s step-end infinite;
 }

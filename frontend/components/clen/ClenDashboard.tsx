@@ -15,14 +15,25 @@ export function ClenDashboard() {
       <button
         onClick={() => setIsOpen(p => !p)}
         className={cn(
-          'flex items-center gap-1.5 text-[10px] font-mono px-3 py-1.5 border rounded-sm transition-colors',
+          'relative flex items-center gap-2 text-[11px] font-mono px-3 py-1.5 border rounded-sm transition-all duration-200 active:scale-95',
           isOpen
-            ? 'border-brand-green/30 bg-brand-green/10 text-brand-green'
-            : 'border-brand-border text-brand-muted hover:text-brand-text hover:bg-brand-elevated/50',
+            ? 'border-brand-green/40 bg-brand-green/10 text-brand-green shadow-[0_0_12px_rgba(0,200,83,0.15)]'
+            : 'border-brand-green/25 bg-brand-green/5 text-brand-text hover:border-brand-green/50 hover:bg-brand-green/10 hover:text-brand-green shadow-[0_0_8px_rgba(0,200,83,0.08)] hover:shadow-[0_0_14px_rgba(0,200,83,0.2)]',
         )}
       >
-        <MessageCircle className="w-3 h-3 shrink-0" />
-        Ask Clen
+        <span className={cn(
+          'relative flex items-center justify-center',
+          !isOpen && 'animate-[clen-pulse_2.4s_ease-in-out_infinite]',
+        )}>
+          <MessageCircle className={cn(
+            'w-3.5 h-3.5 shrink-0 transition-colors',
+            isOpen ? 'text-brand-green' : 'text-brand-green',
+          )} />
+        </span>
+        <span>Ask Clen</span>
+        {!isOpen && (
+          <span className="w-1.5 h-1.5 rounded-full bg-brand-green animate-[clen-dot_2.4s_ease-in-out_infinite]" />
+        )}
       </button>
 
       <ClenPanel

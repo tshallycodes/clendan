@@ -136,7 +136,11 @@ export function IntegrationsClient() {
   useEffect(() => {
     async function init() {
       setLoading(true)
-      await fetchAllStatuses()
+      try {
+        await fetchAllStatuses()
+      } catch {
+        // statuses will default to not_connected
+      }
       setLoading(false)
 
       if (typeof window !== 'undefined') {
@@ -337,15 +341,15 @@ export function IntegrationsClient() {
   }
 
   async function handleResync(slug: string) {
+    setStatus(slug, 'syncing')
     try {
       const token = await getToken()
       await fetch(`${API}/v1/integrations/${slug}/sync`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
       })
-      setStatus(slug, 'syncing')
     } catch {
-      // silent fail â€” status poll will correct
+      // silent fail — status poll will correct
     }
   }
 

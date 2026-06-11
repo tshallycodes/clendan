@@ -191,9 +191,11 @@ async def xero_connect(
 
 @router.get("/integrations/xero/callback")
 async def xero_callback(
-    code: str = Query(...),
-    state: str = Query(...),
     db: Prisma = Depends(get_db_dep),
+    code: str | None = Query(default=None),
+    state: str | None = Query(default=None),
+    error: str | None = Query(default=None),
+    error_description: str | None = Query(default=None),
 ):
     """
     OAuth callback from Xero. Exchanges code+PKCE for tokens, fetches connected orgs,
@@ -201,6 +203,14 @@ async def xero_callback(
     """
     from app.core.config import get_settings as _get_settings
     _frontend_url = _get_settings().frontend_url
+
+    # Xero returns error param when user denies or scopes are wrong
+    if error:
+        logger.warning("Xero OAuth error: %s — %s", error, error_description)
+        return RedirectResponse(f"{_frontend_url}/dashboard/integrations?error={error}")
+
+    if not code or not state:
+        return RedirectResponse(f"{_frontend_url}/dashboard/integrations?error=invalid_callback")
 
     parts = state.split(":", 1)
     if len(parts) != 2:
@@ -378,6 +388,39 @@ async def xero_disconnect(
         data={"status": "disconnected", "encrypted_credentials": "{}"},
     )
     return standard_response(data={"status": "disconnected"})
+
+
+@router.get("/integrations/{slug}/sync-log")
+async def integration_sync_log(
+    slug: str,
+    current_user: RequireOrgAuth,
+    db: Annotated[Prisma, Depends(get_db_dep)],
+    limit: int = Query(default=50, le=200),
+):
+    """Returns recent sync log entries for an integration."""
+    integration = await db.integration.find_first(
+        where={"tenant_id": current_user.tenant_id, "type": slug}
+    )
+    if not integration:
+        return standard_response(data=[])
+
+    logs = await db.integrationsynclog.find_many(
+        where={"integration_id": integration.id, "tenant_id": current_user.tenant_id},
+        order={"created_at": "desc"},
+        take=limit,
+    )
+    return standard_response(data=[
+        {
+            "id": log.id,
+            "timestamp": log.created_at.isoformat(),
+            "entity_type": log.entity_type,
+            "status": log.status,
+            "records_synced": log.records_synced,
+            "error_message": log.error_message,
+            "duration_ms": log.duration_ms,
+        }
+        for log in logs
+    ])
 
 
 @router.delete("/integrations/quickbooks/disconnect")

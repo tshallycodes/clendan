@@ -30,44 +30,60 @@ async def sync_quickbooks_connection(ctx: dict, integration_id: str, tenant_id: 
         logger.error("Tenant mismatch on sync job — possible data leakage attempt blocked")
         return {"status": "error", "reason": "tenant_mismatch"}
 
+    import time as _time
+    start = _time.monotonic()
+    sync_status = "success"
+    records = 0
+
     try:
         creds = json.loads(integration.encrypted_credentials)
         realm_id = creds.get("realm_id", "")
 
-        # Verify connection is live
-        company = await qb.get_company_info(
-            encrypted_access=creds["access_token"],
-            realm_id=realm_id,
-            sandbox=settings.quickbooks_sandbox,
-        )
-        await db.integration.update(
-            where={"id": integration_id},
-            data={"last_synced_at": datetime.now(UTC)},
-        )
-        logger.info("QB sync OK: tenant=%s company=%s", tenant_id, company.get("company_name"))
-        return {"status": "ok", "company": company}
-
-    except Exception as exc:
-        logger.error("QB sync failed for integration %s: %s", integration_id, type(exc).__name__)
-
-        # Attempt token refresh
+        # Attempt token refresh if access token may be stale
         try:
-            creds = json.loads(integration.encrypted_credentials)
             new_tokens = await qb.refresh_token(creds["refresh_token"])
             updated_creds = {**creds, **new_tokens}
             await db.integration.update(
                 where={"id": integration_id},
                 data={"encrypted_credentials": json.dumps(updated_creds)},
             )
+            creds = updated_creds
             logger.info("QB token refreshed for integration %s", integration_id)
-            return {"status": "token_refreshed"}
-        except Exception as refresh_exc:
-            logger.error("QB token refresh also failed: %s", type(refresh_exc).__name__)
-            await db.integration.update(
-                where={"id": integration_id},
-                data={"status": "error"},
-            )
-            return {"status": "error", "reason": str(type(refresh_exc).__name__)}
+        except Exception:
+            pass  # use existing token — may still be valid
+
+        company = await qb.get_company_info(
+            encrypted_access=creds["access_token"],
+            realm_id=realm_id,
+            sandbox=settings.quickbooks_sandbox,
+        )
+        records = 1  # company record fetched
+        logger.info("QB sync OK: tenant=%s company=%s", tenant_id, company.get("company_name"))
+
+    except Exception as exc:
+        logger.error("QB sync failed for integration %s: %s", integration_id, type(exc).__name__)
+        sync_status = "error"
+
+    elapsed = int((_time.monotonic() - start) * 1000)
+
+    await db.integrationsynclog.create(data={
+        "tenant_id": tenant_id,
+        "integration_id": integration.id,
+        "entity_type": "company",
+        "status": sync_status,
+        "records_synced": records,
+        "duration_ms": elapsed,
+    })
+
+    if sync_status == "success":
+        await db.integration.update(
+            where={"id": integration_id},
+            data={"status": "connected", "last_synced_at": datetime.now(UTC)},
+        )
+        return {"status": "ok"}
+    else:
+        await db.integration.update(where={"id": integration_id}, data={"status": "error"})
+        return {"status": "error", "reason": "sync_failed"}
 
 
 async def enqueue_quickbooks_sync(integration_id: str, tenant_id: str) -> None:
