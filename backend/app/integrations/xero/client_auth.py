@@ -23,7 +23,7 @@ logger = get_logger(__name__)
 XERO_AUTH_URL = "https://login.xero.com/identity/connect/authorize"
 XERO_TOKEN_URL = "https://identity.xero.com/connect/token"
 XERO_CONNECTIONS_URL = "https://api.xero.com/connections"
-XERO_SCOPES = "openid accounting.transactions accounting.contacts offline_access"
+XERO_SCOPES = "openid offline_access"
 
 # Access token lifetime: 30 min. Refresh 60s early.
 ACCESS_TOKEN_TTL_SECONDS = 1800

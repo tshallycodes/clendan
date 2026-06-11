@@ -214,7 +214,11 @@ async def xero_callback(
     try:
         encrypted_creds = await xero.exchange_code(code=code, state=state, tenant_id=tenant_id)
     except Exception as exc:
-        logger.error("Xero token exchange failed: %s", type(exc).__name__)
+        import httpx as _httpx
+        detail = str(exc)
+        if isinstance(exc, _httpx.HTTPStatusError):
+            detail = exc.response.text[:500]
+        logger.error("Xero token exchange failed: %s — %s", type(exc).__name__, detail)
         return RedirectResponse(f"{_frontend_url}/dashboard/integrations?error=token_exchange_failed")
 
     try:

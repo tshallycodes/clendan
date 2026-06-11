@@ -142,10 +142,17 @@ export function IntegrationsClient() {
       if (typeof window !== 'undefined') {
         const params = new URLSearchParams(window.location.search)
         const connected = params.get('connected')
+        const oauthError = params.get('error')
         if (connected) {
           setStatus(connected, 'syncing')
-          showToast(`${connected} connected â€” syncing data`)
+          showToast(`${connected} connected — syncing data`)
+        }
+        if (oauthError) {
+          showToast(`Connection failed: ${oauthError.replace(/_/g, ' ')}`)
+        }
+        if (connected || oauthError) {
           params.delete('connected')
+          params.delete('error')
           const newSearch = params.toString()
           window.history.replaceState(null, '', newSearch ? `?${newSearch}` : window.location.pathname)
         }
