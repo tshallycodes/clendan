@@ -32,6 +32,7 @@ function abbrSize(abbr: string): string {
 
 function BankCard({ bank, onViewDetail }: { bank: BankDef; onViewDetail: (b: BankDef) => void }) {
   const [error, setError] = useState(false)
+  const useFallback = error || !bank.domain
 
   return (
     <button
@@ -40,10 +41,14 @@ function BankCard({ bank, onViewDetail }: { bank: BankDef; onViewDetail: (b: Ban
       title={bank.name}
     >
       <div className="relative w-16 h-16">
-        <div className="w-full h-full rounded-sm flex items-center justify-center overflow-hidden border border-[#1a2a1a] group-hover:ring-1 group-hover:ring-[#00C853]/40 group-hover:border-[#00C853]/30 transition-all"
-             style={{ backgroundColor: error || !bank.domain ? bank.color : 'white' }}>
-          {error || !bank.domain ? (
-            <span className={`${abbrSize(bank.abbr)} font-mono font-bold text-white leading-none`}>
+        <div
+          className="w-full h-full rounded-sm flex items-center justify-center overflow-hidden border border-brand-border group-hover:ring-1 group-hover:ring-[#00C853]/40 group-hover:border-[#00C853]/30 transition-all bg-brand-surface"
+        >
+          {useFallback ? (
+            <span
+              className={`${abbrSize(bank.abbr)} font-mono font-bold leading-none`}
+              style={{ color: bank.color }}
+            >
               {bank.abbr}
             </span>
           ) : (
@@ -58,7 +63,7 @@ function BankCard({ bank, onViewDetail }: { bank: BankDef; onViewDetail: (b: Ban
             />
           )}
         </div>
-        <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-[#00C853] border-2 border-[#0a0a0a]" />
+        <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-[#00C853] border-2 border-brand-bg" />
       </div>
       <span className="text-[10px] font-mono text-brand-muted text-center leading-tight max-w-[64px] truncate">
         {bank.name}
@@ -94,7 +99,7 @@ export function BankPicker({
           id: connectedInstitutionId,
           name: connectedBankName || 'Connected Bank',
           abbr: (connectedBankName || 'CB').slice(0, 2).toUpperCase(),
-          color: '#1a1a1a',
+          color: '#00C853',
           domain: '',
           provider: 'plaid' as const,
           region: 'us' as const,
@@ -116,7 +121,7 @@ export function BankPicker({
         id: 'truelayer-connected',
         name: connectedTruelayerName || 'Connected Bank',
         abbr: (connectedTruelayerName || 'EU').slice(0, 2).toUpperCase(),
-        color: '#1a1a1a',
+        color: '#00C853',
         domain: '',
         provider: 'truelayer' as const,
         region: 'eu' as const,
@@ -156,11 +161,11 @@ export function BankPicker({
           <button
             onClick={() => onConnect(region)}
             disabled={connecting}
-            className="flex flex-col items-center gap-1.5 group cursor-pointer disabled:opacity-40"
+            className="flex flex-col items-center gap-1.5 cursor-pointer disabled:opacity-40"
             title="Connect another bank"
           >
-            <div className="w-16 h-16 rounded-sm flex items-center justify-center bg-[#111111] border border-[#1a2a1a] group-hover:ring-1 group-hover:ring-[#00C853]/40 group-hover:border-[#00C853]/30 transition-all">
-              <Plus size={20} className="text-[#4a6a4a] group-hover:text-[#a0b8a0] transition-colors" />
+            <div className="w-16 h-16 rounded-sm flex items-center justify-center bg-[#00C853] hover:bg-[#00a844] active:scale-[0.97] transition-all">
+              <Plus size={20} className="text-black" />
             </div>
           </button>
         </div>

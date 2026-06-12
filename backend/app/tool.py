@@ -516,10 +516,7 @@ class ToolSettings:
     on_startup = startup
     on_shutdown = shutdown
 
-    @property
-    def redis_settings(self) -> RedisSettings:
-        settings = get_settings()
-        return RedisSettings.from_dsn(settings.redis_url)
+    redis_settings = RedisSettings.from_dsn(get_settings().redis_url)
 
     max_jobs = 10
     job_timeout = 300
