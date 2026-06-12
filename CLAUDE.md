@@ -307,22 +307,45 @@ docker-compose up --build
 
 ## Design System
 
-### Color Tokens
+### Theme Architecture
+
+The app uses **light mode by default**. Dark mode activates via the `.dark` class on `<html>`.
+All colors are CSS variables defined in `globals.css` — never hardcode hex values in components.
+Always use Tailwind design token classes (`bg-brand-surface`, `text-brand-text`, etc.).
+
+### Brand Color Tokens
+
+| Tailwind Class | Light value | Dark value | Usage |
+| -------------- | ----------- | ---------- | ----- |
+| `bg-brand-bg` / `text-brand-bg` | `#f5f6f5` | `#0a0a0a` | Page background |
+| `bg-brand-surface` | `#ffffff` | `#111111` | Cards, panels, drawers, sidebars |
+| `bg-brand-elevated` | `#eef2ee` | `#1a1a1a` | Modals, dropdowns, nested cards |
+| `border-brand-border` / `divide-brand-border` | `#d8e4d8` | `#1a2a1a` | Card borders, dividers |
+| `border-brand-border-subtle` | `#e6eee6` | `#1e1e1e` | Subtle separators |
+| `text-brand-text` | `#0e160e` | `#e8f0e8` | Primary text |
+| `text-brand-secondary` | `#3a5c3a` | `#a0b8a0` | Labels, metadata |
+| `text-brand-muted` | `#4a6a4a` | `#6e8c6e` | Timestamps, captions, placeholders |
+
+**Hard rule: never write raw hex values for any of the above.** Use the Tailwind token class.
+Inline styles are allowed only for dynamic values (e.g. computed chart colours, bank brand colours).
+
+### Semantic Colors — Same in Both Modes
+
+These never change between light and dark. Use raw hex or `brand-*` token:
 
 | Token | Value | Usage |
-|-------|-------|-------|
-| `background` | `#0a0a0a` | Page background — darkest layer |
-| `surface` | `#111111` | Cards, panels, sidebars |
-| `surface-elevated` | `#1a1a1a` | Modals, dropdowns, popovers |
-| `border` | `#1a2a1a` | Card borders, dividers |
-| `border-subtle` | `#1e1e1e` | Subtle separators |
-| `text` | `#e8f0e8` | Primary text |
-| `text-secondary` | `#a0b8a0` | Labels, metadata |
-| `text-muted` | `#4a6a4a` | Timestamps, captions |
+| ----- | ----- | ----- |
+| `bg-brand-green` / `#00C853` | Electric Green | Primary CTA, success states — see strict rules below |
+| `#ff4d6d` | Danger red | Blocked actions, fraud flags, policy violations |
+| `rgba(255,77,109,0.08)` | Danger tint | Danger card backgrounds |
+| `#00a8cc` | Info blue | Approval-required states, neutral info |
+| `#f5a623` | Warning amber | Stale data, slow execution, pending states |
+| `rgba(0,0,0,0.7)` | Overlay | Modal backdrops |
 
 ### Electric Green Rules — STRICT
 
 Electric Green `#00C853` appears ONLY on:
+
 - Logo mark
 - Primary CTA button (one per page/screen max)
 - Active nav indicator (dot or underline only — NOT the icon itself)
@@ -330,31 +353,21 @@ Electric Green `#00C853` appears ONLY on:
 - Positive financial values and auto-approved states
 - Tool active/running pulse indicators
 - Toggle switches (on state)
-- Input focus border
+- Input focus border (`1px solid #00C853`)
 - Chart lines showing positive trends
 - Confidence score bars above 0.9
 
 Electric Green NEVER appears on:
-- Nav icons — inactive `#4a6a4a`, active `#e8f0e8`
-- Card borders or dividers — use `#1a2a1a`
-- Secondary buttons — white/muted outline only
+
+- Nav icons — use `text-brand-muted` inactive, `text-brand-text` active
+- Card borders or dividers — use `border-brand-border`
+- Secondary buttons — use `border-brand-border` outline only
 - Page titles and section headers
 - Badges and status tags (use semantic colors)
 - Background fills or decorative elements
 - Anything that does not represent a successful or positive execution outcome
 
-**The dashboard reads as black and white. Green appears where execution succeeds.**
-
-### Semantic Colors
-
-| Token | Value | Usage |
-|-------|-------|-------|
-| `primary` | `#00C853` | Electric Green — see strict rules above |
-| `danger` | `#ff4d6d` | Blocked actions, fraud flags, policy violations |
-| `danger-bg` | `rgba(255,77,109,0.08)` | Danger card backgrounds |
-| `info` | `#00a8cc` | Approval-required states, V2 badges, neutral info |
-| `warning` | `#f5a623` | Stale data, slow execution, pending states |
-| `overlay` | `rgba(0,0,0,0.7)` | Modal backdrops |
+**The dashboard reads as monochrome. Green appears only where execution succeeds.**
 
 ### Tool Status Colors
 
@@ -363,7 +376,7 @@ Electric Green NEVER appears on:
 | Running / Auto-executed | `#00C853` | Active tool indicators, success states |
 | Approval Required | `#00a8cc` | Pending human review |
 | Blocked / Flagged | `#ff4d6d` | Policy violation, fraud flag, escalated |
-| Inactive / Disabled | `#4a6a4a` | Tool turned off, V2/V3 not yet deployed |
+| Inactive / Disabled | `text-brand-muted` | Tool turned off, not yet deployed |
 
 Never repurpose status colors outside tool/execution display.
 
@@ -381,7 +394,7 @@ Never repurpose status colors outside tool/execution display.
 | Label | 10px | 500 | IBM Plex Mono | Uppercase section labels |
 | Code | 12px | 400 | IBM Plex Mono | API endpoints, trace IDs, JSON |
 
-Financial values: `#e8f0e8` neutral, `#00C853` auto-approved, `#ff4d6d` blocked. Labels never green.
+Financial values: `text-brand-text` neutral · `#00C853` auto-approved · `#ff4d6d` blocked. Labels never green.
 
 ### Spacing — 8pt Grid
 
@@ -397,26 +410,27 @@ Clendan is sharp-edged — infrastructure product aesthetic. Default: `sm`. Max:
 
 ### Component Patterns
 
-**Primary Button:** background `#00C853`, text `#000000` (black for contrast), hover `#00a844`, active scale `0.97`. One per page.
+**Primary Button:** `bg-[#00C853] text-black hover:bg-[#00a844] active:scale-[0.97]`. One per page.
 
-**Secondary Button:** transparent background, border `1px solid #1a2a1a`, text `#e8f0e8`, hover background `#111118`.
+**Secondary Button:** `bg-transparent border border-brand-border text-brand-text hover:bg-brand-elevated`.
 
-**Danger Button:** background `rgba(255,77,109,0.1)`, border `1px solid #ff4d6d`, text `#ff4d6d`. Used for block/reject actions only.
+**Danger Button:** `bg-[rgba(255,77,109,0.1)] border border-[#ff4d6d] text-[#ff4d6d]`. Block/reject actions only.
 
-**Cards:** background `#111118`, border `1px solid #1a2a1a`, radius `sm`, padding `md`. No shadows — flat is correct.
+**Cards:** `bg-brand-surface border border-brand-border rounded-sm p-4`. No shadows — flat is correct.
 
-**Inputs:** background `#0a0a0a`, border `1px solid #1a2a1a`, focus border `1px solid #00C853`, text `#e8f0e8`, placeholder `#4a6a4a`, radius `sm`.
+**Inputs:** `bg-brand-bg border border-brand-border focus:border-[#00C853] text-brand-text placeholder:text-brand-muted rounded-sm`.
 
 **Status Badge:**
-- Auto: background `rgba(0,200,83,0.08)`, text `#00C853`, border `1px solid rgba(0,200,83,0.2)`
-- Pending: background `rgba(0,168,204,0.08)`, text `#00a8cc`, border `1px solid rgba(0,168,204,0.2)`
-- Blocked: background `rgba(255,77,109,0.08)`, text `#ff4d6d`, border `1px solid rgba(255,77,109,0.2)`
 
-**API Code Block:** background `#0a0a0a`, border `1px solid #1a2a1a`, font IBM Plex Mono 12px. Keywords: `#f5a623`. Strings: `#00C853`. Comments: `#4a6a4a`. Copy button top-right.
+- Auto: `bg-[rgba(0,200,83,0.08)] text-[#00C853] border border-[rgba(0,200,83,0.2)]`
+- Pending: `bg-[rgba(0,168,204,0.08)] text-[#00a8cc] border border-[rgba(0,168,204,0.2)]`
+- Blocked: `bg-[rgba(255,77,109,0.08)] text-[#ff4d6d] border border-[rgba(255,77,109,0.2)]`
 
-**Audit Trail Row:** background `#111118`, hover background `#1a1a28`, expandable. Expanded state shows full reasoning trace in monospace. Trace IDs in `#4a6a4a`.
+**API Code Block:** `bg-brand-bg border border-brand-border` font IBM Plex Mono 12px. Keywords: `#f5a623`. Strings: `#00C853`. Comments: `text-brand-muted`. Copy button top-right.
 
-**Tool Card:** background `#111118`, border `1px solid #1a2a1a`. Active tools: left border `3px solid #00C853`. Approval-required: left border `3px solid #00a8cc`. Blocked: left border `3px solid #ff4d6d`. Inactive: no accent border.
+**Audit Trail Row:** `bg-brand-surface hover:bg-brand-elevated`, expandable. Expanded state shows full reasoning trace in monospace. Trace IDs in `text-brand-muted`.
+
+**Tool Card:** `bg-brand-surface border border-brand-border`. Active: `border-l-[3px] border-l-[#00C853]`. Approval-required: `border-l-[3px] border-l-[#00a8cc]`. Blocked: `border-l-[3px] border-l-[#ff4d6d]`. Inactive: no accent border.
 
 ### Motion Rules
 
