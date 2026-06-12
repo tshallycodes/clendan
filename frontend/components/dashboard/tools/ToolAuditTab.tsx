@@ -41,47 +41,47 @@ export function ToolAuditTab({ toolId }: { toolId: string }) {
   }, [toolId, getToken])
 
   if (loading) {
-    return <div className="py-12 text-center text-xs font-mono text-[#4a6a4a]">Loading…</div>
+    return <div className="py-12 text-center text-xs font-mono text-brand-muted">Loading…</div>
   }
 
   if (entries.length === 0) {
     return (
-      <div className="bg-[#111111] border border-[#1a2a1a] rounded-sm p-8 text-center">
-        <p className="text-xs font-mono text-[#4a6a4a]">No audit entries</p>
+      <div className="bg-brand-surface border border-brand-border rounded-sm p-8 text-center">
+        <p className="text-xs font-mono text-brand-muted">No audit entries</p>
       </div>
     )
   }
 
   return (
-    <div className="bg-[#111111] border border-[#1a2a1a] rounded-sm overflow-hidden">
+    <div className="bg-brand-surface border border-brand-border rounded-sm overflow-hidden">
       {entries.map((e, i) => (
-        <div key={e.id} className={i > 0 ? 'border-t border-[#1a2a1a]' : ''}>
+        <div key={e.id} className={i > 0 ? 'border-t border-brand-border' : ''}>
           <button
             type="button"
             onClick={() => setExpanded(expanded === e.id ? null : e.id)}
-            className="w-full flex items-center justify-between px-4 py-3 hover:bg-[#1a1a28] transition-colors text-left"
+            className="w-full flex items-center justify-between px-4 py-3 hover:bg-brand-elevated transition-colors text-left"
           >
             <div className="flex items-center gap-4 min-w-0">
-              <span className="text-[10px] font-mono text-[#4a6a4a] shrink-0">
+              <span className="text-[10px] font-mono text-brand-muted shrink-0">
                 {new Date(e.created_at).toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
               </span>
-              <span className="text-xs font-mono text-[#a0b8a0] truncate">{e.action}</span>
+              <span className="text-xs font-mono text-brand-secondary truncate">{e.action}</span>
             </div>
             <div className="flex items-center gap-3 shrink-0 ml-4">
-              <span className="text-[10px] font-mono text-[#4a6a4a]">{e.actor}</span>
-              <span className="text-[10px] font-mono text-[#4a6a4a]">{expanded === e.id ? '▲' : '▼'}</span>
+              <span className="text-[10px] font-mono text-brand-muted">{e.actor}</span>
+              <span className="text-[10px] font-mono text-brand-muted">{expanded === e.id ? '▲' : '▼'}</span>
             </div>
           </button>
           {expanded === e.id && (
-            <div className="px-4 pb-3 space-y-2 border-t border-[#1a2a1a]">
+            <div className="px-4 pb-3 space-y-2 border-t border-brand-border">
               {e.execution_id && (
-                <p className="text-[10px] font-mono text-[#4a6a4a]">execution: {e.execution_id}</p>
+                <p className="text-[10px] font-mono text-brand-muted">execution: {e.execution_id}</p>
               )}
               {e.model_version && (
-                <p className="text-[10px] font-mono text-[#4a6a4a]">model: {e.model_version}</p>
+                <p className="text-[10px] font-mono text-brand-muted">model: {e.model_version}</p>
               )}
               {e.reasoning_trace_json && (
-                <pre className="text-[10px] font-mono text-[#a0b8a0] whitespace-pre-wrap bg-[#0a0a0a] border border-[#1a2a1a] rounded-sm p-3 overflow-x-auto max-h-48">
+                <pre className="text-[10px] font-mono text-brand-secondary whitespace-pre-wrap bg-brand-bg border border-brand-border rounded-sm p-3 overflow-x-auto max-h-48">
                   {e.reasoning_trace_json}
                 </pre>
               )}

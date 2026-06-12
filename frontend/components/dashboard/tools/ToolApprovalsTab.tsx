@@ -56,13 +56,13 @@ export function ToolApprovalsTab({ toolId }: { toolId: string }) {
   }
 
   if (loading) {
-    return <div className="py-12 text-center text-xs font-mono text-[#4a6a4a]">Loading…</div>
+    return <div className="py-12 text-center text-xs font-mono text-brand-muted">Loading…</div>
   }
 
   if (approvals.length === 0) {
     return (
-      <div className="bg-[#111111] border border-[#1a2a1a] rounded-sm p-8 text-center">
-        <p className="text-xs font-mono text-[#4a6a4a]">No pending approvals</p>
+      <div className="bg-brand-surface border border-brand-border rounded-sm p-8 text-center">
+        <p className="text-xs font-mono text-brand-muted">No pending approvals</p>
       </div>
     )
   }
@@ -70,16 +70,16 @@ export function ToolApprovalsTab({ toolId }: { toolId: string }) {
   return (
     <div className="space-y-3">
       {approvals.map(a => (
-        <div key={a.id} className="bg-[#111111] border border-[#1a2a1a] border-l-[3px] border-l-[#00a8cc] rounded-sm p-4">
+        <div key={a.id} className="bg-brand-surface border border-brand-border border-l-[3px] border-l-[#00a8cc] rounded-sm p-4">
           <div className="flex items-start justify-between gap-4">
             <div className="space-y-1 min-w-0">
-              <p className="text-xs font-mono text-[#e8f0e8] truncate">{a.decision ?? 'Approval required'}</p>
-              <p className="text-[10px] font-mono text-[#4a6a4a]">
+              <p className="text-xs font-mono text-brand-text truncate">{a.decision ?? 'Approval required'}</p>
+              <p className="text-[10px] font-mono text-brand-muted">
                 Requested {new Date(a.requested_at).toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
                 {' · '}Expires {new Date(a.expires_at).toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
               </p>
               {a.confidence != null && (
-                <p className="text-[10px] font-mono text-[#4a6a4a]">Confidence {Math.round(a.confidence * 100)}%</p>
+                <p className="text-[10px] font-mono text-brand-muted">Confidence {Math.round(a.confidence * 100)}%</p>
               )}
             </div>
             <div className="flex gap-2 shrink-0">

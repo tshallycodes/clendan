@@ -30,7 +30,7 @@ const STATUS_CLASS: Record<string, string> = {
   blocked:            'text-[#ff4d6d]',
   failed:             'text-[#ff4d6d]',
   running:            'text-[#f5a623]',
-  queued:             'text-[#4a6a4a]',
+  queued:             'text-brand-muted',
 }
 
 export function ToolExecutionsTab({ toolId }: { toolId: string }) {
@@ -74,9 +74,9 @@ export function ToolExecutionsTab({ toolId }: { toolId: string }) {
           { label: 'Auto-executed', value: `${autoPercent}%` },
           { label: 'Blocked', value: blocked },
         ].map(({ label, value }) => (
-          <div key={label} className="bg-[#111111] border border-[#1a2a1a] rounded-sm p-3">
-            <p className="text-[10px] font-mono uppercase tracking-widest text-[#4a6a4a]">{label}</p>
-            <p className="text-lg font-heading font-bold text-[#e8f0e8] mt-1">{value}</p>
+          <div key={label} className="bg-brand-surface border border-brand-border rounded-sm p-3">
+            <p className="text-[10px] font-mono uppercase tracking-widest text-brand-muted">{label}</p>
+            <p className="text-lg font-heading font-bold text-brand-text mt-1">{value}</p>
           </div>
         ))}
       </div>
@@ -86,8 +86,8 @@ export function ToolExecutionsTab({ toolId }: { toolId: string }) {
           <button key={f.key} type="button" onClick={() => setFilter(f.key)}
             className={`text-[10px] font-mono px-3 py-1.5 rounded-sm border transition-colors ${
               filter === f.key
-                ? 'border-[#1a2a1a] bg-[#1a1a28] text-[#e8f0e8]'
-                : 'border-transparent text-[#4a6a4a] hover:text-[#a0b8a0]'
+                ? 'border-brand-border bg-brand-elevated text-brand-text'
+                : 'border-transparent text-brand-muted hover:text-brand-secondary'
             }`}
           >
             {f.label}
@@ -95,31 +95,31 @@ export function ToolExecutionsTab({ toolId }: { toolId: string }) {
         ))}
       </div>
 
-      <div className="bg-[#111111] border border-[#1a2a1a] rounded-sm overflow-hidden">
+      <div className="bg-brand-surface border border-brand-border rounded-sm overflow-hidden">
         <table className="w-full text-xs font-mono">
           <thead>
-            <tr className="border-b border-[#1a2a1a]">
-              <th className="text-left px-4 py-2 text-[#4a6a4a] font-normal">Time</th>
-              <th className="text-left px-4 py-2 text-[#4a6a4a] font-normal">Decision</th>
-              <th className="text-left px-4 py-2 text-[#4a6a4a] font-normal">Status</th>
-              <th className="text-right px-4 py-2 text-[#4a6a4a] font-normal">Duration</th>
+            <tr className="border-b border-brand-border">
+              <th className="text-left px-4 py-2 text-brand-muted font-normal">Time</th>
+              <th className="text-left px-4 py-2 text-brand-muted font-normal">Decision</th>
+              <th className="text-left px-4 py-2 text-brand-muted font-normal">Status</th>
+              <th className="text-right px-4 py-2 text-brand-muted font-normal">Duration</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={4} className="px-4 py-8 text-center text-[#4a6a4a]">Loading…</td></tr>
+              <tr><td colSpan={4} className="px-4 py-8 text-center text-brand-muted">Loading…</td></tr>
             ) : executions.length === 0 ? (
-              <tr><td colSpan={4} className="px-4 py-8 text-center text-[#4a6a4a]">No executions yet</td></tr>
+              <tr><td colSpan={4} className="px-4 py-8 text-center text-brand-muted">No executions yet</td></tr>
             ) : executions.map(e => (
-              <tr key={e.id} className="border-t border-[#1a2a1a] hover:bg-[#1a1a28] transition-colors">
-                <td className="px-4 py-2.5 text-[#4a6a4a]">
+              <tr key={e.id} className="border-t border-brand-border hover:bg-brand-elevated transition-colors">
+                <td className="px-4 py-2.5 text-brand-muted">
                   {new Date(e.created_at).toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
                 </td>
-                <td className="px-4 py-2.5 text-[#a0b8a0] max-w-[200px] truncate">{e.decision || '—'}</td>
+                <td className="px-4 py-2.5 text-brand-secondary max-w-[200px] truncate">{e.decision || '—'}</td>
                 <td className="px-4 py-2.5">
-                  <span className={STATUS_CLASS[e.status] ?? 'text-[#a0b8a0]'}>{e.status}</span>
+                  <span className={STATUS_CLASS[e.status] ?? 'text-brand-secondary'}>{e.status}</span>
                 </td>
-                <td className="px-4 py-2.5 text-right text-[#4a6a4a]">
+                <td className="px-4 py-2.5 text-right text-brand-muted">
                   {e.duration_ms != null ? `${e.duration_ms}ms` : '—'}
                 </td>
               </tr>
