@@ -1,5 +1,5 @@
-"""
-PayPal sync job — runs via arq worker.
+﻿"""
+PayPal sync job — runs via arq tool.
 Fetches recent transactions and invoices for a connected PayPal integration.
 Writes sync log entries per entity type.
 """

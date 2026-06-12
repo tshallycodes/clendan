@@ -1,4 +1,4 @@
-# Clendan — Relevant MCPs from mcpmarket.com
+﻿# Clendan — Relevant MCPs from mcpmarket.com
 
 > Researched 2026-05-21. 34,189 servers indexed. Results filtered for direct relevance to Clendan's tech stack and financial domain.
 
@@ -10,28 +10,28 @@
 |---|---|---|---|---|---|
 | **Stripe Agent Toolkit** | Seamless integration of Stripe APIs into agentic workflows using popular agent frameworks | Payment processing, invoice payment scheduling, subscription billing | https://mcpmarket.com/server/stripe-agent-toolkit | ⭐ 995 | Free/OSS |
 | **Stripe** (API Dev) | Manages customers, payments, subscriptions, invoices, and products through the Stripe API | Invoice payments, customer management, subscription data | https://mcpmarket.com/search?q=stripe | – | Free/OSS |
-| **Stripe** (Fraud/Radar) | TypeScript MCP specialising in fraud and Radar operations plus raw API access | Fraud Detection Worker — Stripe Radar signals | https://mcpmarket.com/search?q=stripe | – | Free/OSS |
-| **Stripe** (Read-only) | Read-only access to Stripe account data: balances, customers, payment intents, invoices, products | Revenue Recognition Worker, analytics layer | https://mcpmarket.com/search?q=stripe | – | Free/OSS |
+| **Stripe** (Fraud/Radar) | TypeScript MCP specialising in fraud and Radar operations plus raw API access | Fraud Detection Tool — Stripe Radar signals | https://mcpmarket.com/search?q=stripe | – | Free/OSS |
+| **Stripe** (Read-only) | Read-only access to Stripe account data: balances, customers, payment intents, invoices, products | Revenue Recognition Tool, analytics layer | https://mcpmarket.com/search?q=stripe | – | Free/OSS |
 | **Stripe Server** | Payment processing, customer management, and refund handling via MCP | AP automation — executing payments and refunds | https://mcpmarket.com/search?q=stripe | ⭐ 44 | Free/OSS |
-| **Stripe Billing** | Comprehensive Stripe billing operations: customers, subscriptions, revenue metrics | Revenue Recognition Worker | https://mcpmarket.com/search?q=stripe | – | Free/OSS |
-| **FlowCheck** | Connects Stripe payouts and bank data to AI agents for financial analysis | AI Accountant Worker — reconciling Stripe payouts to bank | https://mcpmarket.com/search?q=plaid | – | Free/OSS |
-| **QuickBooks Online** (invoices) | Manages QBO data: customers, invoices, expenses, payments, reports | Invoice Processing Worker — writing bills to QuickBooks | https://mcpmarket.com/search?q=quickbooks | – | Free/OSS |
-| **QuickBooks Online** (AI-driven) | AI-driven management of financial entities via QBO + automated OAuth | Invoice Processing Worker MVP integration | https://mcpmarket.com/search?q=quickbooks | – | Free/OSS |
+| **Stripe Billing** | Comprehensive Stripe billing operations: customers, subscriptions, revenue metrics | Revenue Recognition Tool | https://mcpmarket.com/search?q=stripe | – | Free/OSS |
+| **FlowCheck** | Connects Stripe payouts and bank data to AI agents for financial analysis | AI Accountant Tool — reconciling Stripe payouts to bank | https://mcpmarket.com/search?q=plaid | – | Free/OSS |
+| **QuickBooks Online** (invoices) | Manages QBO data: customers, invoices, expenses, payments, reports | Invoice Processing Tool — writing bills to QuickBooks | https://mcpmarket.com/search?q=quickbooks | – | Free/OSS |
+| **QuickBooks Online** (AI-driven) | AI-driven management of financial entities via QBO + automated OAuth | Invoice Processing Tool MVP integration | https://mcpmarket.com/search?q=quickbooks | – | Free/OSS |
 | **QuickBooks** (NL query) | Natural language querying and modification of QuickBooks Online accounting data | Control plane dashboard — querying QBO data | https://mcpmarket.com/search?q=quickbooks | – | Free/OSS |
-| **LedgerLink** | AI assistants manage QuickBooks Online data through natural language conversations | AI Accountant Worker — ledger management | https://mcpmarket.com/search?q=quickbooks | – | Free/OSS |
+| **LedgerLink** | AI assistants manage QuickBooks Online data through natural language conversations | AI Accountant Tool — ledger management | https://mcpmarket.com/search?q=quickbooks | – | Free/OSS |
 | **Xero** (top) | Connects MCP to Xero's API for standardised access to accounting and business features | V2 — when Clendan adds Xero as a second ERP integration | https://mcpmarket.com/search?q=xero | ⭐ 288 | Free/OSS |
 | **Xero** (full management) | Manages Xero accounting data: contacts, invoices, payments, accounts, reports | V2 ERP integration | https://mcpmarket.com/search?q=xero | ⭐ 20 | Free/OSS |
-| **GoCardless** | AI assistants manage GoCardless payment data: customers, payments, mandates, subscriptions | Collections Worker — direct debit collection automation | https://mcpmarket.com/search?q=xero | – | Free/OSS |
-| **Personal Finance (Plaid)** | Connects bank accounts via Plaid to MCP server, enabling natural language finance queries | AI Accountant Worker — bank feed ingestion via Plaid | https://mcpmarket.com/search?q=plaid | – | Free/OSS |
-| **BankSync** | Connects AI agents to bank accounts, transactions, balances, and investments across 15,000+ institutions | Reconciliation Worker — multi-bank aggregation | https://mcpmarket.com/search?q=plaid | – | Free/OSS |
-| **InvoicePilot** | Automate professional invoice creation, delivery, and follow-up with escalating payment reminders | Collections Worker — automated payment chasing | https://mcpmarket.com/search?q=invoice | – | Free/OSS |
-| **InvoiceFlow** | Automate invoice creation, predict late payments with AI, manage reminders, reconcile payments | Invoice Processing Worker + Collections Worker | https://mcpmarket.com/search?q=invoice | – | Free/OSS |
+| **GoCardless** | AI assistants manage GoCardless payment data: customers, payments, mandates, subscriptions | Collections Tool — direct debit collection automation | https://mcpmarket.com/search?q=xero | – | Free/OSS |
+| **Personal Finance (Plaid)** | Connects bank accounts via Plaid to MCP server, enabling natural language finance queries | AI Accountant Tool — bank feed ingestion via Plaid | https://mcpmarket.com/search?q=plaid | – | Free/OSS |
+| **BankSync** | Connects AI agents to bank accounts, transactions, balances, and investments across 15,000+ institutions | Reconciliation Tool — multi-bank aggregation | https://mcpmarket.com/search?q=plaid | – | Free/OSS |
+| **InvoicePilot** | Automate professional invoice creation, delivery, and follow-up with escalating payment reminders | Collections Tool — automated payment chasing | https://mcpmarket.com/search?q=invoice | – | Free/OSS |
+| **InvoiceFlow** | Automate invoice creation, predict late payments with AI, manage reminders, reconcile payments | Invoice Processing Tool + Collections Tool | https://mcpmarket.com/search?q=invoice | – | Free/OSS |
 | **Invoice Parser** | Extracts structured data from invoices, receipts, financial documents into JSON using Claude Vision | Invoice Parser API — core AI extraction engine | https://mcpmarket.com/search?q=invoice | – | Free/OSS |
 | **Invapi** | Converts, validates, extracts e-invoices: UBL, CII, ZUGFeRD, Excel formats | Invoice Parser API — multi-format support | https://mcpmarket.com/search?q=invoice | – | Free/OSS |
-| **Payments Agent** | Automates overdue invoice reminder emails with human-in-the-loop approval | Collections Worker — overdue invoice automation | https://mcpmarket.com/search?q=invoice | – | Free/OSS |
-| **Accounting Practice** | Automates bookkeeping, tax planning, payroll, sales tax compliance, client management | AI Accountant Worker — multi-workflow accounting | https://mcpmarket.com/search?q=quickbooks | – | Free/OSS |
+| **Payments Agent** | Automates overdue invoice reminder emails with human-in-the-loop approval | Collections Tool — overdue invoice automation | https://mcpmarket.com/search?q=invoice | – | Free/OSS |
+| **Accounting Practice** | Automates bookkeeping, tax planning, payroll, sales tax compliance, client management | AI Accountant Tool — multi-workflow accounting | https://mcpmarket.com/search?q=quickbooks | – | Free/OSS |
 | **SaaS Brain** | Connects Claude AI to Stripe and Supabase data for natural language SaaS business metric insights | Analytics for the control plane dashboard | https://mcpmarket.com/search?q=stripe | – | Free/OSS |
-| **DebtStack.ai** | Pre-computed, quality-assured credit data for financial analysis | Credit Underwriting Worker (V3) | https://mcpmarket.com/search?q=posthog | – | Paid |
+| **DebtStack.ai** | Pre-computed, quality-assured credit data for financial analysis | Credit Underwriting Tool (V3) | https://mcpmarket.com/search?q=posthog | – | Paid |
 
 ---
 
@@ -63,7 +63,7 @@
 | **Supabase** (official) | Connects Supabase projects to AI assistants via MCP — official integration | Supabase Storage for invoice PDFs/receipts; Supabase DB as alternative to Postgres | https://mcpmarket.com/search?q=supabase | ⭐ 2.7k | Free/OSS |
 | **Supabase Query** | End-to-end Supabase database management via chat: query execution and management API | Control plane dashboard — querying financial execution logs | https://mcpmarket.com/search?q=supabase | ⭐ 821 | Free/OSS |
 | **Supabase** (management) | Programmatic management of Supabase projects and organizations via standardized interface | Infrastructure management for multi-tenant Clendan deployment | https://mcpmarket.com/search?q=supabase | ⭐ 49 | Free/OSS |
-| **Supabase** (MCP clients) | Seamless integration between MCP clients and Supabase: databases, storage, and edge functions | Clendan workers connecting to Supabase storage + DB | https://mcpmarket.com/search?q=supabase | ⭐ 45 | Free/OSS |
+| **Supabase** (MCP clients) | Seamless integration between MCP clients and Supabase: databases, storage, and edge functions | Clendan tools connecting to Supabase storage + DB | https://mcpmarket.com/search?q=supabase | ⭐ 45 | Free/OSS |
 | **PostgreSQL** (top) | PostgreSQL database management: analysis, debugging, schema management, migration, monitoring | Primary Clendan database — AI-assisted schema management | https://mcpmarket.com/search?q=postgresql | ⭐ 185 | Free/OSS |
 | **PostgreSQL** (63 tools) | 63 AI-native tools: query optimization, index tuning, EXPLAIN analysis, health management | PostgreSQL performance management under financial load | https://mcpmarket.com/search?q=postgresql | – | Free/OSS |
 | **PostgreSQL** (admin) | Securely interacts with PostgreSQL via MCP: administration, observability, and querying | Row-level security management for multi-tenant isolation | https://mcpmarket.com/search?q=postgresql | – | Free/OSS |
@@ -77,7 +77,7 @@
 |---|---|---|---|---|---|
 | **Send Email (Resend)** | Sends emails directly from AI assistants using the Resend API | Approval notification emails, overdue invoice alerts, CFO escalation | https://mcpmarket.com/search?q=resend+email | ⭐ 444 | Free/OSS |
 | **Resend** (full management) | Comprehensive email and domain management via Resend API for AI assistants | Human Approval API — routing approval requests via email | https://mcpmarket.com/search?q=resend+email | – | Free/OSS |
-| **DataXLR8 Email** | Transactional/outreach email via Resend API: template support, multi-step sequences, logging and statistics | Collections Worker — multi-step overdue invoice reminder sequences | https://mcpmarket.com/search?q=resend+email | – | Free/OSS |
+| **DataXLR8 Email** | Transactional/outreach email via Resend API: template support, multi-step sequences, logging and statistics | Collections Tool — multi-step overdue invoice reminder sequences | https://mcpmarket.com/search?q=resend+email | – | Free/OSS |
 | **Slack** (top) | Connects Slack workspaces to MCP for enhanced AI integration | Finance team alerts: flagged invoices, CFO escalation, fraud blocks | https://mcpmarket.com/search?q=slack | ⭐ 1.6k | Free/OSS |
 | **Slack** (API) | AI assistants interact with Slack API via standardised MCP interface | Structured notification delivery to finance channels | https://mcpmarket.com/search?q=slack | ⭐ 110 | Free/OSS |
 | **Slack** (comprehensive) | Comprehensive Slack workspace communication and management tools | Full workspace integration for approval workflows | https://mcpmarket.com/search?q=slack | ⭐ 67 | Free/OSS |
@@ -109,9 +109,9 @@
 
 | MCP Name | What It Does | Relevant To | URL | Stars | Cost |
 |---|---|---|---|---|---|
-| **Sentry** (middleware, top) | Middleware MCP server to interact with the upstream Sentry API via LLMs | Error monitoring for all Clendan workers and APIs | https://mcpmarket.com/search?q=sentry | ⭐ 694 | Free/OSS |
+| **Sentry** (middleware, top) | Middleware MCP server to interact with the upstream Sentry API via LLMs | Error monitoring for all Clendan tools and APIs | https://mcpmarket.com/search?q=sentry | ⭐ 694 | Free/OSS |
 | **Sentry** (API management) | Sentry API: error data retrieval, project management, application performance monitoring | APM for invoice processing pipeline latency tracking | https://mcpmarket.com/search?q=sentry | ⭐ 21 | Free/OSS |
-| **PostHog** | Interface between desktop apps and PostHog platform for analytics and feature flags | Product analytics on control plane dashboard usage; feature flags for worker autonomy levels | https://mcpmarket.com/search?q=posthog | ⭐ 142 | Free/OSS |
+| **PostHog** | Interface between desktop apps and PostHog platform for analytics and feature flags | Product analytics on control plane dashboard usage; feature flags for tool autonomy levels | https://mcpmarket.com/search?q=posthog | ⭐ 142 | Free/OSS |
 | **Stripe Analytics** | Connects AI agent to Stripe dashboard for revenue, customer, and subscription analytics | Revenue metrics for Clendan's own SaaS billing | https://mcpmarket.com/search?q=stripe | – | Free/OSS |
 | **Stripe Insights** | Transforms Stripe account into a natural language question-answering assistant for financial analysis | Clendan internal analytics — interrogating revenue data conversationally | https://mcpmarket.com/search?q=stripe | – | Free/OSS |
 
@@ -123,7 +123,7 @@
 |---|---|---|---|---|---|
 | **Clerk** (user management) | Manages Clerk user accounts through MCP — direct interaction with AI clients for admin tasks | Multi-tenant user management: provisioning, deprovisioning finance team members | https://mcpmarket.com/search?q=clerk+auth | – | Free/OSS |
 | **Clerk** (org management) | Clerk organization, user, and role management directly with AI assistants | Tenant onboarding automation — creating orgs, assigning roles, setting permissions | https://mcpmarket.com/search?q=clerk+auth | – | Free/OSS |
-| **Clerk Template** | Production-ready template for building MCP servers with Clerk authentication on Cloudflare Workers | Pattern for building Clendan's own authenticated MCP endpoints | https://mcpmarket.com/search?q=clerk+auth | – | Free/OSS |
+| **Clerk Template** | Production-ready template for building MCP servers with Clerk authentication on Cloudflare Tools | Pattern for building Clendan's own authenticated MCP endpoints | https://mcpmarket.com/search?q=clerk+auth | – | Free/OSS |
 
 ---
 
@@ -131,15 +131,15 @@
 
 Top 10 MCPs Clendan should install first, in order:
 
-1. **Stripe Agent Toolkit** (⭐ 995) — Core to the MVP. Clendan's Invoice Processing Worker needs to schedule payments via Stripe. This is the official agentic Stripe integration with framework support.
+1. **Stripe Agent Toolkit** (⭐ 995) — Core to the MVP. Clendan's Invoice Processing Tool needs to schedule payments via Stripe. This is the official agentic Stripe integration with framework support.
 
-2. **QuickBooks Online** (full management) — The other MVP integration. Enables the Invoice Processing Worker to create bills, code expenses, and trigger payments directly in QBO — Clendan's day-one ERP target.
+2. **QuickBooks Online** (full management) — The other MVP integration. Enables the Invoice Processing Tool to create bills, code expenses, and trigger payments directly in QBO — Clendan's day-one ERP target.
 
-3. **Invoice Parser** (Claude Vision) — Directly mirrors Clendan's own Invoice Parser API. Using this MCP accelerates internal development by giving the Invoice Processing Worker native JSON extraction from PDFs using Claude Vision.
+3. **Invoice Parser** (Claude Vision) — Directly mirrors Clendan's own Invoice Parser API. Using this MCP accelerates internal development by giving the Invoice Processing Tool native JSON extraction from PDFs using Claude Vision.
 
 4. **PDF Reader** (⭐ 717) — Every invoice and contract in Clendan flows through PDF. This is the highest-starred PDF processing MCP on the platform and handles parallel extraction at scale.
 
-5. **Supabase** (⭐ 2.7k) — Clendan uses Supabase Storage for document storage. The official integration connects all workers to Supabase programmatically — non-optional.
+5. **Supabase** (⭐ 2.7k) — Clendan uses Supabase Storage for document storage. The official integration connects all tools to Supabase programmatically — non-optional.
 
 6. **PostgreSQL** (⭐ 185) — Clendan's primary database. Row-level security for multi-tenancy is a non-negotiable from day one. This MCP enables AI-assisted schema management and debugging without raw DB access.
 
@@ -147,7 +147,7 @@ Top 10 MCPs Clendan should install first, in order:
 
 8. **Send Email / Resend** (⭐ 444) — The Human Approval API routes flagged invoices for human review via email. Resend is already Clendan's chosen email provider. This MCP makes approval notifications agentic.
 
-9. **Sentry** (⭐ 694) — Financial systems cannot have silent failures. Sentry catches worker errors, latency spikes, and failed ERP sync attempts before they corrupt ledger data. Install before go-live.
+9. **Sentry** (⭐ 694) — Financial systems cannot have silent failures. Sentry catches tool errors, latency spikes, and failed ERP sync attempts before they corrupt ledger data. Install before go-live.
 
 10. **Slack** (⭐ 1.6k) — For CFO escalation, fraud alerts, and approval queue notifications. Finance teams live in Slack. The Human Approval API should push to Slack as the primary channel, email as secondary.
 
@@ -156,10 +156,10 @@ Top 10 MCPs Clendan should install first, in order:
 **Honourable mentions for V2:**
 - **Xero** (⭐ 288) — Second ERP after QuickBooks
 - **InvoiceFlow** — Invoice lifecycle automation end-to-end
-- **BankSync** — Multi-bank aggregation for the Reconciliation Worker
+- **BankSync** — Multi-bank aggregation for the Reconciliation Tool
 - **GitHub** (⭐ 30k) — Development workflow
 - **PostHog** (⭐ 142) — Product analytics on the control plane
-- **GoCardless** — Direct debit automation for Collections Worker
+- **GoCardless** — Direct debit automation for Collections Tool
 
 ---
 

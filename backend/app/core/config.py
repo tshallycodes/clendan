@@ -53,6 +53,7 @@ class Settings(BaseSettings):
     truelayer_client_id: str = ""
     truelayer_client_secret: str = ""
     truelayer_redirect_uri: str = "http://localhost:8000/v1/integrations/truelayer/callback"
+    truelayer_env: str = "sandbox"  # sandbox | production
 
     codat_api_key: str = ""
 
@@ -91,6 +92,7 @@ class Settings(BaseSettings):
 
     freshbooks_client_id: str = ""
     freshbooks_client_secret: str = ""
+    freshbooks_redirect_uri: str = "http://localhost:8000/v1/integrations/freshbooks/callback"
 
     sage_client_id: str = ""
     sage_client_secret: str = ""

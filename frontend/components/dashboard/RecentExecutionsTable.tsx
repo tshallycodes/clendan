@@ -1,10 +1,10 @@
-import Link from 'next/link'
+﻿import Link from 'next/link'
 import { getBackendToken } from '@/lib/auth'
 import { apiGet } from '@/lib/api'
 
 interface Execution {
   id: string
-  worker_type: string
+  tool_type: string
   decision: string
   status: string
   created_at: string
@@ -72,7 +72,7 @@ export async function RecentExecutionsTable() {
 
       {executions.length === 0 ? (
         <p className="px-5 py-8 text-xs font-mono text-brand-muted text-center">
-          No executions yet — deploy a worker and submit your first invoice
+          No executions yet — deploy a tool and submit your first invoice
         </p>
       ) : (
         <div className="overflow-x-auto">
@@ -80,7 +80,7 @@ export async function RecentExecutionsTable() {
             <thead>
               <tr className="border-b border-brand-border">
                 <th className="px-5 py-3 text-left text-[10px] font-mono text-brand-muted uppercase tracking-widest">Time</th>
-                <th className="px-5 py-3 text-left text-[10px] font-mono text-brand-muted uppercase tracking-widest">Worker</th>
+                <th className="px-5 py-3 text-left text-[10px] font-mono text-brand-muted uppercase tracking-widest">Tool</th>
                 <th className="px-5 py-3 text-left text-[10px] font-mono text-brand-muted uppercase tracking-widest">Decision</th>
                 <th className="px-5 py-3 text-left text-[10px] font-mono text-brand-muted uppercase tracking-widest">Status</th>
                 <th className="px-5 py-3 text-right text-[10px] font-mono text-brand-muted uppercase tracking-widest" />
@@ -92,7 +92,7 @@ export async function RecentExecutionsTable() {
                 return (
                   <tr key={ex.id} className="hover:bg-brand-elevated transition-colors">
                     <td className="px-5 py-3 text-brand-muted whitespace-nowrap">{formatTimestamp(ex.created_at)}</td>
-                    <td className="px-5 py-3 text-brand-text">{ex.worker_type}</td>
+                    <td className="px-5 py-3 text-brand-text">{ex.tool_type}</td>
                     <td className="px-5 py-3 text-brand-secondary">{decisionLabel(ex.decision)}</td>
                     <td className="px-5 py-3">
                       <StatusBadge variant={variant} label={ex.status.toUpperCase()} />

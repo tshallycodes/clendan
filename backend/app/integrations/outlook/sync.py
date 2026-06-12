@@ -1,5 +1,5 @@
-"""
-Outlook sync job — runs via arq worker.
+﻿"""
+Outlook sync job — runs via arq tool.
 Creates Graph API mail subscription, scans messages with attachments,
 writes sync log, and marks integration as connected.
 """
@@ -83,9 +83,11 @@ async def sync_outlook_connection(ctx: dict, integration_id: str, tenant_id: str
     # ---------------------------------------------------------------------------
     # Scan messages with attachments
     # ---------------------------------------------------------------------------
+    initial_status = integration.status
     start = time.monotonic()
     sync_status = "success"
     messages_count = 0
+    messages: list = []
 
     try:
         messages = await outlook.list_messages_with_attachments(access_token=access_token)
@@ -122,6 +124,29 @@ async def sync_outlook_connection(ctx: dict, integration_id: str, tenant_id: str
         where={"id": integration_id},
         data={"status": "connected", "connected_at": datetime.now(UTC)},
     )
+
+    if sync_status == "success" and initial_status == "connected" and messages:
+        try:
+            from app.orchestrator.events import enqueue_orchestrator_event
+            for message in messages:
+                message_id = message.get("id", "")
+                if message_id:
+                    await enqueue_orchestrator_event(
+                        tenant_id=tenant_id,
+                        event_type="receipt_received",
+                        payload={
+                            "source": "outlook",
+                            "integration_id": integration_id,
+                            "message_id": message_id,
+                        },
+                        idempotency_key=f"outlook:receipt:{message_id}",
+                        db=db,
+                    )
+        except Exception as exc:
+            logger.error(
+                "outlook_receipt_event_failed integration_id=%s: %s",
+                integration_id, type(exc).__name__,
+            )
 
     logger.info(
         "outlook_sync_ok tenant=%s messages=%d elapsed_ms=%d",

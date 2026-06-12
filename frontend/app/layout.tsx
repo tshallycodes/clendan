@@ -1,4 +1,4 @@
-import type { Metadata } from 'next'
+﻿import type { Metadata } from 'next'
 import { Syne, IBM_Plex_Mono } from 'next/font/google'
 import { ClerkProvider } from '@clerk/nextjs'
 import { Providers } from '@/components/Providers'
@@ -18,7 +18,7 @@ const ibmPlexMono = IBM_Plex_Mono({
 
 export const metadata: Metadata = {
   title: 'Clendan — AI Financial Agent OS',
-  description: 'Autonomous AI workers for financial operations',
+  description: 'Autonomous AI tools for financial operations',
 }
 
 export default function RootLayout({

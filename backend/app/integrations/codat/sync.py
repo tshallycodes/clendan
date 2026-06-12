@@ -1,5 +1,5 @@
-"""
-Codat sync jobs — run via arq worker.
+﻿"""
+Codat sync jobs — run via arq tool.
 Polls Codat for active connections, fetches invoices, writes sync logs.
 """
 import json

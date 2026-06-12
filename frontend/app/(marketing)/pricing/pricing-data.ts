@@ -1,4 +1,4 @@
-export interface PlanFeature {
+﻿export interface PlanFeature {
   label: string
   included: boolean | string
 }
@@ -23,7 +23,7 @@ export const PLANS: Plan[] = [
     monthlyPrice: '£299',
     annualPrice: '£249',
     features: [
-      { label: '2 AI workers', included: true },
+      { label: '2 AI tools', included: true },
       { label: '500 executions/month', included: true },
       { label: 'QuickBooks + Xero integrations', included: true },
       { label: 'Basic policy engine', included: true },
@@ -45,7 +45,7 @@ export const PLANS: Plan[] = [
     badge: 'Most Popular',
     highlight: true,
     features: [
-      { label: '5 AI workers', included: true },
+      { label: '5 AI tools', included: true },
       { label: '5,000 executions/month', included: true },
       { label: 'All integrations', included: true },
       { label: 'Advanced policy engine', included: true },
@@ -65,7 +65,7 @@ export const PLANS: Plan[] = [
     monthlyPrice: 'Custom',
     annualPrice: 'Custom',
     features: [
-      { label: 'Unlimited workers + executions', included: true },
+      { label: 'Unlimited tools + executions', included: true },
       { label: 'Custom integrations', included: true },
       { label: 'Advanced policy engine', included: true },
       { label: 'Approval queue', included: true },
@@ -94,7 +94,7 @@ export interface ComparisonRow {
 }
 
 export const COMPARISON: ComparisonRow[] = [
-  { feature: 'AI Workers', starter: '2', growth: '5', enterprise: 'Unlimited' },
+  { feature: 'AI Tools', starter: '2', growth: '5', enterprise: 'Unlimited' },
   { feature: 'Executions/month', starter: '500', growth: '5,000', enterprise: 'Unlimited' },
   { feature: 'Integrations', starter: 'Xero, QuickBooks', growth: 'All', enterprise: 'All + Custom' },
   { feature: 'Standalone APIs', starter: false, growth: '10,000 calls/mo', enterprise: 'Unlimited' },

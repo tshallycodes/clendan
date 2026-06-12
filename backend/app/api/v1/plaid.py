@@ -2,16 +2,16 @@ import json
 from datetime import datetime, UTC
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, status
 from pydantic import BaseModel
 from prisma import Prisma
 
 from app.core.db import get_db_dep
 from app.core.logging import get_logger
 from app.core.responses import standard_response
-from app.core.security import RequireOrgAuth, CurrentUser
+from app.core.security import RequireOrgAuth
 from app.integrations.plaid import client as plaid
-from app.integrations.plaid.sync import enqueue_plaid_sync
+from app.integrations.plaid.sync import sync_plaid_transactions
 
 logger = get_logger(__name__)
 router = APIRouter(tags=["plaid"])
@@ -42,7 +42,6 @@ class CategoryUpdateRequest(BaseModel):
 async def create_link_token(
     body: LinkTokenRequest,
     current_user: RequireOrgAuth,
-    db: Annotated[Prisma, Depends(get_db_dep)],
 ):
     """Creates a Plaid Link token. Frontend passes this to the Plaid Link widget."""
     try:
@@ -61,6 +60,7 @@ async def create_link_token(
 @router.post("/integrations/plaid/exchange-token")
 async def exchange_token(
     body: ExchangeTokenRequest,
+    background_tasks: BackgroundTasks,
     current_user: RequireOrgAuth,
     db: Annotated[Prisma, Depends(get_db_dep)],
 ):
@@ -83,34 +83,20 @@ async def exchange_token(
         "institution_name": body.institution_name,
     })
 
-    existing = await db.integration.find_first(
-        where={"tenant_id": tenant_id, "type": "plaid"}
+    # Always create a new integration — dedup happens after sync based on account IDs
+    integration = await db.integration.create(
+        data={
+            "tenant_id": tenant_id,
+            "type": "plaid",
+            "institution_id": body.institution_id,
+            "institution_name": body.institution_name,
+            "encrypted_credentials": credentials_json,
+            "status": "connected",
+            "connected_at": datetime.now(UTC),
+        }
     )
-    if existing:
-        integration = await db.integration.update(
-            where={"id": existing.id},
-            data={
-                "encrypted_credentials": credentials_json,
-                "status": "connected",
-                "connected_at": datetime.now(UTC),
-            },
-        )
-    else:
-        integration = await db.integration.create(
-            data={
-                "tenant_id": tenant_id,
-                "type": "plaid",
-                "encrypted_credentials": credentials_json,
-                "status": "connected",
-                "connected_at": datetime.now(UTC),
-            }
-        )
 
-    # Enqueue initial sync
-    try:
-        await enqueue_plaid_sync(integration_id=integration.id, tenant_id=tenant_id)
-    except Exception as exc:
-        logger.warning("Failed to enqueue Plaid sync (will retry later): %s", type(exc).__name__)
+    background_tasks.add_task(sync_plaid_transactions, {}, integration.id, tenant_id)
 
     return standard_response(
         data={"status": "connected", "integration_id": integration.id}
@@ -189,15 +175,13 @@ async def list_transactions(
     if status_filter:
         where["status"] = status_filter
 
-    transactions, total = await db.batch_(
-        db.banktransaction.find_many(
-            where=where,
-            order={"date": "desc"},
-            take=limit,
-            skip=offset,
-        ),
-        db.banktransaction.count(where=where),
+    transactions = await db.banktransaction.find_many(
+        where=where,
+        order={"date": "desc"},
+        take=limit,
+        skip=offset,
     )
+    total = await db.banktransaction.count(where=where)
 
     return standard_response(
         data={
@@ -291,3 +275,145 @@ async def disconnect_plaid(
     )
 
     return standard_response(data={"status": "disconnected"})
+
+
+@router.get("/integrations/plaid/connections")
+async def list_plaid_connections(
+    current_user: RequireOrgAuth,
+    db: Annotated[Prisma, Depends(get_db_dep)],
+    institution_name: str | None = Query(None),
+):
+    """Lists all Plaid connections for the tenant, optionally filtered by institution name (substring)."""
+    tenant_id = current_user.tenant_id
+
+    where: dict = {"tenant_id": tenant_id, "type": "plaid", "status": {"not": "disconnected"}}
+    if institution_name:
+        where["institution_name"] = {"contains": institution_name, "mode": "insensitive"}
+
+    integrations = await db.integration.find_many(
+        where=where,
+        include={"bank_accounts": True},
+        order={"connected_at": "desc"},
+    )
+
+    connections = []
+    for intg in integrations:
+        accounts = intg.bank_accounts or []
+        account_ids = [a.id for a in accounts]
+        recent_txns = []
+        if account_ids:
+            recent_txns = await db.banktransaction.find_many(
+                where={"account_id": {"in": account_ids}},
+                order={"date": "desc"},
+                take=5,
+            )
+        connections.append({
+            "integration_id": intg.id,
+            "institution_id": intg.institution_id,
+            "institution_name": intg.institution_name,
+            "status": intg.status,
+            "connected_at": intg.connected_at.isoformat() if intg.connected_at else None,
+            "last_synced_at": intg.last_synced_at.isoformat() if intg.last_synced_at else None,
+            "accounts": [
+                {
+                    "id": a.id,
+                    "name": a.name,
+                    "type": a.type,
+                    "subtype": a.subtype or "",
+                    "current_balance_minor": a.current_balance_minor,
+                    "currency": a.currency,
+                }
+                for a in accounts
+            ],
+            "recent_transactions": [
+                {
+                    "id": t.id,
+                    "merchant_name": t.merchant_name,
+                    "description": t.description,
+                    "amount_minor": t.amount_minor,
+                    "currency": t.currency,
+                    "date": t.date.isoformat(),
+                    "ai_category": t.ai_category,
+                }
+                for t in recent_txns
+            ],
+        })
+
+    return standard_response(data={"connections": connections})
+
+
+@router.post("/integrations/plaid/connections/{integration_id}/sync")
+async def sync_plaid_connection(
+    integration_id: str,
+    background_tasks: BackgroundTasks,
+    current_user: RequireOrgAuth,
+    db: Annotated[Prisma, Depends(get_db_dep)],
+):
+    """Triggers a sync for a specific Plaid connection."""
+    tenant_id = current_user.tenant_id
+    intg = await db.integration.find_first(
+        where={"id": integration_id, "tenant_id": tenant_id, "type": "plaid"}
+    )
+    if not intg:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Plaid connection not found")
+    if intg.status == "disconnected":
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Connection is disconnected — reconnect first")
+
+    background_tasks.add_task(sync_plaid_transactions, {}, integration_id, tenant_id)
+    return standard_response(data={"status": "sync_enqueued", "integration_id": integration_id})
+
+
+@router.delete("/integrations/plaid/connections/{integration_id}")
+async def disconnect_plaid_connection(
+    integration_id: str,
+    current_user: RequireOrgAuth,
+    db: Annotated[Prisma, Depends(get_db_dep)],
+):
+    """Disconnects a specific Plaid connection. Credentials wiped."""
+    tenant_id = current_user.tenant_id
+    intg = await db.integration.find_first(
+        where={"id": integration_id, "tenant_id": tenant_id, "type": "plaid"}
+    )
+    if not intg:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Plaid connection not found")
+    if intg.status == "disconnected":
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Already disconnected")
+
+    await db.integration.update(
+        where={"id": integration_id},
+        data={"status": "disconnected", "encrypted_credentials": "{}"},
+    )
+    return standard_response(data={"status": "disconnected"})
+
+
+@router.get("/integrations/plaid/connections/{integration_id}/sync-log")
+async def plaid_connection_sync_log(
+    integration_id: str,
+    current_user: RequireOrgAuth,
+    db: Annotated[Prisma, Depends(get_db_dep)],
+    limit: int = Query(20, le=100),
+):
+    """Returns sync log entries for a specific Plaid connection."""
+    tenant_id = current_user.tenant_id
+    intg = await db.integration.find_first(
+        where={"id": integration_id, "tenant_id": tenant_id, "type": "plaid"}
+    )
+    if not intg:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Plaid connection not found")
+
+    logs = await db.integrationsynclog.find_many(
+        where={"integration_id": integration_id, "tenant_id": tenant_id},
+        order={"created_at": "desc"},
+        take=limit,
+    )
+    return standard_response(data=[
+        {
+            "id": l.id,
+            "entity_type": l.entity_type,
+            "status": l.status,
+            "records_synced": l.records_synced,
+            "error_message": l.error_message,
+            "timestamp": l.created_at.isoformat(),
+        }
+        for l in logs
+    ])

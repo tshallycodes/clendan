@@ -1,5 +1,5 @@
-"""
-Tests for the receipt processing worker (Phase 6).
+﻿"""
+Tests for the receipt processing tool (Phase 6).
 Mirrors the invoice integration test structure.
 """
 import pytest
@@ -26,7 +26,7 @@ PARSED_RECEIPT_BLOCKED = ParsedReceipt(
 )
 
 COMMON_ARGS = dict(
-    worker_id="worker-r1",
+    tool_id="tool-r1",
     tenant_id="tenant-1",
     execution_id="exec-r1",
     file_bytes=b"fake-image",
@@ -42,11 +42,11 @@ def _mock_audit():
 @pytest.mark.asyncio
 async def test_receipt_auto_approved():
     with (
-        patch("app.workers.receipt_processing._extract_receipt", return_value=PARSED_RECEIPT_AUTO),
-        patch("app.workers.receipt_processing.write_audit_log", _mock_audit()),
+        patch("app.tools.receipt_processing._extract_receipt", return_value=PARSED_RECEIPT_AUTO),
+        patch("app.tools.receipt_processing.write_audit_log", _mock_audit()),
     ):
-        from app.workers.receipt_processing import execute_receipt_worker
-        result = await execute_receipt_worker(**COMMON_ARGS)
+        from app.tools.receipt_processing import execute_receipt_tool
+        result = await execute_receipt_tool(**COMMON_ARGS)
     assert result["decision"] == "auto_approved"
     assert result["confidence"] == 0.92
 
@@ -54,11 +54,11 @@ async def test_receipt_auto_approved():
 @pytest.mark.asyncio
 async def test_receipt_blocked_category():
     with (
-        patch("app.workers.receipt_processing._extract_receipt", return_value=PARSED_RECEIPT_BLOCKED),
-        patch("app.workers.receipt_processing.write_audit_log", _mock_audit()),
+        patch("app.tools.receipt_processing._extract_receipt", return_value=PARSED_RECEIPT_BLOCKED),
+        patch("app.tools.receipt_processing.write_audit_log", _mock_audit()),
     ):
-        from app.workers.receipt_processing import execute_receipt_worker
-        result = await execute_receipt_worker(**COMMON_ARGS)
+        from app.tools.receipt_processing import execute_receipt_tool
+        result = await execute_receipt_tool(**COMMON_ARGS)
     assert result["decision"] == "blocked"
     assert "category" in result["reason"].lower()
 
@@ -67,11 +67,11 @@ async def test_receipt_blocked_category():
 async def test_receipt_audit_written_on_auto():
     mock_audit = _mock_audit()
     with (
-        patch("app.workers.receipt_processing._extract_receipt", return_value=PARSED_RECEIPT_AUTO),
-        patch("app.workers.receipt_processing.write_audit_log", mock_audit),
+        patch("app.tools.receipt_processing._extract_receipt", return_value=PARSED_RECEIPT_AUTO),
+        patch("app.tools.receipt_processing.write_audit_log", mock_audit),
     ):
-        from app.workers.receipt_processing import execute_receipt_worker
-        await execute_receipt_worker(**COMMON_ARGS)
+        from app.tools.receipt_processing import execute_receipt_tool
+        await execute_receipt_tool(**COMMON_ARGS)
     mock_audit.assert_called_once()
 
 
@@ -79,21 +79,21 @@ async def test_receipt_audit_written_on_auto():
 async def test_receipt_audit_written_on_blocked():
     mock_audit = _mock_audit()
     with (
-        patch("app.workers.receipt_processing._extract_receipt", return_value=PARSED_RECEIPT_BLOCKED),
-        patch("app.workers.receipt_processing.write_audit_log", mock_audit),
+        patch("app.tools.receipt_processing._extract_receipt", return_value=PARSED_RECEIPT_BLOCKED),
+        patch("app.tools.receipt_processing.write_audit_log", mock_audit),
     ):
-        from app.workers.receipt_processing import execute_receipt_worker
-        await execute_receipt_worker(**COMMON_ARGS)
+        from app.tools.receipt_processing import execute_receipt_tool
+        await execute_receipt_tool(**COMMON_ARGS)
     mock_audit.assert_called_once()
 
 
 @pytest.mark.asyncio
 async def test_receipt_low_confidence_raises():
     low_conf = PARSED_RECEIPT_AUTO.model_copy(update={"confidence": 0.3})
-    with patch("app.workers.receipt_processing._extract_receipt", return_value=low_conf):
-        from app.workers.receipt_processing import execute_receipt_worker
+    with patch("app.tools.receipt_processing._extract_receipt", return_value=low_conf):
+        from app.tools.receipt_processing import execute_receipt_tool
         with pytest.raises(ValueError, match="confidence"):
-            await execute_receipt_worker(**COMMON_ARGS)
+            await execute_receipt_tool(**COMMON_ARGS)
 
 
 @pytest.mark.asyncio
@@ -102,9 +102,9 @@ async def test_receipt_operation_fails_if_audit_fails():
         raise RuntimeError("Audit log write failed")
 
     with (
-        patch("app.workers.receipt_processing._extract_receipt", return_value=PARSED_RECEIPT_AUTO),
-        patch("app.workers.receipt_processing.write_audit_log", failing_audit),
+        patch("app.tools.receipt_processing._extract_receipt", return_value=PARSED_RECEIPT_AUTO),
+        patch("app.tools.receipt_processing.write_audit_log", failing_audit),
     ):
-        from app.workers.receipt_processing import execute_receipt_worker
+        from app.tools.receipt_processing import execute_receipt_tool
         with pytest.raises(RuntimeError, match="Audit log write failed"):
-            await execute_receipt_worker(**COMMON_ARGS)
+            await execute_receipt_tool(**COMMON_ARGS)

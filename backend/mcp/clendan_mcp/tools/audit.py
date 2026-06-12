@@ -1,4 +1,4 @@
-"""
+﻿"""
 tools/audit.py — Audit trail and execution detail tools.
 
 Clendan's audit trail is immutable — records cannot be modified or deleted.
@@ -10,7 +10,7 @@ from typing import Any
 
 from clendan_mcp.auth import MCPError, api_get
 
-VALID_WORKER_TYPES = {
+VALID_TOOL_TYPES = {
     "invoice_processing",
     "ai_accountant",
     "receipt_processing",
@@ -28,7 +28,7 @@ VALID_STATUSES = {"auto", "approved", "rejected", "blocked", "pending", "failed"
 
 
 async def get_audit_trail(
-    worker_type: str | None = None,
+    tool_type: str | None = None,
     status: str | None = None,
     from_date: str | None = None,
     to_date: str | None = None,
@@ -37,15 +37,15 @@ async def get_audit_trail(
     """
     Query the immutable audit trail.
 
-    The audit trail records every worker execution and human action. Records
+    The audit trail records every tool execution and human action. Records
     are permanently stored and cannot be modified or deleted.
 
     Args:
-        worker_type: Filter by worker type. Valid values:
+        tool_type: Filter by tool type. Valid values:
             invoice_processing, ai_accountant, receipt_processing,
             reconciliation, expense_control, collections, fraud_detection,
             treasury, revenue_recognition, credit_underwriting, compliance.
-            Leave empty to see all worker types.
+            Leave empty to see all tool types.
         status: Filter by execution status. Valid values:
             auto, approved, rejected, blocked, pending, failed.
             Leave empty to see all statuses.
@@ -55,17 +55,17 @@ async def get_audit_trail(
 
     Returns a list of audit entries, each with:
         id (str): Audit log entry ID
-        actor (str): Who/what performed the action (e.g. "worker:invoice_processing")
+        actor (str): Who/what performed the action (e.g. "tool:invoice_processing")
         action (str): What action was taken
         model_version (str): AI model version used (or "human" for manual actions)
         created_at (str): ISO 8601 timestamp
         execution_id (str | null): Associated execution ID (use in get_execution_detail)
-        reasoning_trace_json (dict | null): Structured reasoning from the worker
+        reasoning_trace_json (dict | null): Structured reasoning from the tool
     """
-    if worker_type and worker_type not in VALID_WORKER_TYPES:
+    if tool_type and tool_type not in VALID_TOOL_TYPES:
         raise MCPError(
-            f"Invalid worker_type '{worker_type}'. "
-            f"Valid types: {', '.join(sorted(VALID_WORKER_TYPES))}"
+            f"Invalid tool_type '{tool_type}'. "
+            f"Valid types: {', '.join(sorted(VALID_TOOL_TYPES))}"
         )
     if status and status not in VALID_STATUSES:
         raise MCPError(
@@ -76,8 +76,8 @@ async def get_audit_trail(
         raise MCPError("limit must be between 1 and 200.")
 
     params: dict[str, Any] = {"limit": limit}
-    if worker_type:
-        params["worker_type"] = worker_type
+    if tool_type:
+        params["tool_type"] = tool_type
     if status:
         params["status"] = status
     if from_date:
@@ -94,19 +94,19 @@ async def get_execution_detail(trace_id: str) -> dict[str, Any]:
     """
     Get the full detail of a specific execution by trace ID.
 
-    Returns a complete record of everything that happened during a worker
+    Returns a complete record of everything that happened during a tool
     execution: input data, every policy rule evaluated (pass/fail), the final
     decision, confidence score, actions taken, and the full ordered reasoning
     trace from the AI model.
 
     Args:
         trace_id: The execution ID. Found in audit trail entries as 'execution_id',
-                  or in the output of parse_invoice / run_invoice_worker.
+                  or in the output of parse_invoice / run_invoice_tool.
 
     Returns:
         execution (dict):
             id (str): Execution ID
-            worker_id (str): The worker that ran
+            tool_id (str): The tool that ran
             decision (str): Final decision
             confidence (float): Confidence score 0.0–1.0
             status (str): Execution status

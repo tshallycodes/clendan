@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useAuth } from '@clerk/nextjs'
 import { ROLE_COLORS, ROLE_LABEL, type Member } from './types'
 
-const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001'
+const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
 const ASSIGNABLE_ROLES = ['admin', 'approver', 'viewer'] as const
 type AssignableRole = (typeof ASSIGNABLE_ROLES)[number]

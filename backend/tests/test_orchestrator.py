@@ -1,12 +1,12 @@
-"""
+﻿"""
 Financial Orchestrator unit tests.
-No external API connections — workers execute in-process via stubs.
+No external API connections — tools execute in-process via stubs.
 """
 import pytest
 from datetime import datetime, UTC
 
 from app.orchestrator.orchestrator import FinancialEvent, FinancialOrchestrator, OrchestratorOutput
-from app.workers.base import WorkerType
+from app.tools.base import ToolType
 
 
 def _make_event(event_type: str = "invoice_received") -> FinancialEvent:
@@ -30,11 +30,11 @@ class TestFinancialOrchestrator:
         assert isinstance(result, OrchestratorOutput)
 
     @pytest.mark.asyncio
-    async def test_invoice_received_routes_to_invoice_processing_worker(self):
+    async def test_invoice_received_routes_to_invoice_processing_tool(self):
         orchestrator = FinancialOrchestrator()
         event = _make_event("invoice_received")
         result = await orchestrator.handle_event(event, tenant_id="tenant_test")
-        assert result.worker_type == WorkerType.INVOICE_PROCESSING
+        assert result.tool_type == ToolType.INVOICE_PROCESSING
 
     @pytest.mark.asyncio
     async def test_decision_is_non_empty_string(self):
@@ -63,28 +63,28 @@ class TestFinancialOrchestrator:
         orchestrator = FinancialOrchestrator()
         event = _make_event("transaction_posted")
         result = await orchestrator.handle_event(event, tenant_id="tenant_test")
-        assert result.worker_type == WorkerType.ACCOUNTANT
+        assert result.tool_type == ToolType.ACCOUNTANT
 
     @pytest.mark.asyncio
     async def test_fraud_check_routes_to_fraud_detection(self):
-        """Test classification only — invoke worker directly via classify to avoid validation."""
+        """Test classification only — invoke tool directly via classify to avoid validation."""
         orchestrator = FinancialOrchestrator()
         event = _make_event("fraud_check_requested")
-        worker_type = await orchestrator._classify_event(event)
-        assert worker_type == WorkerType.FRAUD_DETECTION
+        tool_type = await orchestrator._classify_event(event)
+        assert tool_type == ToolType.FRAUD_DETECTION
 
     @pytest.mark.asyncio
     async def test_reconciliation_requested_routes_correctly(self):
-        """Test classification only — invoke worker directly via classify to avoid validation."""
+        """Test classification only — invoke tool directly via classify to avoid validation."""
         orchestrator = FinancialOrchestrator()
         event = _make_event("reconciliation_requested")
-        worker_type = await orchestrator._classify_event(event)
-        assert worker_type == WorkerType.RECONCILIATION
+        tool_type = await orchestrator._classify_event(event)
+        assert tool_type == ToolType.RECONCILIATION
 
     @pytest.mark.asyncio
     async def test_classify_event_raises_for_unknown_type(self):
         import types
         orchestrator = FinancialOrchestrator()
         fake_event = types.SimpleNamespace(event_type="unknown_event_type")
-        with pytest.raises(ValueError, match="No worker registered for event type"):
+        with pytest.raises(ValueError, match="No tool registered for event type"):
             await orchestrator._classify_event(fake_event)

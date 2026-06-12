@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState } from 'react'
 
@@ -7,8 +7,8 @@ const ENTRIES = [
     date: '2026-06-05',
     version: 'v0.3.0',
     category: 'New Feature',
-    title: 'Worker Management & API Keys',
-    body: 'Deploy and configure AI workers directly from the dashboard. Generate API keys for programmatic access. Full worker CRUD with autonomy level and policy threshold configuration.',
+    title: 'Tool Management & API Keys',
+    body: 'Deploy and configure AI tools directly from the dashboard. Generate API keys for programmatic access. Full tool CRUD with autonomy level and policy threshold configuration.',
   },
   {
     date: '2026-06-04',
@@ -22,7 +22,7 @@ const ENTRIES = [
     version: 'v0.1.0',
     category: 'New Feature',
     title: 'Platform Foundation',
-    body: 'Multi-tenant PostgreSQL with row-level security. Invoice Processing Worker, AI Accountant Worker, Receipt Processing Worker. Full audit trail, approval queue, and policy engine.',
+    body: 'Multi-tenant PostgreSQL with row-level security. Invoice Processing Tool, AI Accountant Tool, Receipt Processing Tool. Full audit trail, approval queue, and policy engine.',
   },
 ]
 

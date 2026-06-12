@@ -1,10 +1,10 @@
-'use client'
+﻿'use client'
 
 import { useState } from 'react'
 import { useAuth } from '@clerk/nextjs'
 import { useIsOwner } from '@/lib/auth-client'
 
-const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001'
+const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
 export function DangerZone() {
   const { getToken } = useAuth()
@@ -23,9 +23,9 @@ export function DangerZone() {
       const res = await fetch(`${API}/v1/tools`, { headers: { Authorization: `Bearer ${token}` } })
       if (res.ok) {
         const json = await res.json()
-        const workers: { id: string }[] = json.data ?? json ?? []
+        const tools: { id: string }[] = json.data ?? json ?? []
         await Promise.all(
-          workers.map((w) =>
+          tools.map((w) =>
             fetch(`${API}/v1/tools/${w.id}`, {
               method: 'PATCH',
               headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
@@ -52,14 +52,14 @@ export function DangerZone() {
     <div className="border-l-[3px] border-l-[#ff4d6d] pl-4 space-y-6">
       <div className="space-y-3">
         <div>
-          <p className="text-xs font-mono text-brand-text font-medium">Pause all workers</p>
-          <p className="text-[10px] font-mono text-brand-muted mt-0.5">Sets all active workers to inactive. They can be resumed individually.</p>
+          <p className="text-xs font-mono text-brand-text font-medium">Pause all tools</p>
+          <p className="text-[10px] font-mono text-brand-muted mt-0.5">Sets all active tools to inactive. They can be resumed individually.</p>
         </div>
         {pauseConfirm && (
-          <p className="text-[10px] font-mono text-[#ff4d6d]">This will pause all active workers. Click again to confirm.</p>
+          <p className="text-[10px] font-mono text-[#ff4d6d]">This will pause all active tools. Click again to confirm.</p>
         )}
         {pauseDone && (
-          <p className="text-[10px] font-mono text-brand-green">All workers paused.</p>
+          <p className="text-[10px] font-mono text-brand-green">All tools paused.</p>
         )}
         <button
           type="button"
@@ -67,7 +67,7 @@ export function DangerZone() {
           disabled={pausing}
           className="text-xs font-mono bg-[rgba(255,77,109,0.1)] border border-[#ff4d6d] text-[#ff4d6d] hover:bg-[rgba(255,77,109,0.2)] rounded-sm px-3 py-1.5 transition-colors disabled:opacity-50"
         >
-          {pausing ? 'Pausing…' : pauseConfirm ? 'Confirm pause' : 'Pause all workers'}
+          {pausing ? 'Pausing…' : pauseConfirm ? 'Confirm pause' : 'Pause all tools'}
         </button>
         {pauseConfirm && (
           <button

@@ -2,20 +2,25 @@
 
 import { useState } from 'react'
 import Image from 'next/image'
+import { Plus } from 'lucide-react'
 import { BANKS, BankDef } from './banks-data'
+import { IntegrationStatus } from './types'
 
 interface BankPickerProps {
+  plaidStatus: IntegrationStatus
   connectedInstitutionId: string | null
+  connectedBankName: string | null
+  truelayerStatus: IntegrationStatus
+  connectedTruelayerName: string | null
   connecting: boolean
   onViewDetail: (bank: BankDef) => void
+  onConnect: (region: Region) => void
 }
 
-type Region = 'all' | 'us' | 'uk' | 'eu'
+type Region = 'us' | 'eu'
 
 const REGIONS: { label: string; value: Region }[] = [
-  { label: 'All', value: 'all' },
   { label: 'US', value: 'us' },
-  { label: 'UK', value: 'uk' },
   { label: 'EU', value: 'eu' },
 ]
 
@@ -25,39 +30,104 @@ function abbrSize(abbr: string): string {
   return 'text-xs'
 }
 
-function BankLogo({ bank }: { bank: BankDef }) {
+function BankCard({ bank, onViewDetail }: { bank: BankDef; onViewDetail: (b: BankDef) => void }) {
   const [error, setError] = useState(false)
 
-  if (error) {
-    return (
-      <div className="w-full h-full flex items-center justify-center" style={{ backgroundColor: bank.color }}>
-        <span className={`${abbrSize(bank.abbr)} font-mono font-bold text-white leading-none`}>
-          {bank.abbr}
-        </span>
-      </div>
-    )
-  }
-
   return (
-    <Image
-      unoptimized
-      src={`https://www.google.com/s2/favicons?sz=128&domain=${bank.domain}`}
-      alt={bank.name}
-      width={40}
-      height={40}
-      className="object-contain"
-      onError={() => setError(true)}
-    />
+    <button
+      onClick={() => onViewDetail(bank)}
+      className="flex flex-col items-center gap-1.5 group cursor-pointer"
+      title={bank.name}
+    >
+      <div className="relative w-16 h-16">
+        <div className="w-full h-full rounded-sm flex items-center justify-center overflow-hidden border border-[#1a2a1a] group-hover:ring-1 group-hover:ring-[#00C853]/40 group-hover:border-[#00C853]/30 transition-all"
+             style={{ backgroundColor: error || !bank.domain ? bank.color : 'white' }}>
+          {error || !bank.domain ? (
+            <span className={`${abbrSize(bank.abbr)} font-mono font-bold text-white leading-none`}>
+              {bank.abbr}
+            </span>
+          ) : (
+            <Image
+              unoptimized
+              src={`https://www.google.com/s2/favicons?sz=128&domain=${bank.domain}`}
+              alt={bank.name}
+              width={40}
+              height={40}
+              className="object-contain"
+              onError={() => setError(true)}
+            />
+          )}
+        </div>
+        <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-[#00C853] border-2 border-[#0a0a0a]" />
+      </div>
+      <span className="text-[10px] font-mono text-brand-muted text-center leading-tight max-w-[64px] truncate">
+        {bank.name}
+      </span>
+    </button>
   )
 }
 
-export function BankPicker({ connectedInstitutionId, connecting, onViewDetail }: BankPickerProps) {
-  const [region, setRegion] = useState<Region>('all')
+export function BankPicker({
+  plaidStatus, connectedInstitutionId, connectedBankName,
+  truelayerStatus, connectedTruelayerName,
+  connecting, onViewDetail, onConnect,
+}: BankPickerProps) {
+  const [region, setRegion] = useState<Region>('us')
 
-  const filtered = region === 'all' ? BANKS : BANKS.filter((b) => b.region === region)
+  const plaidConnected = plaidStatus === 'connected' || plaidStatus === 'syncing'
+  const truelayerConnected = truelayerStatus === 'connected' || truelayerStatus === 'syncing'
+  const isConnected = region === 'us' ? plaidConnected : truelayerConnected
+
+  // Build the list of connected bank cards to show
+  const connectedCards: BankDef[] = (() => {
+    if (region === 'us' && plaidConnected) {
+      const matched = BANKS.filter(
+        (b) => b.region === 'us' && (
+          (b.institution_id && b.institution_id === connectedInstitutionId) ||
+          (connectedBankName && connectedBankName.toLowerCase().includes(b.name.toLowerCase()))
+        )
+      )
+      if (matched.length > 0) return matched
+      // Fallback for banks not in the predefined list
+      if (connectedInstitutionId) {
+        return [{
+          id: connectedInstitutionId,
+          name: connectedBankName || 'Connected Bank',
+          abbr: (connectedBankName || 'CB').slice(0, 2).toUpperCase(),
+          color: '#1a1a1a',
+          domain: '',
+          provider: 'plaid' as const,
+          region: 'us' as const,
+        }]
+      }
+    }
+    if (region === 'eu' && truelayerConnected) {
+      if (connectedTruelayerName) {
+        const matched = BANKS.filter(
+          (b) => b.region === 'eu' && (
+            connectedTruelayerName.toLowerCase().includes(b.name.toLowerCase()) ||
+            b.name.toLowerCase().includes(connectedTruelayerName.toLowerCase())
+          )
+        )
+        if (matched.length > 0) return matched
+      }
+      // Fallback
+      return [{
+        id: 'truelayer-connected',
+        name: connectedTruelayerName || 'Connected Bank',
+        abbr: (connectedTruelayerName || 'EU').slice(0, 2).toUpperCase(),
+        color: '#1a1a1a',
+        domain: '',
+        provider: 'truelayer' as const,
+        region: 'eu' as const,
+      }]
+    }
+    return []
+  })()
 
   return (
     <div className="space-y-4">
+      {/* Region tabs */}
       <div className="flex gap-1">
         {REGIONS.map((r) => (
           <button
@@ -75,31 +145,37 @@ export function BankPicker({ connectedInstitutionId, connecting, onViewDetail }:
         ))}
       </div>
 
-      <div className="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-8 gap-4">
-        {filtered.map((bank) => {
-          const isConnected = !!(bank.institution_id && bank.institution_id === connectedInstitutionId)
-          return (
-            <button
-              key={bank.id}
-              onClick={() => onViewDetail(bank)}
-              className="flex flex-col items-center gap-1.5 group cursor-pointer"
-              title={bank.name}
-            >
-              <div className="relative w-16 h-16">
-                <div className="w-full h-full rounded-sm flex items-center justify-center overflow-hidden bg-white border border-[#2a2a2a] group-hover:ring-1 group-hover:ring-[#00C853]/40 group-hover:border-[#00C853]/30 transition-all relative">
-                  <BankLogo bank={bank} />
-                </div>
-                {isConnected && (
-                  <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-[#00C853] border-2 border-[#0a0a0a]" />
-                )}
-              </div>
-              <span className="text-[10px] font-mono text-brand-muted text-center leading-tight max-w-[64px] truncate">
-                {bank.name}
-              </span>
-            </button>
-          )
-        })}
-      </div>
+      {isConnected ? (
+        /* Connected state — show only connected banks + add button */
+        <div className="flex items-start gap-4 flex-wrap">
+          {connectedCards.map((bank) => (
+            <BankCard key={bank.id} bank={bank} onViewDetail={onViewDetail} />
+          ))}
+
+          {/* Add another bank */}
+          <button
+            onClick={() => onConnect(region)}
+            disabled={connecting}
+            className="flex flex-col items-center gap-1.5 group cursor-pointer disabled:opacity-40"
+            title="Connect another bank"
+          >
+            <div className="w-16 h-16 rounded-sm flex items-center justify-center bg-[#111111] border border-[#1a2a1a] group-hover:ring-1 group-hover:ring-[#00C853]/40 group-hover:border-[#00C853]/30 transition-all">
+              <Plus size={20} className="text-[#4a6a4a] group-hover:text-[#a0b8a0] transition-colors" />
+            </div>
+          </button>
+        </div>
+      ) : (
+        /* Not connected — single connect button */
+        <div className="flex justify-center py-4">
+          <button
+            onClick={() => onConnect(region)}
+            disabled={connecting}
+            className="px-6 py-2 text-xs font-mono text-black bg-[#00C853] rounded-sm hover:bg-[#00a844] active:scale-[0.97] transition-all disabled:opacity-40"
+          >
+            {connecting ? 'Connecting...' : 'Connect'}
+          </button>
+        </div>
+      )}
     </div>
   )
 }

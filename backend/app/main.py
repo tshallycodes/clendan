@@ -1,4 +1,4 @@
-from contextlib import asynccontextmanager
+﻿from contextlib import asynccontextmanager
 from datetime import datetime, UTC
 import uuid
 
@@ -49,11 +49,11 @@ def create_app() -> FastAPI:
         openapi_tags=[
             {"name": "health", "description": "Liveness and readiness probes."},
             {"name": "onboarding", "description": "Create tenant and user on first sign-in."},
-            {"name": "dashboard", "description": "Aggregated stats, executions, approvals, audit trail, and workers."},
-            {"name": "agents", "description": "Trigger agent workers. Idempotent via `Idempotency-Key`."},
+            {"name": "dashboard", "description": "Aggregated stats, executions, approvals, audit trail, and tools."},
+            {"name": "agents", "description": "Trigger agent tools. Idempotent via `Idempotency-Key`."},
             {"name": "approvals", "description": "Respond to pending human-approval requests."},
             {"name": "integrations", "description": "Manage Plaid, Xero, and QuickBooks connections."},
-            {"name": "tenants", "description": "Tenant and worker configuration."},
+            {"name": "tenants", "description": "Tenant and tool configuration."},
         ],
     )
 

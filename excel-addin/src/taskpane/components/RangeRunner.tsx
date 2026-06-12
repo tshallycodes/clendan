@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+﻿import React, { useState } from "react";
 import { styles } from "../styles";
 
 /* global Excel, crypto */
@@ -67,7 +67,7 @@ export default function RangeRunner({
           "Idempotency-Key": idempotencyKey,
         },
         body: JSON.stringify({
-          worker: tool,
+          tool: tool,
           payload: {
             range_data: rangeValues,
             range_address: rangeAddress,

@@ -1,4 +1,4 @@
-"""
+﻿"""
 tests/test_auth.py — Unit tests for the auth module.
 
 Tests API key handling, header generation, and error mapping without
@@ -104,11 +104,11 @@ async def test_api_get_success(monkeypatch):
     auth_module.CLENDAN_API_BASE = "https://api.clendan.com"
 
     respx.get("https://api.clendan.com/v1/tools").mock(
-        return_value=httpx.Response(200, json={"data": {"workers": []}})
+        return_value=httpx.Response(200, json={"data": {"tools": []}})
     )
 
     result = await api_get("/v1/tools")
-    assert result == {"data": {"workers": []}}
+    assert result == {"data": {"tools": []}}
 
 
 @pytest.mark.asyncio

@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState } from 'react'
 import { useAuth } from '@clerk/nextjs'
@@ -6,7 +6,7 @@ import { StatusBadge } from '@/components/dashboard/StatusBadge'
 import { cn } from '@/lib/utils'
 import { useCanApprove } from '@/lib/auth-client'
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001'
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
 export interface Approval {
   id: string
@@ -274,7 +274,7 @@ export function ApprovalsClient({ initialApprovals }: Props) {
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-brand-green animate-pulse" />
             <p className="text-xs font-mono text-brand-muted">
-              No pending approvals — workers are executing autonomously
+              No pending approvals — tools are executing autonomously
             </p>
           </div>
         </div>

@@ -1,4 +1,4 @@
-"""
+﻿"""
 server.py — Clendan MCP Server entry point.
 
 Registers all 21 tools and starts the stdio transport. Run with:
@@ -15,7 +15,7 @@ import asyncio
 from mcp.server import Server
 from mcp.server.stdio import stdio_server
 
-from clendan_mcp.tools.invoices import parse_invoice, run_invoice_worker
+from clendan_mcp.tools.invoices import parse_invoice, run_invoice_tool
 from clendan_mcp.tools.approvals import (
     get_pending_approvals,
     approve_execution,
@@ -23,11 +23,11 @@ from clendan_mcp.tools.approvals import (
     get_approval_detail,
 )
 from clendan_mcp.tools.audit import get_audit_trail, get_execution_detail
-from clendan_mcp.tools.workers import (
-    list_workers,
-    get_worker_status,
-    pause_worker,
-    resume_worker,
+from clendan_mcp.tools.tools import (
+    list_tools,
+    get_tool_status,
+    pause_tool,
+    resume_tool,
     get_policy_rules,
 )
 from clendan_mcp.tools.integrations import (
@@ -50,7 +50,7 @@ app = Server("clendan")
 
 # --- Financial operations ---
 app.tool()(parse_invoice)
-app.tool()(run_invoice_worker)
+app.tool()(run_invoice_tool)
 app.tool()(score_fraud)
 app.tool()(reconcile_datasets)
 app.tool()(extract_contract_data)
@@ -65,11 +65,11 @@ app.tool()(get_approval_detail)
 app.tool()(get_audit_trail)
 app.tool()(get_execution_detail)
 
-# --- Workers ---
-app.tool()(list_workers)
-app.tool()(get_worker_status)
-app.tool()(pause_worker)
-app.tool()(resume_worker)
+# --- Tools ---
+app.tool()(list_tools)
+app.tool()(get_tool_status)
+app.tool()(pause_tool)
+app.tool()(resume_tool)
 app.tool()(get_policy_rules)
 
 # --- Integrations ---

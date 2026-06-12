@@ -1,4 +1,4 @@
-import hashlib
+﻿import hashlib
 from datetime import datetime, timezone
 from typing import Any
 
@@ -14,7 +14,7 @@ _logger = get_logger(__name__)
 
 router = APIRouter(prefix="/execute", tags=["agents"])
 
-WORKER_TYPE_TO_EVENT: dict[str, str] = {
+TOOL_TYPE_TO_EVENT: dict[str, str] = {
     "invoice_processing":  "invoice_received",
     "fraud_detection":     "fraud_check_requested",
     "collections":         "collection_triggered",
@@ -22,11 +22,13 @@ WORKER_TYPE_TO_EVENT: dict[str, str] = {
     "reconciliation":      "reconciliation_requested",
     "revenue_recognition": "revenue_recognition_run",
     "compliance_check":    "compliance_check_requested",
+    "receipt_processing":  "receipt_received",
+    "treasury":            "treasury_run",
 }
 
 
 class ExecuteRequest(BaseModel):
-    worker: str
+    tool: str
     payload: dict[str, Any] = {}
 
 
@@ -38,8 +40,8 @@ async def execute(
 ):
     """
     Direct API execution path for external callers.
-    Authenticates via API key (Bearer ck_live_...), enqueues the requested worker.
-    Same Idempotency-Key + tenant + worker returns the existing execution record.
+    Authenticates via API key (Bearer ck_live_...), enqueues the requested tool.
+    Same Idempotency-Key + tenant + tool returns the existing execution record.
     """
     # --- Auth: extract and validate API key format ---
     if not authorization.startswith("Bearer ck_live_"):
@@ -67,30 +69,30 @@ async def execute(
 
     tenant_id: str = api_key.tenant_id
 
-    # --- Validate worker type ---
-    if body.worker not in WORKER_TYPE_TO_EVENT:
+    # --- Validate tool type ---
+    if body.tool not in TOOL_TYPE_TO_EVENT:
         raise HTTPException(
             status_code=400,
-            detail=f"Unknown worker type '{body.worker}'. Valid types: {list(WORKER_TYPE_TO_EVENT)}",
+            detail=f"Unknown tool type '{body.tool}'. Valid types: {list(TOOL_TYPE_TO_EVENT)}",
         )
 
-    event_type = WORKER_TYPE_TO_EVENT[body.worker]
+    event_type = TOOL_TYPE_TO_EVENT[body.tool]
 
-    # --- Find active worker for this tenant ---
-    worker = await db.worker.find_first(
-        where={"tenant_id": tenant_id, "type": body.worker, "status": "active"}
+    # --- Find active tool for this tenant ---
+    tool = await db.tool.find_first(
+        where={"tenant_id": tenant_id, "type": body.tool, "status": "active"}
     )
-    if not worker:
+    if not tool:
         raise HTTPException(
             status_code=404,
-            detail=f"No active worker of type '{body.worker}' found for this tenant",
+            detail=f"No active tool of type '{body.tool}' found for this tenant",
         )
 
     # --- Idempotency check ---
     existing = await db.execution.find_first(
         where={
             "tenant_id": tenant_id,
-            "worker_id": worker.id,
+            "tool_id": tool.id,
             "input_ref": idempotency_key,
         }
     )
@@ -108,7 +110,7 @@ async def execute(
     execution = await db.execution.create(
         data={
             "tenant_id": tenant_id,
-            "worker_id": worker.id,
+            "tool_id": tool.id,
             "input_ref": idempotency_key,
             "decision": "pending",
             "confidence": 0.0,
@@ -122,7 +124,7 @@ async def execute(
         "run_orchestrator_job",
         execution_id=execution.id,
         tenant_id=tenant_id,
-        worker_id=worker.id,
+        tool_id=tool.id,
         event_type=event_type,
         payload=body.payload,
     )
@@ -131,7 +133,7 @@ async def execute(
         "execution_queued",
         extra={
             "execution_id": execution.id,
-            "worker_id": worker.id,
+            "tool_id": tool.id,
             "tenant_id": tenant_id,
             "source": "api_key",
         },

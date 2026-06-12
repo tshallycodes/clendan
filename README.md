@@ -1,6 +1,6 @@
-# Clendan — AI Financial Agent OS
+﻿# Clendan — AI Financial Agent OS
 
-Autonomous AI workers that process invoices, reconcile accounts, and execute financial tasks under strict policy enforcement with full audit trails.
+Autonomous AI tools that process invoices, reconcile accounts, and execute financial tasks under strict policy enforcement with full audit trails.
 
 ## Stack
 
@@ -79,9 +79,9 @@ See `.env.example` for all required variables.
    - **PostgreSQL** — Railway template, note the `DATABASE_URL`
    - **Redis** — Railway template, note the `REDIS_URL`
    - **Backend API** — from repo, root directory: `backend/`, uses `railway.toml`
-   - **Background Worker** — same repo, root directory: `backend/`, uses `railway.worker.toml`
+   - **Background Tool** — same repo, root directory: `backend/`, uses `railway.tool.toml`
 
-3. Set env vars on the Backend + Worker services (copy from `.env.example`):
+3. Set env vars on the Backend + Tool services (copy from `.env.example`):
    ```
    DATABASE_URL        (from Railway Postgres)
    REDIS_URL           (from Railway Redis)
@@ -127,6 +127,6 @@ https://your-railway-api-url.up.railway.app/v1/integrations/quickbooks/callback
 
 ## Architecture
 
-Master-subagent model: the Financial Orchestrator is the master agent. All workers are sub-agents called as tools. Workers never call each other directly. All coordination and policy enforcement flow through the Orchestrator.
+Master-subagent model: the Financial Orchestrator is the master agent. All tools are sub-agents called as tools. Tools never call each other directly. All coordination and policy enforcement flow through the Orchestrator.
 
-Every agent execution follows: receive → classify → select worker → execute → policy check → output → audit.
+Every agent execution follows: receive → classify → select tool → execute → policy check → output → audit.

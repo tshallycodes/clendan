@@ -5,7 +5,7 @@ import { useAuth } from '@clerk/nextjs'
 import { Copy, Check, Plus, X } from 'lucide-react'
 import { useCanConfigure } from '@/lib/auth-client'
 
-const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001'
+const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
 interface ApiKey {
   id: string; name: string; key_prefix: string

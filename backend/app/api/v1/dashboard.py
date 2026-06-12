@@ -1,4 +1,4 @@
-from typing import Annotated
+﻿from typing import Annotated
 from fastapi import APIRouter, Depends, Query
 from prisma import Prisma
 
@@ -22,14 +22,14 @@ async def dashboard_stats(
 
     execution_count = await db.execution.count(where={"tenant_id": tenant_id})
     pending_approvals = await db.approval.count(where={"tenant_id": tenant_id, "status": "pending"})
-    worker_count = await db.worker.count(where={"tenant_id": tenant_id, "status": "active"})
+    tool_count = await db.tool.count(where={"tenant_id": tenant_id, "status": "active"})
     invoice_count = await db.invoice.count(where={"tenant_id": tenant_id})
     transaction_count = await db.banktransaction.count(where={"tenant_id": tenant_id})
 
     return standard_response(data={
         "executions": execution_count,
         "pending_approvals": pending_approvals,
-        "active_workers": worker_count,
+        "active_tools": tool_count,
         "invoices": invoice_count,
         "transactions": transaction_count,
     })
@@ -42,15 +42,15 @@ async def list_executions(
     limit: int = Query(50, le=200),
     offset: int = Query(0, ge=0),
     status: str | None = Query(None),
-    worker_id: str | None = Query(None),
+    tool_id: str | None = Query(None),
 ):
-    """Lists executions for the tenant, newest first. Optionally filter by worker_id."""
+    """Lists executions for the tenant, newest first. Optionally filter by tool_id."""
     tenant_id = current_user.tenant_id
     where: dict = {"tenant_id": tenant_id}
     if status:
         where["status"] = status
-    if worker_id:
-        where["worker_id"] = worker_id
+    if tool_id:
+        where["tool_id"] = tool_id
 
     total = await db.execution.count(where=where)
     executions = await db.execution.find_many(
@@ -58,15 +58,15 @@ async def list_executions(
         order={"created_at": "desc"},
         take=limit,
         skip=offset,
-        include={"worker": True, "approval": True},
+        include={"tool": True, "approval": True},
     )
 
     return standard_response(data={
         "executions": [
             {
                 "id": e.id,
-                "worker_id": e.worker_id,
-                "worker_type": e.worker.type if e.worker else "unknown",
+                "tool_id": e.tool_id,
+                "tool_type": e.tool.type if e.tool else "unknown",
                 "decision": e.decision,
                 "confidence": e.confidence,
                 "status": e.status,
@@ -154,21 +154,21 @@ async def list_audit(
     })
 
 
-@router.get("/dashboard/workers")
-async def list_workers(
+@router.get("/dashboard/tools")
+async def list_tools(
     current_user: RequireOrgAuth,
     db: Annotated[Prisma, Depends(get_db_dep)],
 ):
-    """Lists all workers for the tenant."""
+    """Lists all tools for the tenant."""
     tenant_id = current_user.tenant_id
 
-    workers = await db.worker.find_many(
+    tools = await db.tool.find_many(
         where={"tenant_id": tenant_id},
         order={"type": "asc"},
     )
 
     return standard_response(data={
-        "workers": [
+        "tools": [
             {
                 "id": w.id,
                 "type": w.type,
@@ -176,6 +176,6 @@ async def list_workers(
                 "version": w.version,
                 "status": w.status,
             }
-            for w in workers
+            for w in tools
         ]
     })

@@ -302,3 +302,29 @@ async def get_message_attachments(access_token: str, message_id: str) -> list:
 
     data = await _circuit.call(_retry, _call)
     return data.get("value", [])
+
+
+async def get_attachment_bytes(
+    access_token: str, message_id: str, attachment_id: str
+) -> tuple[bytes, str]:
+    """
+    GET /me/messages/{id}/attachments/{attachmentId}
+    Returns (raw_bytes, content_type). contentBytes is standard base64 in Graph API.
+    """
+    import base64 as _base64
+
+    async def _call():
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                f"{GRAPH_API_BASE}/me/messages/{message_id}/attachments/{attachment_id}",
+                headers={"Authorization": f"Bearer {access_token}", "Accept": "application/json"},
+                timeout=30.0,
+            )
+            response.raise_for_status()
+            return response.json()
+
+    data = await _circuit.call(_retry, _call)
+    content_bytes_b64 = data.get("contentBytes", "")
+    content_type = data.get("contentType", "application/pdf")
+    raw_bytes = _base64.b64decode(content_bytes_b64) if content_bytes_b64 else b""
+    return raw_bytes, content_type

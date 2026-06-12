@@ -5,7 +5,7 @@ import { useAuth } from '@clerk/nextjs'
 import { Check } from 'lucide-react'
 import { ROLE_LABEL } from './types'
 
-const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001'
+const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
 const INVITE_ROLES = ['org:admin', 'org:approver', 'org:viewer'] as const
 type InviteRole = (typeof INVITE_ROLES)[number]

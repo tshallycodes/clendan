@@ -1,5 +1,5 @@
-"""
-GoCardless sync job — runs via arq worker.
+﻿"""
+GoCardless sync job — runs via arq tool.
 Fetches mandates, payments, and payouts for a connected GoCardless integration.
 Writes sync log entries per entity type.
 """

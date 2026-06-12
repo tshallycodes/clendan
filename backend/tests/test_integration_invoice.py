@@ -1,7 +1,7 @@
-"""
-Integration tests for the invoice processing worker.
+﻿"""
+Integration tests for the invoice processing tool.
 
-These tests call execute_invoice_worker directly (bypassing the arq queue)
+These tests call execute_invoice_tool directly (bypassing the arq queue)
 to verify the full decision flow end-to-end with all dependencies mocked.
 
 1.8 coverage:
@@ -52,7 +52,7 @@ POLICY_CONFIG = {
 }
 
 COMMON_ARGS = dict(
-    worker_id="worker-1",
+    tool_id="tool-1",
     tenant_id="tenant-1",
     execution_id="exec-1",
     file_bytes=b"fake-image-bytes",
@@ -70,12 +70,12 @@ async def test_auto_approved_end_to_end():
     mock_accounting = AsyncMock()
 
     with (
-        patch("app.workers.invoice_processing._extract_invoice", return_value=PARSED_INVOICE_AUTO),
-        patch("app.workers.invoice_processing._mock_accounting_write", mock_accounting),
-        patch("app.workers.invoice_processing.write_audit_log", _mock_audit()),
+        patch("app.tools.invoice_processing._extract_invoice", return_value=PARSED_INVOICE_AUTO),
+        patch("app.tools.invoice_processing._mock_accounting_write", mock_accounting),
+        patch("app.tools.invoice_processing.write_audit_log", _mock_audit()),
     ):
-        from app.workers.invoice_processing import execute_invoice_worker
-        result = await execute_invoice_worker(**COMMON_ARGS)
+        from app.tools.invoice_processing import execute_invoice_tool
+        result = await execute_invoice_tool(**COMMON_ARGS)
 
     assert result["decision"] == "auto_approved"
     assert result["confidence"] == 0.95
@@ -87,12 +87,12 @@ async def test_approval_required_end_to_end():
     mock_accounting = AsyncMock()
 
     with (
-        patch("app.workers.invoice_processing._extract_invoice", return_value=PARSED_INVOICE_APPROVE),
-        patch("app.workers.invoice_processing._mock_accounting_write", mock_accounting),
-        patch("app.workers.invoice_processing.write_audit_log", _mock_audit()),
+        patch("app.tools.invoice_processing._extract_invoice", return_value=PARSED_INVOICE_APPROVE),
+        patch("app.tools.invoice_processing._mock_accounting_write", mock_accounting),
+        patch("app.tools.invoice_processing.write_audit_log", _mock_audit()),
     ):
-        from app.workers.invoice_processing import execute_invoice_worker
-        result = await execute_invoice_worker(**COMMON_ARGS)
+        from app.tools.invoice_processing import execute_invoice_tool
+        result = await execute_invoice_tool(**COMMON_ARGS)
 
     assert result["decision"] == "approval_required"
     mock_accounting.assert_not_called()  # no accounting write for pending approval
@@ -103,12 +103,12 @@ async def test_blocked_end_to_end():
     mock_accounting = AsyncMock()
 
     with (
-        patch("app.workers.invoice_processing._extract_invoice", return_value=PARSED_INVOICE_BLOCKED),
-        patch("app.workers.invoice_processing._mock_accounting_write", mock_accounting),
-        patch("app.workers.invoice_processing.write_audit_log", _mock_audit()),
+        patch("app.tools.invoice_processing._extract_invoice", return_value=PARSED_INVOICE_BLOCKED),
+        patch("app.tools.invoice_processing._mock_accounting_write", mock_accounting),
+        patch("app.tools.invoice_processing.write_audit_log", _mock_audit()),
     ):
-        from app.workers.invoice_processing import execute_invoice_worker
-        result = await execute_invoice_worker(**COMMON_ARGS)
+        from app.tools.invoice_processing import execute_invoice_tool
+        result = await execute_invoice_tool(**COMMON_ARGS)
 
     assert result["decision"] == "blocked"
 
@@ -121,12 +121,12 @@ async def test_blocked_no_accounting_write_proof():
     mock_accounting = AsyncMock()
 
     with (
-        patch("app.workers.invoice_processing._extract_invoice", return_value=PARSED_INVOICE_BLOCKED),
-        patch("app.workers.invoice_processing._mock_accounting_write", mock_accounting),
-        patch("app.workers.invoice_processing.write_audit_log", _mock_audit()),
+        patch("app.tools.invoice_processing._extract_invoice", return_value=PARSED_INVOICE_BLOCKED),
+        patch("app.tools.invoice_processing._mock_accounting_write", mock_accounting),
+        patch("app.tools.invoice_processing.write_audit_log", _mock_audit()),
     ):
-        from app.workers.invoice_processing import execute_invoice_worker
-        await execute_invoice_worker(**COMMON_ARGS)
+        from app.tools.invoice_processing import execute_invoice_tool
+        await execute_invoice_tool(**COMMON_ARGS)
 
     mock_accounting.assert_not_called()
 
@@ -144,12 +144,12 @@ async def test_audit_written_before_accounting_write():
         call_order.append("accounting")
 
     with (
-        patch("app.workers.invoice_processing._extract_invoice", return_value=PARSED_INVOICE_AUTO),
-        patch("app.workers.invoice_processing._mock_accounting_write", mock_accounting),
-        patch("app.workers.invoice_processing.write_audit_log", mock_audit),
+        patch("app.tools.invoice_processing._extract_invoice", return_value=PARSED_INVOICE_AUTO),
+        patch("app.tools.invoice_processing._mock_accounting_write", mock_accounting),
+        patch("app.tools.invoice_processing.write_audit_log", mock_audit),
     ):
-        from app.workers.invoice_processing import execute_invoice_worker
-        await execute_invoice_worker(**COMMON_ARGS)
+        from app.tools.invoice_processing import execute_invoice_tool
+        await execute_invoice_tool(**COMMON_ARGS)
 
     assert call_order == ["audit", "accounting"], (
         f"Expected audit before accounting, got: {call_order}"
@@ -165,13 +165,13 @@ async def test_operation_fails_if_audit_write_fails():
     mock_accounting = AsyncMock()
 
     with (
-        patch("app.workers.invoice_processing._extract_invoice", return_value=PARSED_INVOICE_AUTO),
-        patch("app.workers.invoice_processing._mock_accounting_write", mock_accounting),
-        patch("app.workers.invoice_processing.write_audit_log", failing_audit),
+        patch("app.tools.invoice_processing._extract_invoice", return_value=PARSED_INVOICE_AUTO),
+        patch("app.tools.invoice_processing._mock_accounting_write", mock_accounting),
+        patch("app.tools.invoice_processing.write_audit_log", failing_audit),
     ):
-        from app.workers.invoice_processing import execute_invoice_worker
+        from app.tools.invoice_processing import execute_invoice_tool
         with pytest.raises(RuntimeError, match="Audit log write failed"):
-            await execute_invoice_worker(**COMMON_ARGS)
+            await execute_invoice_tool(**COMMON_ARGS)
 
     mock_accounting.assert_not_called()
 
@@ -180,7 +180,7 @@ async def test_operation_fails_if_audit_write_fails():
 async def test_low_confidence_raises_error():
     low_confidence_invoice = PARSED_INVOICE_AUTO.model_copy(update={"confidence": 0.3})
 
-    with patch("app.workers.invoice_processing._extract_invoice", return_value=low_confidence_invoice):
-        from app.workers.invoice_processing import execute_invoice_worker
+    with patch("app.tools.invoice_processing._extract_invoice", return_value=low_confidence_invoice):
+        from app.tools.invoice_processing import execute_invoice_tool
         with pytest.raises(ValueError, match="confidence"):
-            await execute_invoice_worker(**COMMON_ARGS)
+            await execute_invoice_tool(**COMMON_ARGS)

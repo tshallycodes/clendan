@@ -6,7 +6,7 @@ export interface BankDef {
   domain: string
   provider: 'plaid' | 'truelayer'
   institution_id?: string
-  region: 'us' | 'uk' | 'eu'
+  region: 'us' | 'eu'
 }
 
 export const BANKS: BankDef[] = [
@@ -22,19 +22,14 @@ export const BANKS: BankDef[] = [
   { id: 'amex', name: 'Amex', abbr: 'AMEX', color: '#2E77BC', domain: 'americanexpress.com', provider: 'plaid', institution_id: 'ins_10', region: 'us' },
   { id: 'usaa', name: 'USAA', abbr: 'USAA', color: '#003087', domain: 'usaa.com', provider: 'plaid', institution_id: 'ins_11', region: 'us' },
   { id: 'ally', name: 'Ally Bank', abbr: 'ALLY', color: '#6A3290', domain: 'ally.com', provider: 'plaid', region: 'us' },
-  // UK Banks (via Plaid)
-  { id: 'barclays', name: 'Barclays', abbr: 'BARC', color: '#00AEEF', domain: 'barclays.co.uk', provider: 'plaid', region: 'uk' },
-  { id: 'hsbc', name: 'HSBC', abbr: 'HSBC', color: '#DB0011', domain: 'hsbc.com', provider: 'plaid', region: 'uk' },
-  { id: 'lloyds', name: 'Lloyds', abbr: 'LLOY', color: '#006A4D', domain: 'lloydsbank.com', provider: 'plaid', region: 'uk' },
-  { id: 'natwest', name: 'NatWest', abbr: 'NW', color: '#6F2C91', domain: 'natwest.com', provider: 'plaid', region: 'uk' },
-  { id: 'santander', name: 'Santander', abbr: 'SAN', color: '#EA1D25', domain: 'santander.co.uk', provider: 'plaid', region: 'uk' },
-  { id: 'halifax', name: 'Halifax', abbr: 'HAL', color: '#009FE3', domain: 'halifax.co.uk', provider: 'plaid', region: 'uk' },
-  { id: 'nationwide', name: 'Nationwide', abbr: 'NBS', color: '#103C75', domain: 'nationwide.co.uk', provider: 'plaid', region: 'uk' },
-  { id: 'monzo', name: 'Monzo', abbr: 'MNZ', color: '#FF3366', domain: 'monzo.com', provider: 'plaid', region: 'uk' },
-  { id: 'starling', name: 'Starling', abbr: 'SB', color: '#6935AA', domain: 'starlingbank.com', provider: 'plaid', region: 'uk' },
-  { id: 'revolut', name: 'Revolut', abbr: 'REV', color: '#3D3D3D', domain: 'revolut.com', provider: 'plaid', region: 'uk' },
-  { id: 'first_direct', name: 'First Direct', abbr: 'FD', color: '#1A1A1A', domain: 'firstdirect.com', provider: 'plaid', region: 'uk' },
-  // EU Banks (TrueLayer only)
+  // EU & UK Banks (via TrueLayer Open Banking)
+  { id: 'barclays', name: 'Barclays', abbr: 'BARC', color: '#00AEEF', domain: 'barclays.co.uk', provider: 'truelayer', region: 'eu' },
+  { id: 'hsbc', name: 'HSBC', abbr: 'HSBC', color: '#DB0011', domain: 'hsbc.com', provider: 'truelayer', region: 'eu' },
+  { id: 'lloyds', name: 'Lloyds', abbr: 'LLOY', color: '#006A4D', domain: 'lloydsbank.com', provider: 'truelayer', region: 'eu' },
+  { id: 'natwest', name: 'NatWest', abbr: 'NW', color: '#6F2C91', domain: 'natwest.com', provider: 'truelayer', region: 'eu' },
+  { id: 'monzo', name: 'Monzo', abbr: 'MNZ', color: '#FF3366', domain: 'monzo.com', provider: 'truelayer', region: 'eu' },
+  { id: 'starling', name: 'Starling', abbr: 'SB', color: '#6935AA', domain: 'starlingbank.com', provider: 'truelayer', region: 'eu' },
+  { id: 'revolut', name: 'Revolut', abbr: 'REV', color: '#3D3D3D', domain: 'revolut.com', provider: 'truelayer', region: 'eu' },
   { id: 'n26', name: 'N26', abbr: 'N26', color: '#30373E', domain: 'n26.com', provider: 'truelayer', region: 'eu' },
   { id: 'ing', name: 'ING', abbr: 'ING', color: '#FF6200', domain: 'ing.com', provider: 'truelayer', region: 'eu' },
   { id: 'bunq', name: 'Bunq', abbr: 'BUNQ', color: '#00B9A9', domain: 'bunq.com', provider: 'truelayer', region: 'eu' },

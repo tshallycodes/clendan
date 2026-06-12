@@ -1,4 +1,4 @@
-"""
+﻿"""
 Stub heavy runtime dependencies that are unavailable in the unit-test environment
 (Prisma client not generated, optional C-extensions not installed, etc.).
 
@@ -60,8 +60,8 @@ class MockPrisma:
         self.approval.create = AsyncMock(return_value=None)
         self.auditlog = MagicMock()
         self.auditlog.create = AsyncMock(return_value=None)
-        self.worker = MagicMock()
-        self.worker.find_first = AsyncMock(return_value=None)
+        self.tool = MagicMock()
+        self.tool.find_first = AsyncMock(return_value=None)
         self.execute_raw = AsyncMock(return_value=None)
         self.connect = AsyncMock(return_value=None)
         self.disconnect = AsyncMock(return_value=None)

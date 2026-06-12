@@ -13,7 +13,7 @@ import { BankPicker } from './BankPicker'
 import { BankDetailDrawer } from './BankDetailDrawer'
 import { BankDef } from './banks-data'
 
-const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001'
+const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
 const INTEGRATIONS: IntegrationDef[] = [
   // Accounting
@@ -44,7 +44,7 @@ const INTEGRATIONS: IntegrationDef[] = [
 ]
 
 const STATUSABLE_SLUGS = [
-  'quickbooks', 'plaid', 'xero', 'stripe', 'gocardless',
+  'quickbooks', 'plaid', 'truelayer', 'xero', 'stripe', 'gocardless',
   'codat', 'hubspot', 'gmail', 'outlook', 'google-drive',
   'freshbooks', 'sage', 'wave', 'adyen', 'wise',
   'netsuite', 'sap', 'dynamics365', 'sage-intacct', 'salesforce', 'dropbox', 'onedrive',
@@ -59,6 +59,8 @@ export function IntegrationsClient() {
   const [loading, setLoading] = useState(true)
   const [connecting, setConnecting] = useState<string | null>(null)
   const [connectedBankId, setConnectedBankId] = useState<string | null>(null)
+  const [connectedBankName, setConnectedBankName] = useState<string | null>(null)
+  const [connectedTruelayerName, setConnectedTruelayerName] = useState<string | null>(null)
   const [toast, setToast] = useState<string | null>(null)
   const [plaidToken, setPlaidToken] = useState<string | null>(null)
 
@@ -68,19 +70,20 @@ export function IntegrationsClient() {
   const [showXeroModal, setShowXeroModal] = useState(false)
   const [xeroOrgs, setXeroOrgs] = useState<XeroOrg[]>([])
   const [pendingXeroIntegrationId, setPendingXeroIntegrationId] = useState<string | null>(null)
-  const [showSyncLog, setShowSyncLog] = useState<string | null>(null)
+  const [showSyncLog, setShowSyncLog] = useState<{ slug: string; name: string } | null>(null)
   const [detailSlug, setDetailSlug] = useState<string | null>(null)
   const [bankDetailBank, setBankDetailBank] = useState<BankDef | null>(null)
 
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const { open: openPlaidLink, ready: plaidReady } = usePlaidLink({
-    token: plaidToken ?? '',
+    token: plaidToken,
     onSuccess: useCallback(async (public_token: string, metadata: PlaidLinkOnSuccessMetadata) => {
       const institution_id = metadata.institution?.institution_id ?? null
       const institution_name = metadata.institution?.name ?? null
       setStatus('plaid', 'syncing')
       setPlaidToken(null)
+      setConnecting(null)
       try {
         const authToken = await getToken()
         await fetch(`${API}/v1/integrations/plaid/exchange-token`, {
@@ -89,9 +92,11 @@ export function IntegrationsClient() {
           body: JSON.stringify({ public_token, institution_id, institution_name }),
         })
         if (institution_id) setConnectedBankId(institution_id)
+        if (institution_name) setConnectedBankName(institution_name)
         showToast('Bank connected — syncing transactions')
       } catch {
         setStatus('plaid', 'error')
+        setConnecting(null)
       }
     }, [getToken]), // eslint-disable-line react-hooks/exhaustive-deps
     onExit: useCallback(() => {
@@ -121,7 +126,8 @@ export function IntegrationsClient() {
         const raw: string = json.data?.status ?? json.status ?? 'not_connected'
         const synced: string | null = json.data?.last_synced_at ?? null
         const institutionId: string | null = slug === 'plaid' ? (json.data?.institution_id ?? null) : null
-        return { slug, status: raw as IntegrationStatus, last_synced_at: synced, institution_id: institutionId }
+        const institutionName: string | null = (slug === 'plaid' || slug === 'truelayer') ? (json.data?.institution_name ?? null) : null
+        return { slug, status: raw as IntegrationStatus, last_synced_at: synced, institution_id: institutionId, institution_name: institutionName }
       }),
     )
     const nextStatuses: Record<string, IntegrationStatus> = {}
@@ -132,6 +138,10 @@ export function IntegrationsClient() {
         nextSynced[r.value.slug] = r.value.last_synced_at
         if (r.value.slug === 'plaid' && r.value.institution_id) {
           setConnectedBankId(r.value.institution_id)
+          setConnectedBankName(r.value.institution_name)
+        }
+        if (r.value.slug === 'truelayer' && r.value.institution_name) {
+          setConnectedTruelayerName(r.value.institution_name)
         }
       }
     }
@@ -266,10 +276,26 @@ export function IntegrationsClient() {
 
   async function handleConnectBank(bank: BankDef) {
     if (connecting) return
+
     if (bank.provider === 'truelayer') {
-      showToast('TrueLayer EU banks coming soon')
+      setBankDetailBank(null)
+      setConnecting('truelayer')
+      try {
+        const authToken = await getToken()
+        const res = await fetch(`${API}/v1/integrations/truelayer/connect`, {
+          headers: { Authorization: `Bearer ${authToken}` },
+        })
+        if (!res.ok) throw new Error('Failed to get TrueLayer auth URL')
+        const json = await res.json()
+        const url: string = json.data?.auth_url ?? json.auth_url
+        window.location.href = url
+      } catch {
+        setStatus('truelayer', 'error')
+        setConnecting(null)
+      }
       return
     }
+
     setBankDetailBank(null)
     setConnecting('plaid')
     try {
@@ -281,11 +307,13 @@ export function IntegrationsClient() {
       })
       if (!res.ok) throw new Error('Failed to create Plaid link token')
       const json = await res.json()
-      const token: string = json.data?.link_token ?? json.link_token
+      const token: string | undefined = json.data?.link_token ?? json.link_token
+      if (!token) throw new Error('Plaid returned empty link token')
       setPlaidToken(token)
-    } catch {
+    } catch (err) {
       setStatus('plaid', 'error')
       setConnecting(null)
+      showToast(`Bank connection failed: ${err instanceof Error ? err.message : 'unknown error'}`)
     }
   }
 
@@ -301,10 +329,37 @@ export function IntegrationsClient() {
         throw new Error(json.detail ?? json.error ?? 'Disconnect failed')
       }
       setStatus(slug, 'disconnected')
-      if (slug === 'plaid') { setConnectedBankId(null); setBankDetailBank(null) }
     } catch (err) {
       showToast(err instanceof Error ? err.message : 'Disconnect failed')
     }
+  }
+
+  async function handleDisconnectConnection(provider: string, integrationId: string) {
+    try {
+      const token = await getToken()
+      const res = await fetch(`${API}/v1/integrations/${provider}/connections/${integrationId}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      if (!res.ok) {
+        const json = await res.json().catch(() => ({}))
+        throw new Error(json.detail ?? json.error ?? 'Disconnect failed')
+      }
+      await fetchAllStatuses()
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'Disconnect failed')
+    }
+  }
+
+  async function handleResyncConnection(provider: string, integrationId: string) {
+    try {
+      const token = await getToken()
+      await fetch(`${API}/v1/integrations/${provider}/connections/${integrationId}/sync`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      setStatus(provider, 'syncing')
+    } catch { /* silent — status poll will correct */ }
   }
 
   async function handleCredentialsSubmit(slug: string, credentials: Record<string, string>) {
@@ -359,12 +414,7 @@ export function IntegrationsClient() {
     }
   }
 
-  const syncLogIntg = showSyncLog
-    ? (INTEGRATIONS.find((i) => i.slug === showSyncLog) ?? null)
-    : null
-  const syncLogName = showSyncLog === 'plaid' && bankDetailBank
-    ? bankDetailBank.name
-    : (syncLogIntg?.name ?? showSyncLog ?? '')
+  const syncLogName = showSyncLog?.name ?? ''
 
   const detailIntg = detailSlug
     ? (INTEGRATIONS.find((i) => i.slug === detailSlug) ?? null)
@@ -398,9 +448,20 @@ export function IntegrationsClient() {
               Banking
             </h2>
             <BankPicker
+              plaidStatus={statuses['plaid'] ?? 'not_connected'}
               connectedInstitutionId={connectedBankId}
-              connecting={connecting === 'plaid'}
+              connectedBankName={connectedBankName}
+              truelayerStatus={statuses['truelayer'] ?? 'not_connected'}
+              connectedTruelayerName={connectedTruelayerName}
+              connecting={connecting === 'plaid' || connecting === 'truelayer'}
               onViewDetail={setBankDetailBank}
+              onConnect={(region) => {
+                if (region === 'eu') {
+                  handleConnectBank({ id: 'truelayer', name: 'Bank', abbr: 'EU', color: '#1a1a1a', domain: '', provider: 'truelayer', region: 'eu' })
+                } else {
+                  handleConnectBank({ id: 'other', name: 'Other Bank', abbr: '+', color: '#1a1a1a', domain: '', provider: 'plaid', region: 'us' })
+                }
+              }}
             />
           </section>
 
@@ -446,18 +507,23 @@ export function IntegrationsClient() {
       {/* Bank detail drawer */}
       <BankDetailDrawer
         bank={bankDetailBank}
-        plaidStatus={statuses['plaid'] ?? 'not_connected'}
-        connectedInstitutionId={connectedBankId}
         onClose={() => setBankDetailBank(null)}
         onConnect={handleConnectBank}
-        onDisconnect={() => handleDisconnectDirect('plaid')}
-        onResync={() => { handleResync('plaid'); setBankDetailBank(null) }}
-        onSyncLog={() => { setShowSyncLog('plaid'); setBankDetailBank(null) }}
+        onDisconnect={async (integrationId, provider) => {
+          await handleDisconnectConnection(provider, integrationId)
+        }}
+        onResync={async (integrationId, provider) => {
+          await handleResyncConnection(provider, integrationId)
+        }}
+        onSyncLog={(slug, name) => {
+          setShowSyncLog({ slug, name })
+          setBankDetailBank(null)
+        }}
       />
 
       {/* Sync log drawer */}
       <SyncLogDrawer
-        slug={showSyncLog}
+        slug={showSyncLog?.slug ?? null}
         integrationName={syncLogName}
         onClose={() => setShowSyncLog(null)}
       />
@@ -472,14 +538,17 @@ export function IntegrationsClient() {
         onConnect={() => {
           if (detailIntg) { setDetailSlug(null); handleConnect(detailIntg) }
         }}
-        onDisconnect={() => {
-          if (detailSlug) { handleDisconnectDirect(detailSlug); setDetailSlug(null) }
+        onDisconnect={async () => {
+          if (detailSlug) { await handleDisconnectDirect(detailSlug); setDetailSlug(null) }
         }}
-        onResync={() => {
-          if (detailSlug) handleResync(detailSlug)
+        onResync={async () => {
+          if (detailSlug) await handleResync(detailSlug)
         }}
         onSyncLog={() => {
-          if (detailSlug) { setShowSyncLog(detailSlug); setDetailSlug(null) }
+          if (detailSlug) {
+            setShowSyncLog({ slug: detailSlug, name: detailIntg?.name ?? detailSlug })
+            setDetailSlug(null)
+          }
         }}
       />
 

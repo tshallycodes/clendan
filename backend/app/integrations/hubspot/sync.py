@@ -1,5 +1,5 @@
-"""
-HubSpot sync job — runs via arq worker.
+﻿"""
+HubSpot sync job — runs via arq tool.
 Fetches contacts, companies, and deals. Writes a sync log entry per entity type.
 """
 import time

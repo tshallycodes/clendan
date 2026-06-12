@@ -1,15 +1,15 @@
-# Clendan — Claude Code Configuration
+﻿# Clendan — Claude Code Configuration
 
 ## Project Overview
 
-Clendan is an AI Financial Agent OS. A platform where companies deploy autonomous AI workers
+Clendan is an AI Financial Agent OS. A platform where companies deploy autonomous AI tools
 that connect to financial systems, execute tasks, enforce policy, and produce full audit trails.
 
 **Stack:** Next.js 14 (frontend) · FastAPI (backend) · PostgreSQL + Prisma · Clerk (auth) ·
 Anthropic SDK · BullMQ + Redis · Vercel + Railway · Sentry + PostHog
 
 **Architecture:** Master-subagent model. Financial Orchestrator is the master agent.
-All other workers are sub-agents called as tools. Workers never call each other directly.
+All other tools are sub-agents called as tools. Tools never call each other directly.
 
 ---
 
@@ -26,6 +26,7 @@ All other workers are sub-agents called as tools. Workers never call each other 
 - When fixing bugs: read only the specific lines needed, not full files
 - ALWAYS run database migrations after schema changes
 - If an error persists after two attempts, stop and discuss options
+- Do not hardcode API keys, secrets, or any credentials, or design styles
 
 ---
 
@@ -48,7 +49,7 @@ All other workers are sub-agents called as tools. Workers never call each other 
 No agent feature is complete unless it follows every step:
 
 ```
-receive → classify → select worker → execute → policy check → output → audit
+receive → classify → select tool → execute → policy check → output → audit
 ```
 
 ### Step Definitions
@@ -56,20 +57,20 @@ receive → classify → select worker → execute → policy check → output �
 | Step | Rule |
 |------|------|
 | Receive | Event or API call arrives at Orchestrator. Input validated before any processing. |
-| Classify | Orchestrator identifies event type and determines which worker(s) to invoke. |
-| Select Worker | Orchestrator calls the appropriate sub-agent worker as a tool. Never assumed. |
-| Execute | Worker runs its task using connected tools (bank API, ERP, OCR, etc). |
+| Classify | Orchestrator identifies event type and determines which tool(s) to invoke. |
+| Select Tool | Orchestrator calls the appropriate sub-agent tool as a tool. Never assumed. |
+| Execute | Tool runs its task using connected tools (bank API, ERP, OCR, etc). |
 | Policy Check | Policy engine validates output before any action is taken. Cannot be skipped. |
 | Output | Decision returned with confidence score and full reasoning trace. |
 | Audit | Every action written to immutable audit log before returning response to caller. |
 
 ### Required Patterns
 
-**Worker invocation:**
+**Tool invocation:**
 ```python
-# Orchestrator calls workers as tools — never direct execution
-result = await orchestrator.invoke_worker(
-    worker_type="invoice_processing",
+# Orchestrator calls tools as tools — never direct execution
+result = await orchestrator.invoke_tool(
+    tool_type="invoice_processing",
     input=event_payload,
     tenant_id=tenant_id,
     policy_context=policy_rules
@@ -93,13 +94,13 @@ else:
 
 ### Hard Fail Anti-Patterns
 
-- Worker executing without policy check
-- Orchestrator calling workers directly without classifying first
+- Tool executing without policy check
+- Orchestrator calling tools directly without classifying first
 - Single external API call with no retry logic
 - Writing to ERP/accounting system before audit log entry
 - Agent returning success when external API returned empty
 - Skipping the audit step for any reason
-- Two workers calling each other directly (bypassing Orchestrator)
+- Two tools calling each other directly (bypassing Orchestrator)
 
 **If any step in the agent flow is missing: the feature is incomplete and must not be marked done.**
 
@@ -126,7 +127,7 @@ Clendan is a multi-tenant platform. Every feature must enforce tenant isolation.
 - **Row-level security (RLS)** on every PostgreSQL table — no exceptions
 - **Tenant ID on every query** — never query without scoping to tenant
 - **Tool credentials isolated per tenant** — API keys for Xero, Plaid, QuickBooks stored encrypted, scoped to tenant only
-- **Agent instances isolated per tenant** — one tenant's workers cannot access another's tools or data
+- **Agent instances isolated per tenant** — one tenant's tools cannot access another's tools or data
 - **Audit logs scoped per tenant** — tenants can only query their own audit trail
 - **Cross-tenant data leakage is a critical security failure** — treat it as such
 
@@ -179,7 +180,7 @@ return {
 - Audit log table: append-only, no UPDATE, no DELETE, no exceptions
 
 ### Performance
-- Redis cache for tenant config, policy rules, worker definitions — strict TTL invalidation
+- Redis cache for tenant config, policy rules, tool definitions — strict TTL invalidation
 - Rate limiting and backpressure on all Plaid, Xero, QuickBooks, Stripe API calls
 - Batch processing for reconciliation jobs — never run in request thread
 - Agent execution target: 2–5 seconds. Flag and investigate anything above 10 seconds.
@@ -188,7 +189,7 @@ return {
 - Circuit breakers on all external API integrations (Plaid, Xero, QuickBooks, Stripe)
 - Retries with exponential backoff and jitter on all external calls
 - Dead-letter queues for failed agent jobs — replay without data loss
-- Graceful degradation — a failing integration does not stop other workers
+- Graceful degradation — a failing integration does not stop other tools
 - Health check endpoints for all services: `/health` and `/ready`
 
 ### Security
@@ -204,7 +205,7 @@ return {
 - Sentry for error monitoring — all unhandled exceptions captured
 - Structured logs only — JSON, never freeform strings
 - Audit logs are separate from application logs — different table, different retention
-- PostHog for product analytics — track agent executions, approval rates, worker usage
+- PostHog for product analytics — track agent executions, approval rates, tool usage
 
 ---
 
@@ -218,7 +219,7 @@ Default pattern:
 - Spawn one subagent for schema/migration work, separate from application code
 - Spawn one subagent for reading existing code before any writing subagent starts
 - Never read and write in the same sequential pass when parallelism is possible
-- For phases with multiple components (route + worker + DB migration), always fan out
+- For phases with multiple components (route + tool + DB migration), always fan out
 - When in doubt: more subagents, not fewer
 
 ---
@@ -255,7 +256,7 @@ SendMessage({ to: "researcher", summary: "Start", message: "[task context]" })
 |---------|------|----------|
 | **Pipeline** | A → B → C → D | Sequential dependencies (feature dev) |
 | **Fan-out** | Lead → A, B, C → Lead | Independent parallel work (multiple files) |
-| **Supervisor** | Lead ↔ workers | Ongoing coordination (complex refactor) |
+| **Supervisor** | Lead ↔ tools | Ongoing coordination (complex refactor) |
 
 ### Rules
 - ALWAYS name agents — `name: "role"` makes them addressable
@@ -269,7 +270,7 @@ SendMessage({ to: "researcher", summary: "Start", message: "[task context]" })
 | Use | Don't Use |
 |-----|-----------|
 | 3+ files touched | Single file edits |
-| New agent workers | 1–2 line fixes |
+| New agent tools | 1–2 line fixes |
 | Cross-module changes | Config changes |
 | New FastAPI routes | Documentation updates |
 | New integrations (Plaid, Xero) | Simple questions |
@@ -327,7 +328,7 @@ Electric Green `#00C853` appears ONLY on:
 - Active nav indicator (dot or underline only — NOT the icon itself)
 - Successful execution status indicators
 - Positive financial values and auto-approved states
-- Worker active/running pulse indicators
+- Tool active/running pulse indicators
 - Toggle switches (on state)
 - Input focus border
 - Chart lines showing positive trends
@@ -355,16 +356,16 @@ Electric Green NEVER appears on:
 | `warning` | `#f5a623` | Stale data, slow execution, pending states |
 | `overlay` | `rgba(0,0,0,0.7)` | Modal backdrops |
 
-### Worker Status Colors
+### Tool Status Colors
 
 | Status | Color | Usage |
 |--------|-------|-------|
-| Running / Auto-executed | `#00C853` | Active worker indicators, success states |
+| Running / Auto-executed | `#00C853` | Active tool indicators, success states |
 | Approval Required | `#00a8cc` | Pending human review |
 | Blocked / Flagged | `#ff4d6d` | Policy violation, fraud flag, escalated |
-| Inactive / Disabled | `#4a6a4a` | Worker turned off, V2/V3 not yet deployed |
+| Inactive / Disabled | `#4a6a4a` | Tool turned off, V2/V3 not yet deployed |
 
-Never repurpose status colors outside worker/execution display.
+Never repurpose status colors outside tool/execution display.
 
 ### Typography Scale
 
@@ -415,7 +416,7 @@ Clendan is sharp-edged — infrastructure product aesthetic. Default: `sm`. Max:
 
 **Audit Trail Row:** background `#111118`, hover background `#1a1a28`, expandable. Expanded state shows full reasoning trace in monospace. Trace IDs in `#4a6a4a`.
 
-**Worker Card:** background `#111118`, border `1px solid #1a2a1a`. Active workers: left border `3px solid #00C853`. Approval-required: left border `3px solid #00a8cc`. Blocked: left border `3px solid #ff4d6d`. Inactive: no accent border.
+**Tool Card:** background `#111118`, border `1px solid #1a2a1a`. Active tools: left border `3px solid #00C853`. Approval-required: left border `3px solid #00a8cc`. Blocked: left border `3px solid #ff4d6d`. Inactive: no accent border.
 
 ### Motion Rules
 
@@ -426,7 +427,7 @@ Clendan is sharp-edged — infrastructure product aesthetic. Default: `sm`. Max:
 - Skeleton loaders only — no full-screen spinners
 - Every button: idle → hover → active (scale 0.97) → loading → success/error
 - Execution log lines animate in sequentially — 150ms stagger per line
-- Worker status changes: fade + slight translate, 200ms ease
+- Tool status changes: fade + slight translate, 200ms ease
 - Charts animate on load and between time ranges — static charts are not acceptable
 - Approval queue counter changes: number interpolates, never jumps
 
@@ -444,7 +445,7 @@ Clendan is sharp-edged — infrastructure product aesthetic. Default: `sm`. Max:
 ## Clendan-Specific Rules
 
 - All Anthropic API calls via FastAPI backend — never from Next.js client directly
-- Worker execution always goes through BullMQ queue — never block API request threads
+- Tool execution always goes through BullMQ queue — never block API request threads
 - Policy engine runs on every agent output before any action is taken — cannot be bypassed
 - Audit log written before returning response — if audit write fails, the operation fails
 - Tenant isolation enforced at DB layer (RLS) AND application layer — both required
@@ -453,7 +454,7 @@ Clendan is sharp-edged — infrastructure product aesthetic. Default: `sm`. Max:
 - Completed tasks: move to done.md, never delete — audit trail for development
 - Every 10 Claude Code tasks ≈ 5% weekly limit — be surgical with file reads
 - Currency: store as integer (pence/cents), convert to decimal at display layer only
-- Worker versioning: every worker has a version field — agent decisions log the version used
+- Tool versioning: every tool has a version field — agent decisions log the version used
 - Human approval API: approval expiry must be enforced — stale approvals rejected after configured TTL
 - Clerk auth: verify JWT server-side on every protected FastAPI route — `requireAuth()` in middleware
 - Never expose raw Plaid, Xero, or QuickBooks error messages to the frontend — map to structured errors

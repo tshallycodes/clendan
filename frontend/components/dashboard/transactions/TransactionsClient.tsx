@@ -7,7 +7,7 @@ import { TransactionRow, type Transaction } from './TransactionRow'
 
 export type { Transaction }
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001'
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 const PAGE_SIZE = 50
 
 type StatusFilter = 'all' | 'pending' | 'categorised' | 'matched'

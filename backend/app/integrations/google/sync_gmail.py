@@ -1,5 +1,5 @@
-"""
-Gmail sync job — runs via arq worker.
+﻿"""
+Gmail sync job — runs via arq tool.
 Sets up Gmail watch, scans the last 30 days of emails with attachments,
 counts PDF attachment hits, writes sync log, updates integration status.
 """
@@ -66,10 +66,12 @@ async def sync_gmail_connection(ctx: dict, integration_id: str, tenant_id: str) 
         except Exception as exc:
             logger.error("gmail_token_refresh_failed integration_id=%s: %s", integration_id, type(exc).__name__)
 
+    initial_status = integration.status
     sync_start = time.monotonic()
     sync_status = "success"
     message_count = 0
     pdf_count = 0
+    pdf_attachments: list[tuple[str, str]] = []  # (message_id, attachment_id)
 
     try:
         # Set up Gmail watch if pubsub topic is configured
@@ -103,6 +105,9 @@ async def sync_gmail_connection(ctx: dict, integration_id: str, tenant_id: str) 
                     filename = part.get("filename", "")
                     if mime == "application/pdf" or filename.lower().endswith(".pdf"):
                         pdf_count += 1
+                        attachment_id = (part.get("body") or {}).get("attachmentId", "")
+                        if attachment_id:
+                            pdf_attachments.append((stub["id"], attachment_id))
             except Exception as exc:
                 logger.warning(
                     "gmail_message_parts_failed message_id=%s: %s",
@@ -139,6 +144,27 @@ async def sync_gmail_connection(ctx: dict, integration_id: str, tenant_id: str) 
             where={"id": integration_id},
             data={"status": "connected", "connected_at": datetime.now(UTC)},
         )
+        if initial_status == "connected" and pdf_attachments:
+            try:
+                from app.orchestrator.events import enqueue_orchestrator_event
+                for message_id, attachment_id in pdf_attachments:
+                    await enqueue_orchestrator_event(
+                        tenant_id=tenant_id,
+                        event_type="receipt_received",
+                        payload={
+                            "source": "gmail",
+                            "integration_id": integration_id,
+                            "message_id": message_id,
+                            "attachment_id": attachment_id,
+                        },
+                        idempotency_key=f"gmail:receipt:{message_id}:{attachment_id}",
+                        db=db,
+                    )
+            except Exception as exc:
+                logger.error(
+                    "gmail_receipt_event_failed integration_id=%s: %s",
+                    integration_id, type(exc).__name__,
+                )
         logger.info(
             "gmail_sync_ok tenant=%s messages=%d pdfs=%d",
             tenant_id, message_count, pdf_count,

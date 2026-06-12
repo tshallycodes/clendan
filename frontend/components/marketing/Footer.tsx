@@ -1,4 +1,4 @@
-import Link from 'next/link'
+﻿import Link from 'next/link'
 
 const FOOTER_LINKS: { heading: string; links: { label: string; href: string }[] }[] = [
   {

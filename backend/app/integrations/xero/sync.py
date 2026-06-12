@@ -1,5 +1,5 @@
-"""
-Xero sync job — runs via arq worker.
+﻿"""
+Xero sync job — runs via arq tool.
 Fetches accounts and contacts to verify connection is live.
 Writes IntegrationSyncLog entries. Updates integration status.
 """

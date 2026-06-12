@@ -1,6 +1,6 @@
 ﻿'use client'
 
-import type { Execution } from './WorkerDetail'
+import type { Execution } from './ToolDetail'
 
 const DECISION_BADGE: Record<string, string> = {
   auto_approved:     'bg-[rgba(0,200,83,0.08)] text-[#00C853] border border-[rgba(0,200,83,0.2)]',
@@ -26,7 +26,7 @@ export function ExecutionsTable({ executions }: Props) {
   if (executions.length === 0) {
     return (
       <div className="border border-[#1a2a1a] rounded-sm p-8 text-center">
-        <p className="text-xs font-mono text-[#4a6a4a]">No executions yet. Use Run test to trigger this worker.</p>
+        <p className="text-xs font-mono text-[#4a6a4a]">No executions yet. Use Run test to trigger this tool.</p>
       </div>
     )
   }

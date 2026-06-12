@@ -1,14 +1,12 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '@clerk/nextjs'
 import Image from 'next/image'
 import { BankDef } from './banks-data'
-import { IntegrationStatus } from './types'
-import { StatusDot, StatusLabel } from './CardStatusIndicator'
 
-const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001'
+const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
 interface Account {
   id: string
@@ -29,15 +27,23 @@ interface Transaction {
   ai_category: string | null
 }
 
+interface BankConnection {
+  integration_id: string
+  institution_name: string | null
+  status: string
+  connected_at: string | null
+  last_synced_at: string | null
+  accounts: Account[]
+  recent_transactions: Transaction[]
+}
+
 interface Props {
   bank: BankDef | null
-  plaidStatus: IntegrationStatus
-  connectedInstitutionId: string | null
   onClose: () => void
   onConnect: (bank: BankDef) => void
-  onDisconnect: () => void
-  onResync: () => void
-  onSyncLog: () => void
+  onDisconnect: (integrationId: string, provider: string) => Promise<void>
+  onResync: (integrationId: string, provider: string) => Promise<void>
+  onSyncLog: (slug: string, name: string) => void
 }
 
 function fmt(minor: number, currency: string): string {
@@ -48,141 +54,282 @@ function fmt(minor: number, currency: string): string {
   }
 }
 
-export function BankDetailDrawer({ bank, plaidStatus, connectedInstitutionId, onClose, onConnect, onDisconnect, onResync, onSyncLog }: Props) {
-  const { getToken } = useAuth()
-  const [accounts, setAccounts] = useState<Account[]>([])
-  const [transactions, setTransactions] = useState<Transaction[]>([])
-  const [loading, setLoading] = useState(false)
-  const [confirmDisconnect, setConfirmDisconnect] = useState(false)
+function StatusBadge({ status }: { status: string }) {
+  const map: Record<string, { bg: string; color: string; border: string }> = {
+    connected: { bg: 'rgba(0,200,83,0.08)', color: '#00C853', border: 'rgba(0,200,83,0.2)' },
+    syncing:   { bg: 'rgba(0,168,204,0.08)', color: '#00a8cc', border: 'rgba(0,168,204,0.2)' },
+    error:     { bg: 'rgba(255,77,109,0.08)', color: '#ff4d6d', border: 'rgba(255,77,109,0.2)' },
+  }
+  const s = map[status] ?? { bg: 'rgba(74,106,74,0.15)', color: '#a0b8a0', border: 'rgba(74,106,74,0.3)' }
+  return (
+    <span
+      className="text-[10px] font-mono uppercase tracking-wider px-2 py-0.5 rounded-sm"
+      style={{ background: s.bg, color: s.color, border: `1px solid ${s.border}` }}
+    >
+      {status}
+    </span>
+  )
+}
 
-  const isConnected = (plaidStatus === 'connected' || plaidStatus === 'syncing') &&
-    (bank?.institution_id === connectedInstitutionId || connectedInstitutionId === null)
+function ConnectionSection({
+  conn,
+  provider,
+  onDisconnect,
+  onResync,
+  onSyncLog,
+}: {
+  conn: BankConnection
+  provider: string
+  onDisconnect: (integrationId: string, provider: string) => Promise<void>
+  onResync: (integrationId: string, provider: string) => Promise<void>
+  onSyncLog: (slug: string, name: string) => void
+}) {
+  const [confirmDisconnect, setConfirmDisconnect] = useState(false)
+  const [disconnecting, setDisconnecting] = useState(false)
+  const [resyncing, setResyncing] = useState(false)
+
+  const lastSyncDisplay = conn.last_synced_at
+    ? new Date(conn.last_synced_at).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
+    : 'Not synced'
+
+  return (
+    <div className="bg-[#111118] border border-[#1a2a1a] rounded-sm overflow-hidden" style={{ borderLeft: '3px solid #00C853' }}>
+      {/* Header row */}
+      <div className="flex items-center justify-between px-4 py-3 border-b border-[#1a2a1a]">
+        <div>
+          <p className="text-xs font-mono text-[#e8f0e8]">{conn.institution_name || 'Connected Account'}</p>
+          <p className="text-[10px] font-mono text-[#4a6a4a] mt-0.5">Last sync: {lastSyncDisplay}</p>
+        </div>
+        <StatusBadge status={conn.status} />
+      </div>
+
+      {/* Accounts */}
+      {conn.accounts.length > 0 && (
+        <div className="divide-y divide-[#1a2a1a] border-b border-[#1a2a1a]">
+          {conn.accounts.map((a) => (
+            <div key={a.id} className="flex items-center justify-between gap-4 px-4 py-2.5">
+              <div className="min-w-0">
+                <p className="text-xs font-mono text-[#e8f0e8] truncate">{a.name}</p>
+                <p className="text-[10px] font-mono text-[#4a6a4a] uppercase mt-0.5">{a.subtype || a.type}</p>
+              </div>
+              <p className="text-xs font-mono text-[#e8f0e8] shrink-0">{fmt(a.current_balance_minor, a.currency)}</p>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Recent transactions */}
+      {conn.recent_transactions.length > 0 && (
+        <div className="border-b border-[#1a2a1a]">
+          <p className="text-[10px] font-mono uppercase tracking-widest text-[#4a6a4a] px-4 pt-3 pb-2">Recent</p>
+          <div className="divide-y divide-[#1a2a1a]">
+            {conn.recent_transactions.slice(0, 3).map((t) => (
+              <div key={t.id} className="flex items-center justify-between gap-4 px-4 py-2">
+                <p className="text-[10px] font-mono text-[#a0b8a0] truncate">{t.merchant_name || t.description}</p>
+                <div className="text-right shrink-0">
+                  <p className="text-[10px] font-mono text-[#e8f0e8]">{fmt(t.amount_minor, t.currency)}</p>
+                  <p className="text-[10px] font-mono text-[#4a6a4a]">
+                    {new Date(t.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Actions */}
+      <div className="px-4 py-3 flex gap-2">
+        <button
+          disabled={resyncing}
+          onClick={async () => {
+            setResyncing(true)
+            try { await onResync(conn.integration_id, provider) } finally { setResyncing(false) }
+          }}
+          className="flex-1 py-1.5 text-[10px] font-mono text-[#e8f0e8] bg-transparent border border-[#1a2a1a] rounded-sm hover:bg-[#1a1a1a] transition-colors disabled:opacity-60"
+        >
+          {resyncing ? 'Syncing...' : 'Resync'}
+        </button>
+        <button
+          onClick={() => onSyncLog(
+            `${provider}/connections/${conn.integration_id}`,
+            conn.institution_name || 'Connection',
+          )}
+          className="flex-1 py-1.5 text-[10px] font-mono text-[#e8f0e8] bg-transparent border border-[#1a2a1a] rounded-sm hover:bg-[#1a1a1a] transition-colors"
+        >
+          Sync Log
+        </button>
+        {confirmDisconnect ? (
+          <>
+            <button
+              disabled={disconnecting}
+              onClick={async () => {
+                setDisconnecting(true)
+                try { await onDisconnect(conn.integration_id, provider) } finally {
+                  setDisconnecting(false)
+                  setConfirmDisconnect(false)
+                }
+              }}
+              className="flex-1 py-1.5 text-[10px] font-mono text-[#ff4d6d] bg-[rgba(255,77,109,0.1)] border border-[#ff4d6d] rounded-sm hover:bg-[rgba(255,77,109,0.15)] transition-colors disabled:opacity-60"
+            >
+              {disconnecting ? 'Disconnecting...' : 'Confirm'}
+            </button>
+            <button
+              onClick={() => setConfirmDisconnect(false)}
+              className="px-3 py-1.5 text-[10px] font-mono text-[#4a6a4a] bg-transparent border border-[#1a2a1a] rounded-sm hover:bg-[#1a1a1a] transition-colors"
+            >
+              Cancel
+            </button>
+          </>
+        ) : (
+          <button
+            onClick={() => setConfirmDisconnect(true)}
+            className="flex-1 py-1.5 text-[10px] font-mono text-[#ff4d6d] bg-[rgba(255,77,109,0.1)] border border-[#ff4d6d]/30 rounded-sm hover:bg-[rgba(255,77,109,0.15)] transition-colors"
+          >
+            Disconnect
+          </button>
+        )}
+      </div>
+    </div>
+  )
+}
+
+export function BankDetailDrawer({ bank, onClose, onConnect, onDisconnect, onResync, onSyncLog }: Props) {
+  const { getToken } = useAuth()
+  const [connections, setConnections] = useState<BankConnection[]>([])
+  const [loading, setLoading] = useState(false)
+  const [logoError, setLogoError] = useState(false)
+
+  const fetchConnections = useCallback(async (bankDef: BankDef) => {
+    setLoading(true)
+    try {
+      const token = await getToken()
+      const param = `institution_name=${encodeURIComponent(bankDef.name)}`
+      const res = await fetch(`${API}/v1/integrations/${bankDef.provider}/connections?${param}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      if (res.ok) {
+        const json = await res.json()
+        setConnections(json.data?.connections ?? [])
+      }
+    } catch { /* silent */ } finally { setLoading(false) }
+  }, [getToken]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    setConfirmDisconnect(false)
-    if (!bank || !isConnected) { setAccounts([]); setTransactions([]); return }
-    setLoading(true)
-    async function load() {
-      try {
-        const token = await getToken()
-        const [ar, tr] = await Promise.all([
-          fetch(`${API}/v1/integrations/plaid/accounts`, { headers: { Authorization: `Bearer ${token}` } }),
-          fetch(`${API}/v1/integrations/plaid/transactions?limit=5`, { headers: { Authorization: `Bearer ${token}` } }),
-        ])
-        if (ar.ok) setAccounts((await ar.json()).data ?? [])
-        if (tr.ok) setTransactions((await tr.json()).data?.transactions ?? [])
-      } catch { /* silent */ } finally { setLoading(false) }
-    }
-    load()
-  }, [bank?.id, isConnected]) // eslint-disable-line react-hooks/exhaustive-deps
+    setLogoError(false)
+    setConnections([])
+    if (!bank) return
+    fetchConnections(bank)
+  }, [bank?.id]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleDisconnect = async (integrationId: string, provider: string) => {
+    await onDisconnect(integrationId, provider)
+    if (bank) fetchConnections(bank)
+  }
 
   return (
     <AnimatePresence>
       {bank && (
         <>
-          <motion.div key="bank-bd" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }} className="fixed inset-0 bg-black/70 z-40" onClick={onClose} />
-          <motion.aside key="bank-dr" initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }} transition={{ type: 'tween', duration: 0.25 }} className="fixed right-0 top-0 h-full w-[480px] max-w-full bg-[#111111] border-l border-[#1a2a1a] z-50 flex flex-col">
-
+          <motion.div
+            key="bank-bd"
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 bg-black/70 z-40"
+            onClick={onClose}
+          />
+          <motion.aside
+            key="bank-dr"
+            initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }}
+            transition={{ type: 'tween', duration: 0.25 }}
+            className="fixed right-0 top-0 h-full w-[480px] max-w-full bg-[#111111] border-l border-[#1a2a1a] z-50 flex flex-col"
+          >
             {/* Header */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-[#1a2a1a]">
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-sm overflow-hidden bg-white flex items-center justify-center shrink-0">
-                  <Image unoptimized src={`https://www.google.com/s2/favicons?sz=64&domain=${bank.domain}`} alt={bank.name} width={24} height={24} className="object-contain" />
+                <div
+                  className="w-8 h-8 rounded-sm overflow-hidden flex items-center justify-center shrink-0"
+                  style={{ backgroundColor: logoError || !bank.domain ? bank.color : 'white' }}
+                >
+                  {logoError || !bank.domain ? (
+                    <span className="text-[10px] font-mono font-bold text-white leading-none">
+                      {bank.abbr.slice(0, 2)}
+                    </span>
+                  ) : (
+                    <Image
+                      unoptimized
+                      src={`https://www.google.com/s2/favicons?sz=64&domain=${bank.domain}`}
+                      alt={bank.name} width={24} height={24} className="object-contain"
+                      onError={() => setLogoError(true)}
+                    />
+                  )}
                 </div>
-                <div>
-                  <h2 className="font-heading font-bold text-base text-[#e8f0e8]">{bank.name}</h2>
-                  <div className="flex items-center gap-1.5 mt-0.5">
-                    <StatusDot status={isConnected ? 'connected' : 'not_connected'} />
-                    <StatusLabel status={isConnected ? 'connected' : 'not_connected'} />
-                  </div>
-                </div>
+                <h2 className="font-heading font-bold text-base text-[#e8f0e8]">{bank.name}</h2>
               </div>
-              <button onClick={onClose} className="text-[#4a6a4a] hover:text-[#e8f0e8] transition-colors text-xl leading-none">&times;</button>
+              <button
+                onClick={onClose}
+                className="text-[#4a6a4a] hover:text-[#e8f0e8] transition-colors text-xl leading-none"
+              >
+                &times;
+              </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto px-6 py-5 space-y-6">
-              {isConnected ? (
+            <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4">
+              {loading ? (
+                <div className="space-y-3">
+                  {[1, 2].map((i) => (
+                    <div key={i} className="h-32 bg-[#111118] border border-[#1a2a1a] rounded-sm animate-pulse" />
+                  ))}
+                </div>
+              ) : connections.length > 0 ? (
                 <>
-                  {/* Accounts */}
-                  <section>
-                    <p className="text-[10px] font-mono uppercase tracking-widest text-[#4a6a4a] mb-3">Bank Accounts</p>
-                    {loading ? (
-                      <div className="space-y-1">{[1,2].map(i => <div key={i} className="h-16 bg-[#0a0a0a] border border-[#1a2a1a] rounded-sm animate-pulse" />)}</div>
-                    ) : accounts.length > 0 ? (
-                      <div className="space-y-1">
-                        {accounts.map(a => (
-                          <div key={a.id} className="bg-[#0a0a0a] border border-[#1a2a1a] rounded-sm px-4 py-3 flex items-center justify-between gap-4">
-                            <div className="min-w-0">
-                              <p className="text-xs font-mono text-[#e8f0e8] truncate">{a.name}</p>
-                              <p className="text-[10px] font-mono text-[#4a6a4a] mt-0.5 uppercase">{a.subtype || a.type}</p>
-                            </div>
-                            <p className="text-xs font-mono text-[#e8f0e8] shrink-0">{fmt(a.current_balance_minor, a.currency)}</p>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-[10px] font-mono text-[#4a6a4a]">No accounts yet — run a sync to load data</p>
-                    )}
-                  </section>
-
-                  {/* Recent transactions */}
-                  <section>
-                    <p className="text-[10px] font-mono uppercase tracking-widest text-[#4a6a4a] mb-3">Recent Transactions</p>
-                    {loading ? (
-                      <div className="space-y-1">{[1,2,3].map(i => <div key={i} className="h-12 bg-[#0a0a0a] border border-[#1a2a1a] rounded-sm animate-pulse" />)}</div>
-                    ) : transactions.length > 0 ? (
-                      <div className="space-y-1">
-                        {transactions.map(t => (
-                          <div key={t.id} className="bg-[#0a0a0a] border border-[#1a2a1a] rounded-sm px-4 py-2.5 flex items-center justify-between gap-4">
-                            <div className="min-w-0">
-                              <p className="text-xs font-mono text-[#e8f0e8] truncate">{t.merchant_name || t.description}</p>
-                              {t.ai_category && <p className="text-[10px] font-mono text-[#4a6a4a] mt-0.5 uppercase">{t.ai_category}</p>}
-                            </div>
-                            <div className="text-right shrink-0">
-                              <p className="text-xs font-mono text-[#e8f0e8]">{fmt(t.amount_minor, t.currency)}</p>
-                              <p className="text-[10px] font-mono text-[#4a6a4a] mt-0.5">{new Date(t.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</p>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-[10px] font-mono text-[#4a6a4a]">No transactions yet — run a sync to load data</p>
-                    )}
-                  </section>
-
-                  {/* Actions */}
-                  <section>
-                    <p className="text-[10px] font-mono uppercase tracking-widest text-[#4a6a4a] mb-3">Actions</p>
-                    <div className="flex gap-2">
-                      <button onClick={onResync} className="flex-1 py-2 text-[11px] font-mono text-[#e8f0e8] border border-[#1a2a1a] rounded-sm hover:bg-[#1a1a1a] transition-colors">Resync</button>
-                      <button onClick={onSyncLog} className="flex-1 py-2 text-[11px] font-mono text-[#e8f0e8] border border-[#1a2a1a] rounded-sm hover:bg-[#1a1a1a] transition-colors">Sync Log</button>
-                      {confirmDisconnect ? (
-                        <>
-                          <button onClick={() => { onDisconnect(); setConfirmDisconnect(false) }} className="flex-1 py-2 text-[11px] font-mono text-[#ff4d6d] bg-[rgba(255,77,109,0.08)] border border-[#ff4d6d]/30 rounded-sm hover:bg-[rgba(255,77,109,0.15)] transition-colors">Confirm</button>
-                          <button onClick={() => setConfirmDisconnect(false)} className="px-3 py-2 text-[11px] font-mono text-[#4a6a4a] border border-[#1a2a1a] rounded-sm hover:bg-[#1a1a1a] transition-colors">Cancel</button>
-                        </>
-                      ) : (
-                        <button onClick={() => setConfirmDisconnect(true)} className="flex-1 py-2 text-[11px] font-mono text-[#ff4d6d] bg-[rgba(255,77,109,0.05)] border border-[#ff4d6d]/30 rounded-sm hover:bg-[rgba(255,77,109,0.1)] transition-colors">Disconnect</button>
-                      )}
-                    </div>
-                  </section>
+                  {connections.length > 1 && (
+                    <p className="text-[10px] font-mono uppercase tracking-widest text-[#4a6a4a]">
+                      {connections.length} Connections
+                    </p>
+                  )}
+                  {connections.map((conn) => (
+                    <ConnectionSection
+                      key={conn.integration_id}
+                      conn={conn}
+                      provider={bank.provider}
+                      onDisconnect={handleDisconnect}
+                      onResync={onResync}
+                      onSyncLog={onSyncLog}
+                    />
+                  ))}
                 </>
               ) : (
-                <div className="flex flex-col items-center justify-center py-16 gap-4 text-center">
-                  <div className="w-16 h-16 rounded-sm overflow-hidden bg-white flex items-center justify-center">
-                    <Image unoptimized src={`https://www.google.com/s2/favicons?sz=128&domain=${bank.domain}`} alt={bank.name} width={48} height={48} className="object-contain" />
+                <div className="flex flex-col items-center justify-center py-16 gap-5 text-center">
+                  <div
+                    className="w-14 h-14 rounded-sm overflow-hidden flex items-center justify-center border border-[#1a2a1a]"
+                    style={{ backgroundColor: !bank.domain ? bank.color : 'white' }}
+                  >
+                    {!bank.domain ? (
+                      <span className="text-lg font-mono font-bold text-white">{bank.abbr.slice(0, 2)}</span>
+                    ) : (
+                      <Image
+                        unoptimized
+                        src={`https://www.google.com/s2/favicons?sz=128&domain=${bank.domain}`}
+                        alt={bank.name} width={40} height={40} className="object-contain"
+                      />
+                    )}
                   </div>
                   <div>
-                    <p className="text-sm font-mono text-[#e8f0e8]">Connect {bank.name}</p>
-                    <p className="text-[10px] font-mono text-[#4a6a4a] mt-1 max-w-[240px] mx-auto">Sync accounts and transactions automatically</p>
+                    <p className="text-sm font-mono font-semibold text-[#e8f0e8]">{bank.name}</p>
+                    <p className="text-[10px] font-mono text-[#4a6a4a] mt-1.5 max-w-[220px] mx-auto leading-relaxed">
+                      Sync accounts and transactions automatically
+                    </p>
                   </div>
-                  <button onClick={() => onConnect(bank)} className="px-6 py-2.5 bg-[#00C853] text-black text-xs font-mono font-semibold rounded-sm hover:bg-[#00a844] active:scale-[0.97] transition-all">
+                  <button
+                    onClick={() => onConnect(bank)}
+                    className="px-6 py-2.5 bg-[#00C853] text-black text-xs font-mono font-semibold rounded-sm hover:bg-[#00a844] active:scale-[0.97] transition-all"
+                  >
                     Connect
                   </button>
                 </div>
               )}
             </div>
-
           </motion.aside>
         </>
       )}

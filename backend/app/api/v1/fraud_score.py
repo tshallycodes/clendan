@@ -1,6 +1,6 @@
-"""
+﻿"""
 Fraud Score API stub — POST /v1/fraud/score.
-# TODO: wire FraudDetectionWorker in Phase 2
+# TODO: wire FraudDetectionTool in Phase 2
 """
 from fastapi import APIRouter
 from pydantic import BaseModel
@@ -21,7 +21,7 @@ class FraudScoreRequest(BaseModel):
 
 @router.post("/fraud/score")
 async def score_fraud(body: FraudScoreRequest, current_user: RequireOrgAuth) -> dict:
-    """Score a transaction for fraud risk. Stub — FraudDetectionWorker not yet wired."""
+    """Score a transaction for fraud risk. Stub — FraudDetectionTool not yet wired."""
     return standard_response(
         data={
             "risk_score": 0.0,

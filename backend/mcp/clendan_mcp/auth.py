@@ -7,6 +7,7 @@ mapping is consistent.
 """
 from __future__ import annotations
 
+import contextvars
 import os
 from typing import Any
 
@@ -14,6 +15,9 @@ import httpx
 
 CLENDAN_API_BASE = os.getenv("CLENDAN_API_BASE", "https://api.clendan.com")
 CLENDAN_API_KEY = os.getenv("CLENDAN_API_KEY", "")
+
+# Set per SSE connection by http_server.py — takes priority over CLENDAN_API_KEY env var
+_request_api_key: contextvars.ContextVar[str] = contextvars.ContextVar("request_api_key", default="")
 
 # User-friendly error messages for common HTTP status codes
 _STATUS_MESSAGES: dict[int, str] = {
@@ -47,11 +51,11 @@ class MCPError(Exception):
 
 
 def _require_api_key() -> str:
-    key = CLENDAN_API_KEY or os.getenv("CLENDAN_API_KEY", "")
+    key = _request_api_key.get() or CLENDAN_API_KEY or os.getenv("CLENDAN_API_KEY", "")
     if not key:
         raise MCPError(
             "CLENDAN_API_KEY is not set. "
-            "Get your API key from https://app.clendan.com/dashboard/developer-api "
+            "Get your API key from https://app.clendan.com/settings/mcp "
             "and set it in your MCP config."
         )
     return key

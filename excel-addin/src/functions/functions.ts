@@ -1,4 +1,4 @@
-/* global CustomFunctions, OfficeRuntime */
+﻿/* global CustomFunctions, OfficeRuntime */
 
 const API_BASE = "https://api.clendan.com";
 const API_KEY_STORAGE_KEY = "clendan_api_key";
@@ -16,7 +16,7 @@ function generateIdempotencyKey(): string {
  * Categorises a transaction description using Clendan AI.
  * @customfunction
  * @param transactionDescription The transaction description to categorise
- * @returns Category string from the AI Accountant worker
+ * @returns Category string from the AI Accountant tool
  */
 export async function CATEGORISE(transactionDescription: string): Promise<string> {
   const key = await getApiKey();
@@ -33,7 +33,7 @@ export async function CATEGORISE(transactionDescription: string): Promise<string
         "Idempotency-Key": generateIdempotencyKey(),
       },
       body: JSON.stringify({
-        worker: "ai_accountant",
+        tool: "ai_accountant",
         payload: { transaction_description: transactionDescription },
       }),
     });
@@ -72,7 +72,7 @@ export async function PROCESS_INVOICE(documentUrl: string): Promise<string> {
         "Idempotency-Key": generateIdempotencyKey(),
       },
       body: JSON.stringify({
-        worker: "invoice_processing",
+        tool: "invoice_processing",
         payload: { document_url: documentUrl },
       }),
     });

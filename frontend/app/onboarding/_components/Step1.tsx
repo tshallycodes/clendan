@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useAuth, useUser } from '@clerk/nextjs'
 
-const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001'
+const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
 const INDUSTRIES = ['Technology', 'Finance', 'Healthcare', 'Retail', 'Manufacturing', 'Professional Services', 'Other']
 const COMPANY_SIZES = ['1–10', '11–50', '51–200', '201–1000', '1000+']

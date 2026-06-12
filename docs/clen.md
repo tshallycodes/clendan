@@ -1,6 +1,6 @@
-# Clen — Clendan's AI Assistant
+﻿# Clen — Clendan's AI Assistant
 # Build Phase A (Docs Assistant) after: website live, docs content written
-# Build Phase B (Account Assistant) after: dashboard live, Invoice Processing Worker wired
+# Build Phase B (Account Assistant) after: dashboard live, Invoice Processing Tool wired
 
 ---
 
@@ -13,7 +13,7 @@ mode it knows the user's real data and can answer questions about their
 specific account, guide them through tasks, and take actions with confirmation.
 
 Clen is not a generic chatbot. It knows Clendan's full product, the user's
-workers, their executions, their integrations, and their audit trail.
+tools, their executions, their integrations, and their audit trail.
 It speaks like a knowledgeable colleague, not a support ticket system.
 
 ---
@@ -51,7 +51,7 @@ Clen speaks like a sharp, knowledgeable finance-tech colleague.
 Example responses:
 
 User: "How do I set an approval threshold?"
-Clen: "Go to Dashboard → Workers → Configure on the Invoice Processing Worker.
+Clen: "Go to Dashboard → Tools → Configure on the Invoice Processing Tool.
 Set your auto-approve limit under Amount Thresholds. Anything below that
 processes automatically. Above it routes to your approval queue."
 
@@ -66,11 +66,11 @@ to pull up the full reasoning trace?"
 
 ```
 You are Clen, the AI assistant for Clendan — an AI Financial Agent OS that
-helps companies automate finance operations using autonomous AI workers.
+helps companies automate finance operations using autonomous AI tools.
 
 You have full knowledge of:
 - What Clendan is and how it works
-- All 10 AI workers and what they do (Invoice Processing, AI Accountant,
+- All 10 AI tools and what they do (Invoice Processing, AI Accountant,
   Reconciliation, Expense Control, Collections, Fraud Detection, Treasury,
   Revenue Recognition, Credit Underwriting, Compliance)
 - The 5 standalone API tools (Invoice Parser, Receipt OCR, Document
@@ -78,7 +78,7 @@ You have full knowledge of:
 - All integrations (QuickBooks, Xero, Plaid, Stripe, GoCardless, TrueLayer,
   Codat, HubSpot, Gmail, Outlook, Google Drive)
 - Pricing (Starter £299/mo, Growth £799/mo, Enterprise custom)
-- The master-subagent architecture (Orchestrator routes to workers)
+- The master-subagent architecture (Orchestrator routes to tools)
 - Authentication (API keys, Bearer token)
 - Policy engine (approval thresholds, supplier verification, currency rules)
 - Audit trail (immutable, append-only, full reasoning traces)
@@ -97,7 +97,7 @@ Personality:
   app.clendan.com — but only once and only if relevant.
 
 You do NOT have access to any user account data in this mode.
-If asked about their specific account, workers, or executions,
+If asked about their specific account, tools, or executions,
 tell them to log into their dashboard where you have full context.
 ```
 
@@ -112,7 +112,7 @@ You are Clen, the AI assistant embedded in the Clendan dashboard.
 
 You also have access to this user's account data via tools.
 Their organisation: {org_name}
-Their active workers: {worker_list}
+Their active tools: {tool_list}
 Their connected integrations: {integration_list}
 Their plan: {plan_name}
 
@@ -120,7 +120,7 @@ You can:
 1. Answer questions using their live account data by calling tools
 2. Guide them through tasks step by step
 3. Take actions on their behalf — but ALWAYS confirm before executing
-   any action that modifies data (approvals, worker config, etc.)
+   any action that modifies data (approvals, tool config, etc.)
 
 Rules:
 - Never take a modifying action without explicit user confirmation
@@ -215,7 +215,7 @@ Clicking a prompt sends it immediately.
 **Context Bar (below header):**
 - Shows what Clen knows about the current page
 - e.g. on `/dashboard/approvals`: "I can see your 3 pending approvals"
-- e.g. on `/dashboard/workers`: "I can see your 2 active workers"
+- e.g. on `/dashboard/tools`: "I can see your 2 active tools"
 - Muted text, `11px`, IBM Plex Mono
 
 **Action Confirmation UI:**
@@ -239,7 +239,7 @@ Clen never executes without this confirmation being shown and clicked.
 **Loading State:**
 Three animated dots when Clen is thinking or calling a tool.
 If calling a tool: shows which tool — "Checking your audit trail..."
-"Looking at your workers..." "Fetching execution details..."
+"Looking at your tools..." "Fetching execution details..."
 
 ---
 
@@ -388,7 +388,7 @@ ACCOUNT_TOOLS = [
         "input_schema": {
             "type": "object",
             "properties": {
-                "worker_type": {"type": "string"},
+                "tool_type": {"type": "string"},
                 "status": {"type": "string", "enum": ["auto", "approved", "rejected", "blocked"]},
                 "from_date": {"type": "string"},
                 "to_date": {"type": "string"},
@@ -407,19 +407,19 @@ ACCOUNT_TOOLS = [
         }
     },
     {
-        "name": "list_workers",
-        "description": "List all deployed workers and their current status.",
+        "name": "list_tools",
+        "description": "List all deployed tools and their current status.",
         "input_schema": {"type": "object", "properties": {}}
     },
     {
-        "name": "get_worker_status",
-        "description": "Get detailed status and config of a specific worker.",
+        "name": "get_tool_status",
+        "description": "Get detailed status and config of a specific tool.",
         "input_schema": {
             "type": "object",
             "properties": {
-                "worker_type": {"type": "string"}
+                "tool_type": {"type": "string"}
             },
-            "required": ["worker_type"]
+            "required": ["tool_type"]
         }
     },
     {
@@ -464,14 +464,14 @@ ACCOUNT_TOOLS = [
         }
     },
     {
-        "name": "pause_worker",
-        "description": "Pause a running worker. ALWAYS show confirmation card before calling this.",
+        "name": "pause_tool",
+        "description": "Pause a running tool. ALWAYS show confirmation card before calling this.",
         "input_schema": {
             "type": "object",
             "properties": {
-                "worker_type": {"type": "string"}
+                "tool_type": {"type": "string"}
             },
-            "required": ["worker_type"]
+            "required": ["tool_type"]
         }
     }
 ]
@@ -491,7 +491,7 @@ async def build_system_prompt(mode: str, user: CurrentUser | None) -> str:
         return DOCS_SYSTEM_PROMPT.format(docs=base)
 
     # Account mode — enrich with user's live context
-    workers = await get_workers_summary(user.org_id)
+    tools = await get_tools_summary(user.org_id)
     integrations = await get_integrations_summary(user.org_id)
     org = await get_org(user.org_id)
     stats = await get_execution_stats(user.org_id, period="7d")
@@ -500,7 +500,7 @@ async def build_system_prompt(mode: str, user: CurrentUser | None) -> str:
         docs=base,
         org_name=org.name,
         plan=org.plan,
-        worker_list=workers,
+        tool_list=tools,
         integration_list=integrations,
         stats_summary=stats
     )
@@ -636,13 +636,13 @@ Never call the Anthropic API from the frontend — backend only.
 
 **Phase A — Docs Assistant:**
 - [ ] Website live at clendan.com
-- [ ] Docs content written (at least introduction, quickstart, workers overview)
+- [ ] Docs content written (at least introduction, quickstart, tools overview)
 - [ ] Anthropic API key in backend env vars
 - [ ] Marketing site deployed on Vercel
 
 **Phase B — Account Assistant:**
 - [ ] Dashboard live with real data
 - [ ] Clerk auth working end to end
-- [ ] Invoice Processing Worker wired
+- [ ] Invoice Processing Tool wired
 - [ ] At least one integration connected
 - [ ] Phase A working and stable

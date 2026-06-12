@@ -1,4 +1,4 @@
-"""
+﻿"""
 Local dev script — tests live QuickBooks sandbox connection.
 Run from backend/: python scripts/test_qb_connection.py
 """
@@ -44,7 +44,7 @@ async def main() -> None:
         print(f"OK: Company name: {company.get('company_name')}")
         print(f"    Country: {company.get('country')}")
         print(f"    Fiscal year start: {company.get('fiscal_year_start')}")
-        print("\nQuickBooks connection is live and workers can fetch data.")
+        print("\nQuickBooks connection is live and tools can fetch data.")
 
     except Exception as exc:
         print(f"FAIL: {type(exc).__name__}: {exc}")

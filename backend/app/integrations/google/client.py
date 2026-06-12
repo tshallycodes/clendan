@@ -12,7 +12,7 @@ import httpx
 
 from app.core.config import get_settings
 from app.core.logging import get_logger
-from app.integrations.encryption import encrypt_credentials, decrypt_credentials
+from app.integrations.encryption import encrypt_credentials
 from app.integrations.google.circuit_breaker import _circuit
 
 logger = get_logger(__name__)
@@ -329,6 +329,43 @@ async def setup_drive_watch(
             )
             response.raise_for_status()
             return response.json()
+
+    return await _circuit.call(_retry, _call)
+
+
+async def get_gmail_attachment_bytes(access_token: str, message_id: str, attachment_id: str) -> bytes:
+    """Download a Gmail attachment and return raw bytes. Gmail uses URL-safe base64."""
+    import base64 as _base64
+
+    async def _call():
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                f"{GMAIL_API_BASE}/messages/{message_id}/attachments/{attachment_id}",
+                headers={"Authorization": f"Bearer {access_token}"},
+                timeout=30.0,
+            )
+            response.raise_for_status()
+            return response.json()
+
+    data = await _circuit.call(_retry, _call)
+    b64data = data.get("data", "")
+    # Gmail pads with - and _ instead of + and /; pad to multiple of 4
+    padded = b64data + "=" * ((4 - len(b64data) % 4) % 4)
+    return _base64.urlsafe_b64decode(padded)
+
+
+async def download_drive_file_bytes(access_token: str, file_id: str) -> bytes:
+    """Download a Google Drive file's content as raw bytes."""
+    async def _call():
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                f"{DRIVE_API_BASE}/files/{file_id}",
+                headers={"Authorization": f"Bearer {access_token}"},
+                params={"alt": "media"},
+                timeout=60.0,
+            )
+            response.raise_for_status()
+            return response.content
 
     return await _circuit.call(_retry, _call)
 

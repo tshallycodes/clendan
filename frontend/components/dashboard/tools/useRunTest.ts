@@ -1,13 +1,13 @@
-'use client'
+﻿'use client'
 
 import { useState, useCallback } from 'react'
 import { useAuth } from '@clerk/nextjs'
-import { TEST_PAYLOADS } from './workerTestPayloads'
-import type { TestResult } from './WorkerTestResult'
+import { TEST_PAYLOADS } from './toolTestPayloads'
+import type { TestResult } from './ToolTestResult'
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
-export function useRunTest(workerId: string, workerType: string) {
+export function useRunTest(toolId: string, toolType: string) {
   const { getToken } = useAuth()
   const [running, setRunning]         = useState(false)
   const [result, setResult]           = useState<TestResult | null>(null)
@@ -17,9 +17,9 @@ export function useRunTest(workerId: string, workerType: string) {
     setResult(null)
     try {
       const token = await getToken()
-      const testPayload = TEST_PAYLOADS[workerType]
+      const testPayload = TEST_PAYLOADS[toolType]
       if (!testPayload) {
-        setResult({ decision: 'failed', confidence: null, error: 'No test payload defined for this worker type.' })
+        setResult({ decision: 'failed', confidence: null, error: 'No test payload defined for this tool type.' })
         return
       }
       const res = await fetch(`${API}/v1/events`, {
@@ -27,9 +27,9 @@ export function useRunTest(workerId: string, workerType: string) {
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
-          'Idempotency-Key': `test-${workerId}-${Date.now()}`,
+          'Idempotency-Key': `test-${toolId}-${Date.now()}`,
         },
-        body: JSON.stringify({ ...testPayload, worker_id: workerId }),
+        body: JSON.stringify({ ...testPayload, tool_id: toolId }),
       })
       if (!res.ok) {
         setResult({ decision: 'failed', confidence: null, error: `Request failed (${res.status})` })
@@ -42,7 +42,7 @@ export function useRunTest(workerId: string, workerType: string) {
     } finally {
       setRunning(false)
     }
-  }, [getToken, workerId, workerType])
+  }, [getToken, toolId, toolType])
 
   const dismiss = useCallback(() => setResult(null), [])
 

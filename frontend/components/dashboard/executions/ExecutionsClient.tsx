@@ -1,15 +1,15 @@
-'use client'
+﻿'use client'
 
 import { useState } from 'react'
 import { useAuth } from '@clerk/nextjs'
 import { StatusBadge } from '@/components/dashboard/StatusBadge'
 import { cn } from '@/lib/utils'
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001'
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
 export interface Execution {
   id: string
-  worker_type: string
+  tool_type: string
   decision: string
   confidence: number
   status: string
@@ -39,7 +39,7 @@ function decisionToBadge(decision: string): string {
   return 'inactive'
 }
 
-function toWorkerLabel(type: string): string {
+function toToolLabel(type: string): string {
   return type.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
 }
 
@@ -115,8 +115,8 @@ function ExecutionDrawer({ execution, onClose, onAction, loadingState }: DrawerP
 
         <div className="space-y-5">
           <div>
-            <div className="text-[10px] font-mono text-brand-muted uppercase tracking-widest mb-1">Worker</div>
-            <div className="text-sm font-mono text-brand-text">{toWorkerLabel(execution.worker_type)}</div>
+            <div className="text-[10px] font-mono text-brand-muted uppercase tracking-widest mb-1">Tool</div>
+            <div className="text-sm font-mono text-brand-text">{toToolLabel(execution.tool_type)}</div>
             {execution.version && (
               <div className="text-[10px] font-mono text-brand-muted mt-0.5">v{execution.version}</div>
             )}
@@ -309,14 +309,14 @@ export function ExecutionsClient({ initialExecutions, total }: Props) {
       <div className="bg-brand-surface border border-brand-border rounded-sm overflow-hidden">
         {filtered.length === 0 ? (
           <p className="px-5 py-12 text-xs font-mono text-brand-muted text-center">
-            No executions yet — deploy a worker to begin
+            No executions yet — deploy a tool to begin
           </p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className="border-b border-brand-border">
-                  {['Timestamp', 'Worker', 'Decision', 'Status', 'Duration', ''].map((h, i) => (
+                  {['Timestamp', 'Tool', 'Decision', 'Status', 'Duration', ''].map((h, i) => (
                     <th
                       key={i}
                       className="text-left text-[10px] font-mono text-brand-muted uppercase tracking-widest px-5 py-3"
@@ -337,7 +337,7 @@ export function ExecutionsClient({ initialExecutions, total }: Props) {
                       {formatTs(e.created_at)}
                     </td>
                     <td className="px-5 py-3 text-xs font-mono text-brand-text whitespace-nowrap">
-                      {toWorkerLabel(e.worker_type)}
+                      {toToolLabel(e.tool_type)}
                     </td>
                     <td className="px-5 py-3 text-xs font-mono text-brand-text capitalize">
                       {e.decision}

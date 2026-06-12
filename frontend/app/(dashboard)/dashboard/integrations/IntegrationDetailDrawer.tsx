@@ -7,7 +7,7 @@ import { IntegrationLogo } from './IntegrationLogo'
 import { StatusDot, StatusLabel } from './CardStatusIndicator'
 import { IntegrationDef, IntegrationStatus } from './types'
 
-const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001'
+const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
 interface SyncLogEntry {
   id: string
@@ -23,8 +23,8 @@ interface Props {
   lastSyncedAt: string | null
   onClose: () => void
   onConnect: () => void
-  onDisconnect: () => void
-  onResync: () => void
+  onDisconnect: () => Promise<void>
+  onResync: () => Promise<void>
   onSyncLog: () => void
 }
 
@@ -39,12 +39,16 @@ export function IntegrationDetailDrawer({ slug, intg, status, lastSyncedAt, onCl
   const [logs, setLogs] = useState<SyncLogEntry[]>([])
   const [logsLoading, setLogsLoading] = useState(false)
   const [confirmDisconnect, setConfirmDisconnect] = useState(false)
+  const [disconnecting, setDisconnecting] = useState(false)
+  const [resyncing, setResyncing] = useState(false)
 
   const open = slug !== null && intg !== null
   const isConnected = status === 'connected' || status === 'syncing'
 
   useEffect(() => {
     setConfirmDisconnect(false)
+    setDisconnecting(false)
+    setResyncing(false)
     setLogs([])
     if (!slug || !isConnected) return
     setLogsLoading(true)
@@ -135,11 +139,29 @@ export function IntegrationDetailDrawer({ slug, intg, status, lastSyncedAt, onCl
                   <section>
                     <p className="text-[10px] font-mono uppercase tracking-widest text-[#4a6a4a] mb-3">Actions</p>
                     <div className="flex gap-2">
-                      <button onClick={onResync} className="flex-1 py-2 text-[11px] font-mono text-[#e8f0e8] border border-[#1a2a1a] rounded-sm hover:bg-[#1a1a1a] transition-colors">Resync</button>
+                      <button
+                        disabled={resyncing}
+                        onClick={async () => {
+                          setResyncing(true)
+                          try { await onResync() } finally { setResyncing(false) }
+                        }}
+                        className="flex-1 py-2 text-[11px] font-mono text-[#e8f0e8] border border-[#1a2a1a] rounded-sm hover:bg-[#1a1a1a] transition-colors disabled:opacity-60"
+                      >
+                        {resyncing ? 'Syncing...' : 'Resync'}
+                      </button>
                       <button onClick={onSyncLog} className="flex-1 py-2 text-[11px] font-mono text-[#e8f0e8] border border-[#1a2a1a] rounded-sm hover:bg-[#1a1a1a] transition-colors">Sync Log</button>
                       {confirmDisconnect ? (
                         <>
-                          <button onClick={() => { onDisconnect(); setConfirmDisconnect(false) }} className="flex-1 py-2 text-[11px] font-mono text-[#ff4d6d] bg-[rgba(255,77,109,0.08)] border border-[#ff4d6d]/30 rounded-sm hover:bg-[rgba(255,77,109,0.15)] transition-colors">Confirm</button>
+                          <button
+                            disabled={disconnecting}
+                            onClick={async () => {
+                              setDisconnecting(true)
+                              try { await onDisconnect() } finally { setDisconnecting(false); setConfirmDisconnect(false) }
+                            }}
+                            className="flex-1 py-2 text-[11px] font-mono text-[#ff4d6d] bg-[rgba(255,77,109,0.08)] border border-[#ff4d6d]/30 rounded-sm hover:bg-[rgba(255,77,109,0.15)] transition-colors disabled:opacity-60"
+                          >
+                            {disconnecting ? 'Disconnecting...' : 'Confirm'}
+                          </button>
                           <button onClick={() => setConfirmDisconnect(false)} className="px-3 py-2 text-[11px] font-mono text-[#4a6a4a] border border-[#1a2a1a] rounded-sm hover:bg-[#1a1a1a] transition-colors">Cancel</button>
                         </>
                       ) : (

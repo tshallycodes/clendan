@@ -1,4 +1,4 @@
-"""
+﻿"""
 Shared helper for emitting orchestrator events from any source:
 HTTP API, webhooks, sync jobs, cron triggers.
 Centralises execution record creation and queue dispatch.
@@ -21,25 +21,25 @@ async def enqueue_orchestrator_event(
     db: Prisma,
 ) -> str | None:
     """
-    Finds the active worker, creates an Execution record (status: queued),
+    Finds the active tool, creates an Execution record (status: queued),
     and enqueues run_orchestrator_job.
 
     Returns the execution_id.
-    Returns None if no active worker is deployed for this event type.
+    Returns None if no active tool is deployed for this event type.
     Idempotent: if a non-failed execution with this key already exists, returns its id.
     """
-    worker_type = EVENT_TO_WORKER.get(event_type)
-    if worker_type is None:
+    tool_type = EVENT_TO_WORKER.get(event_type)
+    if tool_type is None:
         logger.error("unknown_event_type", extra={"event_type": event_type})
         return None
 
-    worker = await db.worker.find_first(
-        where={"tenant_id": tenant_id, "type": worker_type.value, "status": "active"}
+    tool = await db.tool.find_first(
+        where={"tenant_id": tenant_id, "type": tool_type.value, "status": "active"}
     )
-    if not worker:
+    if not tool:
         logger.warning(
-            "no_active_worker_for_event",
-            extra={"tenant_id": tenant_id, "event_type": event_type, "worker_type": worker_type.value},
+            "no_active_tool_for_event",
+            extra={"tenant_id": tenant_id, "event_type": event_type, "tool_type": tool_type.value},
         )
         return None
 
@@ -51,7 +51,7 @@ async def enqueue_orchestrator_event(
 
     execution = await db.execution.create(data={
         "tenant_id": tenant_id,
-        "worker_id": worker.id,
+        "tool_id": tool.id,
         "input_ref": idempotency_key,
         "decision": "pending",
         "confidence": 0.0,
@@ -63,7 +63,7 @@ async def enqueue_orchestrator_event(
         "run_orchestrator_job",
         execution_id=execution.id,
         tenant_id=tenant_id,
-        worker_id=worker.id,
+        tool_id=tool.id,
         event_type=event_type,
         payload=payload,
     )

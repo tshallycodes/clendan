@@ -1,5 +1,5 @@
-"""
-Square sync job — runs via arq worker.
+﻿"""
+Square sync job — runs via arq tool.
 Fetches recent payments and invoices for a connected Square integration.
 Writes sync log entries per entity type.
 """

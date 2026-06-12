@@ -1,4 +1,4 @@
-from typing import Annotated
+﻿from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from prisma import Prisma
@@ -43,7 +43,7 @@ async def explain_decision(
         data={
             "execution": {
                 "id": execution.id,
-                "worker_id": execution.worker_id,
+                "tool_id": execution.tool_id,
                 "decision": execution.decision,
                 "confidence": execution.confidence,
                 "status": execution.status,

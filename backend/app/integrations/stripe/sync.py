@@ -1,5 +1,5 @@
-"""
-Stripe sync job — runs via arq worker.
+﻿"""
+Stripe sync job — runs via arq tool.
 Fetches recent charges and invoices to verify connection and seed initial data.
 """
 import time

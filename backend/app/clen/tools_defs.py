@@ -1,4 +1,4 @@
-"""
+﻿"""
 Anthropic tool_use schema definitions for Clen account mode.
 Imported by tools.py — kept separate to stay within the 500-line limit.
 """
@@ -22,11 +22,11 @@ ACCOUNT_TOOLS: list[dict] = [
     },
     {
         "name": "get_audit_trail",
-        "description": "Returns recent audit log entries, optionally filtered by worker type and status.",
+        "description": "Returns recent audit log entries, optionally filtered by tool type and status.",
         "input_schema": {
             "type": "object",
             "properties": {
-                "worker_type": {"type": "string", "description": "Filter by worker type. Optional."},
+                "tool_type": {"type": "string", "description": "Filter by tool type. Optional."},
                 "status": {"type": "string", "description": "Filter by execution status. Optional."},
                 "limit": {"type": "integer", "description": "Max entries to return (default 10, max 50).", "default": 10},
             },
@@ -45,19 +45,19 @@ ACCOUNT_TOOLS: list[dict] = [
         },
     },
     {
-        "name": "list_workers",
-        "description": "Lists all workers configured for this organisation.",
+        "name": "list_tools",
+        "description": "Lists all tools configured for this organisation.",
         "input_schema": {"type": "object", "properties": {}, "required": []},
     },
     {
-        "name": "get_worker_status",
-        "description": "Returns the current status and configuration of a specific worker.",
+        "name": "get_tool_status",
+        "description": "Returns the current status and configuration of a specific tool.",
         "input_schema": {
             "type": "object",
             "properties": {
-                "worker_type": {"type": "string", "description": "Worker type to look up (e.g. invoice_processing)."},
+                "tool_type": {"type": "string", "description": "Tool type to look up (e.g. invoice_processing)."},
             },
-            "required": ["worker_type"],
+            "required": ["tool_type"],
         },
     },
     {
@@ -109,18 +109,18 @@ ACCOUNT_TOOLS: list[dict] = [
         },
     },
     {
-        "name": "pause_worker",
+        "name": "pause_tool",
         "description": (
-            "ACTION: Pauses (deactivates) a worker by type. "
+            "ACTION: Pauses (deactivates) a tool by type. "
             "REQUIRES explicit user confirmation before calling. "
-            "Writes to audit log before updating worker status."
+            "Writes to audit log before updating tool status."
         ),
         "input_schema": {
             "type": "object",
             "properties": {
-                "worker_type": {"type": "string", "description": "Worker type to pause (e.g. invoice_processing)."},
+                "tool_type": {"type": "string", "description": "Tool type to pause (e.g. invoice_processing)."},
             },
-            "required": ["worker_type"],
+            "required": ["tool_type"],
         },
     },
 ]

@@ -1,9 +1,9 @@
-import Link from 'next/link'
+﻿import Link from 'next/link'
 import { ExternalLink } from 'lucide-react'
 import { CodeBlock } from '@/components/dashboard/api/CodeBlock'
 import { EndpointCard } from '@/components/dashboard/api/EndpointCard'
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8001'
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'
 
 export default function ApiDocsPage() {
   return (
@@ -78,7 +78,7 @@ curl -H "Authorization: Bearer $TOKEN" \\
         <div className="space-y-3">
           <EndpointCard
             method="GET" path="/v1/dashboard/stats"
-            description="Execution counts, pending approvals, active workers, invoices processed."
+            description="Execution counts, pending approvals, active tools, invoices processed."
             headers={[{ name: 'Authorization', required: true, description: 'Bearer <clerk-token>' }]}
             example={`curl ${BASE_URL}/v1/dashboard/stats \\
   -H "Authorization: Bearer $TOKEN"`}
@@ -111,11 +111,11 @@ curl -H "Authorization: Bearer $TOKEN" \\
       <section className="space-y-4">
         <h2 className="font-heading font-semibold text-sm text-brand-text uppercase tracking-widest">Agent Execution</h2>
         <p className="text-xs font-mono text-brand-muted">
-          Trigger a worker with a document. Use the same <code className="text-brand-text">Idempotency-Key</code> to safely retry — duplicate requests return the existing execution record.
+          Trigger a tool with a document. Use the same <code className="text-brand-text">Idempotency-Key</code> to safely retry — duplicate requests return the existing execution record.
         </p>
         <EndpointCard
-          method="POST" path="/v1/agents/{worker_id}/run"
-          description="Enqueue a document for processing by a specific worker. Returns immediately with execution_id."
+          method="POST" path="/v1/agents/{tool_id}/run"
+          description="Enqueue a document for processing by a specific tool. Returns immediately with execution_id."
           headers={[
             { name: 'X-Tenant-ID',      required: true, description: 'Your tenant ID' },
             { name: 'Idempotency-Key',  required: true, description: 'Unique key per operation (UUID recommended)' },
@@ -123,7 +123,7 @@ curl -H "Authorization: Bearer $TOKEN" \\
           example={`# Encode document as base64, then submit
 FILE_B64=$(base64 -w0 invoice.pdf)
 
-curl -X POST ${BASE_URL}/v1/agents/<worker_id>/run \\
+curl -X POST ${BASE_URL}/v1/agents/<tool_id>/run \\
   -H "X-Tenant-ID: <your-tenant-id>" \\
   -H "Idempotency-Key: $(uuidgen)" \\
   -H "Content-Type: application/json" \\
@@ -160,7 +160,7 @@ curl -X POST ${BASE_URL}/v1/agents/<worker_id>/run \\
 
 BASE = "${BASE_URL}/v1"
 TENANT_ID = "<your-tenant-id>"
-WORKER_ID = "<your-worker-id>"
+WORKER_ID = "<your-tool-id>"
 
 with open("invoice.pdf", "rb") as f:
     b64 = base64.b64encode(f.read()).decode()
@@ -181,7 +181,7 @@ print(resp.json()["data"])  # {"execution_id": "...", "status": "queued"}`} />
         <h2 className="font-heading font-semibold text-sm text-brand-text uppercase tracking-widest">TypeScript example</h2>
         <CodeBlock lang="typescript" code={`const BASE = "${BASE_URL}/v1"
 const TENANT_ID = "<your-tenant-id>"
-const WORKER_ID = "<your-worker-id>"
+const WORKER_ID = "<your-tool-id>"
 
 const fileBytes = await fs.readFile("invoice.pdf")
 const b64 = fileBytes.toString("base64")

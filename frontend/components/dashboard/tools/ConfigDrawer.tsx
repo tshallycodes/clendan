@@ -1,24 +1,24 @@
-'use client'
+﻿'use client'
 
 import { useState } from 'react'
 import { useAuth } from '@clerk/nextjs'
-import type { Worker } from './WorkerCard'
+import type { Tool } from './ToolCard'
 
-const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001'
+const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
 function formatType(type: string): string {
-  return type.split('_').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') + ' Worker'
+  return type.split('_').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') + ' Tool'
 }
 
 interface Props {
-  worker: Worker
+  tool: Tool
   onClose: () => void
   onSaved: () => void
 }
 
-export function ConfigDrawer({ worker, onClose, onSaved }: Props) {
+export function ConfigDrawer({ tool, onClose, onSaved }: Props) {
   const { getToken } = useAuth()
-  const [autonomy, setAutonomy] = useState<Worker['autonomy_level']>(worker.autonomy_level)
+  const [autonomy, setAutonomy] = useState<Tool['autonomy_level']>(tool.autonomy_level)
   const [autoThreshold, setAutoThreshold] = useState(50000)
   const [approveThreshold, setApproveThreshold] = useState(500000)
   const [saving, setSaving] = useState(false)
@@ -30,7 +30,7 @@ export function ConfigDrawer({ worker, onClose, onSaved }: Props) {
     setError(null)
     try {
       const token = await getToken()
-      const res = await fetch(`${API}/v1/tools/${worker.id}`, {
+      const res = await fetch(`${API}/v1/tools/${tool.id}`, {
         method: 'PATCH',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -61,8 +61,8 @@ export function ConfigDrawer({ worker, onClose, onSaved }: Props) {
       <div className="absolute right-0 top-0 h-screen w-96 bg-brand-surface border-l border-brand-border p-6 overflow-y-auto">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h2 className="font-heading font-semibold text-brand-text text-sm">{formatType(worker.type)}</h2>
-            <p className="text-[10px] font-mono text-brand-muted mt-0.5">{worker.type}</p>
+            <h2 className="font-heading font-semibold text-brand-text text-sm">{formatType(tool.type)}</h2>
+            <p className="text-[10px] font-mono text-brand-muted mt-0.5">{tool.type}</p>
           </div>
           <button type="button" onClick={onClose} className="text-brand-muted hover:text-brand-text transition-colors text-lg leading-none">✕</button>
         </div>
@@ -72,7 +72,7 @@ export function ConfigDrawer({ worker, onClose, onSaved }: Props) {
             <label className={labelClass}>Autonomy Level</label>
             <select
               value={autonomy}
-              onChange={(e) => setAutonomy(e.target.value as Worker['autonomy_level'])}
+              onChange={(e) => setAutonomy(e.target.value as Tool['autonomy_level'])}
               className={inputClass}
             >
               <option value="auto">Auto — executes without approval</option>

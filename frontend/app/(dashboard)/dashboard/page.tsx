@@ -1,4 +1,4 @@
-import { getBackendToken } from '@/lib/auth'
+﻿import { getBackendToken } from '@/lib/auth'
 import { apiGet } from '@/lib/api'
 import { StatCard } from '@/components/dashboard/StatCard'
 import { StatusBadge } from '@/components/dashboard/StatusBadge'
@@ -9,7 +9,7 @@ import { SystemStatusBar } from '@/components/dashboard/SystemStatusBar'
 interface Stats {
   executions: number
   pending_approvals: number
-  active_workers: number
+  active_tools: number
   invoices: number
   transactions: number
 }
@@ -21,7 +21,7 @@ export default async function DashboardPage() {
     if (token) stats = await apiGet<Stats>('/v1/dashboard/stats', token)
   } catch { /* backend not running — show zeros */ }
 
-  const s = stats ?? { executions: 0, pending_approvals: 0, active_workers: 0, invoices: 0, transactions: 0 }
+  const s = stats ?? { executions: 0, pending_approvals: 0, active_tools: 0, invoices: 0, transactions: 0 }
 
   return (
     <div className="p-6 space-y-6">
@@ -62,7 +62,7 @@ export default async function DashboardPage() {
           <h2 className="font-heading font-semibold text-brand-text text-sm">Active Tools</h2>
         </div>
         <div className="divide-y divide-brand-border">
-          {s.active_workers === 0 ? (
+          {s.active_tools === 0 ? (
             <p className="px-5 py-8 text-xs font-mono text-brand-muted text-center">No active tools — deploy tools to begin</p>
           ) : (
             <div className="px-5 py-4 flex items-center gap-4">
@@ -71,7 +71,7 @@ export default async function DashboardPage() {
                 <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-brand-green" />
               </span>
               <div className="flex-1 text-xs font-mono text-brand-text">
-                {s.active_workers} tool{s.active_workers !== 1 ? 's' : ''} running
+                {s.active_tools} tool{s.active_tools !== 1 ? 's' : ''} running
               </div>
               <StatusBadge status="active" />
             </div>

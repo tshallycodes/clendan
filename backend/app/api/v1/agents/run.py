@@ -1,5 +1,5 @@
-import base64
-from typing import Annotated, Any
+﻿import base64
+from typing import Any
 
 from fastapi import APIRouter, Header, HTTPException, Path
 from pydantic import BaseModel
@@ -7,10 +7,10 @@ from pydantic import BaseModel
 from app.core.db import get_db
 from app.core.logging import get_logger
 from app.core.responses import standard_response
-from app.core.security import RequireOrgAuth, CurrentUser
+from app.core.security import RequireOrgAuth
 from app.queue.pool import get_queue_pool
 
-WORKER_TYPE_TO_EVENT: dict[str, str] = {
+TOOL_TYPE_TO_EVENT: dict[str, str] = {
     "invoice_processing":  "invoice_received",
     "fraud_detection":     "fraud_check_requested",
     "collections":         "collection_triggered",
@@ -18,6 +18,8 @@ WORKER_TYPE_TO_EVENT: dict[str, str] = {
     "reconciliation":      "reconciliation_requested",
     "revenue_recognition": "revenue_recognition_run",
     "compliance_check":    "compliance_check_requested",
+    "receipt_processing":  "receipt_received",
+    "treasury":            "treasury_run",
 }
 
 _logger = get_logger(__name__)
@@ -30,36 +32,36 @@ class RunRequest(BaseModel):
     content_type: str
 
 
-@router.post("/{worker_id}/run")
+@router.post("/{tool_id}/run")
 async def run_agent(
     current_user: RequireOrgAuth,
-    worker_id: str = Path(...),
+    tool_id: str = Path(...),
     body: RunRequest = ...,
     idempotency_key: str = Header(..., alias="Idempotency-Key"),
 ):
     """
-    Idempotent execution endpoint. Enqueues the invoice processing worker via arq.
-    Same Idempotency-Key + tenant + worker returns the existing execution record.
+    Idempotent execution endpoint. Enqueues the invoice processing tool via arq.
+    Same Idempotency-Key + tenant + tool returns the existing execution record.
     Tenant isolation enforced at application layer; RLS enforced at DB layer (Phase 2).
     """
     db = get_db()
     tenant_id = current_user.tenant_id
 
-    # Validate worker belongs to tenant
-    worker = await db.worker.find_first(
-        where={"id": worker_id, "tenant_id": tenant_id}
+    # Validate tool belongs to tenant
+    tool = await db.tool.find_first(
+        where={"id": tool_id, "tenant_id": tenant_id}
     )
-    if not worker:
-        raise HTTPException(status_code=404, detail="Worker not found")
+    if not tool:
+        raise HTTPException(status_code=404, detail="Tool not found")
 
-    if worker.status == "inactive":
-        raise HTTPException(status_code=409, detail="Worker is inactive")
+    if tool.status == "inactive":
+        raise HTTPException(status_code=409, detail="Tool is inactive")
 
     # Idempotency: check for existing execution with this key (stored in input_ref)
     existing = await db.execution.find_first(
         where={
             "tenant_id": tenant_id,
-            "worker_id": worker_id,
+            "tool_id": tool_id,
             "input_ref": idempotency_key,
         }
     )
@@ -86,16 +88,16 @@ async def run_agent(
     if not file_bytes:
         raise HTTPException(status_code=400, detail="file_bytes_b64 decoded to empty bytes")
 
-    # Extract policy config from worker's config_json
+    # Extract policy config from tool's config_json
     policy_config = {}
-    if worker.config_json and isinstance(worker.config_json, dict):
-        policy_config = worker.config_json.get("policy", {})
+    if tool.config_json and isinstance(tool.config_json, dict):
+        policy_config = tool.config_json.get("policy", {})
 
     # Create execution record (status: queued)
     execution = await db.execution.create(
         data={
             "tenant_id": tenant_id,
-            "worker_id": worker_id,
+            "tool_id": tool_id,
             "input_ref": idempotency_key,
             "decision": "pending",
             "confidence": 0.0,
@@ -109,7 +111,7 @@ async def run_agent(
         "run_invoice_job",
         execution_id=execution.id,
         tenant_id=tenant_id,
-        worker_id=worker_id,
+        tool_id=tool_id,
         file_bytes=file_bytes,
         content_type=body.content_type,
         policy_config=policy_config,
@@ -117,7 +119,7 @@ async def run_agent(
 
     _logger.info(
         "execution_queued",
-        extra={"execution_id": execution.id, "worker_id": worker_id, "tenant_id": tenant_id},
+        extra={"execution_id": execution.id, "tool_id": tool_id, "tenant_id": tenant_id},
     )
 
     return standard_response(
@@ -134,36 +136,36 @@ class TriggerRequest(BaseModel):
     payload: dict[str, Any] = {}
 
 
-@router.post("/{worker_id}/trigger")
+@router.post("/{tool_id}/trigger")
 async def trigger_agent(
     current_user: RequireOrgAuth,
-    worker_id: str = Path(...),
+    tool_id: str = Path(...),
     body: TriggerRequest = ...,
     idempotency_key: str = Header(..., alias="Idempotency-Key"),
 ):
     """
     Dashboard execution path. Clerk-authenticated, generic JSON payload.
-    Enqueues the named worker via run_orchestrator_job.
-    Same Idempotency-Key + tenant + worker returns the existing execution record.
+    Enqueues the named tool via run_orchestrator_job.
+    Same Idempotency-Key + tenant + tool returns the existing execution record.
     """
     db = get_db()
     tenant_id = current_user.tenant_id
 
-    # --- Find worker by id and tenant ---
-    worker = await db.worker.find_first(
-        where={"id": worker_id, "tenant_id": tenant_id}
+    # --- Find tool by id and tenant ---
+    tool = await db.tool.find_first(
+        where={"id": tool_id, "tenant_id": tenant_id}
     )
-    if not worker:
-        raise HTTPException(status_code=404, detail="Worker not found")
+    if not tool:
+        raise HTTPException(status_code=404, detail="Tool not found")
 
-    if worker.status == "inactive":
-        raise HTTPException(status_code=409, detail="Worker is inactive")
+    if tool.status == "inactive":
+        raise HTTPException(status_code=409, detail="Tool is inactive")
 
     # --- Idempotency check ---
     existing = await db.execution.find_first(
         where={
             "tenant_id": tenant_id,
-            "worker_id": worker_id,
+            "tool_id": tool_id,
             "input_ref": idempotency_key,
         }
     )
@@ -177,18 +179,18 @@ async def trigger_agent(
             }
         )
 
-    # --- Extract policy config from worker config ---
+    # --- Extract policy config from tool config ---
     policy_config: dict[str, Any] = {}
-    if worker.config_json and isinstance(worker.config_json, dict):
-        policy_config = worker.config_json.get("policy", {})
+    if tool.config_json and isinstance(tool.config_json, dict):
+        policy_config = tool.config_json.get("policy", {})
 
-    event_type = WORKER_TYPE_TO_EVENT.get(worker.type, "invoice_received")
+    event_type = TOOL_TYPE_TO_EVENT.get(tool.type, "invoice_received")
 
     # --- Create execution record ---
     execution = await db.execution.create(
         data={
             "tenant_id": tenant_id,
-            "worker_id": worker_id,
+            "tool_id": tool_id,
             "input_ref": idempotency_key,
             "decision": "pending",
             "confidence": 0.0,
@@ -202,7 +204,7 @@ async def trigger_agent(
         "run_orchestrator_job",
         execution_id=execution.id,
         tenant_id=tenant_id,
-        worker_id=worker_id,
+        tool_id=tool_id,
         event_type=event_type,
         payload={**body.payload, **policy_config},
     )
@@ -211,7 +213,7 @@ async def trigger_agent(
         "trigger_queued",
         extra={
             "execution_id": execution.id,
-            "worker_id": worker_id,
+            "tool_id": tool_id,
             "tenant_id": tenant_id,
             "source": "dashboard",
         },

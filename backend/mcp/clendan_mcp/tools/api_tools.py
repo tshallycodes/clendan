@@ -1,8 +1,8 @@
-"""
+﻿"""
 tools/api_tools.py — Standalone financial analysis tool wrappers.
 
 These tools map to purpose-built API endpoints for fraud scoring,
-reconciliation, and contract extraction. They are not worker executions —
+reconciliation, and contract extraction. They are not tool executions —
 they call direct API endpoints and return synchronous results.
 """
 from __future__ import annotations

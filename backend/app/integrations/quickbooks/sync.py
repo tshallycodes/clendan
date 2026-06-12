@@ -1,5 +1,5 @@
-"""
-QuickBooks sync job — runs via arq worker.
+﻿"""
+QuickBooks sync job — runs via arq tool.
 Fetches company info and validates connection. Full invoice/account sync added in Phase 4+.
 """
 import json
