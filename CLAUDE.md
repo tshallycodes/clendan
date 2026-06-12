@@ -6,7 +6,7 @@ Clendan is an AI Financial Agent OS. A platform where companies deploy autonomou
 that connect to financial systems, execute tasks, enforce policy, and produce full audit trails.
 
 **Stack:** Next.js 14 (frontend) · FastAPI (backend) · PostgreSQL + Prisma · Clerk (auth) ·
-Anthropic SDK · BullMQ + Redis · Vercel + Railway · Sentry + PostHog
+Anthropic SDK · arq + Redis · Vercel + Railway · Sentry + PostHog
 
 **Architecture:** Master-subagent model. Financial Orchestrator is the master agent.
 All other tools are sub-agents called as tools. Tools never call each other directly.
@@ -116,7 +116,7 @@ These rules apply to every feature that touches financial data. No exceptions.
 - **Audit log immutability** — never UPDATE or DELETE audit rows. Append only.
 - **Reconciliation** — every external data sync must have a reconciliation job to detect drift
 - **Rollback capability** — any financial action taken by an agent must be reversable where technically possible. Document explicitly where it is not.
-- **Zero trust on external data** — data from Plaid, Xero, QuickBooks, Stripe is always validated before writing to DB. Never pass external data directly to ledger.
+- **Zero trust on external data** — data from Plaid, Xero, QuickBooks, Stripe, FreshBooks is always validated before writing to DB. Never pass external data directly to ledger.
 
 ---
 
@@ -126,7 +126,7 @@ Clendan is a multi-tenant platform. Every feature must enforce tenant isolation.
 
 - **Row-level security (RLS)** on every PostgreSQL table — no exceptions
 - **Tenant ID on every query** — never query without scoping to tenant
-- **Tool credentials isolated per tenant** — API keys for Xero, Plaid, QuickBooks stored encrypted, scoped to tenant only
+- **Tool credentials isolated per tenant** — API keys for Xero, Plaid, QuickBooks, FreshBooks stored encrypted, scoped to tenant only
 - **Agent instances isolated per tenant** — one tenant's tools cannot access another's tools or data
 - **Audit logs scoped per tenant** — tenants can only query their own audit trail
 - **Cross-tenant data leakage is a critical security failure** — treat it as such
@@ -168,7 +168,7 @@ return {
 - Modular boundaries: agents, tools, policy, auth, billing — no cross-domain shortcuts
 - Stateless FastAPI services — all state in PostgreSQL or Redis
 - Event-driven patterns for agent execution, notifications, audit trails
-- BullMQ queues for all async agent jobs — never block request threads with long-running tasks
+- arq queues for all async agent jobs — never block request threads with long-running tasks
 - Backward-compatible API versioning — v1 never breaks
 
 ### Data Layer
@@ -291,8 +291,11 @@ SendMessage({ to: "researcher", summary: "Start", message: "[task context]" })
 # Frontend
 cd frontend && npm run build && npm test
 
-# Backend
-cd backend && pytest && uvicorn main:app --reload
+# Backend API
+cd backend && pytest && uvicorn app.main:app --reload
+
+# Background worker
+cd backend && python run_tool.py app.tool.ToolSettings
 
 # Full stack
 docker-compose up --build
@@ -459,11 +462,11 @@ Clendan is sharp-edged — infrastructure product aesthetic. Default: `sm`. Max:
 ## Clendan-Specific Rules
 
 - All Anthropic API calls via FastAPI backend — never from Next.js client directly
-- Tool execution always goes through BullMQ queue — never block API request threads
+- Tool execution always goes through arq queue — never block API request threads
 - Policy engine runs on every agent output before any action is taken — cannot be bypassed
 - Audit log written before returning response — if audit write fails, the operation fails
 - Tenant isolation enforced at DB layer (RLS) AND application layer — both required
-- Tool credentials (Xero OAuth, Plaid tokens) encrypted with tenant-specific keys — never logged
+- Tool credentials (Xero OAuth, Plaid tokens, FreshBooks OAuth) encrypted with tenant-specific keys — never logged
 - Agent reasoning traces stored in full — never truncate reasoning for storage savings
 - Completed tasks: move to done.md, never delete — audit trail for development
 - Every 10 Claude Code tasks ≈ 5% weekly limit — be surgical with file reads
@@ -471,7 +474,7 @@ Clendan is sharp-edged — infrastructure product aesthetic. Default: `sm`. Max:
 - Tool versioning: every tool has a version field — agent decisions log the version used
 - Human approval API: approval expiry must be enforced — stale approvals rejected after configured TTL
 - Clerk auth: verify JWT server-side on every protected FastAPI route — `requireAuth()` in middleware
-- Never expose raw Plaid, Xero, or QuickBooks error messages to the frontend — map to structured errors
+- Never expose raw Plaid, Xero, QuickBooks, or FreshBooks error messages to the frontend — map to structured errors
 - Integration connection flow: OAuth → callback → store encrypted token → trigger initial sync → poll → confirm data present → mark connected. All steps required.
 - `POST /v1/agents/{id}/run` is idempotent — same idempotency key must return same result
 - Dashboard reads from DB-backed endpoints only — never calls external APIs directly from UI
