@@ -5,8 +5,7 @@ from prisma import Prisma
 from app.core.db import get_db_dep
 from app.core.logging import get_logger
 from app.core.responses import standard_response
-from app.core.security import RequireOrgAuth, CurrentUser
-from fastapi import HTTPException, status
+from app.core.security import RequireOrgAuth
 
 logger = get_logger(__name__)
 router = APIRouter(tags=["dashboard"])
@@ -89,12 +88,20 @@ async def list_approvals(
     db: Annotated[Prisma, Depends(get_db_dep)],
     limit: int = Query(20, le=100),
     offset: int = Query(0, ge=0),
+    tool_id: str | None = Query(None),
 ):
-    """Lists pending approvals for the tenant."""
+    """Lists pending approvals for the tenant. Optionally filter by tool_id."""
     tenant_id = current_user.tenant_id
+    where: dict = {"tenant_id": tenant_id, "status": "pending"}
+    if tool_id:
+        execs = await db.execution.find_many(
+            where={"tenant_id": tenant_id, "tool_id": tool_id},
+            take=500,
+        )
+        where["execution_id"] = {"in": [e.id for e in execs]}
 
     approvals = await db.approval.find_many(
-        where={"tenant_id": tenant_id, "status": "pending"},
+        where=where,
         order={"requested_at": "asc"},
         take=limit,
         skip=offset,
@@ -125,12 +132,20 @@ async def list_audit(
     db: Annotated[Prisma, Depends(get_db_dep)],
     limit: int = Query(50, le=200),
     offset: int = Query(0, ge=0),
+    tool_id: str | None = Query(None),
 ):
-    """Lists audit log entries for the tenant. Immutable — read only."""
+    """Lists audit log entries for the tenant. Optionally filter by tool_id."""
     tenant_id = current_user.tenant_id
+    where: dict = {"tenant_id": tenant_id}
+    if tool_id:
+        execs = await db.execution.find_many(
+            where={"tenant_id": tenant_id, "tool_id": tool_id},
+            take=500,
+        )
+        where["execution_id"] = {"in": [e.id for e in execs]}
 
     entries = await db.auditlog.find_many(
-        where={"tenant_id": tenant_id},
+        where=where,
         order={"created_at": "desc"},
         take=limit,
         skip=offset,

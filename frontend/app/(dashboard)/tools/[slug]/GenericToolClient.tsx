@@ -1,13 +1,14 @@
-﻿'use client'
+'use client'
 
 import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { ConfigDrawer } from '@/components/dashboard/tools/ConfigDrawer'
 import { DeployToolForm } from '@/components/dashboard/tools/DeployToolForm'
-import { ExecutionsTable } from '@/components/dashboard/tools/ExecutionsTable'
+import { ToolExecutionsTab } from '@/components/dashboard/tools/ToolExecutionsTab'
+import { ToolApprovalsTab } from '@/components/dashboard/tools/ToolApprovalsTab'
+import { ToolAuditTab } from '@/components/dashboard/tools/ToolAuditTab'
 import type { Tool } from '@/components/dashboard/tools/ToolCard'
-import type { Execution } from '@/components/dashboard/tools/ToolDetail'
 import type { ToolDef } from '../tools-data'
 import { useAuth } from '@clerk/nextjs'
 import { useCanConfigure } from '@/lib/auth-client'
@@ -17,8 +18,16 @@ const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 interface Props {
   tool: ToolDef
   deployed: Tool | null
-  executions: Execution[]
 }
+
+type ToolTab = 'overview' | 'executions' | 'approvals' | 'audit'
+
+const TABS: { key: ToolTab; label: string }[] = [
+  { key: 'overview', label: 'Overview' },
+  { key: 'executions', label: 'Executions' },
+  { key: 'approvals', label: 'Approvals' },
+  { key: 'audit', label: 'Audit' },
+]
 
 const AUTONOMY_BADGE: Record<string, { label: string; className: string }> = {
   auto:    { label: 'Auto',    className: 'bg-[rgba(0,200,83,0.08)] text-[#00C853] border border-[rgba(0,200,83,0.2)]' },
@@ -26,12 +35,26 @@ const AUTONOMY_BADGE: Record<string, { label: string; className: string }> = {
   suggest: { label: 'Suggest', className: 'bg-[#111111] text-[#4a6a4a] border border-[#1a2a1a]' },
 }
 
-export function GenericToolClient({ tool, deployed, executions }: Props) {
+function CapabilitiesList({ caps }: { caps: string[] }) {
+  return (
+    <ul className="bg-[#111111] border border-[#1a2a1a] rounded-sm divide-y divide-[#1a2a1a]">
+      {caps.map((cap) => (
+        <li key={cap} className="flex items-start gap-3 px-4 py-3">
+          <span className="text-[#00C853] font-mono text-[10px] mt-0.5 shrink-0">→</span>
+          <span className="text-xs font-mono text-[#a0b8a0]">{cap}</span>
+        </li>
+      ))}
+    </ul>
+  )
+}
+
+export function GenericToolClient({ tool, deployed }: Props) {
   const router = useRouter()
   const { getToken } = useAuth()
   const canConfigure = useCanConfigure()
   const [showConfig, setShowConfig] = useState(false)
   const [toggling, setToggling] = useState(false)
+  const [activeTab, setActiveTab] = useState<ToolTab>('overview')
 
   const isActive = deployed?.status === 'active'
   const badge = deployed ? (AUTONOMY_BADGE[deployed.autonomy_level] ?? AUTONOMY_BADGE.suggest) : null
@@ -73,19 +96,12 @@ export function GenericToolClient({ tool, deployed, executions }: Props) {
 
         {deployed && canConfigure && (
           <div className="flex items-center gap-2 flex-wrap">
-            <button
-              type="button"
-              onClick={() => setShowConfig(true)}
-              className="text-xs font-mono border border-[#1a2a1a] text-[#e8f0e8] hover:bg-[#1a1a28] rounded-sm px-3 py-1.5 transition-colors"
-            >
+            <button type="button" onClick={() => setShowConfig(true)}
+              className="text-xs font-mono border border-[#1a2a1a] text-[#e8f0e8] hover:bg-[#1a1a28] rounded-sm px-3 py-1.5 transition-colors">
               Configure
             </button>
-            <button
-              type="button"
-              onClick={handleToggle}
-              disabled={toggling}
-              className="text-xs font-mono border border-[#1a2a1a] text-[#e8f0e8] hover:bg-[#1a1a28] rounded-sm px-3 py-1.5 transition-colors disabled:opacity-50"
-            >
+            <button type="button" onClick={handleToggle} disabled={toggling}
+              className="text-xs font-mono border border-[#1a2a1a] text-[#e8f0e8] hover:bg-[#1a1a28] rounded-sm px-3 py-1.5 transition-colors disabled:opacity-50">
               {toggling ? '…' : isActive ? 'Pause' : 'Resume'}
             </button>
           </div>
@@ -93,47 +109,51 @@ export function GenericToolClient({ tool, deployed, executions }: Props) {
       </div>
 
       {deployed ? (
-        <div className="flex items-center gap-2">
-          {isActive ? (
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#00C853] opacity-60" />
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-[#00C853]" />
+        <>
+          <div className="flex items-center gap-2">
+            {isActive ? (
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#00C853] opacity-60" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-[#00C853]" />
+              </span>
+            ) : (
+              <span className="h-2 w-2 rounded-full bg-[#4a6a4a]" />
+            )}
+            <span className={`text-xs font-mono ${isActive ? 'text-[#00C853]' : 'text-[#4a6a4a]'}`}>
+              {isActive ? 'Active' : 'Inactive'}
             </span>
-          ) : (
-            <span className="h-2 w-2 rounded-full bg-[#4a6a4a]" />
-          )}
-          <span className={`text-xs font-mono ${isActive ? 'text-[#00C853]' : 'text-[#4a6a4a]'}`}>
-            {isActive ? 'Active' : 'Inactive'}
-          </span>
-        </div>
-      ) : (
-        <div className="bg-[#111111] border border-[#1a2a1a] rounded-sm p-6 space-y-4 max-w-sm">
-          <p className="text-xs font-mono text-[#4a6a4a]">This tool has not been deployed yet.</p>
-          {canConfigure && (
-            <DeployToolForm fixedType={tool.type} onDeployed={() => router.refresh()} />
-          )}
-        </div>
-      )}
+          </div>
 
-      {tool.capabilities.length > 0 && (
-        <section className="space-y-3">
-          <p className="text-[10px] font-mono uppercase tracking-widest text-[#4a6a4a]">Capabilities</p>
-          <ul className="bg-[#111111] border border-[#1a2a1a] rounded-sm divide-y divide-[#1a2a1a]">
-            {tool.capabilities.map((cap) => (
-              <li key={cap} className="flex items-start gap-3 px-4 py-3">
-                <span className="text-[#00C853] font-mono text-[10px] mt-0.5 shrink-0">→</span>
-                <span className="text-xs font-mono text-[#a0b8a0]">{cap}</span>
-              </li>
+          <div className="flex gap-1 border-b border-[#1a2a1a]">
+            {TABS.map(t => (
+              <button key={t.key} type="button" onClick={() => setActiveTab(t.key)}
+                className={`text-xs font-mono px-4 py-2.5 border-b-2 transition-colors -mb-px ${
+                  activeTab === t.key
+                    ? 'border-[#00C853] text-[#e8f0e8]'
+                    : 'border-transparent text-[#4a6a4a] hover:text-[#a0b8a0]'
+                }`}>
+                {t.label}
+              </button>
             ))}
-          </ul>
-        </section>
-      )}
+          </div>
 
-      {deployed && (
-        <section className="space-y-3">
-          <p className="text-[10px] font-mono uppercase tracking-widest text-[#4a6a4a]">Recent Executions</p>
-          <ExecutionsTable executions={executions} />
-        </section>
+          <div>
+            {activeTab === 'overview' && <CapabilitiesList caps={tool.capabilities} />}
+            {activeTab === 'executions' && <ToolExecutionsTab toolId={deployed.id} />}
+            {activeTab === 'approvals' && <ToolApprovalsTab toolId={deployed.id} />}
+            {activeTab === 'audit' && <ToolAuditTab toolId={deployed.id} />}
+          </div>
+        </>
+      ) : (
+        <>
+          <div className="bg-[#111111] border border-[#1a2a1a] rounded-sm p-6 space-y-4 max-w-sm">
+            <p className="text-xs font-mono text-[#4a6a4a]">This tool has not been deployed yet.</p>
+            {canConfigure && (
+              <DeployToolForm fixedType={tool.type} onDeployed={() => router.refresh()} />
+            )}
+          </div>
+          {tool.capabilities.length > 0 && <CapabilitiesList caps={tool.capabilities} />}
+        </>
       )}
 
       {showConfig && deployed && (

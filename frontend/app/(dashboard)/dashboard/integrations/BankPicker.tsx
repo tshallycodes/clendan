@@ -81,54 +81,29 @@ export function BankPicker({
 
   const plaidConnected = plaidStatus === 'connected' || plaidStatus === 'syncing'
   const truelayerConnected = truelayerStatus === 'connected' || truelayerStatus === 'syncing'
-  const isConnected = region === 'us' ? plaidConnected : truelayerConnected
 
-  // Build the list of connected bank cards to show
+  // Only show cards for banks we can actually identify — no generic fallback cards
   const connectedCards: BankDef[] = (() => {
     if (region === 'us' && plaidConnected) {
-      const matched = BANKS.filter(
+      return BANKS.filter(
         (b) => b.region === 'us' && (
           (b.institution_id && b.institution_id === connectedInstitutionId) ||
           (connectedBankName && connectedBankName.toLowerCase().includes(b.name.toLowerCase()))
         )
       )
-      if (matched.length > 0) return matched
-      // Fallback for banks not in the predefined list
-      if (connectedInstitutionId) {
-        return [{
-          id: connectedInstitutionId,
-          name: connectedBankName || 'Connected Bank',
-          abbr: (connectedBankName || 'CB').slice(0, 2).toUpperCase(),
-          color: '#00C853',
-          domain: '',
-          provider: 'plaid' as const,
-          region: 'us' as const,
-        }]
-      }
     }
-    if (region === 'eu' && truelayerConnected) {
-      if (connectedTruelayerName) {
-        const matched = BANKS.filter(
-          (b) => b.region === 'eu' && (
-            connectedTruelayerName.toLowerCase().includes(b.name.toLowerCase()) ||
-            b.name.toLowerCase().includes(connectedTruelayerName.toLowerCase())
-          )
+    if (region === 'eu' && truelayerConnected && connectedTruelayerName) {
+      return BANKS.filter(
+        (b) => b.region === 'eu' && (
+          connectedTruelayerName.toLowerCase().includes(b.name.toLowerCase()) ||
+          b.name.toLowerCase().includes(connectedTruelayerName.toLowerCase())
         )
-        if (matched.length > 0) return matched
-      }
-      // Fallback
-      return [{
-        id: 'truelayer-connected',
-        name: connectedTruelayerName || 'Connected Bank',
-        abbr: (connectedTruelayerName || 'EU').slice(0, 2).toUpperCase(),
-        color: '#00C853',
-        domain: '',
-        provider: 'truelayer' as const,
-        region: 'eu' as const,
-      }]
+      )
     }
     return []
   })()
+
+  const isConnected = connectedCards.length > 0
 
   return (
     <div className="space-y-4">
