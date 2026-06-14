@@ -17,7 +17,7 @@ RUN poetry run prisma generate
 EXPOSE 8000
 
 # PORT env var is set by Railway; falls back to 8000 for local Docker
-CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
+CMD ["sh", "-c", "prisma db push --skip-generate && uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
 
 # To run the arq background worker (separate Railway service):
 # CMD ["python", "run_tool.py", "app.tool.ToolSettings"]

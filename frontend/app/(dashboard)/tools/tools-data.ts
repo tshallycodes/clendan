@@ -160,6 +160,62 @@ export const TOOLS: ToolDef[] = [
       'GDPR data retention enforcement',
     ],
   },
+  {
+    slug: 'accounts-receivable',
+    type: 'accounts_receivable',
+    name: 'Accounts Receivable',
+    desc: 'Monitor outstanding invoices, classify urgency, and draft collection actions.',
+    capabilities: [
+      'Real-time outstanding and overdue invoice monitoring',
+      'AI urgency classification across all connected accounting sources',
+      'Automated chase email drafting per debtor',
+      'Write-off blocking above configurable outstanding threshold',
+      'Multi-source aggregation: FreshBooks, Xero, QuickBooks',
+      'Approval routing for write-off and escalation actions',
+    ],
+  },
+  {
+    slug: 'accounts-payable',
+    type: 'accounts_payable',
+    name: 'Accounts Payable',
+    desc: 'Process bills, detect duplicates, and route payments for approval.',
+    capabilities: [
+      'Automated bill processing from all connected sources',
+      'Duplicate detection by contact and amount within configurable window',
+      'Auto-approve payments below spend threshold',
+      'Approval routing for high-value bills',
+      'Overdue bill flagging with escalation',
+      'Multi-source aggregation: FreshBooks, Xero, QuickBooks',
+    ],
+  },
+  {
+    slug: 'cash-flow-forecast',
+    type: 'cash_flow_forecast',
+    name: 'Cash Flow Forecast',
+    desc: 'Bucket AR inflows and AP outflows to forecast 30/60/90-day liquidity.',
+    capabilities: [
+      '30, 60, and 90-day cash flow bucketing from live accounting data',
+      'Low runway alerting below configurable threshold',
+      'AR inflow and AP outflow breakdown per period',
+      'AI narrative with scenario and risk commentary',
+      'Approval routing when net cash position drops below floor',
+      'Multi-source aggregation: FreshBooks, Xero, QuickBooks',
+    ],
+  },
+  {
+    slug: 'tax-compliance',
+    type: 'tax_compliance',
+    name: 'Tax Compliance',
+    desc: 'Compute VAT position, detect missing tax codes, and flag filing risks.',
+    capabilities: [
+      'VAT collected and input VAT computation from live invoice and expense data',
+      'Net VAT liability or reclaim position calculation',
+      'Missing tax code detection across bills and expenses',
+      'AI-generated filing risk summary and recommendations',
+      'Approval routing when liability exceeds configurable threshold',
+      'Multi-source aggregation: FreshBooks, Xero, QuickBooks',
+    ],
+  },
 ]
 
 export function slugToTool(slug: string): ToolDef | undefined {
