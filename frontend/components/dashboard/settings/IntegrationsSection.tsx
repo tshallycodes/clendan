@@ -14,6 +14,7 @@ const INTEGRATION_META: Record<string, { name: string; desc: string }> = {
   gocardless:   { name: 'GoCardless',            desc: 'Direct debit' },
   adyen:        { name: 'Adyen',                 desc: 'Global payment processing' },
   wise:         { name: 'Wise',                  desc: 'International transfers' },
+  square:       { name: 'Square',               desc: 'Point of sale and invoicing' },
   netsuite:     { name: 'NetSuite',              desc: 'Full ERP sync' },
   sap:          { name: 'SAP',                   desc: 'Enterprise ERP' },
   dynamics365:  { name: 'Microsoft Dynamics 365', desc: 'ERP and CRM' },
@@ -29,7 +30,7 @@ const INTEGRATION_META: Record<string, { name: string; desc: string }> = {
 }
 
 const STATUSABLE_SLUGS = [
-  'quickbooks', 'plaid', 'truelayer', 'xero', 'stripe', 'gocardless',
+  'quickbooks', 'plaid', 'truelayer', 'xero', 'stripe', 'gocardless', 'square',
   'hubspot', 'gmail', 'outlook', 'google-drive',
   'freshbooks', 'adyen', 'wise',
   'netsuite', 'sap', 'dynamics365', 'salesforce', 'dropbox', 'onedrive',

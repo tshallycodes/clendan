@@ -27,7 +27,15 @@ const CONFIGS: Record<string, IntegrationCredConfig> = {
     title: 'Adyen',
     fields: [
       { name: 'api_key', label: 'API Key', type: 'password', placeholder: 'AQEt...' },
+      { name: 'merchant_account', label: 'Merchant Account', type: 'text', placeholder: 'YourCompany_TEST' },
       { name: 'environment', label: 'Environment', type: 'select', options: ['test', 'live'] },
+    ],
+  },
+  wise: {
+    title: 'Wise',
+    fields: [
+      { name: 'api_token', label: 'API Token', type: 'password', placeholder: 'paste your Wise API token' },
+      { name: 'environment', label: 'Environment', type: 'select', options: ['sandbox', 'live'] },
     ],
   },
   netsuite: {
@@ -105,10 +113,10 @@ export function CredentialsDrawer({ slug, open, onClose, onSubmit }: Props) {
 
   return (
     <div className="fixed inset-0 z-50 flex justify-end" onClick={(e) => { if (e.target === e.currentTarget) handleClose() }}>
-      <div className="w-full max-w-sm bg-[#111111] border-l border-brand-border h-full flex flex-col shadow-2xl">
+      <div className="w-full max-w-sm bg-brand-surface border-l border-brand-border h-full flex flex-col shadow-2xl">
         <div className="flex items-center justify-between px-5 py-4 border-b border-brand-border">
-          <h2 className="text-sm font-mono font-medium text-[#e8f0e8]">Connect {cfg.title}</h2>
-          <button type="button" onClick={handleClose} className="text-brand-muted hover:text-[#e8f0e8] transition-colors text-lg leading-none">Ã—</button>
+          <h2 className="text-sm font-mono font-medium text-brand-text">Connect {cfg.title}</h2>
+          <button type="button" onClick={handleClose} className="text-brand-muted hover:text-brand-text transition-colors text-lg leading-none">×</button>
         </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4 p-5 flex-1 overflow-y-auto">
@@ -119,7 +127,7 @@ export function CredentialsDrawer({ slug, open, onClose, onSubmit }: Props) {
                 <select
                   value={values[field.name] ?? field.options?.[0] ?? ''}
                   onChange={(e) => setValues((v) => ({ ...v, [field.name]: e.target.value }))}
-                  className="bg-[#0a0a0a] border border-brand-border focus:border-[#00C853] text-[#e8f0e8] rounded-sm px-3 py-2 text-xs font-mono outline-none transition-colors"
+                  className="bg-brand-bg border border-brand-border focus:border-[#00C853] text-brand-text rounded-sm px-3 py-2 text-xs font-mono outline-none transition-colors"
                 >
                   {field.options?.map((o) => <option key={o} value={o}>{o}</option>)}
                 </select>
@@ -131,7 +139,7 @@ export function CredentialsDrawer({ slug, open, onClose, onSubmit }: Props) {
                   placeholder={field.placeholder}
                   autoComplete="off"
                   required
-                  className="bg-[#0a0a0a] border border-brand-border focus:border-[#00C853] text-[#e8f0e8] rounded-sm px-3 py-2 text-xs font-mono outline-none placeholder-brand-muted transition-colors"
+                  className="bg-brand-bg border border-brand-border focus:border-[#00C853] text-brand-text rounded-sm px-3 py-2 text-xs font-mono outline-none placeholder-brand-muted transition-colors"
                 />
               )}
             </label>
@@ -154,7 +162,7 @@ export function CredentialsDrawer({ slug, open, onClose, onSubmit }: Props) {
             <button
               type="button"
               onClick={handleClose}
-              className="text-xs font-mono border border-brand-border text-brand-muted rounded-sm px-3 py-2 hover:text-[#e8f0e8] transition-colors"
+              className="text-xs font-mono border border-brand-border text-brand-muted rounded-sm px-3 py-2 hover:text-brand-text transition-colors"
             >
               Cancel
             </button>

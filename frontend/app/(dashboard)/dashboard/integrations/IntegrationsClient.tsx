@@ -24,7 +24,8 @@ const INTEGRATIONS: IntegrationDef[] = [
   { name: 'Stripe', slug: 'stripe', category: 'Payments', desc: 'Revenue and charges', connectType: 'oauth' },
   { name: 'GoCardless', slug: 'gocardless', category: 'Payments', desc: 'Direct debit', connectType: 'api_key' },
   { name: 'Adyen', slug: 'adyen', category: 'Payments', desc: 'Global payment processing', connectType: 'api_key' },
-  { name: 'Wise', slug: 'wise', category: 'Payments', desc: 'International transfers', connectType: 'oauth' },
+  { name: 'Wise', slug: 'wise', category: 'Payments', desc: 'International transfers', connectType: 'api_key' },
+  { name: 'Square', slug: 'square', category: 'Payments', desc: 'Point of sale and invoicing', connectType: 'oauth' },
   // ERP
   { name: 'NetSuite', slug: 'netsuite', category: 'ERP', desc: 'Full ERP sync', connectType: 'api_key' },
   { name: 'SAP', slug: 'sap', category: 'ERP', desc: 'Enterprise ERP', connectType: 'api_key' },
@@ -41,7 +42,7 @@ const INTEGRATIONS: IntegrationDef[] = [
 ]
 
 const STATUSABLE_SLUGS = [
-  'quickbooks', 'plaid', 'truelayer', 'xero', 'stripe', 'gocardless',
+  'quickbooks', 'plaid', 'truelayer', 'xero', 'stripe', 'gocardless', 'square',
   'codat', 'hubspot', 'gmail', 'outlook', 'google-drive',
   'freshbooks', 'adyen', 'wise',
   'netsuite', 'sap', 'dynamics365', 'salesforce', 'dropbox', 'onedrive',

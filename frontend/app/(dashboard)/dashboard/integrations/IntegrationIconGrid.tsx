@@ -14,6 +14,7 @@ const DOMAINS: Record<string, string> = {
   gocardless:     'gocardless.com',
   adyen:          'adyen.com',
   wise:           'wise.com',
+  square:         'squareup.com',
   netsuite:       'netsuite.com',
   sap:            'sap.com',
   dynamics365:    'dynamics.microsoft.com',
