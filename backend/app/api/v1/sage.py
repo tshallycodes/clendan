@@ -24,7 +24,7 @@ logger = get_logger(__name__)
 router = APIRouter(tags=["sage"])
 
 _AUTH_URL = "https://www.sageone.com/oauth2/auth"
-_SCOPE = "readonly"
+_SCOPE = "full_access"
 
 
 @router.get("/integrations/sage/connect")
