@@ -1,0 +1,274 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - banner [ref=e3]:
+      - generic [ref=e4]:
+        - link "Clendan home" [ref=e5] [cursor=pointer]:
+          - /url: /
+          - generic [ref=e6]:
+            - generic [ref=e8]: C
+            - generic [ref=e9]: CLENDAN
+        - navigation [ref=e10]:
+          - link "How It Works" [ref=e11] [cursor=pointer]:
+            - /url: /how-it-works
+          - link "Tools" [ref=e12] [cursor=pointer]:
+            - /url: /tools
+          - link "API Tools" [ref=e13] [cursor=pointer]:
+            - /url: /api-tools
+          - link "Pricing" [ref=e14] [cursor=pointer]:
+            - /url: /pricing
+        - generic [ref=e15]:
+          - link "Sign in" [ref=e17] [cursor=pointer]:
+            - /url: /sign-in
+          - link "Get started" [ref=e18] [cursor=pointer]:
+            - /url: /sign-up
+    - main [ref=e19]:
+      - generic [ref=e21]:
+        - paragraph [ref=e22]: AI Financial Agent OS
+        - heading "Your Finance Team, Running on Autopilot" [level=1] [ref=e23]:
+          - text: Your Finance Team,
+          - text: Running on Autopilot
+        - paragraph [ref=e24]: Deploy AI tools that connect to your financial systems, execute tasks autonomously, and produce full audit trails for every action. Not a dashboard. Execution infrastructure.
+        - generic [ref=e25]:
+          - link "Deploy Your First Tool" [ref=e26] [cursor=pointer]:
+            - /url: /sign-up
+          - link "See How It Works" [ref=e27] [cursor=pointer]:
+            - /url: /how-it-works
+        - generic [ref=e29]:
+          - generic [ref=e34]: invoice-tool â€” execution log
+          - generic "Execution log" [ref=e35]:
+            - generic [ref=e36]:
+              - generic [ref=e37]: "[09:14:52]"
+              - generic [ref=e38]: "Invoice received: Acme Supplies Ltd Â£1,240.00"
+            - generic [ref=e39]:
+              - generic [ref=e40]: "[09:14:52]"
+              - generic [ref=e41]: "Extracting data... confidence: 0.97"
+            - generic [ref=e42]:
+              - generic [ref=e43]: "[09:14:53]"
+              - generic [ref=e44]: "Policy check: amount threshold â†’ APPROVAL_REQUIRED"
+            - generic [ref=e45]:
+              - generic [ref=e46]: "[09:14:53]"
+              - generic [ref=e47]: Routing to approval queue...
+            - generic [ref=e48]:
+              - generic [ref=e49]: "[09:14:58]"
+              - generic [ref=e50]: Approved by Sarah Chen
+            - generic [ref=e51]:
+              - generic [ref=e52]: "[09:14:58]"
+              - generic [ref=e53]: Bill created in QuickBooks â€” BILL-4421
+            - generic [ref=e54]:
+              - generic [ref=e55]: ">"
+              - generic [ref=e56]: â–ˆ
+      - generic [ref=e58]:
+        - generic [ref=e59]: "Trusted integrations with:"
+        - generic [ref=e61]:
+          - generic [ref=e62]: Xero
+          - generic [ref=e63]: QuickBooks
+          - generic [ref=e64]: Plaid
+          - generic [ref=e65]: Stripe
+          - generic [ref=e66]: NetSuite
+          - generic [ref=e67]: Salesforce
+          - generic [ref=e68]: Xero
+          - generic [ref=e69]: QuickBooks
+          - generic [ref=e70]: Plaid
+          - generic [ref=e71]: Stripe
+          - generic [ref=e72]: NetSuite
+          - generic [ref=e73]: Salesforce
+      - generic [ref=e74]:
+        - heading "Finance Operations Are Broken" [level=2] [ref=e76]
+        - generic [ref=e77]:
+          - generic [ref=e79]:
+            - generic [ref=e80]: 66%
+            - paragraph [ref=e81]: of AP teams still process invoices manually
+            - generic [ref=e82]: Ardent Partners 2025
+          - generic [ref=e84]:
+            - generic [ref=e85]: 50%
+            - paragraph [ref=e86]: of finance teams take 6+ days to close the books each month
+            - generic [ref=e87]: Ledge 2025
+          - generic [ref=e89]:
+            - generic [ref=e90]: $6+
+            - paragraph [ref=e91]: average cost to manually process a single invoice
+            - generic [ref=e92]: industry average
+      - generic [ref=e94]:
+        - generic [ref=e95]:
+          - heading "Deploy AI Tools. Connect Your Stack. Execute With a Full Audit Trail." [level=2] [ref=e96]
+          - paragraph [ref=e97]: Infrastructure, not a dashboard.
+        - generic [ref=e98]:
+          - generic [ref=e100]:
+            - img [ref=e101]
+            - generic [ref=e103]:
+              - heading "Deploy AI Tools" [level=3] [ref=e104]
+              - paragraph [ref=e105]: Autonomous agents that execute real financial tasks, not just surface insights.
+          - generic [ref=e107]:
+            - img [ref=e108]
+            - generic [ref=e111]:
+              - heading "Connect Your Stack" [level=3] [ref=e112]
+              - paragraph [ref=e113]: Native integrations with Xero, QuickBooks, Plaid, Stripe, and your ERP.
+          - generic [ref=e115]:
+            - img [ref=e116]
+            - generic [ref=e119]:
+              - heading "Full Audit Trail" [level=3] [ref=e120]
+              - paragraph [ref=e121]: Every action logged, every decision explained. Policy-enforced by default.
+      - generic [ref=e122]:
+        - generic [ref=e123]:
+          - paragraph [ref=e124]: How it works
+          - heading "From Invoice to Payment in Under 30 Seconds" [level=2] [ref=e125]
+        - generic [ref=e127]:
+          - generic [ref=e129]:
+            - generic [ref=e131]: "01"
+            - generic [ref=e132]:
+              - heading "Connect" [level=3] [ref=e133]
+              - paragraph [ref=e134]: Link your bank, ERP, and accounting tools via OAuth in minutes.
+          - generic [ref=e136]:
+            - generic [ref=e138]: "02"
+            - generic [ref=e139]:
+              - heading "Configure" [level=3] [ref=e140]
+              - paragraph [ref=e141]: Set policy rules, approval thresholds, and tool permissions.
+          - generic [ref=e143]:
+            - generic [ref=e145]: "03"
+            - generic [ref=e146]:
+              - heading "Execute" [level=3] [ref=e147]
+              - paragraph [ref=e148]: Tools run autonomously, enforcing policy on every action.
+          - generic [ref=e150]:
+            - generic [ref=e152]: "04"
+            - generic [ref=e153]:
+              - heading "Monitor" [level=3] [ref=e154]
+              - paragraph [ref=e155]: Full audit trail. Every decision, every outcome, every trace ID.
+      - generic [ref=e157]:
+        - generic [ref=e158]:
+          - paragraph [ref=e159]: Tools
+          - heading "10 AI Tools. Every Finance Function Covered." [level=2] [ref=e160]
+        - generic [ref=e161]:
+          - generic [ref=e163]:
+            - generic [ref=e164]:
+              - heading "Invoice Processing" [level=3] [ref=e165]
+              - generic [ref=e166]: MVP
+            - paragraph [ref=e167]: Receive, extract, validate, and route invoices automatically.
+          - generic [ref=e169]:
+            - generic [ref=e170]:
+              - heading "AI Accountant" [level=3] [ref=e171]
+              - generic [ref=e172]: MVP
+            - paragraph [ref=e173]: Journal entries, GL coding, and month-end close tasks.
+          - generic [ref=e175]:
+            - generic [ref=e176]:
+              - heading "Reconciliation" [level=3] [ref=e177]
+              - generic [ref=e178]: V2
+            - paragraph [ref=e179]: Match transactions across bank, ERP, and payment processors.
+          - generic [ref=e181]:
+            - generic [ref=e182]:
+              - heading "Expense Control" [level=3] [ref=e183]
+              - generic [ref=e184]: V2
+            - paragraph [ref=e185]: Enforce spend policy and flag out-of-policy submissions.
+          - generic [ref=e187]:
+            - generic [ref=e188]:
+              - heading "Collections" [level=3] [ref=e189]
+              - generic [ref=e190]: V2
+            - paragraph [ref=e191]: Automated AR follow-ups, escalations, and payment matching.
+          - generic [ref=e193]:
+            - generic [ref=e194]:
+              - heading "Fraud Detection" [level=3] [ref=e195]
+              - generic [ref=e196]: V2
+            - paragraph [ref=e197]: Anomaly detection on transactions and supplier behaviour.
+          - generic [ref=e199]:
+            - generic [ref=e200]:
+              - heading "Treasury" [level=3] [ref=e201]
+              - generic [ref=e202]: V2
+            - paragraph [ref=e203]: Cash positioning, sweep rules, and liquidity forecasting.
+          - generic [ref=e205]:
+            - generic [ref=e206]:
+              - heading "Revenue Recognition" [level=3] [ref=e207]
+              - generic [ref=e208]: V2
+            - paragraph [ref=e209]: ASC 606 / IFRS 15 compliant revenue scheduling.
+          - generic [ref=e211]:
+            - generic [ref=e212]:
+              - heading "Credit Underwriting" [level=3] [ref=e213]
+              - generic [ref=e214]: V3
+            - paragraph [ref=e215]: Automated decisioning on trade credit and lending applications.
+          - generic [ref=e217]:
+            - generic [ref=e218]:
+              - heading "Compliance" [level=3] [ref=e219]
+              - generic [ref=e220]: V3
+            - paragraph [ref=e221]: Continuous monitoring against regulatory frameworks.
+      - generic [ref=e224]:
+        - heading "Ready to Automate Your Finance Stack?" [level=2] [ref=e225]
+        - paragraph [ref=e226]: Deploy your first AI tool in under 10 minutes.
+        - link "Request Early Access" [ref=e228] [cursor=pointer]:
+          - /url: /sign-up
+    - contentinfo [ref=e229]:
+      - generic [ref=e230]:
+        - generic [ref=e231]:
+          - generic [ref=e232]:
+            - generic [ref=e233]:
+              - generic [ref=e235]: C
+              - generic [ref=e236]: CLENDAN
+            - paragraph [ref=e237]: AI Financial Agent OS
+          - generic [ref=e238]:
+            - generic [ref=e239]:
+              - paragraph [ref=e240]: Product
+              - list [ref=e241]:
+                - listitem [ref=e242]:
+                  - link "How It Works" [ref=e243] [cursor=pointer]:
+                    - /url: /how-it-works
+                - listitem [ref=e244]:
+                  - link "Tools" [ref=e245] [cursor=pointer]:
+                    - /url: /tools
+                - listitem [ref=e246]:
+                  - link "API Tools" [ref=e247] [cursor=pointer]:
+                    - /url: /api-tools
+                - listitem [ref=e248]:
+                  - link "Integrations" [ref=e249] [cursor=pointer]:
+                    - /url: /integrations
+                - listitem [ref=e250]:
+                  - link "Pricing" [ref=e251] [cursor=pointer]:
+                    - /url: /pricing
+            - generic [ref=e252]:
+              - paragraph [ref=e253]: Company
+              - list [ref=e254]:
+                - listitem [ref=e255]:
+                  - link "About" [ref=e256] [cursor=pointer]:
+                    - /url: /about
+                - listitem [ref=e257]:
+                  - link "Blog" [ref=e258] [cursor=pointer]:
+                    - /url: /blog
+                - listitem [ref=e259]:
+                  - link "Changelog" [ref=e260] [cursor=pointer]:
+                    - /url: /changelog
+                - listitem [ref=e261]:
+                  - link "Security" [ref=e262] [cursor=pointer]:
+                    - /url: /security
+            - generic [ref=e263]:
+              - paragraph [ref=e264]: Developers
+              - list [ref=e265]:
+                - listitem [ref=e266]:
+                  - link "Docs" [ref=e267] [cursor=pointer]:
+                    - /url: /docs
+                - listitem [ref=e268]:
+                  - link "API Reference" [ref=e269] [cursor=pointer]:
+                    - /url: /docs/api
+                - listitem [ref=e270]:
+                  - link "Status" [ref=e271] [cursor=pointer]:
+                    - /url: /status
+            - generic [ref=e272]:
+              - paragraph [ref=e273]: Legal
+              - list [ref=e274]:
+                - listitem [ref=e275]:
+                  - link "Privacy" [ref=e276] [cursor=pointer]:
+                    - /url: /privacy
+                - listitem [ref=e277]:
+                  - link "Terms" [ref=e278] [cursor=pointer]:
+                    - /url: /terms
+                - listitem [ref=e279]:
+                  - link "Security Policy" [ref=e280] [cursor=pointer]:
+                    - /url: /security-policy
+        - generic [ref=e281]:
+          - paragraph [ref=e282]: © 2026 Clendan Ltd. All rights reserved.
+          - generic [ref=e283]:
+            - link "GitHub" [ref=e284] [cursor=pointer]:
+              - /url: https://github.com
+              - img [ref=e285]
+            - link "LinkedIn" [ref=e287] [cursor=pointer]:
+              - /url: https://linkedin.com
+              - img [ref=e288]
+            - link "X / Twitter" [ref=e290] [cursor=pointer]:
+              - /url: https://x.com
+              - img [ref=e291]
+  - button "Open Next.js Dev Tools" [ref=e298] [cursor=pointer]:
+    - img [ref=e299]

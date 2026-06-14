@@ -2,6 +2,7 @@ import { auth } from '@clerk/nextjs/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { Sidebar } from '@/components/dashboard/Sidebar'
+import { MobileNav } from '@/components/dashboard/MobileNav'
 import { ClenDashboard } from '@/components/clen/ClenDashboard'
 import { getBackendToken } from '@/lib/auth'
 
@@ -33,7 +34,8 @@ export default async function DashboardLayout({ children }: { children: React.Re
   return (
     <div className="flex min-h-screen bg-brand-bg">
       <Sidebar />
-      <div className="flex-1 overflow-auto flex flex-col">
+      <MobileNav />
+      <div className="flex-1 overflow-auto flex flex-col pt-[57px] lg:pt-0">
         {backendStatus === 'unreachable' && (
           <div className="bg-[rgba(245,166,35,0.08)] border-b border-[rgba(245,166,35,0.2)] px-6 py-2.5 flex items-center justify-between">
             <p className="text-[11px] font-mono text-[#f5a623]">

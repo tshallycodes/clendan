@@ -22,7 +22,7 @@ export function Sidebar() {
   const { signOut } = useClerk()
 
   return (
-    <aside className="w-56 shrink-0 bg-brand-surface border-r border-brand-border flex flex-col h-screen sticky top-0">
+    <aside className="hidden lg:flex w-56 shrink-0 bg-brand-surface border-r border-brand-border flex-col h-screen sticky top-0">
       <div className="flex items-center gap-2.5 px-5 py-4 border-b border-brand-border">
         <span className="w-6 h-6 rounded-sm border border-brand-green flex items-center justify-center font-heading font-bold text-brand-green text-xs">
           C
