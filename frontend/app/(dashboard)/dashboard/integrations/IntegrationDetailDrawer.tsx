@@ -76,7 +76,7 @@ export function IntegrationDetailDrawer({ slug, intg, status, lastSyncedAt, onCl
       {open && intg && (
         <>
           <motion.div key="intg-bd" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }} className="fixed inset-0 bg-black/70 z-40" onClick={onClose} />
-          <motion.aside key="intg-dr" initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }} transition={{ type: 'tween', duration: 0.25 }} className="fixed right-0 top-0 h-full w-[480px] max-w-full bg-[#111111] border-l border-brand-border z-50 flex flex-col">
+          <motion.aside key="intg-dr" initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }} transition={{ type: 'tween', duration: 0.25 }} className="fixed right-0 top-0 h-full w-[480px] max-w-full bg-brand-surface border-l border-brand-border z-50 flex flex-col">
 
             {/* Header */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-brand-border">
@@ -85,14 +85,14 @@ export function IntegrationDetailDrawer({ slug, intg, status, lastSyncedAt, onCl
                   <IntegrationLogo slug={intg.slug} size={32} />
                 </div>
                 <div>
-                  <h2 className="font-heading font-bold text-base text-[#e8f0e8]">{intg.name}</h2>
+                  <h2 className="font-heading font-bold text-base text-brand-text">{intg.name}</h2>
                   <div className="flex items-center gap-1.5 mt-0.5">
                     <StatusDot status={status} />
                     <StatusLabel status={status} />
                   </div>
                 </div>
               </div>
-              <button onClick={onClose} className="text-brand-muted hover:text-[#e8f0e8] transition-colors text-xl leading-none">&times;</button>
+              <button onClick={onClose} className="text-brand-muted hover:text-brand-text transition-colors text-xl leading-none">&times;</button>
             </div>
 
             <div className="flex-1 overflow-y-auto px-6 py-5 space-y-6">
@@ -101,10 +101,10 @@ export function IntegrationDetailDrawer({ slug, intg, status, lastSyncedAt, onCl
                   {/* Sync status */}
                   <section>
                     <p className="text-[10px] font-mono uppercase tracking-widest text-brand-muted mb-3">Sync Status</p>
-                    <div className="bg-[#0a0a0a] border border-brand-border rounded-sm divide-y divide-[#1a2a1a]">
+                    <div className="bg-brand-bg border border-brand-border rounded-sm divide-y divide-brand-border">
                       <div className="flex items-center justify-between px-4 py-2.5">
                         <span className="text-[10px] font-mono text-brand-muted">Last sync</span>
-                        <span className="text-xs font-mono text-[#e8f0e8]">{lastSyncDisplay}</span>
+                        <span className="text-xs font-mono text-brand-text">{lastSyncDisplay}</span>
                       </div>
                       <div className="flex items-center justify-between px-4 py-2.5">
                         <span className="text-[10px] font-mono text-brand-muted">Health</span>
@@ -118,12 +118,12 @@ export function IntegrationDetailDrawer({ slug, intg, status, lastSyncedAt, onCl
                     <section>
                       <p className="text-[10px] font-mono uppercase tracking-widest text-brand-muted mb-3">Recent Syncs</p>
                       {logsLoading ? (
-                        <div className="space-y-1">{[1, 2, 3].map((i) => <div key={i} className="h-10 bg-[#0a0a0a] border border-brand-border rounded-sm animate-pulse" />)}</div>
+                        <div className="space-y-1">{[1, 2, 3].map((i) => <div key={i} className="h-10 bg-brand-bg border border-brand-border rounded-sm animate-pulse" />)}</div>
                       ) : (
                         <div className="space-y-1">
                           {logs.map((entry) => (
-                            <div key={entry.id} className="bg-[#0a0a0a] border border-brand-border rounded-sm px-4 py-2.5 flex items-center justify-between gap-4">
-                              <span className="text-xs font-mono text-[#e8f0e8] truncate">{entry.entity_type}</span>
+                            <div key={entry.id} className="bg-brand-bg border border-brand-border rounded-sm px-4 py-2.5 flex items-center justify-between gap-4">
+                              <span className="text-xs font-mono text-brand-text truncate">{entry.entity_type}</span>
                               <div className="flex items-center gap-3 shrink-0">
                                 <span className={`text-[10px] font-mono uppercase ${statusColor(entry.status)}`}>{entry.status}</span>
                                 <span className="text-[10px] font-mono text-brand-muted">{new Date(entry.timestamp).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
@@ -145,11 +145,11 @@ export function IntegrationDetailDrawer({ slug, intg, status, lastSyncedAt, onCl
                           setResyncing(true)
                           try { await onResync() } finally { setResyncing(false) }
                         }}
-                        className="flex-1 py-2 text-[11px] font-mono text-[#e8f0e8] border border-brand-border rounded-sm hover:bg-[#1a1a1a] transition-colors disabled:opacity-60"
+                        className="flex-1 py-2 text-[11px] font-mono text-brand-text border border-brand-border rounded-sm hover:bg-brand-elevated transition-colors disabled:opacity-60"
                       >
                         {resyncing ? 'Syncing...' : 'Resync'}
                       </button>
-                      <button onClick={onSyncLog} className="flex-1 py-2 text-[11px] font-mono text-[#e8f0e8] border border-brand-border rounded-sm hover:bg-[#1a1a1a] transition-colors">Sync Log</button>
+                      <button onClick={onSyncLog} className="flex-1 py-2 text-[11px] font-mono text-brand-text border border-brand-border rounded-sm hover:bg-brand-elevated transition-colors">Sync Log</button>
                       {confirmDisconnect ? (
                         <>
                           <button
@@ -162,7 +162,7 @@ export function IntegrationDetailDrawer({ slug, intg, status, lastSyncedAt, onCl
                           >
                             {disconnecting ? 'Disconnecting...' : 'Confirm'}
                           </button>
-                          <button onClick={() => setConfirmDisconnect(false)} className="px-3 py-2 text-[11px] font-mono text-brand-muted border border-brand-border rounded-sm hover:bg-[#1a1a1a] transition-colors">Cancel</button>
+                          <button onClick={() => setConfirmDisconnect(false)} className="px-3 py-2 text-[11px] font-mono text-brand-muted border border-brand-border rounded-sm hover:bg-brand-elevated transition-colors">Cancel</button>
                         </>
                       ) : (
                         <button onClick={() => setConfirmDisconnect(true)} className="flex-1 py-2 text-[11px] font-mono text-[#ff4d6d] bg-[rgba(255,77,109,0.05)] border border-[#ff4d6d]/30 rounded-sm hover:bg-[rgba(255,77,109,0.1)] transition-colors">Disconnect</button>
@@ -176,7 +176,7 @@ export function IntegrationDetailDrawer({ slug, intg, status, lastSyncedAt, onCl
                     <IntegrationLogo slug={intg.slug} size={48} />
                   </div>
                   <div>
-                    <p className="text-sm font-mono text-[#e8f0e8]">{intg.name}</p>
+                    <p className="text-sm font-mono text-brand-text">{intg.name}</p>
                     <p className="text-[10px] font-mono text-brand-muted mt-1 max-w-[240px] mx-auto">{intg.desc}</p>
                   </div>
                   {intg.comingSoon ? (

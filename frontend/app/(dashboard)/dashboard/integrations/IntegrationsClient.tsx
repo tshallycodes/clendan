@@ -21,7 +21,6 @@ const INTEGRATIONS: IntegrationDef[] = [
   { name: 'Xero', slug: 'xero', category: 'Accounting', desc: 'Bills, invoices, payments', connectType: 'oauth' },
   { name: 'FreshBooks', slug: 'freshbooks', category: 'Accounting', desc: 'Invoice and payment sync', connectType: 'oauth' },
   { name: 'Sage', slug: 'sage', category: 'Accounting', desc: 'Accounting and payroll', connectType: 'oauth', comingSoon: true },
-  { name: 'Wave', slug: 'wave', category: 'Accounting', desc: 'Free accounting for SMBs', connectType: 'oauth' },
   // Payments
   { name: 'Stripe', slug: 'stripe', category: 'Payments', desc: 'Revenue and charges', connectType: 'oauth' },
   { name: 'GoCardless', slug: 'gocardless', category: 'Payments', desc: 'Direct debit', connectType: 'api_key' },
@@ -46,7 +45,7 @@ const INTEGRATIONS: IntegrationDef[] = [
 const STATUSABLE_SLUGS = [
   'quickbooks', 'plaid', 'truelayer', 'xero', 'stripe', 'gocardless',
   'codat', 'hubspot', 'gmail', 'outlook', 'google-drive',
-  'freshbooks', 'sage', 'wave', 'adyen', 'wise',
+  'freshbooks', 'sage', 'adyen', 'wise',
   'netsuite', 'sap', 'dynamics365', 'sage-intacct', 'salesforce', 'dropbox', 'onedrive',
 ]
 
