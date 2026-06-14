@@ -141,6 +141,6 @@ async def enqueue_xero_sync(integration_id: str, tenant_id: str) -> None:
     """Enqueues a Xero sync job onto the arq Redis queue."""
     import arq
     settings = get_settings()
-    redis = await arq.create_pool(arq.connections.RedisSettings.from_dsn(settings.redis_url))
+    redis = await arq.create_pool(arq.connections.RedisSettings.from_dsn(settings.redis_public_url))
     await redis.enqueue_job("sync_xero_connection", integration_id, tenant_id)
     await redis.aclose()

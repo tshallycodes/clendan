@@ -158,6 +158,6 @@ async def enqueue_gocardless_sync(integration_id: str, tenant_id: str) -> None:
     import arq
     from app.core.config import get_settings
     settings = get_settings()
-    redis = await arq.create_pool(arq.connections.RedisSettings.from_dsn(settings.redis_url))
+    redis = await arq.create_pool(arq.connections.RedisSettings.from_dsn(settings.redis_public_url))
     await redis.enqueue_job("sync_gocardless_connection", integration_id, tenant_id)
     await redis.aclose()

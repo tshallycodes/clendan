@@ -118,6 +118,6 @@ async def enqueue_stripe_sync(integration_id: str, tenant_id: str) -> None:
     """Enqueues a sync_stripe_connection arq job onto the Redis queue."""
     import arq
     settings = get_settings()
-    redis = await arq.create_pool(arq.connections.RedisSettings.from_dsn(settings.redis_url))
+    redis = await arq.create_pool(arq.connections.RedisSettings.from_dsn(settings.redis_public_url))
     await redis.enqueue_job("sync_stripe_connection", integration_id, tenant_id)
     await redis.aclose()

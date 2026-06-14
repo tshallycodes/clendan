@@ -516,7 +516,7 @@ class ToolSettings:
     on_startup = startup
     on_shutdown = shutdown
 
-    redis_settings = RedisSettings.from_dsn(get_settings().redis_url)
+    redis_settings = RedisSettings.from_dsn(get_settings().redis_public_url)
 
     max_jobs = 10
     job_timeout = 300

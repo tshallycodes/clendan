@@ -10,7 +10,7 @@ class Settings(BaseSettings):
     debug: bool = False
 
     database_url: str = ""
-    redis_url: str = "redis://localhost:6379/0"
+    redis_public_url: str = "redis://localhost:6379/0"
 
     clerk_secret_key: str = ""
     clerk_publishable_key: str = ""
