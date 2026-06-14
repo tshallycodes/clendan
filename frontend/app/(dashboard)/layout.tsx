@@ -21,7 +21,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
         headers: { Authorization: `Bearer ${token}` },
         cache: 'no-store',
       })
-      if (res.status === 404) {
+      if (res.status === 404 || res.status === 403 || res.status === 401) {
         backendStatus = 'not_onboarded'
       } else if (res.ok) {
         backendStatus = 'ok'
