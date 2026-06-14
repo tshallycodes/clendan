@@ -87,6 +87,7 @@ async def sync_freshbooks_connection(ctx: dict, integration_id: str, tenant_id: 
             return {"status": "error", "reason": "get_me_failed"}
 
     results: dict = {}
+    fetched: dict = {}
 
     for entity, fetch_fn in [
         ("invoices", lambda: fb.get_invoices(access_token, account_id)),
@@ -95,10 +96,9 @@ async def sync_freshbooks_connection(ctx: dict, integration_id: str, tenant_id: 
     ]:
         start = time.monotonic()
         entity_status = "success"
-        count = 0
+        records: list = []
         try:
             records = await fetch_fn()
-            count = len(records)
         except Exception as exc:
             logger.error(
                 "freshbooks_sync_%s_failed integration_id=%s: %s",
@@ -112,10 +112,11 @@ async def sync_freshbooks_connection(ctx: dict, integration_id: str, tenant_id: 
             "integration_id": integration_id,
             "entity_type": entity,
             "status": entity_status,
-            "records_synced": count,
+            "records_synced": len(records),
             "duration_ms": elapsed_ms,
         })
-        results[entity] = {"status": entity_status, "count": count}
+        results[entity] = {"status": entity_status, "count": len(records)}
+        fetched[entity] = records
 
     # Re-read status — integration may have been disconnected while sync was running
     current = await db.integration.find_unique(where={"id": integration_id})
@@ -125,12 +126,14 @@ async def sync_freshbooks_connection(ctx: dict, integration_id: str, tenant_id: 
 
     any_success = any(v["status"] == "success" for v in results.values())
     if any_success:
+        sync_metadata = _build_freshbooks_metadata(fetched)
         await db.integration.update(
             where={"id": integration_id},
             data={
                 "status": "connected",
                 "connected_at": datetime.now(UTC),
                 "last_synced_at": datetime.now(UTC),
+                "sync_metadata": sync_metadata,
             },
         )
         logger.info(
@@ -145,6 +148,61 @@ async def sync_freshbooks_connection(ctx: dict, integration_id: str, tenant_id: 
         await db.integration.update(where={"id": integration_id}, data={"status": "error"})
         logger.error("freshbooks_sync_all_entities_failed integration_id=%s", integration_id)
         return {"status": "error", "reason": "all_entity_fetches_failed"}
+
+
+def _build_freshbooks_metadata(fetched: dict) -> dict:
+    """Compute summary stats from raw FreshBooks API data for display in the UI."""
+    invoices = fetched.get("invoices", [])
+    clients = fetched.get("clients", [])
+    payments = fetched.get("payments", [])
+
+    unpaid_statuses = {"sent", "viewed", "partial", "retry", "failed"}
+    overdue_statuses = {"sent", "viewed", "partial"}
+
+    outstanding_cents = 0
+    overdue_cents = 0
+    overdue_count = 0
+
+    now_date = datetime.now(UTC).date()
+
+    for inv in invoices:
+        status = inv.get("payment_status") or inv.get("v3_status", "")
+        try:
+            outstanding_raw = inv.get("outstanding", {})
+            amount_cents = int(float(outstanding_raw.get("amount", 0) or 0) * 100)
+        except (TypeError, ValueError):
+            amount_cents = 0
+
+        if status in unpaid_statuses:
+            outstanding_cents += amount_cents
+
+        due_date_str = inv.get("due_date") or inv.get("duedate")
+        if status in overdue_statuses and due_date_str:
+            try:
+                due = datetime.strptime(due_date_str, "%Y-%m-%d").date()
+                if due < now_date:
+                    overdue_count += 1
+                    overdue_cents += amount_cents
+            except ValueError:
+                pass
+
+    total_payments_cents = 0
+    for pmt in payments:
+        try:
+            total_payments_cents += int(float(pmt.get("amount", {}).get("amount", 0) or 0) * 100)
+        except (TypeError, ValueError):
+            pass
+
+    return {
+        "total_invoices": len(invoices),
+        "outstanding_invoices": sum(1 for inv in invoices if (inv.get("payment_status") or inv.get("v3_status", "")) in unpaid_statuses),
+        "outstanding_amount_cents": outstanding_cents,
+        "overdue_invoices": overdue_count,
+        "overdue_amount_cents": overdue_cents,
+        "total_clients": len(clients),
+        "total_payments": len(payments),
+        "total_payments_amount_cents": total_payments_cents,
+    }
 
 
 async def enqueue_freshbooks_sync(integration_id: str, tenant_id: str) -> None:

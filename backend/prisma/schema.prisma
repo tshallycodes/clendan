@@ -61,6 +61,7 @@ model Integration {
   status                String    @default("pending")
   connected_at          DateTime?
   last_synced_at        DateTime?
+  sync_metadata         Json?
 
   tenant        Tenant               @relation(fields: [tenant_id], references: [id])
   sync_logs     IntegrationSyncLog[]
