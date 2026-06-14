@@ -149,7 +149,8 @@ async def generic_oauth_callback(
         )
 
     logger.info("%s_connected tenant=%s integration=%s", slug, tenant_id, integration.id)
-    return RedirectResponse(url=f"/dashboard/integrations?connected={slug}", status_code=status.HTTP_302_FOUND)
+    frontend_url = get_settings().frontend_url.rstrip("/")
+    return RedirectResponse(url=f"{frontend_url}/dashboard/integrations?connected={slug}", status_code=status.HTTP_302_FOUND)
 
 
 # ---------------------------------------------------------------------------

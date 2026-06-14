@@ -116,8 +116,9 @@ async def freshbooks_callback(
     except Exception as exc:
         logger.warning("freshbooks_enqueue_sync_failed: %s", type(exc).__name__)
 
+    frontend_url = get_settings().frontend_url.rstrip("/")
     return RedirectResponse(
-        url="/dashboard/integrations?connected=freshbooks",
+        url=f"{frontend_url}/dashboard/integrations?connected=freshbooks",
         status_code=status.HTTP_302_FOUND,
     )
 
