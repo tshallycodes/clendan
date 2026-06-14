@@ -17,6 +17,7 @@ interface SyncLogEntry {
 }
 
 interface AccountSummary {
+  // FreshBooks-style rich accounting summary
   total_invoices?: number
   outstanding_invoices?: number
   outstanding_amount_cents?: number
@@ -25,6 +26,17 @@ interface AccountSummary {
   total_clients?: number
   total_payments?: number
   total_payments_amount_cents?: number
+  total_expenses?: number
+  total_expenses_amount_cents?: number
+  // Xero / QuickBooks-style entity counts
+  invoices?: number
+  bills?: number
+  contacts?: number
+  payments?: number
+  expenses?: number
+  accounts?: number
+  credit_notes?: number
+  tax_rates?: number
   [key: string]: number | string | undefined
 }
 
@@ -50,9 +62,14 @@ function formatCents(cents: number): string {
   return new Intl.NumberFormat('en-GB', { style: 'currency', currency: 'GBP', maximumFractionDigits: 0 }).format(cents / 100)
 }
 
-const SUMMARY_SLUG_ENDPOINTS: Record<string, string> = {
-  freshbooks: '/v1/integrations/freshbooks/status',
-}
+const ALL_SUMMARY_SLUGS = new Set([
+  'freshbooks', 'xero', 'quickbooks',
+  'stripe', 'square', 'gocardless', 'adyen', 'wise',
+  'hubspot', 'salesforce',
+  'gmail', 'outlook', 'google-drive', 'dropbox', 'onedrive',
+  'netsuite', 'sap', 'dynamics365',
+  'sage',
+])
 
 export function IntegrationDetailDrawer({ slug, intg, status, lastSyncedAt, onClose, onConnect, onDisconnect, onResync, onSyncLog }: Props) {
   const { getToken } = useAuth()
@@ -88,9 +105,8 @@ export function IntegrationDetailDrawer({ slug, intg, status, lastSyncedAt, onCl
           setLogs(json.data ?? [])
         }
 
-        const summaryEndpoint = SUMMARY_SLUG_ENDPOINTS[slug ?? '']
-        if (summaryEndpoint) {
-          const sumRes = await fetch(`${API}${summaryEndpoint}`, {
+        if (slug && ALL_SUMMARY_SLUGS.has(slug)) {
+          const sumRes = await fetch(`${API}/v1/integrations/${slug}/status`, {
             headers: { Authorization: `Bearer ${token}` },
           })
           if (sumRes.ok) {
@@ -140,6 +156,7 @@ export function IntegrationDetailDrawer({ slug, intg, status, lastSyncedAt, onCl
                     <section>
                       <p className="text-[10px] font-mono uppercase tracking-widest text-brand-muted mb-3">Account Summary</p>
                       <div className="grid grid-cols-2 gap-2">
+                        {/* FreshBooks-style: rich accounting summary with amounts */}
                         {summary.total_invoices !== undefined && (
                           <SummaryCard label="Invoices" value={String(summary.total_invoices)} />
                         )}
@@ -148,15 +165,15 @@ export function IntegrationDetailDrawer({ slug, intg, status, lastSyncedAt, onCl
                             label="Outstanding"
                             value={String(summary.outstanding_invoices)}
                             sub={formatCents(summary.outstanding_amount_cents)}
-                            accent={summary.outstanding_invoices > 0 ? 'warn' : 'ok'}
+                            accent={(summary.outstanding_invoices as number) > 0 ? 'warn' : 'ok'}
                           />
                         )}
                         {summary.overdue_invoices !== undefined && summary.overdue_amount_cents !== undefined && (
                           <SummaryCard
                             label="Overdue"
                             value={String(summary.overdue_invoices)}
-                            sub={summary.overdue_invoices > 0 ? formatCents(summary.overdue_amount_cents) : undefined}
-                            accent={summary.overdue_invoices > 0 ? 'danger' : 'ok'}
+                            sub={(summary.overdue_invoices as number) > 0 ? formatCents(summary.overdue_amount_cents as number) : undefined}
+                            accent={(summary.overdue_invoices as number) > 0 ? 'danger' : 'ok'}
                           />
                         )}
                         {summary.total_clients !== undefined && (
@@ -166,9 +183,41 @@ export function IntegrationDetailDrawer({ slug, intg, status, lastSyncedAt, onCl
                           <SummaryCard
                             label="Payments"
                             value={String(summary.total_payments)}
-                            sub={formatCents(summary.total_payments_amount_cents)}
+                            sub={formatCents(summary.total_payments_amount_cents as number)}
                             accent="ok"
                           />
+                        )}
+                        {summary.total_expenses !== undefined && summary.total_expenses_amount_cents !== undefined && (
+                          <SummaryCard
+                            label="Expenses"
+                            value={String(summary.total_expenses)}
+                            sub={formatCents(summary.total_expenses_amount_cents as number)}
+                          />
+                        )}
+                        {/* Xero / QuickBooks-style: entity counts only */}
+                        {summary.total_invoices === undefined && summary.invoices !== undefined && (
+                          <SummaryCard label="Invoices" value={String(summary.invoices)} />
+                        )}
+                        {summary.total_invoices === undefined && summary.bills !== undefined && (
+                          <SummaryCard label="Bills" value={String(summary.bills)} />
+                        )}
+                        {summary.total_invoices === undefined && summary.contacts !== undefined && (
+                          <SummaryCard label="Contacts" value={String(summary.contacts)} />
+                        )}
+                        {summary.total_invoices === undefined && summary.payments !== undefined && (
+                          <SummaryCard label="Payments" value={String(summary.payments)} accent="ok" />
+                        )}
+                        {summary.total_invoices === undefined && summary.expenses !== undefined && (
+                          <SummaryCard label="Expenses" value={String(summary.expenses)} />
+                        )}
+                        {summary.total_invoices === undefined && summary.accounts !== undefined && (
+                          <SummaryCard label="Accounts" value={String(summary.accounts)} />
+                        )}
+                        {summary.total_invoices === undefined && summary.credit_notes !== undefined && (
+                          <SummaryCard label="Credit Notes" value={String(summary.credit_notes)} />
+                        )}
+                        {summary.total_invoices === undefined && summary.tax_rates !== undefined && (
+                          <SummaryCard label="Tax Rates" value={String(summary.tax_rates)} />
                         )}
                       </div>
                     </section>

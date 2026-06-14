@@ -172,7 +172,9 @@ async def hubspot_status(
                 if integration.connected_at
                 else None
             ),
+            "last_synced_at": integration.last_synced_at.isoformat() if integration.last_synced_at else None,
             "integration_id": integration.id,
+            "summary": integration.sync_metadata,
         }
     )
 
