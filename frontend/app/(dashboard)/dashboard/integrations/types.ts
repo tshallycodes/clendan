@@ -7,6 +7,7 @@ export interface IntegrationDef {
   category: string
   desc: string
   connectType: ConnectType
+  comingSoon?: boolean
 }
 
 export interface XeroOrg {

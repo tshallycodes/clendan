@@ -179,9 +179,15 @@ export function IntegrationDetailDrawer({ slug, intg, status, lastSyncedAt, onCl
                     <p className="text-sm font-mono text-[#e8f0e8]">{intg.name}</p>
                     <p className="text-[10px] font-mono text-brand-muted mt-1 max-w-[240px] mx-auto">{intg.desc}</p>
                   </div>
-                  <button onClick={onConnect} className="px-6 py-2.5 bg-[#00C853] text-black text-xs font-mono font-semibold rounded-sm hover:bg-[#00a844] active:scale-[0.97] transition-all">
-                    Connect
-                  </button>
+                  {intg.comingSoon ? (
+                    <div className="px-6 py-2.5 border border-brand-border rounded-sm text-xs font-mono text-brand-muted">
+                      Coming Soon
+                    </div>
+                  ) : (
+                    <button onClick={onConnect} className="px-6 py-2.5 bg-[#00C853] text-black text-xs font-mono font-semibold rounded-sm hover:bg-[#00a844] active:scale-[0.97] transition-all">
+                      Connect
+                    </button>
+                  )}
                 </div>
               )}
             </div>

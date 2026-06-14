@@ -20,7 +20,7 @@ const INTEGRATIONS: IntegrationDef[] = [
   { name: 'QuickBooks', slug: 'quickbooks', category: 'Accounting', desc: 'Full AP/AR sync', connectType: 'oauth' },
   { name: 'Xero', slug: 'xero', category: 'Accounting', desc: 'Bills, invoices, payments', connectType: 'oauth' },
   { name: 'FreshBooks', slug: 'freshbooks', category: 'Accounting', desc: 'Invoice and payment sync', connectType: 'oauth' },
-  { name: 'Sage', slug: 'sage', category: 'Accounting', desc: 'Accounting and payroll', connectType: 'oauth' },
+  { name: 'Sage', slug: 'sage', category: 'Accounting', desc: 'Accounting and payroll', connectType: 'oauth', comingSoon: true },
   { name: 'Wave', slug: 'wave', category: 'Accounting', desc: 'Free accounting for SMBs', connectType: 'oauth' },
   // Payments
   { name: 'Stripe', slug: 'stripe', category: 'Payments', desc: 'Revenue and charges', connectType: 'oauth' },

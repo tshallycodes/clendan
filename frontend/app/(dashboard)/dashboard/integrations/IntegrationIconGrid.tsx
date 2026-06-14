@@ -73,16 +73,28 @@ export function IntegrationIconGrid({ integrations, statuses, onViewDetail }: Pr
         return (
           <button
             key={intg.slug}
-            onClick={() => onViewDetail(intg)}
-            className="flex flex-col items-center gap-1.5 group cursor-pointer"
-            title={intg.name}
+            onClick={() => !intg.comingSoon && onViewDetail(intg)}
+            disabled={intg.comingSoon}
+            className={[
+              'flex flex-col items-center gap-1.5 group',
+              intg.comingSoon ? 'cursor-default opacity-50' : 'cursor-pointer',
+            ].join(' ')}
+            title={intg.comingSoon ? `${intg.name} — Coming Soon` : intg.name}
           >
             <div className="relative w-16 h-16">
-              <div className="w-full h-full rounded-sm flex items-center justify-center overflow-hidden bg-white group-hover:ring-1 group-hover:ring-[#00C853]/40 transition-all">
+              <div className={[
+                'w-full h-full rounded-sm flex items-center justify-center overflow-hidden bg-white transition-all',
+                !intg.comingSoon && 'group-hover:ring-1 group-hover:ring-[#00C853]/40',
+              ].filter(Boolean).join(' ')}>
                 <IntegrationIcon slug={intg.slug} name={intg.name} />
               </div>
               {isConnected && (
                 <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-[#00C853] border-2 border-brand-bg" />
+              )}
+              {intg.comingSoon && (
+                <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 text-[8px] font-mono uppercase tracking-wider text-brand-muted bg-brand-elevated border border-brand-border px-1 py-0.5 rounded-sm whitespace-nowrap">
+                  soon
+                </span>
               )}
             </div>
             <span className="text-[10px] font-mono text-brand-muted text-center leading-tight max-w-[64px] truncate">
