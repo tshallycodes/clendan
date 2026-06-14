@@ -29,7 +29,6 @@ const INTEGRATIONS: IntegrationDef[] = [
   { name: 'NetSuite', slug: 'netsuite', category: 'ERP', desc: 'Full ERP sync', connectType: 'api_key' },
   { name: 'SAP', slug: 'sap', category: 'ERP', desc: 'Enterprise ERP', connectType: 'api_key' },
   { name: 'Microsoft Dynamics 365', slug: 'dynamics365', category: 'ERP', desc: 'ERP and CRM', connectType: 'oauth' },
-  { name: 'Sage Intacct', slug: 'sage-intacct', category: 'ERP', desc: 'Cloud ERP', connectType: 'api_key' },
   // CRM
   { name: 'Salesforce', slug: 'salesforce', category: 'CRM', desc: 'Customer and pipeline data', connectType: 'oauth' },
   { name: 'HubSpot', slug: 'hubspot', category: 'CRM', desc: 'CRM and deal sync', connectType: 'oauth' },
@@ -45,7 +44,7 @@ const STATUSABLE_SLUGS = [
   'quickbooks', 'plaid', 'truelayer', 'xero', 'stripe', 'gocardless',
   'codat', 'hubspot', 'gmail', 'outlook', 'google-drive',
   'freshbooks', 'adyen', 'wise',
-  'netsuite', 'sap', 'dynamics365', 'sage-intacct', 'salesforce', 'dropbox', 'onedrive',
+  'netsuite', 'sap', 'dynamics365', 'salesforce', 'dropbox', 'onedrive',
 ]
 
 const CATEGORIES = Array.from(new Set(INTEGRATIONS.map((i) => i.category)))

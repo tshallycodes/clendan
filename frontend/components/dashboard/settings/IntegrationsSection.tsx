@@ -17,7 +17,6 @@ const INTEGRATION_META: Record<string, { name: string; desc: string }> = {
   netsuite:     { name: 'NetSuite',              desc: 'Full ERP sync' },
   sap:          { name: 'SAP',                   desc: 'Enterprise ERP' },
   dynamics365:  { name: 'Microsoft Dynamics 365', desc: 'ERP and CRM' },
-  'sage-intacct': { name: 'Sage Intacct',        desc: 'Cloud ERP' },
   salesforce:   { name: 'Salesforce',            desc: 'Customer and pipeline data' },
   hubspot:      { name: 'HubSpot',               desc: 'CRM and deal sync' },
   gmail:        { name: 'Gmail',                 desc: 'Invoice ingestion from email' },
@@ -33,7 +32,7 @@ const STATUSABLE_SLUGS = [
   'quickbooks', 'plaid', 'truelayer', 'xero', 'stripe', 'gocardless',
   'hubspot', 'gmail', 'outlook', 'google-drive',
   'freshbooks', 'adyen', 'wise',
-  'netsuite', 'sap', 'dynamics365', 'sage-intacct', 'salesforce', 'dropbox', 'onedrive',
+  'netsuite', 'sap', 'dynamics365', 'salesforce', 'dropbox', 'onedrive',
 ]
 
 interface IntegrationState {
