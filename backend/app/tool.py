@@ -47,6 +47,10 @@ from app.tools.compliance import run_compliance_job
 from app.tools.reconciliation import run_reconciliation_job
 from app.tools.expense_control import run_expense_control_job
 from app.tools.treasury import run_treasury_job
+from app.tools.accounts_receivable import run_accounts_receivable_job
+from app.tools.accounts_payable import run_accounts_payable_job
+from app.tools.cash_flow_forecast import run_cash_flow_forecast_job
+from app.tools.tax_compliance import run_tax_compliance_job
 
 logger = get_logger(__name__)
 
@@ -165,6 +169,54 @@ async def run_orchestrator_job(
                 tool_id=tool_id,
             )
             decision, confidence, reasoning = "routed", 1.0, "Routed to Treasury tool"
+
+        elif event_type == "ar_run":
+            pool = await get_queue_pool()
+            await pool.enqueue_job(
+                "run_accounts_receivable_job",
+                execution_id=execution_id,
+                tenant_id=tenant_id,
+                tool_id=tool_id,
+                payload=payload,
+                policy_config=payload.get("policy_config", {}),
+            )
+            decision, confidence, reasoning = "routed", 1.0, "Routed to Accounts Receivable tool"
+
+        elif event_type == "ap_run":
+            pool = await get_queue_pool()
+            await pool.enqueue_job(
+                "run_accounts_payable_job",
+                execution_id=execution_id,
+                tenant_id=tenant_id,
+                tool_id=tool_id,
+                payload=payload,
+                policy_config=payload.get("policy_config", {}),
+            )
+            decision, confidence, reasoning = "routed", 1.0, "Routed to Accounts Payable tool"
+
+        elif event_type == "cash_flow_run":
+            pool = await get_queue_pool()
+            await pool.enqueue_job(
+                "run_cash_flow_forecast_job",
+                execution_id=execution_id,
+                tenant_id=tenant_id,
+                tool_id=tool_id,
+                payload=payload,
+                policy_config=payload.get("policy_config", {}),
+            )
+            decision, confidence, reasoning = "routed", 1.0, "Routed to Cash Flow Forecast tool"
+
+        elif event_type == "tax_compliance_run":
+            pool = await get_queue_pool()
+            await pool.enqueue_job(
+                "run_tax_compliance_job",
+                execution_id=execution_id,
+                tenant_id=tenant_id,
+                tool_id=tool_id,
+                payload=payload,
+                policy_config=payload.get("policy_config", {}),
+            )
+            decision, confidence, reasoning = "routed", 1.0, "Routed to Tax Compliance tool"
 
         elif event_type == "receipt_received":
             decision, confidence, reasoning = await _orchestrate_receipt_received(
@@ -498,6 +550,10 @@ class ToolSettings:
         run_reconciliation_job,
         run_expense_control_job,
         run_treasury_job,
+        run_accounts_receivable_job,
+        run_accounts_payable_job,
+        run_cash_flow_forecast_job,
+        run_tax_compliance_job,
         sync_xero_connection,
         sync_freshbooks_connection,
         sync_stripe_connection,
