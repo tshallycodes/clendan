@@ -31,7 +31,7 @@ function statusBadge(status: string) {
       </span>
     )
   return (
-    <span className="px-2 py-0.5 rounded-sm text-[10px] font-mono bg-[rgba(74,106,74,0.08)] text-[#4a6a4a] border border-[rgba(74,106,74,0.2)]">
+    <span className="px-2 py-0.5 rounded-sm text-[10px] font-mono bg-brand-elevated text-brand-muted border border-brand-border">
       {status}
     </span>
   )

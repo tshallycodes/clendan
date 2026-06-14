@@ -70,17 +70,23 @@ export function GenericToolClient({ tool, deployed }: Props) {
   }
 
   async function handleDeploy() {
-    if (deployed) { await handleToggle(); return }
     setDeploying(true)
     try {
       const token = await getToken()
-      const { getDefaultConfig } = await import('@/components/dashboard/tools/ToolConfigFields')
-      const res = await fetch(`${API}/v1/tools`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: tool.type, autonomy_level: 'approve', config: getDefaultConfig(tool.type) }),
-      })
-      if (res.ok) router.refresh()
+      if (deployed) {
+        await fetch(`${API}/v1/tools/${deployed.id}/pause`, {
+          method: 'PATCH',
+          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        })
+      } else {
+        const { getDefaultConfig } = await import('@/components/dashboard/tools/ToolConfigFields')
+        await fetch(`${API}/v1/tools`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type: tool.type, autonomy_level: 'approve', config: getDefaultConfig(tool.type) }),
+        })
+      }
+      router.refresh()
     } finally {
       setDeploying(false)
     }
@@ -116,7 +122,7 @@ export function GenericToolClient({ tool, deployed }: Props) {
                   ? 'border border-brand-border text-brand-text hover:bg-brand-elevated'
                   : 'bg-[#00C853] text-black hover:bg-[#00a844] active:scale-[0.97]'
               }`}>
-              {actionLoading ? '…' : isActive ? 'Pause' : 'Deploy'}
+              {toggling ? 'Pausing…' : deploying ? 'Deploying…' : isActive ? 'Pause' : 'Deploy'}
             </button>
           </div>
         )}

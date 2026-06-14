@@ -14,7 +14,7 @@ All other tools are sub-agents called as tools. Tools never call each other dire
 ---
 
 ## Rules
-
+- Use the playwright mcp to help you navigate and understand the codebase
 - Do what has been asked; nothing more, nothing less
 - NEVER create files unless absolutely necessary — prefer editing existing files
 - NEVER create documentation files unless explicitly requested
@@ -27,6 +27,14 @@ All other tools are sub-agents called as tools. Tools never call each other dire
 - ALWAYS run database migrations after schema changes
 - If an error persists after two attempts, stop and discuss options
 - Do not hardcode API keys, secrets, or any credentials, or design styles
+- Always pull before pushing your changes to github with
+
+```bash
+git pull
+git add .
+git commit -m "Task title"
+git push -u origin main
+```
 
 ---
 
@@ -294,7 +302,7 @@ cd frontend && npm run build && npm test
 # Backend API
 cd backend && pytest && uvicorn app.main:app --reload
 
-# Background worker
+# Background tool
 cd backend && python run_tool.py app.tool.ToolSettings
 
 # Full stack
@@ -320,14 +328,14 @@ Always use Tailwind design token classes (`bg-brand-surface`, `text-brand-text`,
 
 | Tailwind Class | Light value | Dark value | Usage |
 | -------------- | ----------- | ---------- | ----- |
-| `bg-brand-bg` / `text-brand-bg` | `#f5f6f5` | `#0a0a0a` | Page background |
+| `bg-brand-bg` / `text-brand-bg` | `#f5f5f5` | `#0a0a0a` | Page background |
 | `bg-brand-surface` | `#ffffff` | `#111111` | Cards, panels, drawers, sidebars |
-| `bg-brand-elevated` | `#eef2ee` | `#1a1a1a` | Modals, dropdowns, nested cards |
-| `border-brand-border` / `divide-brand-border` | `#d8e4d8` | `#1a2a1a` | Card borders, dividers |
-| `border-brand-border-subtle` | `#e6eee6` | `#1e1e1e` | Subtle separators |
-| `text-brand-text` | `#0e160e` | `#e8f0e8` | Primary text |
-| `text-brand-secondary` | `#3a5c3a` | `#a0b8a0` | Labels, metadata |
-| `text-brand-muted` | `#4a6a4a` | `#6e8c6e` | Timestamps, captions, placeholders |
+| `bg-brand-elevated` | `#f0f0f0` | `#1a1a1a` | Modals, dropdowns, nested cards |
+| `border-brand-border` / `divide-brand-border` | `#e0e0e0` | `#2c2c2c` | Card borders, dividers |
+| `border-brand-border-subtle` | `#ebebeb` | `#222222` | Subtle separators |
+| `text-brand-text` | `#111111` | `#f0f0f0` | Primary text |
+| `text-brand-secondary` | `#444444` | `#a0a0a0` | Labels, metadata |
+| `text-brand-muted` | `#888888` | `#666666` | Timestamps, captions, placeholders |
 
 **Hard rule: never write raw hex values for any of the above.** Use the Tailwind token class.
 Inline styles are allowed only for dynamic values (e.g. computed chart colours, bank brand colours).

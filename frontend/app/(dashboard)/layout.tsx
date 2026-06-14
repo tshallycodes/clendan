@@ -34,9 +34,6 @@ export default async function DashboardLayout({ children }: { children: React.Re
     <div className="flex min-h-screen bg-brand-bg">
       <Sidebar />
       <div className="flex-1 overflow-auto flex flex-col">
-        <header className="h-10 border-b border-brand-border bg-brand-surface flex items-center justify-end px-4 shrink-0">
-          <ClenDashboard />
-        </header>
         {backendStatus === 'unreachable' && (
           <div className="bg-[rgba(245,166,35,0.08)] border-b border-[rgba(245,166,35,0.2)] px-6 py-2.5 flex items-center justify-between">
             <p className="text-[11px] font-mono text-[#f5a623]">
@@ -48,6 +45,9 @@ export default async function DashboardLayout({ children }: { children: React.Re
           </div>
         )}
         <main className="flex-1">{children}</main>
+      </div>
+      <div className="fixed bottom-6 right-6 z-50">
+        <ClenDashboard />
       </div>
     </div>
   )

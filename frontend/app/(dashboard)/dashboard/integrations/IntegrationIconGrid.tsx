@@ -78,11 +78,11 @@ export function IntegrationIconGrid({ integrations, statuses, onViewDetail }: Pr
             title={intg.name}
           >
             <div className="relative w-16 h-16">
-              <div className="w-full h-full rounded-sm flex items-center justify-center overflow-hidden bg-white border border-[#2a2a2a] group-hover:ring-1 group-hover:ring-[#00C853]/40 group-hover:border-[#00C853]/30 transition-all">
+              <div className="w-full h-full rounded-sm flex items-center justify-center overflow-hidden bg-white group-hover:ring-1 group-hover:ring-[#00C853]/40 transition-all">
                 <IntegrationIcon slug={intg.slug} name={intg.name} />
               </div>
               {isConnected && (
-                <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-[#00C853] border-2 border-[#0a0a0a]" />
+                <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-[#00C853] border-2 border-brand-bg" />
               )}
             </div>
             <span className="text-[10px] font-mono text-brand-muted text-center leading-tight max-w-[64px] truncate">

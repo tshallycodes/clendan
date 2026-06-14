@@ -105,21 +105,21 @@ export function CredentialsDrawer({ slug, open, onClose, onSubmit }: Props) {
 
   return (
     <div className="fixed inset-0 z-50 flex justify-end" onClick={(e) => { if (e.target === e.currentTarget) handleClose() }}>
-      <div className="w-full max-w-sm bg-[#111111] border-l border-[#1a2a1a] h-full flex flex-col shadow-2xl">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-[#1a2a1a]">
+      <div className="w-full max-w-sm bg-[#111111] border-l border-brand-border h-full flex flex-col shadow-2xl">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-brand-border">
           <h2 className="text-sm font-mono font-medium text-[#e8f0e8]">Connect {cfg.title}</h2>
-          <button type="button" onClick={handleClose} className="text-[#4a6a4a] hover:text-[#e8f0e8] transition-colors text-lg leading-none">Ã—</button>
+          <button type="button" onClick={handleClose} className="text-brand-muted hover:text-[#e8f0e8] transition-colors text-lg leading-none">Ã—</button>
         </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4 p-5 flex-1 overflow-y-auto">
           {cfg.fields.map((field) => (
             <label key={field.name} className="flex flex-col gap-1.5">
-              <span className="text-[10px] font-mono uppercase tracking-widest text-[#4a6a4a]">{field.label}</span>
+              <span className="text-[10px] font-mono uppercase tracking-widest text-brand-muted">{field.label}</span>
               {field.type === 'select' ? (
                 <select
                   value={values[field.name] ?? field.options?.[0] ?? ''}
                   onChange={(e) => setValues((v) => ({ ...v, [field.name]: e.target.value }))}
-                  className="bg-[#0a0a0a] border border-[#1a2a1a] focus:border-[#00C853] text-[#e8f0e8] rounded-sm px-3 py-2 text-xs font-mono outline-none transition-colors"
+                  className="bg-[#0a0a0a] border border-brand-border focus:border-[#00C853] text-[#e8f0e8] rounded-sm px-3 py-2 text-xs font-mono outline-none transition-colors"
                 >
                   {field.options?.map((o) => <option key={o} value={o}>{o}</option>)}
                 </select>
@@ -131,7 +131,7 @@ export function CredentialsDrawer({ slug, open, onClose, onSubmit }: Props) {
                   placeholder={field.placeholder}
                   autoComplete="off"
                   required
-                  className="bg-[#0a0a0a] border border-[#1a2a1a] focus:border-[#00C853] text-[#e8f0e8] rounded-sm px-3 py-2 text-xs font-mono outline-none placeholder-[#4a6a4a] transition-colors"
+                  className="bg-[#0a0a0a] border border-brand-border focus:border-[#00C853] text-[#e8f0e8] rounded-sm px-3 py-2 text-xs font-mono outline-none placeholder-brand-muted transition-colors"
                 />
               )}
             </label>
@@ -154,7 +154,7 @@ export function CredentialsDrawer({ slug, open, onClose, onSubmit }: Props) {
             <button
               type="button"
               onClick={handleClose}
-              className="text-xs font-mono border border-[#1a2a1a] text-[#a0b8a0] rounded-sm px-3 py-2 hover:text-[#e8f0e8] transition-colors"
+              className="text-xs font-mono border border-brand-border text-brand-muted rounded-sm px-3 py-2 hover:text-[#e8f0e8] transition-colors"
             >
               Cancel
             </button>

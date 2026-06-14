@@ -79,18 +79,18 @@ export function SyncLogDrawer({ slug, integrationName, onClose }: SyncLogDrawerP
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'tween', duration: 0.25 }}
-            className="fixed right-0 top-0 h-full w-[480px] max-w-full bg-[#111111] border-l border-[#1a2a1a] z-50 flex flex-col"
+            className="fixed right-0 top-0 h-full w-[480px] max-w-full bg-[#111111] border-l border-brand-border z-50 flex flex-col"
           >
-            <div className="flex items-center justify-between px-6 py-4 border-b border-[#1a2a1a]">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-brand-border">
               <div>
                 <h2 className="font-heading font-bold text-base text-[#e8f0e8]">Sync Log</h2>
-                <p className="text-[10px] font-mono text-[#4a6a4a] mt-0.5 uppercase tracking-widest">
+                <p className="text-[10px] font-mono text-brand-muted mt-0.5 uppercase tracking-widest">
                   {integrationName}
                 </p>
               </div>
               <button
                 onClick={onClose}
-                className="text-[#4a6a4a] hover:text-[#e8f0e8] transition-colors text-xl leading-none"
+                className="text-brand-muted hover:text-[#e8f0e8] transition-colors text-xl leading-none"
                 aria-label="Close"
               >
                 &times;
@@ -108,8 +108,8 @@ export function SyncLogDrawer({ slug, integrationName, onClose }: SyncLogDrawerP
 
               {!loading && (!supportsLog || events.length === 0) && (
                 <div className="flex flex-col items-center justify-center h-40 gap-1">
-                  <p className="text-xs font-mono text-[#a0b8a0]">No sync events yet</p>
-                  <p className="text-[10px] font-mono text-[#4a6a4a]">Events will appear here after the first sync</p>
+                  <p className="text-xs font-mono text-brand-secondary">No sync events yet</p>
+                  <p className="text-[10px] font-mono text-brand-muted">Events will appear here after the first sync</p>
                 </div>
               )}
 
@@ -121,7 +121,7 @@ export function SyncLogDrawer({ slug, integrationName, onClose }: SyncLogDrawerP
                       initial={{ opacity: 0, y: 4 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: idx * 0.05, duration: 0.15 }}
-                      className="bg-[#0a0a0a] border border-[#1a2a1a] rounded-sm px-4 py-3"
+                      className="bg-[#0a0a0a] border border-brand-border rounded-sm px-4 py-3"
                     >
                       <div className="flex items-center justify-between gap-4">
                         <div className="min-w-0">
@@ -132,12 +132,12 @@ export function SyncLogDrawer({ slug, integrationName, onClose }: SyncLogDrawerP
                             </span>
                           </div>
                           {event.records_synced > 0 && (
-                            <p className="text-[10px] font-mono text-[#4a6a4a] mt-0.5">
+                            <p className="text-[10px] font-mono text-brand-muted mt-0.5">
                               {event.records_synced} records
                             </p>
                           )}
                         </div>
-                        <time className="text-[10px] font-mono text-[#4a6a4a] shrink-0">
+                        <time className="text-[10px] font-mono text-brand-muted shrink-0">
                           {new Date(event.timestamp).toLocaleString()}
                         </time>
                       </div>

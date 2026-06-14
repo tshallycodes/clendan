@@ -74,7 +74,7 @@ export function IntegrationCard({
               Last sync: {lastSyncedAt ? new Date(lastSyncedAt).toLocaleString() : '—'}
             </p>
             {disconnecting ? (
-              <p className="text-[10px] font-mono text-[#4a6a4a]">Disconnecting...</p>
+              <p className="text-[10px] font-mono text-brand-muted">Disconnecting...</p>
             ) : confirming ? (
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="text-[10px] font-mono text-[#ff4d6d]">Disconnect {intg.name}?</span>

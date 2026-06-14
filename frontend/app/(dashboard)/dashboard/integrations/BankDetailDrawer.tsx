@@ -60,7 +60,7 @@ function StatusBadge({ status }: { status: string }) {
     syncing:   { bg: 'rgba(0,168,204,0.08)', color: '#00a8cc', border: 'rgba(0,168,204,0.2)' },
     error:     { bg: 'rgba(255,77,109,0.08)', color: '#ff4d6d', border: 'rgba(255,77,109,0.2)' },
   }
-  const s = map[status] ?? { bg: 'rgba(74,106,74,0.15)', color: '#a0b8a0', border: 'rgba(74,106,74,0.3)' }
+  const s = map[status] ?? { bg: 'rgba(82,196,120,0.1)', color: 'var(--brand-muted)', border: 'rgba(82,196,120,0.25)' }
   return (
     <span
       className="text-[10px] font-mono uppercase tracking-wider px-2 py-0.5 rounded-sm"

@@ -21,7 +21,7 @@ export interface Execution {
 const AUTONOMY_LABEL: Record<Tool['autonomy_level'], { label: string; className: string }> = {
   auto:    { label: 'Auto',    className: 'bg-[rgba(0,200,83,0.08)] text-[#00C853] border border-[rgba(0,200,83,0.2)]' },
   approve: { label: 'Approve', className: 'bg-[rgba(0,168,204,0.08)] text-[#00a8cc] border border-[rgba(0,168,204,0.2)]' },
-  suggest: { label: 'Suggest', className: 'bg-[#111111] text-[#4a6a4a] border border-[#1a2a1a]' },
+  suggest: { label: 'Suggest', className: 'bg-[#111111] text-brand-muted border border-brand-border' },
 }
 
 interface Props {
@@ -40,13 +40,13 @@ export function ToolDetail({ tool, executions }: Props) {
     <div className="p-6 space-y-6">
       <div className="flex items-start justify-between gap-4">
         <div className="space-y-2">
-          <Link href="/tools" className="text-[11px] font-mono text-[#4a6a4a] hover:text-[#a0b8a0] transition-colors">
+          <Link href="/tools" className="text-[11px] font-mono text-brand-muted hover:text-[#a0b8a0] transition-colors">
             &larr; Tools
           </Link>
           <div className="flex items-center gap-3 flex-wrap">
             <h1 className="font-heading font-bold text-2xl text-[#e8f0e8]">{formatType(tool.type)}</h1>
             <span className={`text-[10px] font-mono px-2 py-0.5 rounded-sm ${autonomy.className}`}>{autonomy.label}</span>
-            <span className="text-[10px] font-mono text-[#4a6a4a]">v{tool.version}</span>
+            <span className="text-[10px] font-mono text-brand-muted">v{tool.version}</span>
             <div className="flex items-center gap-1.5">
               {isActive ? (
                 <span className="relative flex h-2 w-2">
@@ -56,7 +56,7 @@ export function ToolDetail({ tool, executions }: Props) {
               ) : (
                 <span className="h-2 w-2 rounded-full bg-[#4a6a4a]" />
               )}
-              <span className={`text-xs font-mono ${isActive ? 'text-[#00C853]' : 'text-[#4a6a4a]'}`}>
+              <span className={`text-xs font-mono ${isActive ? 'text-[#00C853]' : 'text-brand-muted'}`}>
                 {isActive ? 'Active' : 'Inactive'}
               </span>
             </div>
@@ -66,7 +66,7 @@ export function ToolDetail({ tool, executions }: Props) {
           type="button"
           onClick={run}
           disabled={running}
-          className="text-xs font-mono border border-[#1a2a1a] text-[#e8f0e8] hover:bg-[#1a1a1a] rounded-sm px-3 py-1.5 transition-colors disabled:opacity-50 shrink-0"
+          className="text-xs font-mono border border-brand-border text-[#e8f0e8] hover:bg-[#1a1a1a] rounded-sm px-3 py-1.5 transition-colors disabled:opacity-50 shrink-0"
         >
           {running ? 'Running…' : 'Run test'}
         </button>
@@ -77,10 +77,10 @@ export function ToolDetail({ tool, executions }: Props) {
       {configEntries.length > 0 && (
         <section>
           <h2 className="font-heading font-semibold text-sm text-[#e8f0e8] mb-3">Configuration</h2>
-          <div className="bg-[#111111] border border-[#1a2a1a] rounded-sm p-4 space-y-2">
+          <div className="bg-[#111111] border border-brand-border rounded-sm p-4 space-y-2">
             {configEntries.map(([k, v]) => (
               <div key={k} className="flex gap-4 text-xs font-mono">
-                <span className="text-[#4a6a4a] min-w-[140px] shrink-0">{k}</span>
+                <span className="text-brand-muted min-w-[140px] shrink-0">{k}</span>
                 <span className="text-[#e8f0e8] break-all">{String(v)}</span>
               </div>
             ))}

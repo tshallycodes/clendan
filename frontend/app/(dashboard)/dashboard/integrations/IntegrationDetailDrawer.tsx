@@ -76,10 +76,10 @@ export function IntegrationDetailDrawer({ slug, intg, status, lastSyncedAt, onCl
       {open && intg && (
         <>
           <motion.div key="intg-bd" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }} className="fixed inset-0 bg-black/70 z-40" onClick={onClose} />
-          <motion.aside key="intg-dr" initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }} transition={{ type: 'tween', duration: 0.25 }} className="fixed right-0 top-0 h-full w-[480px] max-w-full bg-[#111111] border-l border-[#1a2a1a] z-50 flex flex-col">
+          <motion.aside key="intg-dr" initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }} transition={{ type: 'tween', duration: 0.25 }} className="fixed right-0 top-0 h-full w-[480px] max-w-full bg-[#111111] border-l border-brand-border z-50 flex flex-col">
 
             {/* Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-[#1a2a1a]">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-brand-border">
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-sm overflow-hidden bg-white flex items-center justify-center shrink-0">
                   <IntegrationLogo slug={intg.slug} size={32} />
@@ -92,7 +92,7 @@ export function IntegrationDetailDrawer({ slug, intg, status, lastSyncedAt, onCl
                   </div>
                 </div>
               </div>
-              <button onClick={onClose} className="text-[#4a6a4a] hover:text-[#e8f0e8] transition-colors text-xl leading-none">&times;</button>
+              <button onClick={onClose} className="text-brand-muted hover:text-[#e8f0e8] transition-colors text-xl leading-none">&times;</button>
             </div>
 
             <div className="flex-1 overflow-y-auto px-6 py-5 space-y-6">
@@ -100,14 +100,14 @@ export function IntegrationDetailDrawer({ slug, intg, status, lastSyncedAt, onCl
                 <>
                   {/* Sync status */}
                   <section>
-                    <p className="text-[10px] font-mono uppercase tracking-widest text-[#4a6a4a] mb-3">Sync Status</p>
-                    <div className="bg-[#0a0a0a] border border-[#1a2a1a] rounded-sm divide-y divide-[#1a2a1a]">
+                    <p className="text-[10px] font-mono uppercase tracking-widest text-brand-muted mb-3">Sync Status</p>
+                    <div className="bg-[#0a0a0a] border border-brand-border rounded-sm divide-y divide-[#1a2a1a]">
                       <div className="flex items-center justify-between px-4 py-2.5">
-                        <span className="text-[10px] font-mono text-[#4a6a4a]">Last sync</span>
+                        <span className="text-[10px] font-mono text-brand-muted">Last sync</span>
                         <span className="text-xs font-mono text-[#e8f0e8]">{lastSyncDisplay}</span>
                       </div>
                       <div className="flex items-center justify-between px-4 py-2.5">
-                        <span className="text-[10px] font-mono text-[#4a6a4a]">Health</span>
+                        <span className="text-[10px] font-mono text-brand-muted">Health</span>
                         <span className="text-[10px] font-mono uppercase tracking-wider text-[#00C853]">OK</span>
                       </div>
                     </div>
@@ -116,17 +116,17 @@ export function IntegrationDetailDrawer({ slug, intg, status, lastSyncedAt, onCl
                   {/* Recent syncs */}
                   {(logsLoading || logs.length > 0) && (
                     <section>
-                      <p className="text-[10px] font-mono uppercase tracking-widest text-[#4a6a4a] mb-3">Recent Syncs</p>
+                      <p className="text-[10px] font-mono uppercase tracking-widest text-brand-muted mb-3">Recent Syncs</p>
                       {logsLoading ? (
-                        <div className="space-y-1">{[1, 2, 3].map((i) => <div key={i} className="h-10 bg-[#0a0a0a] border border-[#1a2a1a] rounded-sm animate-pulse" />)}</div>
+                        <div className="space-y-1">{[1, 2, 3].map((i) => <div key={i} className="h-10 bg-[#0a0a0a] border border-brand-border rounded-sm animate-pulse" />)}</div>
                       ) : (
                         <div className="space-y-1">
                           {logs.map((entry) => (
-                            <div key={entry.id} className="bg-[#0a0a0a] border border-[#1a2a1a] rounded-sm px-4 py-2.5 flex items-center justify-between gap-4">
+                            <div key={entry.id} className="bg-[#0a0a0a] border border-brand-border rounded-sm px-4 py-2.5 flex items-center justify-between gap-4">
                               <span className="text-xs font-mono text-[#e8f0e8] truncate">{entry.entity_type}</span>
                               <div className="flex items-center gap-3 shrink-0">
                                 <span className={`text-[10px] font-mono uppercase ${statusColor(entry.status)}`}>{entry.status}</span>
-                                <span className="text-[10px] font-mono text-[#4a6a4a]">{new Date(entry.timestamp).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
+                                <span className="text-[10px] font-mono text-brand-muted">{new Date(entry.timestamp).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
                               </div>
                             </div>
                           ))}
@@ -137,7 +137,7 @@ export function IntegrationDetailDrawer({ slug, intg, status, lastSyncedAt, onCl
 
                   {/* Actions */}
                   <section>
-                    <p className="text-[10px] font-mono uppercase tracking-widest text-[#4a6a4a] mb-3">Actions</p>
+                    <p className="text-[10px] font-mono uppercase tracking-widest text-brand-muted mb-3">Actions</p>
                     <div className="flex gap-2">
                       <button
                         disabled={resyncing}
@@ -145,11 +145,11 @@ export function IntegrationDetailDrawer({ slug, intg, status, lastSyncedAt, onCl
                           setResyncing(true)
                           try { await onResync() } finally { setResyncing(false) }
                         }}
-                        className="flex-1 py-2 text-[11px] font-mono text-[#e8f0e8] border border-[#1a2a1a] rounded-sm hover:bg-[#1a1a1a] transition-colors disabled:opacity-60"
+                        className="flex-1 py-2 text-[11px] font-mono text-[#e8f0e8] border border-brand-border rounded-sm hover:bg-[#1a1a1a] transition-colors disabled:opacity-60"
                       >
                         {resyncing ? 'Syncing...' : 'Resync'}
                       </button>
-                      <button onClick={onSyncLog} className="flex-1 py-2 text-[11px] font-mono text-[#e8f0e8] border border-[#1a2a1a] rounded-sm hover:bg-[#1a1a1a] transition-colors">Sync Log</button>
+                      <button onClick={onSyncLog} className="flex-1 py-2 text-[11px] font-mono text-[#e8f0e8] border border-brand-border rounded-sm hover:bg-[#1a1a1a] transition-colors">Sync Log</button>
                       {confirmDisconnect ? (
                         <>
                           <button
@@ -162,7 +162,7 @@ export function IntegrationDetailDrawer({ slug, intg, status, lastSyncedAt, onCl
                           >
                             {disconnecting ? 'Disconnecting...' : 'Confirm'}
                           </button>
-                          <button onClick={() => setConfirmDisconnect(false)} className="px-3 py-2 text-[11px] font-mono text-[#4a6a4a] border border-[#1a2a1a] rounded-sm hover:bg-[#1a1a1a] transition-colors">Cancel</button>
+                          <button onClick={() => setConfirmDisconnect(false)} className="px-3 py-2 text-[11px] font-mono text-brand-muted border border-brand-border rounded-sm hover:bg-[#1a1a1a] transition-colors">Cancel</button>
                         </>
                       ) : (
                         <button onClick={() => setConfirmDisconnect(true)} className="flex-1 py-2 text-[11px] font-mono text-[#ff4d6d] bg-[rgba(255,77,109,0.05)] border border-[#ff4d6d]/30 rounded-sm hover:bg-[rgba(255,77,109,0.1)] transition-colors">Disconnect</button>
@@ -177,7 +177,7 @@ export function IntegrationDetailDrawer({ slug, intg, status, lastSyncedAt, onCl
                   </div>
                   <div>
                     <p className="text-sm font-mono text-[#e8f0e8]">{intg.name}</p>
-                    <p className="text-[10px] font-mono text-[#4a6a4a] mt-1 max-w-[240px] mx-auto">{intg.desc}</p>
+                    <p className="text-[10px] font-mono text-brand-muted mt-1 max-w-[240px] mx-auto">{intg.desc}</p>
                   </div>
                   <button onClick={onConnect} className="px-6 py-2.5 bg-[#00C853] text-black text-xs font-mono font-semibold rounded-sm hover:bg-[#00a844] active:scale-[0.97] transition-all">
                     Connect
