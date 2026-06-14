@@ -10,7 +10,6 @@ const INTEGRATION_META: Record<string, { name: string; desc: string }> = {
   quickbooks:   { name: 'QuickBooks',            desc: 'Accounting sync, invoices, and company data' },
   xero:         { name: 'Xero',                  desc: 'Bills, invoices, payments' },
   freshbooks:   { name: 'FreshBooks',            desc: 'Invoice and payment sync' },
-  sage:         { name: 'Sage',                  desc: 'Accounting and payroll' },
   stripe:       { name: 'Stripe',                desc: 'Revenue and charges' },
   gocardless:   { name: 'GoCardless',            desc: 'Direct debit' },
   adyen:        { name: 'Adyen',                 desc: 'Global payment processing' },
@@ -33,7 +32,7 @@ const INTEGRATION_META: Record<string, { name: string; desc: string }> = {
 const STATUSABLE_SLUGS = [
   'quickbooks', 'plaid', 'truelayer', 'xero', 'stripe', 'gocardless',
   'hubspot', 'gmail', 'outlook', 'google-drive',
-  'freshbooks', 'sage', 'adyen', 'wise',
+  'freshbooks', 'adyen', 'wise',
   'netsuite', 'sap', 'dynamics365', 'sage-intacct', 'salesforce', 'dropbox', 'onedrive',
 ]
 
