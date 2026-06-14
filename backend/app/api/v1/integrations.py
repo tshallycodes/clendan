@@ -148,7 +148,7 @@ async def quickbooks_sync(
     current_user: RequireOrgAuth,
     db: Annotated[Prisma, Depends(get_db_dep)],
 ):
-    """Verifies the QuickBooks connection inline. Used by the Resync button."""
+    """Enqueues a QuickBooks sync job via arq."""
     integration = await db.integration.find_first(
         where={"tenant_id": current_user.tenant_id, "type": "quickbooks", "status": "connected"}
     )
@@ -158,13 +158,13 @@ async def quickbooks_sync(
             detail="No connected QuickBooks integration found",
         )
 
-    from app.integrations.quickbooks.sync import sync_quickbooks_connection
-    result = await sync_quickbooks_connection(
-        ctx={},
-        integration_id=integration.id,
-        tenant_id=current_user.tenant_id,
-    )
-    return standard_response(data={"result": result, "integration_id": integration.id})
+    from app.integrations.quickbooks.sync import enqueue_quickbooks_sync
+    try:
+        await enqueue_quickbooks_sync(integration_id=integration.id, tenant_id=current_user.tenant_id)
+    except Exception as exc:
+        logger.error("quickbooks_manual_sync_enqueue_failed integration=%s error=%s", integration.id, type(exc).__name__)
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Failed to enqueue sync job")
+    return standard_response(data={"status": "sync_enqueued", "integration_id": integration.id})
 
 
 class XeroSelectTenantRequest(BaseModel):
@@ -312,7 +312,7 @@ async def xero_sync(
     current_user: RequireOrgAuth,
     db: Annotated[Prisma, Depends(get_db_dep)],
 ):
-    """Verifies the Xero connection inline. Used by the Resync button."""
+    """Enqueues a Xero sync job via arq."""
     integration = await db.integration.find_first(
         where={"tenant_id": current_user.tenant_id, "type": "xero", "status": "connected"}
     )
@@ -322,13 +322,13 @@ async def xero_sync(
             detail="No connected Xero integration found",
         )
 
-    from app.integrations.xero.sync import sync_xero_connection
-    result = await sync_xero_connection(
-        ctx={},
-        integration_id=integration.id,
-        tenant_id=current_user.tenant_id,
-    )
-    return standard_response(data={"result": result, "integration_id": integration.id})
+    from app.integrations.xero.sync import enqueue_xero_sync
+    try:
+        await enqueue_xero_sync(integration_id=integration.id, tenant_id=current_user.tenant_id)
+    except Exception as exc:
+        logger.error("xero_manual_sync_enqueue_failed integration=%s error=%s", integration.id, type(exc).__name__)
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Failed to enqueue sync job")
+    return standard_response(data={"status": "sync_enqueued", "integration_id": integration.id})
 
 
 @router.post("/integrations/xero/select-tenant")
