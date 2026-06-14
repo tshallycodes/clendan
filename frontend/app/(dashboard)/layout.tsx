@@ -6,7 +6,7 @@ import { MobileNav } from '@/components/dashboard/MobileNav'
 import { ClenDashboard } from '@/components/clen/ClenDashboard'
 import { getBackendToken } from '@/lib/auth'
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+const API_BASE = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { userId } = await auth()
