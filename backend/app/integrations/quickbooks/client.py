@@ -347,6 +347,74 @@ async def create_bill(
     }
 
 
+async def _query(access_token: str, realm_id: str, sql: str, sandbox: bool = True) -> list:
+    """Runs a QB query and returns the first entity list found in QueryResponse."""
+    async def _call():
+        url = f"{get_api_base(sandbox)}/{realm_id}/query"
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                url,
+                params={"query": sql, "minorversion": "65"},
+                headers={"Authorization": f"Bearer {access_token}", "Accept": "application/json"},
+                timeout=30.0,
+            )
+            response.raise_for_status()
+            return response.json()
+
+    raw = await _circuit.call(_retry, _call)
+    qr = raw.get("QueryResponse", {})
+    # Return the first non-metadata list value
+    for key, val in qr.items():
+        if isinstance(val, list):
+            return val
+    return []
+
+
+async def get_invoices(access_token: str, realm_id: str, sandbox: bool = True) -> list:
+    """Fetches all QB Invoices (up to 1000)."""
+    return await _query(access_token, realm_id, "SELECT * FROM Invoice MAXRESULTS 1000", sandbox)
+
+
+async def get_bills(access_token: str, realm_id: str, sandbox: bool = True) -> list:
+    """Fetches all QB Bills (up to 1000)."""
+    return await _query(access_token, realm_id, "SELECT * FROM Bill MAXRESULTS 1000", sandbox)
+
+
+async def get_customers(access_token: str, realm_id: str, sandbox: bool = True) -> list:
+    """Fetches all QB Customers (up to 1000)."""
+    return await _query(access_token, realm_id, "SELECT * FROM Customer MAXRESULTS 1000", sandbox)
+
+
+async def get_vendors(access_token: str, realm_id: str, sandbox: bool = True) -> list:
+    """Fetches all QB Vendors (up to 1000)."""
+    return await _query(access_token, realm_id, "SELECT * FROM Vendor MAXRESULTS 1000", sandbox)
+
+
+async def get_payments(access_token: str, realm_id: str, sandbox: bool = True) -> list:
+    """Fetches all QB Payments (up to 1000)."""
+    return await _query(access_token, realm_id, "SELECT * FROM Payment MAXRESULTS 1000", sandbox)
+
+
+async def get_expenses(access_token: str, realm_id: str, sandbox: bool = True) -> list:
+    """Fetches all QB Purchases (expenses) (up to 1000)."""
+    return await _query(access_token, realm_id, "SELECT * FROM Purchase MAXRESULTS 1000", sandbox)
+
+
+async def get_accounts(access_token: str, realm_id: str, sandbox: bool = True) -> list:
+    """Fetches all QB Accounts (up to 1000)."""
+    return await _query(access_token, realm_id, "SELECT * FROM Account MAXRESULTS 1000", sandbox)
+
+
+async def get_tax_codes(access_token: str, realm_id: str, sandbox: bool = True) -> list:
+    """Fetches all QB TaxCodes (up to 1000)."""
+    return await _query(access_token, realm_id, "SELECT * FROM TaxCode MAXRESULTS 1000", sandbox)
+
+
+async def get_credit_memos(access_token: str, realm_id: str, sandbox: bool = True) -> list:
+    """Fetches all QB CreditMemos (up to 1000)."""
+    return await _query(access_token, realm_id, "SELECT * FROM CreditMemo MAXRESULTS 1000", sandbox)
+
+
 async def revoke_token(encrypted_token: str) -> None:
     """Revokes a QuickBooks token."""
     settings = get_settings()

@@ -1,7 +1,7 @@
-﻿"""
-Xero sync job — runs via arq tool.
-Fetches accounts and contacts to verify connection is live.
-Writes IntegrationSyncLog entries. Updates integration status.
+"""
+Xero sync job — runs via arq worker.
+Fetches all financial entities from Xero and persists them to the database.
+Writes IntegrationSyncLog entries per entity. Updates integration status.
 """
 import time
 from datetime import datetime, UTC
@@ -11,15 +11,65 @@ from app.core.db import get_db
 from app.core.logging import get_logger
 from app.integrations.encryption import decrypt_credentials, encrypt_credentials
 from app.integrations.xero import client as xero
+from app.integrations.xero.persist import (
+    upsert_accounts,
+    upsert_bills,
+    upsert_contacts,
+    upsert_credit_notes,
+    upsert_expenses,
+    upsert_invoices,
+    upsert_payments,
+    upsert_tax_rates,
+)
 
 logger = get_logger(__name__)
 
 
-async def sync_xero_connection(ctx: dict, integration_id: str, tenant_id: str) -> dict:
+async def _sync_entity(
+    db,
+    *,
+    entity: str,
+    fetch_fn,
+    upsert_fn,
+    integration_id: str,
+    tenant_id: str,
+) -> dict:
     """
-    arq job: verify Xero connection is live by fetching accounts and contacts.
-    Writes sync log entries. Updates integration status to connected or error.
-    Returns sync result dict.
+    Fetches one entity type from Xero and upserts it into the DB.
+    Returns {"status": "success"|"error", "count": int}.
+    Always writes an IntegrationSyncLog row.
+    """
+    start = time.monotonic()
+    status = "success"
+    count = 0
+    try:
+        records = await fetch_fn()
+        count = await upsert_fn(db, integration_id, tenant_id, records)
+    except Exception as exc:
+        logger.error(
+            "xero_sync_%s_failed integration_id=%s: %s",
+            entity, integration_id, type(exc).__name__,
+        )
+        status = "error"
+
+    elapsed_ms = int((time.monotonic() - start) * 1000)
+    await db.integrationsynclog.create(data={
+        "tenant_id": tenant_id,
+        "integration_id": integration_id,
+        "entity_type": entity,
+        "status": status,
+        "records_synced": count,
+        "duration_ms": elapsed_ms,
+    })
+    return {"status": status, "count": count}
+
+
+async def sync_xero_connection(_ctx: dict, integration_id: str, tenant_id: str) -> dict:
+    """
+    arq job: sync all Xero financial entities to the database.
+    Refreshes token if expired. Persists invoices, bills, contacts, payments,
+    expenses, accounts, credit notes, and tax rates.
+    Writes sync log entries. Updates integration status and sync_metadata.
     """
     db = get_db()
 
@@ -53,16 +103,14 @@ async def sync_xero_connection(ctx: dict, integration_id: str, tenant_id: str) -
         return {"status": "error", "reason": "no_xero_tenant_id"}
 
     access_token = creds.get("access_token", "")
-    refresh_token_val = creds.get("refresh_token", "")
 
-    # Attempt token refresh if expired
+    # Refresh token if expired
     token_expiry_at = creds.get("token_expiry_at")
     if token_expiry_at:
         try:
-            from datetime import datetime, UTC
             if datetime.fromisoformat(token_expiry_at) <= datetime.now(UTC):
                 logger.info("xero_token_expired_refreshing integration_id=%s", integration_id)
-                new_tokens = await xero.refresh_xero_token(refresh_token_val)
+                new_tokens = await xero.refresh_xero_token(creds.get("refresh_token", ""))
                 creds = {**creds, **new_tokens}
                 access_token = new_tokens["access_token"]
                 await db.integration.update(
@@ -72,49 +120,28 @@ async def sync_xero_connection(ctx: dict, integration_id: str, tenant_id: str) -
         except Exception as exc:
             logger.error("xero_token_refresh_failed integration_id=%s: %s", integration_id, type(exc).__name__)
 
-    # Fetch accounts
-    accounts_start = time.monotonic()
-    accounts_status = "success"
-    accounts_count = 0
-    try:
-        accounts = await xero.get_accounts(access_token, xero_tenant_id)
-        accounts_count = len(accounts)
-    except Exception as exc:
-        logger.error("xero_sync_accounts_failed integration_id=%s: %s", integration_id, type(exc).__name__)
-        accounts_status = "error"
+    # Sync all entity types
+    entity_configs = [
+        ("invoices",    lambda: xero.get_invoices(access_token, xero_tenant_id),     upsert_invoices),
+        ("bills",       lambda: xero.get_bills(access_token, xero_tenant_id),        upsert_bills),
+        ("contacts",    lambda: xero.get_contacts(access_token, xero_tenant_id),     upsert_contacts),
+        ("payments",    lambda: xero.get_payments(access_token, xero_tenant_id),     upsert_payments),
+        ("expenses",    lambda: xero.get_expenses(access_token, xero_tenant_id),     upsert_expenses),
+        ("accounts",    lambda: xero.get_accounts(access_token, xero_tenant_id),     upsert_accounts),
+        ("credit_notes", lambda: xero.get_credit_notes(access_token, xero_tenant_id), upsert_credit_notes),
+        ("tax_rates",   lambda: xero.get_tax_rates(access_token, xero_tenant_id),    upsert_tax_rates),
+    ]
 
-    accounts_elapsed = int((time.monotonic() - accounts_start) * 1000)
-
-    await db.integrationsynclog.create(data={
-        "tenant_id": tenant_id,
-        "integration_id": integration.id,
-        "entity_type": "accounts",
-        "status": accounts_status,
-        "records_synced": accounts_count,
-        "duration_ms": accounts_elapsed,
-    })
-
-    # Fetch contacts
-    contacts_start = time.monotonic()
-    contacts_status = "success"
-    contacts_count = 0
-    try:
-        contacts = await xero.get_contacts(access_token, xero_tenant_id)
-        contacts_count = len(contacts)
-    except Exception as exc:
-        logger.error("xero_sync_contacts_failed integration_id=%s: %s", integration_id, type(exc).__name__)
-        contacts_status = "error"
-
-    contacts_elapsed = int((time.monotonic() - contacts_start) * 1000)
-
-    await db.integrationsynclog.create(data={
-        "tenant_id": tenant_id,
-        "integration_id": integration.id,
-        "entity_type": "contacts",
-        "status": contacts_status,
-        "records_synced": contacts_count,
-        "duration_ms": contacts_elapsed,
-    })
+    results: dict[str, dict] = {}
+    for entity, fetch_fn, upsert_fn in entity_configs:
+        results[entity] = await _sync_entity(
+            db,
+            entity=entity,
+            fetch_fn=fetch_fn,
+            upsert_fn=upsert_fn,
+            integration_id=integration_id,
+            tenant_id=tenant_id,
+        )
 
     # Re-read status — integration may have been disconnected while sync was running
     current = await db.integration.find_unique(where={"id": integration_id})
@@ -122,25 +149,28 @@ async def sync_xero_connection(ctx: dict, integration_id: str, tenant_id: str) -
         logger.info("xero_sync_aborted_disconnected integration_id=%s", integration_id)
         return {"status": "skipped", "reason": "disconnected_during_sync"}
 
-    # Determine overall outcome
-    if accounts_status == "success" or contacts_status == "success":
+    any_success = any(v["status"] == "success" for v in results.values())
+    if any_success:
+        sync_metadata = {entity: v["count"] for entity, v in results.items()}
         await db.integration.update(
             where={"id": integration_id},
-            data={"status": "connected", "connected_at": datetime.now(UTC), "last_synced_at": datetime.now(UTC)},
+            data={
+                "status": "connected",
+                "connected_at": datetime.now(UTC),
+                "last_synced_at": datetime.now(UTC),
+                "sync_metadata": sync_metadata,
+            },
         )
         logger.info(
-            "xero_sync_ok tenant=%s accounts=%d contacts=%d",
-            tenant_id, accounts_count, contacts_count,
+            "xero_sync_ok tenant=%s %s",
+            tenant_id,
+            " ".join(f"{e}={v['count']}" for e, v in results.items()),
         )
-        return {
-            "status": "ok",
-            "accounts_synced": accounts_count,
-            "contacts_synced": contacts_count,
-        }
-    else:
-        await db.integration.update(where={"id": integration_id}, data={"status": "error"})
-        logger.error("xero_sync_failed_all_entities integration_id=%s", integration_id)
-        return {"status": "error", "reason": "all_entity_fetches_failed"}
+        return {"status": "ok", **{e: v["count"] for e, v in results.items()}}
+
+    await db.integration.update(where={"id": integration_id}, data={"status": "error"})
+    logger.error("xero_sync_failed_all_entities integration_id=%s", integration_id)
+    return {"status": "error", "reason": "all_entity_fetches_failed"}
 
 
 async def enqueue_xero_sync(integration_id: str, tenant_id: str) -> None:

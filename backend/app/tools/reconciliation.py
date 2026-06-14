@@ -1,9 +1,5 @@
-﻿"""
-Reconciliation Tool — sub-agent tool. Called by Financial Orchestrator as a tool.
-Matches bank transactions against invoices. Detects unmatched items and uses Claude
-to assess severity. Decides: matched / review_required / flagged per unmatched item,
-then derives an overall execution decision.
-"""
+"""Reconciliation Tool — matches BankTransaction against AccountingInvoice (AR) and AccountingBill (AP).
+Unmatched items are reviewed by Claude. Policy flags runs where unmatched % exceeds threshold."""
 from __future__ import annotations
 
 import asyncio
@@ -28,24 +24,16 @@ _ACTOR = "tool:reconciliation:v1"
 _MODEL_VERSION = "reconciliation-v1"
 
 
-# ---------------------------------------------------------------------------
-# Internal data models
-# ---------------------------------------------------------------------------
-
 
 class _ToolPolicy(BaseModel):
-    amount_tolerance_pence: int = 100
+    unmatched_pct_threshold: float = 0.20
+    match_amount_tolerance_pct: float = 0.01
+    match_date_window_days: int = 30
+    # Retained for backward-compat with existing stored configs
     staleness_days: int = 30
     auto_match_confidence_min: float = 0.95
-    amount_tolerance_minor_units: int = 150      # $1.50 — Numeric guide
-    amount_tolerance_pct: float = 0.0003         # 0.03%
-    date_tolerance_days: int = 5
     partial_match_enabled: bool = True
-    partial_match_max_lines: int = 20
-    reconciliation_frequency: str = "daily"      # "real_time" | "daily" | "weekly"
-    unmatched_alert_days: int = 5
-    forex_tolerance_pct: float = 0.02
-    intercompany_auto_eliminate: bool = False
+    reconciliation_frequency: str = "daily"
     stale_open_item_days: int = 90
     period_lock_respect: bool = True
     segregation_of_duties_enforced: bool = True
@@ -66,123 +54,97 @@ class _TransactionRecord(BaseModel):
 class _InvoiceRecord(BaseModel):
     id: str
     tenant_id: str
-    vendor: str | None
-    invoice_number: str | None
-    amount_minor: int
-    currency: str
+    contact_name: str | None
+    outstanding_cents: int
+    total_cents: int
     due_date: datetime | None
     status: str
-    created_at: datetime
+    source: str | None
+
+
+class _BillRecord(BaseModel):
+    id: str
+    tenant_id: str
+    contact_name: str | None
+    outstanding_cents: int
+    total_cents: int
+    due_date: datetime | None
+    status: str
+    source: str | None
 
 
 class _ClaudeItemResult(BaseModel):
     item_id: str
-    item_type: Literal["transaction", "invoice"]
+    item_type: Literal["transaction", "invoice", "bill"]
     severity: Literal["low", "medium", "high"]
     action: Literal["ok", "review", "flag"]
     reasoning: str
 
 
-# ---------------------------------------------------------------------------
-# Policy helper
-# ---------------------------------------------------------------------------
-
 
 def _parse_policy(config_json: dict) -> _ToolPolicy:
     raw = config_json.get("policy", config_json)
-    return _ToolPolicy(
-        amount_tolerance_pence=raw.get("amount_tolerance_pence", 100),
-        staleness_days=raw.get("staleness_days", 30),
-        auto_match_confidence_min=raw.get("auto_match_confidence_min", 0.95),
-        amount_tolerance_minor_units=raw.get("amount_tolerance_minor_units", 150),
-        amount_tolerance_pct=raw.get("amount_tolerance_pct", 0.0003),
-        date_tolerance_days=raw.get("date_tolerance_days", 5),
-        partial_match_enabled=raw.get("partial_match_enabled", True),
-        partial_match_max_lines=raw.get("partial_match_max_lines", 20),
-        reconciliation_frequency=raw.get("reconciliation_frequency", "daily"),
-        unmatched_alert_days=raw.get("unmatched_alert_days", 5),
-        forex_tolerance_pct=raw.get("forex_tolerance_pct", 0.02),
-        intercompany_auto_eliminate=raw.get("intercompany_auto_eliminate", False),
-        stale_open_item_days=raw.get("stale_open_item_days", 90),
-        period_lock_respect=raw.get("period_lock_respect", True),
-        segregation_of_duties_enforced=raw.get("segregation_of_duties_enforced", True),
-    )
+    return _ToolPolicy.model_validate({k: v for k, v in raw.items() if k in _ToolPolicy.model_fields})
 
 
-# ---------------------------------------------------------------------------
-# Claude assessment
-# ---------------------------------------------------------------------------
+def _amounts_match(txn_amount: int, outstanding_cents: int, tolerance_pct: float) -> bool:
+    if outstanding_cents == 0:
+        return txn_amount == 0
+    return abs(txn_amount - outstanding_cents) <= int(outstanding_cents * tolerance_pct) + 1
 
 
-def _build_claude_prompt(
-    unmatched_transactions: list[dict],
-    unmatched_invoices: list[dict],
-) -> str:
-    payload = json.dumps(
-        {
-            "unmatched_transactions": unmatched_transactions,
-            "unmatched_invoices": unmatched_invoices,
-        },
-        indent=2,
-        default=str,
-    )
-    return (
-        "You are a financial reconciliation model. Assess each unmatched item below and return "
-        "a JSON array — one object per item — with exactly these fields:\n"
-        '  "item_id": string (copy from input),\n'
-        '  "item_type": "transaction" or "invoice",\n'
-        '  "severity": "low" | "medium" | "high",\n'
-        '  "action": "ok" | "review" | "flag",\n'
-        '  "reasoning": one concise sentence explaining the assessment.\n\n'
-        "Severity guidance:\n"
-        "- high: large amounts, stale items, duplicate-looking entries, or suspicious patterns\n"
-        "- medium: moderate amounts unmatched for a reasonable time\n"
-        "- low: small amounts or recently created items\n\n"
-        "Action guidance:\n"
-        "- flag: high severity items requiring immediate attention\n"
-        "- review: medium severity items requiring human review\n"
-        "- ok: low severity items that can be auto-resolved\n\n"
-        "Return ONLY a valid JSON array. No markdown, no prose.\n\n"
-        f"Unmatched items:\n{payload}"
-    )
+def _dates_match(txn_date: datetime, due_date: datetime | None, window_days: int) -> bool:
+    if due_date is None:
+        return True
+    return abs((txn_date.date() - due_date.date()).days) <= window_days
+
+
+
+_CLAUDE_SYSTEM_PROMPT = (
+    "You are a financial reconciliation model. Assess each unmatched item and return "
+    "a JSON array — one object per item — with exactly these fields:\n"
+    '  "item_id": string, "item_type": "transaction"|"invoice"|"bill",\n'
+    '  "severity": "low"|"medium"|"high", "action": "ok"|"review"|"flag",\n'
+    '  "reasoning": one concise sentence (include likely match suggestions where obvious).\n'
+    "high=large/stale/duplicate; medium=moderate age; low=small/recent. "
+    "flag=immediate; review=human needed; ok=auto-resolve. "
+    "Return ONLY a valid JSON array. No markdown."
+)
 
 
 async def _call_claude(
     unmatched_txns: list[_TransactionRecord],
     unmatched_invs: list[_InvoiceRecord],
+    unmatched_bills: list[_BillRecord],
     settings_obj,
 ) -> list[_ClaudeItemResult]:
     client = AsyncAnthropic(api_key=settings_obj.anthropic_api_key)
-
-    txn_dicts = [
+    payload = json.dumps(
         {
-            "item_id": t.id,
-            "item_type": "transaction",
-            "amount_minor": t.amount_minor,
-            "currency": t.currency,
-            "merchant_name": t.merchant_name,
-            "description": t.description,
-            "date": t.date.isoformat(),
-            "status": t.status,
-        }
-        for t in unmatched_txns
-    ]
-    inv_dicts = [
-        {
-            "item_id": i.id,
-            "item_type": "invoice",
-            "amount_minor": i.amount_minor,
-            "currency": i.currency,
-            "vendor": i.vendor,
-            "invoice_number": i.invoice_number,
-            "due_date": i.due_date.isoformat() if i.due_date else None,
-            "created_at": i.created_at.isoformat(),
-            "status": i.status,
-        }
-        for i in unmatched_invs
-    ]
-
-    prompt = _build_claude_prompt(txn_dicts, inv_dicts)
+            "unmatched_transactions": [
+                {"item_id": t.id, "item_type": "transaction", "amount_minor": t.amount_minor,
+                 "currency": t.currency, "merchant_name": t.merchant_name,
+                 "description": t.description, "date": t.date.isoformat(), "status": t.status}
+                for t in unmatched_txns
+            ],
+            "unmatched_invoices": [
+                {"item_id": i.id, "item_type": "invoice", "outstanding_cents": i.outstanding_cents,
+                 "total_cents": i.total_cents, "contact_name": i.contact_name,
+                 "due_date": i.due_date.isoformat() if i.due_date else None,
+                 "status": i.status, "source": i.source}
+                for i in unmatched_invs
+            ],
+            "unmatched_bills": [
+                {"item_id": b.id, "item_type": "bill", "outstanding_cents": b.outstanding_cents,
+                 "total_cents": b.total_cents, "contact_name": b.contact_name,
+                 "due_date": b.due_date.isoformat() if b.due_date else None,
+                 "status": b.status, "source": b.source}
+                for b in unmatched_bills
+            ],
+        },
+        default=str,
+    )
+    prompt = f"{_CLAUDE_SYSTEM_PROMPT}\n\nUnmatched items:\n{payload}"
     last_exc: Exception | None = None
 
     for attempt in range(settings_obj.max_agent_attempts):
@@ -213,16 +175,12 @@ async def _call_claude(
     )
 
 
-# ---------------------------------------------------------------------------
-# Core execution
-# ---------------------------------------------------------------------------
-
 
 async def _execute_reconciliation(
     tenant_id: str,
     tool_id: str,
     execution_id: str,
-    period_days: int = 30,
+    period_days: int = 90,
     period_start: datetime | None = None,
     period_end: datetime | None = None,
 ) -> dict:
@@ -234,23 +192,15 @@ async def _execute_reconciliation(
     if period_start is None:
         period_start = period_end - timedelta(days=period_days)
 
-    # Fetch tool config scoped to tenant
-    tool = await db.tool.find_first(
-        where={"id": tool_id, "tenant_id": tenant_id}
-    )
+    tool = await db.tool.find_first(where={"id": tool_id, "tenant_id": tenant_id})
     if tool is None:
         raise ValueError(f"Tool {tool_id} not found for tenant {tenant_id}")
+    policy = _parse_policy(tool.config_json if isinstance(tool.config_json, dict) else {})
 
-    config_raw: dict = tool.config_json if isinstance(tool.config_json, dict) else {}
-    policy = _parse_policy(config_raw)
-
-    staleness_cutoff = datetime.now(UTC) - timedelta(days=policy.staleness_days)
-
-    # Fetch pending bank transactions scoped to tenant
     raw_txns = await db.banktransaction.find_many(
         where={
             "tenant_id": tenant_id,
-            "status": "pending",
+            "status": {"not": "reconciled"},
             "date": {"gte": period_start},
         }
     )
@@ -269,60 +219,93 @@ async def _execute_reconciliation(
         for t in raw_txns
     ]
 
-    # Fetch pending invoices scoped to tenant
-    raw_invs = await db.invoice.find_many(
+    raw_invs = await db.accountinginvoice.find_many(
         where={
             "tenant_id": tenant_id,
-            "status": "pending",
-            "created_at": {"gte": period_start},
+            "status": {"in": ["sent", "viewed", "partial"]},
         }
     )
     invoices = [
         _InvoiceRecord(
             id=i.id,
             tenant_id=i.tenant_id,
-            vendor=i.vendor,
-            invoice_number=i.invoice_number,
-            amount_minor=i.amount_minor,
-            currency=i.currency,
+            contact_name=i.contact_name,
+            outstanding_cents=i.outstanding_cents,
+            total_cents=i.total_cents,
             due_date=i.due_date,
             status=i.status,
-            created_at=i.created_at,
+            source=i.source,
         )
         for i in raw_invs
     ]
 
-    # Amount-based matching — integer arithmetic only, no floats for currency
+    raw_bills = await db.accountingbill.find_many(
+        where={
+            "tenant_id": tenant_id,
+            "status": {"not_in": ["paid", "void"]},
+        }
+    )
+    bills = [
+        _BillRecord(
+            id=b.id,
+            tenant_id=b.tenant_id,
+            contact_name=b.contact_name,
+            outstanding_cents=b.outstanding_cents,
+            total_cents=b.total_cents,
+            due_date=b.due_date,
+            status=b.status,
+            source=b.source,
+        )
+        for b in raw_bills
+    ]
+
     matched_txn_ids: set[str] = set()
     matched_inv_ids: set[str] = set()
-    match_map: dict[str, str] = {}  # txn_id -> invoice_id
+    matched_bill_ids: set[str] = set()
+    match_map: dict[str, dict] = {}
 
-    for invoice in invoices:
-        for txn in transactions:
-            if txn.id in matched_txn_ids:
+    for txn in transactions:
+        for invoice in invoices:
+            if invoice.id in matched_inv_ids:
                 continue
-            if abs(txn.amount_minor - invoice.amount_minor) <= policy.amount_tolerance_pence:
+            if (
+                _amounts_match(txn.amount_minor, invoice.outstanding_cents, policy.match_amount_tolerance_pct)
+                and _dates_match(txn.date, invoice.due_date, policy.match_date_window_days)
+            ):
                 matched_txn_ids.add(txn.id)
                 matched_inv_ids.add(invoice.id)
-                match_map[txn.id] = invoice.id
+                match_map[txn.id] = {"type": "invoice", "id": invoice.id}
+                break
+
+        if txn.id in matched_txn_ids:
+            continue
+        for bill in bills:
+            if bill.id in matched_bill_ids:
+                continue
+            if (
+                _amounts_match(txn.amount_minor, bill.outstanding_cents, policy.match_amount_tolerance_pct)
+                and _dates_match(txn.date, bill.due_date, policy.match_date_window_days)
+            ):
+                matched_txn_ids.add(txn.id)
+                matched_bill_ids.add(bill.id)
+                match_map[txn.id] = {"type": "bill", "id": bill.id}
                 break
 
     unmatched_txns = [t for t in transactions if t.id not in matched_txn_ids]
     unmatched_invs = [i for i in invoices if i.id not in matched_inv_ids]
+    unmatched_bills = [b for b in bills if b.id not in matched_bill_ids]
 
-    # Identify stale unmatched items
-    stale_txn_ids: set[str] = {t.id for t in unmatched_txns if t.date < staleness_cutoff}
-    stale_inv_ids: set[str] = {
-        i.id for i in unmatched_invs if i.created_at < staleness_cutoff
-    }
+    total_txns = len(transactions)
+    unmatched_pct = len(unmatched_txns) / total_txns if total_txns > 0 else 0.0
+    policy_breach = unmatched_pct > policy.unmatched_pct_threshold
 
-    # Call Claude only when there are unmatched items
     claude_results: list[_ClaudeItemResult] = []
-    if unmatched_txns or unmatched_invs:
-        claude_results = await _call_claude(unmatched_txns, unmatched_invs, settings_obj)
+    if unmatched_txns or unmatched_invs or unmatched_bills:
+        claude_results = await _call_claude(
+            unmatched_txns, unmatched_invs, unmatched_bills, settings_obj
+        )
 
-    # Derive overall decision
-    has_flag = any(r.action == "flag" for r in claude_results)
+    has_flag = any(r.action == "flag" for r in claude_results) or policy_breach
     has_review = any(r.action == "review" for r in claude_results)
 
     if has_flag:
@@ -332,8 +315,8 @@ async def _execute_reconciliation(
     else:
         overall_decision = "auto_approved"
 
-    total_items = len(transactions) + len(invoices)
-    matched_count = len(matched_txn_ids) + len(matched_inv_ids)
+    total_items = len(transactions) + len(invoices) + len(bills)
+    matched_count = len(matched_txn_ids) + len(matched_inv_ids) + len(matched_bill_ids)
     confidence = round(matched_count / total_items, 4) if total_items > 0 else 1.0
 
     reasoning_trace: dict = {
@@ -343,12 +326,15 @@ async def _execute_reconciliation(
         "policy": policy.model_dump(),
         "transaction_count": len(transactions),
         "invoice_count": len(invoices),
+        "bill_count": len(bills),
         "matched_transactions": len(matched_txn_ids),
         "matched_invoices": len(matched_inv_ids),
+        "matched_bills": len(matched_bill_ids),
         "unmatched_transactions": len(unmatched_txns),
         "unmatched_invoices": len(unmatched_invs),
-        "stale_transaction_ids": list(stale_txn_ids),
-        "stale_invoice_ids": list(stale_inv_ids),
+        "unmatched_bills": len(unmatched_bills),
+        "unmatched_pct": round(unmatched_pct, 4),
+        "policy_breach": policy_breach,
         "claude_assessments": [r.model_dump() for r in claude_results],
     }
 
@@ -362,26 +348,23 @@ async def _execute_reconciliation(
         execution_id=execution_id,
     )
 
-    # Update matched records in DB
     if matched_txn_ids:
         await db.banktransaction.update_many(
             where={"id": {"in": list(matched_txn_ids)}, "tenant_id": tenant_id},
-            data={"status": "matched"},
-        )
-    if matched_inv_ids:
-        await db.invoice.update_many(
-            where={"id": {"in": list(matched_inv_ids)}, "tenant_id": tenant_id},
-            data={"status": "matched"},
+            data={"status": "reconciled"},
         )
 
-    # Set matched_invoice_id on each matched transaction
-    for txn_id, inv_id in match_map.items():
+    for txn_id, match_info in match_map.items():
+        update_data: dict = {}
+        if match_info["type"] == "invoice":
+            update_data["matched_invoice_id"] = match_info["id"]
+        else:
+            update_data["matched_bill_id"] = match_info["id"]
         await db.banktransaction.update(
             where={"id": txn_id, "tenant_id": tenant_id},
-            data={"matched_invoice_id": inv_id},
+            data=update_data,
         )
 
-    # Create ReconciliationRun record
     await db.reconciliationrun.create(data={
         "tenant_id": tenant_id,
         "execution_id": execution_id,
@@ -398,18 +381,26 @@ async def _execute_reconciliation(
             "claude_assessments": [r.model_dump() for r in claude_results],
             "unmatched_transaction_ids": [t.id for t in unmatched_txns],
             "unmatched_invoice_ids": [i.id for i in unmatched_invs],
+            "unmatched_bill_ids": [b.id for b in unmatched_bills],
+            "policy_breach": policy_breach,
+            "unmatched_pct": round(unmatched_pct, 4),
         },
     })
 
     actions_taken: list[str] = []
     if matched_txn_ids:
-        actions_taken.append(f"matched {len(matched_txn_ids)} transaction(s)")
+        actions_taken.append(f"reconciled {len(matched_txn_ids)} transaction(s)")
     if matched_inv_ids:
         actions_taken.append(f"matched {len(matched_inv_ids)} invoice(s)")
+    if matched_bill_ids:
+        actions_taken.append(f"matched {len(matched_bill_ids)} bill(s)")
     if unmatched_txns:
         actions_taken.append(f"{len(unmatched_txns)} transaction(s) unmatched — pending review")
-    if unmatched_invs:
-        actions_taken.append(f"{len(unmatched_invs)} invoice(s) unmatched — pending review")
+    if policy_breach:
+        actions_taken.append(
+            f"policy breach: {unmatched_pct:.1%} unmatched exceeds "
+            f"{policy.unmatched_pct_threshold:.1%} threshold"
+        )
     if not actions_taken:
         actions_taken.append("no pending items found — nothing to reconcile")
 
@@ -422,10 +413,6 @@ async def _execute_reconciliation(
     }
 
 
-# ---------------------------------------------------------------------------
-# arq job entrypoint
-# ---------------------------------------------------------------------------
-
 
 async def run_reconciliation_job(
     ctx: dict,
@@ -433,7 +420,7 @@ async def run_reconciliation_job(
     execution_id: str,
     tenant_id: str,
     tool_id: str,
-    period_days: int = 30,
+    period_days: int = 90,
     period_start: datetime | None = None,
     period_end: datetime | None = None,
 ) -> dict:
@@ -483,10 +470,6 @@ async def run_reconciliation_job(
         raise
 
 
-# ---------------------------------------------------------------------------
-# BaseTool class (orchestrator interface)
-# ---------------------------------------------------------------------------
-
 
 class ReconciliationTool(BaseTool):
     TOOL_TYPE = ToolType.RECONCILIATION
@@ -495,7 +478,7 @@ class ReconciliationTool(BaseTool):
     async def execute(self, input_data: dict, tenant_id: str) -> ToolOutput:
         execution_id: str = input_data["execution_id"]
         tool_id: str = input_data["tool_id"]
-        period_days: int = input_data.get("period_days", 30)
+        period_days: int = input_data.get("period_days", 90)
         period_start: datetime | None = input_data.get("period_start")
         period_end: datetime | None = input_data.get("period_end")
 

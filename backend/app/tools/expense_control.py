@@ -1,8 +1,6 @@
-﻿"""
-Expense Control Tool — sub-agent tool. Called by Financial Orchestrator as a tool.
-Validates expense claims against policy limits: monthly spend totals, per-transaction limits,
-receipt requirements, and blocked categories. Claude categorises and flags violations.
-"""
+"""Expense Control Tool — validates AccountingExpense records against policy limits.
+Uses AccountingAccount (chart of accounts) to detect miscategorized spend.
+Claude summarises spend by category and recommends approve | flag | block per expense."""
 from __future__ import annotations
 
 import asyncio
@@ -25,127 +23,134 @@ logger = get_logger(__name__)
 
 _ACTOR = "tool:expense_control:v1"
 _MODEL_VERSION = "expense_control-v1"
-_ACTION_RANK: dict[str, int] = {"approve": 0, "review": 1, "block": 2}
+_ACTION_RANK: dict[str, int] = {"approve": 0, "flag": 1, "block": 2}
 
+# Round-number check: multiples of $100 (10 000 cents) above $500 (50 000 cents)
+_ROUND_NUMBER_MODULUS: int = 10_000
+_ROUND_NUMBER_MIN_CENTS: int = 50_000
 
-# -- Models ------------------------------------------------------------------
 
 
 class _ToolPolicy(BaseModel):
-    monthly_limit_per_employee: int = 100000  # pence
-    receipt_required_above: int = 2500        # pence
+    single_expense_limit_cents: int = 100_000       # $1 000
+    approval_required_cents: int = 50_000           # $500
+    auto_approve_limit_cents: int = 10_000          # $100
+    allowed_categories: list[str] = []
+    # Retained fields used by existing stored configs
+    monthly_limit_per_employee: int = 500_000
     blocked_categories: list[str] = []
-    per_transaction_limit: int = 50000                # minor units ($500)
-    daily_spend_limit: int = 200000                   # minor units ($2,000)
-    monthly_spend_limit: int = 500000                 # minor units ($5,000)
-    pre_approval_required_above: int = 100000         # minor units ($1,000)
-    blocked_mcc_allow_override: bool = False
-    weekend_spend_enabled: bool = True
-    international_spend_enabled: bool = True
-    cash_advance_enabled: bool = False                # Primary fraud vector — off by default
-    atm_withdrawal_enabled: bool = False
-    meals_per_diem_limit: int = 10000                 # minor units ($100)
-    hotel_daily_rate_limit: int = 35000               # minor units ($350)
-    entertainment_monthly_limit: int = 25000          # minor units ($250)
-    policy_violation_warning_count: int = 3
-    policy_violation_suspend_count: int = 5
+    receipt_required_above: int = 2_500
 
 
-class _TransactionRecord(BaseModel):
+class _ExpenseRecord(BaseModel):
     id: str
     tenant_id: str
-    account_id: str
-    amount_minor: int
-    currency: str
-    merchant_name: str | None
-    description: str | None
-    date: datetime
+    amount_cents: int
     category: str | None
-    ai_category: str | None
-    status: str
+    account_code: str | None
+    approved: bool
+    expense_date: datetime | None
+    contact_name: str | None
 
 
-class _ClaudeTransactionResult(BaseModel):
-    transaction_id: str
-    category: str
-    policy_violation: bool
-    violation_reason: str | None
-    action: Literal["approve", "review", "block"]
+class _AccountRecord(BaseModel):
+    id: str
+    code: str
+    name: str
+    account_type: str
+
+
+class _ClaudeExpenseResult(BaseModel):
+    expense_id: str
+    recommended_action: Literal["approve", "flag", "block"]
     reasoning: str
+    spend_category_summary: str | None = None
 
 
-class _TransactionDecision(BaseModel):
-    transaction_id: str
-    category: str
-    policy_violation: bool
-    violation_reason: str | None
-    action: Literal["approve", "review", "block"]
+class _ExpenseDecision(BaseModel):
+    expense_id: str
+    amount_cents: int
+    category: str | None
+    account_code: str | None
+    flags: list[str]
+    action: Literal["approve", "flag", "block"]
     reasoning: str
     hard_rule_applied: bool = False
 
 
+
 def _parse_policy(config_json: dict) -> _ToolPolicy:
     raw = config_json.get("policy", config_json)
-    return _ToolPolicy(
-        monthly_limit_per_employee=raw.get("monthly_limit_per_employee", 100000),
-        receipt_required_above=raw.get("receipt_required_above", 2500),
-        blocked_categories=raw.get("blocked_categories", []),
-        per_transaction_limit=raw.get("per_transaction_limit", 50000),
-        daily_spend_limit=raw.get("daily_spend_limit", 200000),
-        monthly_spend_limit=raw.get("monthly_spend_limit", 500000),
-        pre_approval_required_above=raw.get("pre_approval_required_above", 100000),
-        blocked_mcc_allow_override=raw.get("blocked_mcc_allow_override", False),
-        weekend_spend_enabled=raw.get("weekend_spend_enabled", True),
-        international_spend_enabled=raw.get("international_spend_enabled", True),
-        cash_advance_enabled=raw.get("cash_advance_enabled", False),
-        atm_withdrawal_enabled=raw.get("atm_withdrawal_enabled", False),
-        meals_per_diem_limit=raw.get("meals_per_diem_limit", 10000),
-        hotel_daily_rate_limit=raw.get("hotel_daily_rate_limit", 35000),
-        entertainment_monthly_limit=raw.get("entertainment_monthly_limit", 25000),
-        policy_violation_warning_count=raw.get("policy_violation_warning_count", 3),
-        policy_violation_suspend_count=raw.get("policy_violation_suspend_count", 5),
-    )
+    return _ToolPolicy.model_validate({k: v for k, v in raw.items() if k in _ToolPolicy.model_fields})
 
 
+def _apply_hard_rules(
+    expense: _ExpenseRecord,
+    valid_account_codes: set[str],
+    policy: _ToolPolicy,
+) -> tuple[list[str], Literal["approve", "flag", "block"] | None]:
+    """Returns (flags, action) where action is None if no hard rule fired."""
+    flags: list[str] = []
+    worst: Literal["approve", "flag", "block"] = "approve"
 
-# -- Claude ------------------------------------------------------------------
+    def _up(a: Literal["approve", "flag", "block"]) -> None:
+        nonlocal worst
+        if _ACTION_RANK[a] > _ACTION_RANK[worst]:
+            worst = a
 
+    if expense.amount_cents > policy.single_expense_limit_cents:
+        flags.append(f"amount {expense.amount_cents} exceeds limit {policy.single_expense_limit_cents}")
+        _up("block")
+    if not expense.approved and expense.amount_cents > policy.approval_required_cents:
+        flags.append(f"unapproved: {expense.amount_cents} exceeds approval_required_cents {policy.approval_required_cents}")
+        _up("flag")
+    if expense.account_code and valid_account_codes and expense.account_code not in valid_account_codes:
+        flags.append(f"account_code '{expense.account_code}' not in chart of accounts — miscategorized")
+        _up("flag")
+    if expense.amount_cents >= _ROUND_NUMBER_MIN_CENTS and expense.amount_cents % _ROUND_NUMBER_MODULUS == 0:
+        flags.append(f"suspicious round number: {expense.amount_cents}")
+        _up("flag")
 
-def _build_claude_prompt(transactions: list[_TransactionRecord]) -> str:
-    serialised = json.dumps(
-        [
-            {
-                "transaction_id": t.id,
-                "account_id": t.account_id,
-                "amount_minor": t.amount_minor,
-                "currency": t.currency,
-                "merchant_name": t.merchant_name,
-                "description": t.description,
-                "date": t.date.isoformat(),
-                "category": t.category,
-                "ai_category": t.ai_category,
-            }
-            for t in transactions
-        ],
-        indent=2,
-    )
-    return (
-        "You are an expense policy compliance model. Review each transaction and return a JSON array "
-        "— one object per transaction — with fields: transaction_id (string), category (string), "
-        "policy_violation (bool), violation_reason (string|null), "
-        'action ("approve"|"review"|"block"), reasoning (string).\n'
-        "Rules: clear violation → block; ambiguous → review; normal business expense → approve.\n"
-        "Return ONLY a valid JSON array. No markdown, no prose.\n\n"
-        f"Transactions:\n{serialised}"
-    )
+    return (flags, worst) if flags else (flags, None)
+
 
 
 async def _call_claude(
-    transactions: list[_TransactionRecord],
+    expenses: list[_ExpenseRecord],
+    valid_accounts: list[_AccountRecord],
+    policy: _ToolPolicy,
     settings_obj,
-) -> list[_ClaudeTransactionResult]:
+) -> list[_ClaudeExpenseResult]:
     client = AsyncAnthropic(api_key=settings_obj.anthropic_api_key)
-    prompt = _build_claude_prompt(transactions)
+    data = json.dumps({
+        "expenses": [
+            {"expense_id": e.id, "amount_cents": e.amount_cents, "category": e.category,
+             "account_code": e.account_code, "approved": e.approved,
+             "expense_date": e.expense_date.isoformat() if e.expense_date else None,
+             "contact_name": e.contact_name}
+            for e in expenses
+        ],
+        "valid_chart_of_accounts": [
+            {"code": a.code, "name": a.name, "account_type": a.account_type}
+            for a in valid_accounts
+        ],
+        "policy": {
+            "single_expense_limit_cents": policy.single_expense_limit_cents,
+            "approval_required_cents": policy.approval_required_cents,
+            "auto_approve_limit_cents": policy.auto_approve_limit_cents,
+            "allowed_categories": policy.allowed_categories,
+            "blocked_categories": policy.blocked_categories,
+        },
+    }, indent=2)
+    prompt = (
+        "You are an expense compliance model. Review expenses against the policy and chart of accounts. "
+        "Return a JSON array — one object per expense — with fields: "
+        '"expense_id" (string), "recommended_action" ("approve"|"flag"|"block"), '
+        '"reasoning" (one sentence), "spend_category_summary" (brief spend summary on first item only, null elsewhere). '
+        "block=clear violation; flag=unapproved/ambiguous/suspicious; approve=legitimate within policy. "
+        f"NEVER approve amounts above {policy.auto_approve_limit_cents} without explicit approval. "
+        f"Return ONLY a valid JSON array.\n\nData:\n{data}"
+    )
     last_exc: Exception | None = None
 
     for attempt in range(settings_obj.max_agent_attempts):
@@ -159,7 +164,7 @@ async def _call_claude(
             parsed = json.loads(raw_text)
             if not isinstance(parsed, list):
                 raise ValueError("Claude response is not a JSON array")
-            return [_ClaudeTransactionResult(**item) for item in parsed]
+            return [_ClaudeExpenseResult(**item) for item in parsed]
         except (APIStatusError, APIConnectionError) as exc:
             last_exc = exc
             logger.error(
@@ -171,17 +176,16 @@ async def _call_claude(
         except (json.JSONDecodeError, ValueError, KeyError) as exc:
             raise RuntimeError(f"Claude returned unparseable response: {exc}") from exc
 
-    raise RuntimeError(f"Claude API failed after {settings_obj.max_agent_attempts} attempts: {last_exc}")
+    raise RuntimeError(
+        f"Claude API failed after {settings_obj.max_agent_attempts} attempts: {last_exc}"
+    )
 
-
-# -- Core execution ----------------------------------------------------------
 
 
 async def _execute_expense_control(
     tenant_id: str,
     tool_id: str,
     execution_id: str,
-    transaction_ids: list[str],
 ) -> dict:
     settings_obj = get_settings()
     db = get_db()
@@ -196,152 +200,177 @@ async def _execute_expense_control(
     config_raw: dict = tool.config_json if isinstance(tool.config_json, dict) else {}
     policy = _parse_policy(config_raw)
 
-    # Fetch transactions scoped to tenant
-    raw_txns = await db.banktransaction.find_many(
-        where={"id": {"in": transaction_ids}, "tenant_id": tenant_id}
+    # 1. Fetch AccountingExpense records for tenant, last 30 days
+    cutoff = datetime.now(UTC) - timedelta(days=30)
+    raw_expenses = await db.accountingexpense.find_many(
+        where={
+            "tenant_id": tenant_id,
+            "expense_date": {"gte": cutoff},
+        }
     )
-    if not raw_txns:
-        raise ValueError("No transactions found for supplied IDs within this tenant")
+    if not raw_expenses:
+        # Nothing to process — write audit and return
+        reasoning_trace: dict = {
+            "overall_decision": "auto_approved",
+            "expense_count": 0,
+            "note": "no expenses in last 30 days",
+            "policy": policy.model_dump(),
+        }
+        await write_audit_log(
+            tenant_id=tenant_id,
+            actor=_ACTOR,
+            action="expense_control:auto_approved",
+            reasoning_trace=reasoning_trace,
+            model_version=_MODEL_VERSION,
+            execution_id=execution_id,
+        )
+        return {
+            "decision": "auto_approved",
+            "confidence": 1.0,
+            "reasoning": json.dumps(reasoning_trace),
+            "actions_taken": ["no expenses found in last 30 days — nothing to process"],
+            "output_data": reasoning_trace,
+        }
 
-    transactions = [_TransactionRecord(**{f: getattr(t, f) for f in _TransactionRecord.model_fields}) for t in raw_txns]
+    expenses = [
+        _ExpenseRecord(
+            id=e.id,
+            tenant_id=e.tenant_id,
+            amount_cents=e.amount_cents,
+            category=e.category,
+            account_code=e.account_code,
+            approved=e.approved,
+            expense_date=e.expense_date,
+            contact_name=e.contact_name,
+        )
+        for e in raw_expenses
+    ]
 
-    blocked_categories_lower = [c.lower() for c in policy.blocked_categories]
+    # 2. Fetch EXPENSE-type accounts from chart of accounts
+    raw_accounts = await db.accountingaccount.find_many(
+        where={
+            "tenant_id": tenant_id,
+            "account_type": "EXPENSE",
+        }
+    )
+    valid_accounts = [
+        _AccountRecord(
+            id=a.id,
+            code=a.code,
+            name=a.name,
+            account_type=a.account_type,
+        )
+        for a in raw_accounts
+    ]
+    valid_account_codes: set[str] = {a.code for a in valid_accounts}
 
-    # Hard rules FIRST — applied before Claude
-    hard_rule_decisions: dict[str, _TransactionDecision] = {}
-    claude_candidates: list[_TransactionRecord] = []
+    # 3. Apply hard rules per expense
+    hard_rule_decisions: dict[str, _ExpenseDecision] = {}
+    claude_candidates: list[_ExpenseRecord] = []
 
-    for txn in transactions:
-        effective_category = (txn.ai_category or txn.category or "").lower()
-
-        # Block: single transaction over monthly limit
-        if txn.amount_minor > policy.monthly_limit_per_employee:
-            hard_rule_decisions[txn.id] = _TransactionDecision(
-                transaction_id=txn.id,
-                category=effective_category or "unknown",
-                policy_violation=True,
-                violation_reason=(
-                    f"Transaction amount {txn.amount_minor} exceeds monthly limit "
-                    f"{policy.monthly_limit_per_employee}"
-                ),
-                action="block",
-                reasoning="Single transaction exceeds the configured monthly per-employee limit.",
+    for expense in expenses:
+        flags, hard_action = _apply_hard_rules(expense, valid_account_codes, policy)
+        if hard_action is not None:
+            hard_rule_decisions[expense.id] = _ExpenseDecision(
+                expense_id=expense.id,
+                amount_cents=expense.amount_cents,
+                category=expense.category,
+                account_code=expense.account_code,
+                flags=flags,
+                action=hard_action,
+                reasoning="; ".join(flags),
                 hard_rule_applied=True,
             )
-            continue
+        else:
+            claude_candidates.append(expense)
 
-        # Block: category in blocked list (case-insensitive)
-        if effective_category and effective_category in blocked_categories_lower:
-            hard_rule_decisions[txn.id] = _TransactionDecision(
-                transaction_id=txn.id,
-                category=effective_category,
-                policy_violation=True,
-                violation_reason=f"Category '{effective_category}' is blocked by policy.",
-                action="block",
-                reasoning="Transaction category is on the blocked-categories list.",
-                hard_rule_applied=True,
-            )
-            continue
-
-        claude_candidates.append(txn)
-
-    # Call Claude on remaining transactions
-    claude_map: dict[str, _ClaudeTransactionResult] = {}
+    # 4. Ask Claude to review remaining expenses + summarize spend by category
+    claude_map: dict[str, _ClaudeExpenseResult] = {}
+    spend_summary: str | None = None
     if claude_candidates:
-        claude_results = await _call_claude(claude_candidates, settings_obj)
-        claude_map = {r.transaction_id: r for r in claude_results}
+        claude_results = await _call_claude(claude_candidates, valid_accounts, policy, settings_obj)
+        for r in claude_results:
+            claude_map[r.expense_id] = r
+            if r.spend_category_summary and spend_summary is None:
+                spend_summary = r.spend_category_summary
 
-    # Merge: hard rules take precedence, then Claude candidates
-    decisions: list[_TransactionDecision] = list(hard_rule_decisions.values())
+    # Merge decisions
+    decisions: list[_ExpenseDecision] = list(hard_rule_decisions.values())
 
-    for txn in claude_candidates:
-        claude_result = claude_map.get(txn.id)
+    for expense in claude_candidates:
+        claude_result = claude_map.get(expense.id)
 
         if claude_result is None:
-            decisions.append(_TransactionDecision(
-                transaction_id=txn.id, category="unknown", policy_violation=True,
-                violation_reason="Claude did not return a result for this transaction.",
-                action="review", reasoning="Missing Claude categorisation — flagged for manual review.",
+            decisions.append(_ExpenseDecision(
+                expense_id=expense.id,
+                amount_cents=expense.amount_cents,
+                category=expense.category,
+                account_code=expense.account_code,
+                flags=["claude_missing_result"],
+                action="flag",
+                reasoning="Claude did not return a result — flagged for manual review.",
                 hard_rule_applied=False,
             ))
             continue
 
-        action: Literal["approve", "review", "block"] = claude_result.action
+        action = claude_result.recommended_action
 
-        # Receipt required check — escalate to review if not already blocked
-        if txn.amount_minor > policy.receipt_required_above and action == "approve":
-            action = "review"
-            violation_reason = (
-                f"Amount {txn.amount_minor} exceeds receipt threshold "
-                f"{policy.receipt_required_above} — receipt required."
+        # 5. Policy: never auto-approve above auto_approve_limit_cents
+        if action == "approve" and expense.amount_cents > policy.auto_approve_limit_cents:
+            action = "flag"
+            flags = [
+                f"auto_approve blocked: amount {expense.amount_cents} exceeds "
+                f"auto_approve_limit_cents {policy.auto_approve_limit_cents}"
+            ]
+            reasoning = (
+                f"{claude_result.reasoning} — escalated: amount exceeds auto-approve limit."
             )
         else:
-            violation_reason = claude_result.violation_reason
+            flags = []
+            reasoning = claude_result.reasoning
 
-        decisions.append(
-            _TransactionDecision(
-                transaction_id=txn.id,
-                category=claude_result.category,
-                policy_violation=claude_result.policy_violation,
-                violation_reason=violation_reason,
-                action=action,
-                reasoning=claude_result.reasoning,
-                hard_rule_applied=False,
-            )
-        )
-
-    # Monthly total for tenant (calendar month so far)
-    month_start = datetime.now(UTC).replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-    monthly_txns = await db.banktransaction.find_many(
-        where={
-            "tenant_id": tenant_id,
-            "date": {"gte": month_start},
-        }
-    )
-    monthly_total: int = sum(t.amount_minor for t in monthly_txns)
-
-    # If monthly total exceeds limit, escalate remaining approved transactions to review
-    if monthly_total > policy.monthly_limit_per_employee:
-        for decision in decisions:
-            if decision.action == "approve":
-                decision.action = "review"
-                decision.policy_violation = True
-                decision.violation_reason = (
-                    f"Monthly spend total {monthly_total} exceeds limit "
-                    f"{policy.monthly_limit_per_employee} — flagged for review."
-                )
+        decisions.append(_ExpenseDecision(
+            expense_id=expense.id,
+            amount_cents=expense.amount_cents,
+            category=expense.category,
+            account_code=expense.account_code,
+            flags=flags,
+            action=action,
+            reasoning=reasoning,
+            hard_rule_applied=False,
+        ))
 
     # Derive overall decision
     has_block = any(d.action == "block" for d in decisions)
-    has_review = any(d.action == "review" for d in decisions)
+    has_flag = any(d.action == "flag" for d in decisions)
 
     if has_block:
         overall_decision = "blocked"
-    elif has_review:
+    elif has_flag:
         overall_decision = "approval_required"
     else:
         overall_decision = "auto_approved"
 
-    violation_count = sum(1 for d in decisions if d.policy_violation)
+    violation_count = sum(1 for d in decisions if d.flags)
     confidence = round(
-        1.0 - (violation_count / len(decisions)) if overall_decision == "auto_approved"
+        1.0 - (violation_count / len(decisions))
+        if overall_decision == "auto_approved"
         else violation_count / len(decisions),
         4,
     )
 
-    # Build reasoning trace
-    reasoning_trace: dict = {
+    reasoning_trace = {
         "overall_decision": overall_decision,
-        "transaction_count": len(decisions),
-        "monthly_total_minor": monthly_total,
-        "monthly_limit_minor": policy.monthly_limit_per_employee,
+        "expense_count": len(decisions),
         "policy": policy.model_dump(),
-        "per_transaction": [
+        "spend_category_summary": spend_summary,
+        "per_expense": [
             {
-                "transaction_id": d.transaction_id,
+                "expense_id": d.expense_id,
+                "amount_cents": d.amount_cents,
                 "category": d.category,
-                "policy_violation": d.policy_violation,
-                "violation_reason": d.violation_reason,
+                "account_code": d.account_code,
+                "flags": d.flags,
                 "action": d.action,
                 "reasoning": d.reasoning,
                 "hard_rule_applied": d.hard_rule_applied,
@@ -360,28 +389,16 @@ async def _execute_expense_control(
         execution_id=execution_id,
     )
 
-    # Update transaction statuses in DB
-    review_ids = [d.transaction_id for d in decisions if d.action == "review"]
-    block_ids = [d.transaction_id for d in decisions if d.action == "block"]
-
-    if block_ids:
-        await db.banktransaction.update_many(
-            where={"id": {"in": block_ids}, "tenant_id": tenant_id},
-            data={"status": "blocked"},
-        )
-    if review_ids:
-        await db.banktransaction.update_many(
-            where={"id": {"in": review_ids}, "tenant_id": tenant_id},
-            data={"status": "flagged"},
-        )
-
     actions_taken: list[str] = []
+    block_ids = [d.expense_id for d in decisions if d.action == "block"]
+    flag_ids = [d.expense_id for d in decisions if d.action == "flag"]
+
     if block_ids:
-        actions_taken.append(f"blocked {len(block_ids)} transaction(s)")
-    if review_ids:
-        actions_taken.append(f"flagged {len(review_ids)} transaction(s) for review")
-    if not block_ids and not review_ids:
-        actions_taken.append("all transactions approved — no status change")
+        actions_taken.append(f"blocked {len(block_ids)} expense(s)")
+    if flag_ids:
+        actions_taken.append(f"flagged {len(flag_ids)} expense(s) for review")
+    if not block_ids and not flag_ids:
+        actions_taken.append("all expenses approved — no status change")
 
     return {
         "decision": overall_decision,
@@ -392,8 +409,6 @@ async def _execute_expense_control(
     }
 
 
-# -- arq job -----------------------------------------------------------------
-
 
 async def run_expense_control_job(
     ctx: dict,
@@ -401,16 +416,13 @@ async def run_expense_control_job(
     execution_id: str,
     tenant_id: str,
     tool_id: str,
-    transaction_ids: list[str],
 ) -> dict:
     db = get_db()
     settings_obj = get_settings()
     start_ms = int(time.time() * 1000)
 
     try:
-        result = await _execute_expense_control(
-            tenant_id, tool_id, execution_id, transaction_ids
-        )
+        result = await _execute_expense_control(tenant_id, tool_id, execution_id)
         duration_ms = int(time.time() * 1000) - start_ms
         await db.execution.update(
             where={"id": execution_id},
@@ -448,8 +460,6 @@ async def run_expense_control_job(
         raise
 
 
-# -- BaseTool --------------------------------------------------------------
-
 
 class ExpenseControlTool(BaseTool):
     TOOL_TYPE = ToolType.EXPENSE_CONTROL
@@ -458,11 +468,8 @@ class ExpenseControlTool(BaseTool):
     async def execute(self, input_data: dict, tenant_id: str) -> ToolOutput:
         execution_id: str = input_data["execution_id"]
         tool_id: str = input_data["tool_id"]
-        transaction_ids: list[str] = input_data["transaction_ids"]
 
-        result = await _execute_expense_control(
-            tenant_id, tool_id, execution_id, transaction_ids
-        )
+        result = await _execute_expense_control(tenant_id, tool_id, execution_id)
         return ToolOutput(
             tool_type=self.TOOL_TYPE,
             decision=result["decision"],

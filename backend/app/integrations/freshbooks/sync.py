@@ -1,6 +1,6 @@
 """
-FreshBooks sync job — runs via arq tool.
-Fetches invoices, clients, and payments to verify connection and seed initial data.
+FreshBooks sync job — runs via arq worker.
+Fetches invoices, clients, payments, and expenses then persists them to the DB.
 """
 import time
 from datetime import datetime, UTC
@@ -13,10 +13,45 @@ from app.integrations.freshbooks import client as fb
 
 logger = get_logger(__name__)
 
+_INVOICE_STATUS_MAP = {
+    # v3_status values
+    "draft": "draft",
+    "sent": "sent",
+    "viewed": "sent",
+    "paid": "paid",
+    "auto-paid": "paid",
+    "retry": "partial",
+    "failed": "partial",
+    "partial": "partial",
+    "disputed": "void",
+    "void": "void",
+    # payment_status values
+    "unpaid": "sent",
+    "overdue": "overdue",
+}
+
+
+def _parse_date(raw: str | None) -> datetime | None:
+    """Parse a YYYY-MM-DD string to a UTC datetime. Returns None on failure."""
+    if not raw:
+        return None
+    try:
+        return datetime.strptime(raw, "%Y-%m-%d").replace(tzinfo=UTC)
+    except ValueError:
+        return None
+
+
+def _cents(value: object) -> int:
+    """Convert a raw FreshBooks amount value (float string or number) to integer cents."""
+    try:
+        return int(float(value or 0) * 100)
+    except (TypeError, ValueError):
+        return 0
+
 
 async def sync_freshbooks_connection(ctx: dict, integration_id: str, tenant_id: str) -> dict:
     """
-    arq job: verify FreshBooks connection is live by fetching invoices, clients, payments.
+    arq job: fetch FreshBooks invoices, clients, payments, expenses and persist to DB.
     Refreshes token if expired. Writes sync log entries. Updates integration status.
     """
     db = get_db()
@@ -93,12 +128,14 @@ async def sync_freshbooks_connection(ctx: dict, integration_id: str, tenant_id: 
         ("invoices", lambda: fb.get_invoices(access_token, account_id)),
         ("clients", lambda: fb.get_clients(access_token, account_id)),
         ("payments", lambda: fb.get_payments(access_token, account_id)),
+        ("expenses", lambda: fb.get_expenses(access_token, account_id)),
     ]:
         start = time.monotonic()
         entity_status = "success"
         records: list = []
         try:
             records = await fetch_fn()
+            await _upsert_entities(db, entity, records, integration_id, tenant_id)
         except Exception as exc:
             logger.error(
                 "freshbooks_sync_%s_failed integration_id=%s: %s",
@@ -137,11 +174,12 @@ async def sync_freshbooks_connection(ctx: dict, integration_id: str, tenant_id: 
             },
         )
         logger.info(
-            "freshbooks_sync_ok tenant=%s invoices=%d clients=%d payments=%d",
+            "freshbooks_sync_ok tenant=%s invoices=%d clients=%d payments=%d expenses=%d",
             tenant_id,
             results["invoices"]["count"],
             results["clients"]["count"],
             results["payments"]["count"],
+            results["expenses"]["count"],
         )
         return {"status": "ok", **{k: v["count"] for k, v in results.items()}}
     else:
@@ -150,11 +188,123 @@ async def sync_freshbooks_connection(ctx: dict, integration_id: str, tenant_id: 
         return {"status": "error", "reason": "all_entity_fetches_failed"}
 
 
+async def _upsert_entities(db, entity: str, records: list, integration_id: str, tenant_id: str) -> None:
+    """Dispatch upserts for a given entity type."""
+    if entity == "invoices":
+        for inv in records:
+            await _upsert_invoice(db, inv, integration_id, tenant_id)
+    elif entity == "clients":
+        for client in records:
+            await _upsert_contact(db, client, integration_id, tenant_id)
+    elif entity == "payments":
+        for pmt in records:
+            await _upsert_payment(db, pmt, integration_id, tenant_id)
+    elif entity == "expenses":
+        for exp in records:
+            await _upsert_expense(db, exp, integration_id, tenant_id)
+
+
+async def _upsert_invoice(db, inv: dict, integration_id: str, tenant_id: str) -> None:
+    ext_id = str(inv["id"])
+    raw_status = inv.get("payment_status") or inv.get("v3_status", "")
+    status = _INVOICE_STATUS_MAP.get(raw_status, "draft")
+
+    total_cents = _cents(inv.get("amount", {}).get("amount"))
+    tax_cents = _cents(inv.get("tax_amount", {}).get("amount"))
+    subtotal_cents = total_cents - tax_cents
+    outstanding_cents = _cents(inv.get("outstanding", {}).get("amount"))
+    due_date = _parse_date(inv.get("due_date") or inv.get("duedate"))
+    issue_date = _parse_date(inv.get("create_date"))
+
+    shared = {
+        "number": inv.get("invoice_number") or inv.get("number"),
+        "status": status,
+        "contact_name": inv.get("customer_name") or inv.get("organization"),
+        "currency": inv.get("currency_code", "GBP"),
+        "total_cents": total_cents,
+        "outstanding_cents": outstanding_cents,
+        "tax_cents": tax_cents,
+        "subtotal_cents": subtotal_cents,
+        "due_date": due_date,
+        "issue_date": issue_date,
+        "type": "invoice",
+        "raw_data": inv,
+    }
+    await db.accountinginvoice.upsert(
+        where={"integration_id_external_id": {"integration_id": integration_id, "external_id": ext_id}},
+        data={
+            "create": {**shared, "tenant_id": tenant_id, "integration_id": integration_id, "source": "freshbooks", "external_id": ext_id},
+            "update": shared,
+        },
+    )
+
+
+async def _upsert_contact(db, client: dict, integration_id: str, tenant_id: str) -> None:
+    ext_id = str(client["id"])
+    name = (
+        client.get("organization")
+        or f'{client.get("fname", "")} {client.get("lname", "")}'.strip()
+        or None
+    )
+    shared = {
+        "name": name,
+        "email": client.get("email"),
+        "contact_type": "customer",
+    }
+    await db.accountingcontact.upsert(
+        where={"integration_id_external_id": {"integration_id": integration_id, "external_id": ext_id}},
+        data={
+            "create": {**shared, "tenant_id": tenant_id, "integration_id": integration_id, "source": "freshbooks", "external_id": ext_id},
+            "update": shared,
+        },
+    )
+
+
+async def _upsert_payment(db, pmt: dict, integration_id: str, tenant_id: str) -> None:
+    ext_id = str(pmt["id"])
+    shared = {
+        "amount_cents": _cents(pmt.get("amount", {}).get("amount")),
+        "currency": pmt.get("currency_code", "GBP"),
+        "paid_at": _parse_date(pmt.get("date")),
+        "payment_type": "received",
+    }
+    await db.accountingpayment.upsert(
+        where={"integration_id_external_id": {"integration_id": integration_id, "external_id": ext_id}},
+        data={
+            "create": {**shared, "tenant_id": tenant_id, "integration_id": integration_id, "source": "freshbooks", "external_id": ext_id},
+            "update": shared,
+        },
+    )
+
+
+async def _upsert_expense(db, exp: dict, integration_id: str, tenant_id: str) -> None:
+    ext_id = str(exp["id"])
+    category_raw = exp.get("category")
+    category = category_raw.get("name") if isinstance(category_raw, dict) else None
+    shared = {
+        "amount_cents": _cents(exp.get("amount", {}).get("amount")),
+        "tax_cents": _cents(exp.get("tax_amount", {}).get("amount")),
+        "category": category,
+        "description": exp.get("notes"),
+        "contact_name": exp.get("vendor"),
+        "expense_date": _parse_date(exp.get("date")),
+        "approved": exp.get("status") == 1,
+    }
+    await db.accountingexpense.upsert(
+        where={"integration_id_external_id": {"integration_id": integration_id, "external_id": ext_id}},
+        data={
+            "create": {**shared, "tenant_id": tenant_id, "integration_id": integration_id, "source": "freshbooks", "external_id": ext_id},
+            "update": shared,
+        },
+    )
+
+
 def _build_freshbooks_metadata(fetched: dict) -> dict:
     """Compute summary stats from raw FreshBooks API data for display in the UI."""
     invoices = fetched.get("invoices", [])
     clients = fetched.get("clients", [])
     payments = fetched.get("payments", [])
+    expenses = fetched.get("expenses", [])
 
     unpaid_statuses = {"sent", "viewed", "partial", "retry", "failed"}
     overdue_statuses = {"sent", "viewed", "partial"}
@@ -167,11 +317,7 @@ def _build_freshbooks_metadata(fetched: dict) -> dict:
 
     for inv in invoices:
         status = inv.get("payment_status") or inv.get("v3_status", "")
-        try:
-            outstanding_raw = inv.get("outstanding", {})
-            amount_cents = int(float(outstanding_raw.get("amount", 0) or 0) * 100)
-        except (TypeError, ValueError):
-            amount_cents = 0
+        amount_cents = _cents(inv.get("outstanding", {}).get("amount"))
 
         if status in unpaid_statuses:
             outstanding_cents += amount_cents
@@ -186,22 +332,27 @@ def _build_freshbooks_metadata(fetched: dict) -> dict:
             except ValueError:
                 pass
 
-    total_payments_cents = 0
-    for pmt in payments:
-        try:
-            total_payments_cents += int(float(pmt.get("amount", {}).get("amount", 0) or 0) * 100)
-        except (TypeError, ValueError):
-            pass
+    total_payments_cents = sum(
+        _cents(pmt.get("amount", {}).get("amount")) for pmt in payments
+    )
+    total_expenses_cents = sum(
+        _cents(exp.get("amount", {}).get("amount")) for exp in expenses
+    )
 
     return {
         "total_invoices": len(invoices),
-        "outstanding_invoices": sum(1 for inv in invoices if (inv.get("payment_status") or inv.get("v3_status", "")) in unpaid_statuses),
+        "outstanding_invoices": sum(
+            1 for inv in invoices
+            if (inv.get("payment_status") or inv.get("v3_status", "")) in unpaid_statuses
+        ),
         "outstanding_amount_cents": outstanding_cents,
         "overdue_invoices": overdue_count,
         "overdue_amount_cents": overdue_cents,
         "total_clients": len(clients),
         "total_payments": len(payments),
         "total_payments_amount_cents": total_payments_cents,
+        "total_expenses": len(expenses),
+        "total_expenses_amount_cents": total_expenses_cents,
     }
 
 

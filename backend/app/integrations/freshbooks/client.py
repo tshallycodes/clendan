@@ -123,3 +123,11 @@ async def get_payments(access_token: str, account_id: str, page: int = 1, per_pa
         )
         resp.raise_for_status()
         return resp.json().get("response", {}).get("result", {}).get("payments", [])
+
+
+async def get_expenses(access_token: str, account_id: str, page: int = 1, per_page: int = 100) -> list[dict]:
+    url = f"{_BASE}/accounting/account/{account_id}/expenses/expenses"
+    async with httpx.AsyncClient(timeout=30) as http:
+        resp = await http.get(url, params={"page": page, "per_page": per_page}, headers=_auth_headers(access_token))
+        resp.raise_for_status()
+        return resp.json().get("response", {}).get("result", {}).get("expenses", [])
