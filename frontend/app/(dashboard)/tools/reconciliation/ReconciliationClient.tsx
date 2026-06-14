@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
+import Link from 'next/link'
 import { useAuth } from '@clerk/nextjs'
 import { ReconciliationRun, ReconciliationItem } from './types'
 import { RunControls } from './RunControls'
@@ -184,6 +185,10 @@ export function ReconciliationClient() {
 
   return (
     <div className="p-6 space-y-5">
+      <Link href="/tools" className="text-[11px] font-mono text-brand-muted hover:text-brand-secondary transition-colors">
+        ← Tools
+      </Link>
+
       <div>
         <h1 className="font-heading font-bold text-2xl text-brand-text">Reconciliation</h1>
         <p className="text-[10px] font-mono text-brand-muted mt-1 uppercase tracking-widest">
