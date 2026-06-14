@@ -97,6 +97,12 @@ async def sync_codat_connection(ctx: dict, integration_id: str, tenant_id: str) 
         "duration_ms": elapsed_ms,
     })
 
+    # Re-read status — integration may have been disconnected while sync was running
+    current = await db.integration.find_unique(where={"id": integration_id})
+    if not current or current.status == "disconnected":
+        logger.info("Codat sync aborted — integration %s was disconnected during run", integration_id)
+        return {"status": "skipped", "reason": "disconnected_during_sync"}
+
     if total_invoices > 0:
         await db.integration.update(
             where={"id": integration_id},

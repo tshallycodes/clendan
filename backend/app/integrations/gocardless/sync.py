@@ -144,6 +144,12 @@ async def sync_gocardless_connection(ctx: dict, integration_id: str, tenant_id: 
         results["payouts_error"] = type(exc).__name__
         logger.error("GoCardless payouts sync failed: %s", type(exc).__name__)
 
+    # Re-read status — integration may have been disconnected while sync was running
+    current = await db.integration.find_unique(where={"id": integration_id})
+    if not current or current.status == "disconnected":
+        logger.info("GoCardless sync aborted — integration %s was disconnected during run", integration_id)
+        return {"status": "skipped", "reason": "disconnected_during_sync"}
+
     # Update integration status to connected after first sync
     await db.integration.update(
         where={"id": integration_id},

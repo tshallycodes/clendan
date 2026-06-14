@@ -145,6 +145,12 @@ async def sync_paypal_connection(ctx: dict, integration_id: str, tenant_id: str)
         results["invoices_error"] = type(exc).__name__
         logger.error("PayPal invoices sync failed: %s", type(exc).__name__)
 
+    # Re-read status — integration may have been disconnected while sync was running
+    current = await db.integration.find_unique(where={"id": integration_id})
+    if not current or current.status == "disconnected":
+        logger.info("PayPal sync aborted — integration %s was disconnected during run", integration_id)
+        return {"status": "skipped", "reason": "disconnected_during_sync"}
+
     # Mark integration as connected after first sync
     await db.integration.update(
         where={"id": integration_id},

@@ -39,6 +39,7 @@ from app.api.v1.paypal import router as paypal_router
 from app.api.v1.webhooks.square import router as square_webhook_router
 from app.api.v1.webhooks.paypal import router as paypal_webhook_router
 from app.api.v1.generic import router as generic_router
+from app.api.v1.sage import router as sage_router
 from app.clen.router import router as clen_router
 
 v1_router = APIRouter()
@@ -86,4 +87,5 @@ v1_router.include_router(paypal_router)
 v1_router.include_router(square_webhook_router)
 v1_router.include_router(paypal_webhook_router)
 v1_router.include_router(clen_router)
+v1_router.include_router(sage_router)
 v1_router.include_router(generic_router)  # must be last — uses {slug} path params

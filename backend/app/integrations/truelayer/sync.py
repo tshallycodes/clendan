@@ -251,6 +251,12 @@ async def sync_truelayer_connection(_ctx: dict, integration_id: str, tenant_id: 
             "duration_ms": int((datetime.now(UTC) - sync_start).total_seconds() * 1000),
         })
 
+        # Re-read status — integration may have been disconnected while sync was running
+        current = await db.integration.find_unique(where={"id": integration_id})
+        if not current or current.status == "disconnected":
+            logger.info("TrueLayer sync aborted — integration %s was disconnected during run", integration_id)
+            return {"status": "skipped", "reason": "disconnected_during_sync"}
+
         await db.integration.update(
             where={"id": integration_id},
             data={"status": "connected", "last_synced_at": datetime.now(UTC)},

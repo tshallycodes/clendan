@@ -30,6 +30,10 @@ async def sync_stripe_connection(ctx: dict, integration_id: str, tenant_id: str)
         logger.error("Tenant mismatch on Stripe sync job — possible data leakage attempt blocked")
         return {"status": "error", "reason": "tenant_mismatch"}
 
+    if integration.status == "disconnected":
+        logger.warning("Sync skipped — Stripe integration %s is disconnected", integration_id)
+        return {"status": "skipped", "reason": "disconnected"}
+
     try:
         creds = decrypt_credentials(integration.encrypted_credentials, tenant_id)
         access_token = creds.get("access_token", "")
@@ -71,6 +75,12 @@ async def sync_stripe_connection(ctx: dict, integration_id: str, tenant_id: str)
             "records_synced": len(invoices),
             "duration_ms": invoices_elapsed_ms,
         })
+
+        # Re-read status — integration may have been disconnected while sync was running
+        current = await db.integration.find_unique(where={"id": integration_id})
+        if not current or current.status == "disconnected":
+            logger.info("Stripe sync aborted — integration %s was disconnected during run", integration_id)
+            return {"status": "skipped", "reason": "disconnected_during_sync"}
 
         # Mark integration as connected now that sync is confirmed
         await db.integration.update(

@@ -29,6 +29,7 @@ from app.integrations.google.sync_gmail import sync_gmail_connection
 from app.integrations.google.sync_drive import sync_drive_connection
 from app.integrations.outlook.sync import sync_outlook_connection
 from app.integrations.outlook.sync import renew_outlook_subscriptions
+from app.integrations.sage.sync import sync_sage_connection
 from app.policy.engine import Decision, evaluate_policy
 from app.queue.pool import get_queue_pool, push_to_dlq
 from app.tools.ai_accountant import run_ai_accountant
@@ -509,6 +510,7 @@ class ToolSettings:
         sync_drive_connection,
         sync_outlook_connection,
         renew_outlook_subscriptions,
+        sync_sage_connection,
     ]
     cron_jobs = [
         cron(run_revenue_recognition_monthly, day=1, hour=0, minute=0),

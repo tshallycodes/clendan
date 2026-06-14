@@ -40,7 +40,7 @@ git push -u origin main
 
 ## Code Quality
 
-- Delete dead code immediately — unused imports, unreachable branches, commented-out blocks
+- Delete dead code immediately — unused imports, unreachable branches, commented-out blocks ESPECIALLY after edits
 - No tangled dependencies — each module has one clear responsibility
 - No duplicated logic — extract shared behaviour into utilities or hooks
 - No magic numbers or hardcoded strings — use constants and config

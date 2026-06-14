@@ -96,6 +96,7 @@ class Settings(BaseSettings):
 
     sage_client_id: str = ""
     sage_client_secret: str = ""
+    sage_redirect_uri: str = "http://localhost:8000/v1/integrations/sage/callback"
 
     wave_client_id: str = ""
     wave_client_secret: str = ""

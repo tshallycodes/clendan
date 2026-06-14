@@ -116,6 +116,12 @@ async def sync_xero_connection(ctx: dict, integration_id: str, tenant_id: str) -
         "duration_ms": contacts_elapsed,
     })
 
+    # Re-read status — integration may have been disconnected while sync was running
+    current = await db.integration.find_unique(where={"id": integration_id})
+    if not current or current.status == "disconnected":
+        logger.info("xero_sync_aborted_disconnected integration_id=%s", integration_id)
+        return {"status": "skipped", "reason": "disconnected_during_sync"}
+
     # Determine overall outcome
     if accounts_status == "success" or contacts_status == "success":
         await db.integration.update(

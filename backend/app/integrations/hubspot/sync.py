@@ -29,6 +29,10 @@ async def sync_hubspot_connection(ctx: dict, integration_id: str, tenant_id: str
         logger.error("hubspot_sync_tenant_mismatch integration=%s — blocked", integration_id)
         return {"status": "error", "reason": "tenant_mismatch"}
 
+    if integration.status == "disconnected":
+        logger.warning("hubspot_sync_skipped integration=%s reason=disconnected", integration_id)
+        return {"status": "skipped", "reason": "disconnected"}
+
     try:
         access_token = await get_valid_token(integration_id, db)
     except Exception as exc:
@@ -120,6 +124,12 @@ async def sync_hubspot_connection(ctx: dict, integration_id: str, tenant_id: str
             "duration_ms": elapsed_ms,
         })
         results["deals_error"] = type(exc).__name__
+
+    # Re-read status — integration may have been disconnected while sync was running
+    current = await db.integration.find_unique(where={"id": integration_id})
+    if not current or current.status == "disconnected":
+        logger.info("hubspot_sync_aborted_disconnected integration=%s", integration_id)
+        return {"status": "skipped", "reason": "disconnected_during_sync"}
 
     # Mark integration as connected after sync completes
     await db.integration.update(
