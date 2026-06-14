@@ -89,6 +89,7 @@ class Settings(BaseSettings):
 
     backend_base_url: str = "http://localhost:8000"
     frontend_url: str = "http://localhost:3000"
+    cors_origins: str = ""  # comma-separated list of extra allowed origins
 
     freshbooks_client_id: str = ""
     freshbooks_client_secret: str = ""
