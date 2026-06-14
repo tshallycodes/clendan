@@ -1,0 +1,127 @@
+---
+title: Process Your First Invoice
+description: End-to-end guide — from PDF to bill in QuickBooks in under 60 seconds.
+---
+
+# Process Your First Invoice
+
+This guide walks through processing a real invoice end to end using the
+Invoice Processing Tool.
+
+## Prerequisites
+
+- Clendan account created
+- QuickBooks or Xero connected (see [Connect Xero](/guides/connect-xero))
+- Invoice Processing Tool deployed
+
+## Option A — Via the Dashboard
+
+1. Go to **Dashboard → Tools**
+2. Click on the Invoice Processing Tool
+3. Click **Test with document**
+4. Upload your invoice PDF
+5. Watch the execution log in real time
+
+The tool will:
+- Parse the invoice (under 2 seconds)
+- Validate against your supplier list
+- Check against your policy thresholds
+- Auto-approve or route to your approval queue
+- Write the bill to QuickBooks/Xero if auto-approved
+
+## Option B — Via the API
+
+<CodeGroup>
+```python Python
+import requests
+
+# Parse the invoice
+with open("invoice.pdf", "rb") as f:
+    parse_response = requests.post(
+        "https://api.clendan.com/v1/parse/invoice",
+        headers={"Authorization": "Bearer YOUR_API_KEY"},
+        files={"file": f}
+    )
+
+invoice_data = parse_response.json()["data"]
+
+# Trigger the tool
+run_response = requests.post(
+    "https://api.clendan.com/v1/agents/invoice-processing/run",
+    headers={
+        "Authorization": "Bearer YOUR_API_KEY",
+        "Idempotency-Key": f"inv-{invoice_data['invoice_number']}"
+    },
+    json={"invoice_data": invoice_data}
+)
+
+result = run_response.json()["data"]
+print(f"Decision: {result['decision']}")
+print(f"Trace ID: {run_response.json()['trace_id']}")
+```
+
+```javascript Node.js
+const FormData = require('form-data');
+const fs = require('fs');
+
+// Parse the invoice
+const form = new FormData();
+form.append('file', fs.createReadStream('invoice.pdf'));
+
+const parseResponse = await fetch('https://api.clendan.com/v1/parse/invoice', {
+  method: 'POST',
+  headers: { 'Authorization': 'Bearer YOUR_API_KEY', ...form.getHeaders() },
+  body: form
+});
+
+const invoiceData = (await parseResponse.json()).data;
+
+// Trigger the tool
+const runResponse = await fetch('https://api.clendan.com/v1/agents/invoice-processing/run', {
+  method: 'POST',
+  headers: {
+    'Authorization': 'Bearer YOUR_API_KEY',
+    'Content-Type': 'application/json',
+    'Idempotency-Key': `inv-${invoiceData.invoice_number}`
+  },
+  body: JSON.stringify({ invoice_data: invoiceData })
+});
+
+const result = await runResponse.json();
+console.log('Decision:', result.data.decision);
+```
+
+```bash cURL
+# Step 1: Parse invoice
+curl -X POST https://api.clendan.com/v1/parse/invoice \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -F "file=@invoice.pdf" \
+  > parsed.json
+
+# Step 2: Run tool (pass parsed data)
+curl -X POST https://api.clendan.com/v1/agents/invoice-processing/run \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: inv-001" \
+  -d @parsed.json
+```
+</CodeGroup>
+
+## What Happens Next
+
+**If auto-approved:**
+- Bill created in QuickBooks/Xero automatically
+- Payment scheduled for the due date
+- Audit log entry written
+- You receive a summary notification (if enabled)
+
+**If approval required:**
+- Approval request appears in your queue
+- You (or your finance team) receive an email notification
+- Approve or reject with one click
+- Tool completes the action on approval
+
+## Viewing the Result
+
+Go to **Dashboard → Executions** to see the full execution detail including
+the reasoning trace — exactly why the tool made the decision it did.

@@ -1,0 +1,168 @@
+---
+title: Invoice Parser API
+description: Extract structured data from any invoice — PDF, PNG, JPG, or TIFF.
+---
+
+# Invoice Parser API
+
+Extract structured JSON from any invoice document. Supports PDF, PNG, JPG,
+and TIFF. Returns vendor details, line items, amounts, dates, and a
+confidence score. No templates. No configuration.
+
+## Endpoint
+
+```
+POST /v1/parse/invoice
+```
+
+## Request
+
+**Content-Type:** `multipart/form-data`
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `file` | File | Yes | Invoice document (PDF, PNG, JPG, TIFF, max 10MB) |
+| `currency_hint` | String | No | ISO 4217 currency code hint (e.g. "GBP") |
+
+**Headers:**
+
+| Header | Required | Description |
+|---|---|---|
+| `Authorization` | Yes | `Bearer YOUR_API_KEY` |
+| `Idempotency-Key` | Recommended | Unique key for retry safety |
+
+## Response
+
+```json
+{
+  "data": {
+    "vendor": "Acme Supplies Ltd",
+    "invoice_number": "INV-2026-0041",
+    "invoice_date": "2026-05-01",
+    "due_date": "2026-06-15",
+    "currency": "GBP",
+    "subtotal": 1033.33,
+    "vat_amount": 206.67,
+    "total_amount": 1240.00,
+    "total_amount_minor": 124000,
+    "po_number": "PO-2026-0089",
+    "line_items": [
+      {
+        "description": "Cloud infrastructure services",
+        "quantity": 1,
+        "unit_price": 1033.33,
+        "total": 1033.33
+      }
+    ],
+    "confidence": 0.97,
+    "flags": []
+  },
+  "error": null,
+  "trace_id": "trace-a1b2c3d4",
+  "timestamp": "2026-06-14T09:14:33Z"
+}
+```
+
+<Note>
+`total_amount_minor` is the total in minor currency units (pence for GBP, cents for USD).
+Always use this for financial calculations — never `total_amount` which is for display only.
+</Note>
+
+## Confidence Score
+
+The `confidence` field (0.0–1.0) indicates extraction reliability:
+
+| Range | Meaning |
+|---|---|
+| 0.95–1.0 | High confidence — safe to auto-process |
+| 0.80–0.94 | Medium confidence — review recommended |
+| Below 0.80 | Low confidence — manual review required |
+
+## Flags
+
+The `flags` array contains warnings about the extracted data:
+
+| Flag | Description |
+|---|---|
+| `DUPLICATE_INVOICE_NUMBER` | This invoice number has been seen before |
+| `AMOUNT_MISMATCH` | Line item totals do not match the invoice total |
+| `MISSING_PO_NUMBER` | No PO number found on the invoice |
+| `UNRECOGNISED_VENDOR` | Vendor not in your approved supplier list |
+
+## Code Examples
+
+<CodeGroup>
+```python Python
+import requests
+
+with open("invoice.pdf", "rb") as f:
+    response = requests.post(
+        "https://api.clendan.com/v1/parse/invoice",
+        headers={
+            "Authorization": "Bearer YOUR_API_KEY",
+            "Idempotency-Key": "inv-parse-20260614-001"
+        },
+        files={"file": ("invoice.pdf", f, "application/pdf")}
+    )
+
+result = response.json()
+
+if result["error"]:
+    print(f"Error: {result['error']['message']}")
+else:
+    invoice = result["data"]
+    print(f"Vendor: {invoice['vendor']}")
+    print(f"Amount: {invoice['currency']} {invoice['total_amount']}")
+    print(f"Confidence: {invoice['confidence']}")
+    print(f"Flags: {invoice['flags']}")
+```
+
+```javascript Node.js
+const FormData = require('form-data');
+const fs = require('fs');
+const fetch = require('node-fetch');
+
+const form = new FormData();
+form.append('file', fs.createReadStream('invoice.pdf'), {
+  filename: 'invoice.pdf',
+  contentType: 'application/pdf'
+});
+
+const response = await fetch('https://api.clendan.com/v1/parse/invoice', {
+  method: 'POST',
+  headers: {
+    'Authorization': 'Bearer YOUR_API_KEY',
+    'Idempotency-Key': 'inv-parse-20260614-001',
+    ...form.getHeaders()
+  },
+  body: form
+});
+
+const result = await response.json();
+
+if (result.error) {
+  console.error('Error:', result.error.message);
+} else {
+  const invoice = result.data;
+  console.log('Vendor:', invoice.vendor);
+  console.log('Amount:', invoice.currency, invoice.total_amount);
+  console.log('Confidence:', invoice.confidence);
+}
+```
+
+```bash cURL
+curl -X POST https://api.clendan.com/v1/parse/invoice \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Idempotency-Key: inv-parse-20260614-001" \
+  -F "file=@invoice.pdf;type=application/pdf"
+```
+</CodeGroup>
+
+## Error Responses
+
+| Code | Description |
+|---|---|
+| `INVALID_FILE_TYPE` | File must be PDF, PNG, JPG, or TIFF |
+| `FILE_TOO_LARGE` | File exceeds 10MB limit |
+| `EXTRACTION_FAILED` | Could not extract data from document |
+| `LOW_CONFIDENCE` | Confidence below minimum threshold (0.5) |

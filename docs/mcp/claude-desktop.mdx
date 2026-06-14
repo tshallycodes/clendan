@@ -1,0 +1,47 @@
+---
+title: Claude Desktop
+description: Connect the Clendan MCP server to Claude Desktop.
+---
+
+# Connect to Claude Desktop
+
+## Step 1 — Get Your API Key
+
+Go to **Dashboard → Settings → API Keys** and copy an active key.
+
+## Step 2 — Edit the Config File
+
+Open `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS) or `%APPDATA%\Claude\claude_desktop_config.json` (Windows) and add the `clendan` entry:
+
+```json
+{
+  "mcpServers": {
+    "clendan": {
+      "url": "https://mcp.clendan.com/sse",
+      "headers": {
+        "Authorization": "Bearer YOUR_API_KEY"
+      }
+    }
+  }
+}
+```
+
+## Step 3 — Restart Claude Desktop
+
+Quit and reopen Claude Desktop. The Clendan tools will appear in the tool picker.
+
+## Verify the Connection
+
+Ask Claude:
+
+> "List my Clendan tools"
+
+Claude will call `list_tools` and return your deployed tools.
+
+## Troubleshooting
+
+| Issue | Fix |
+|---|---|
+| Tools not appearing | Restart Claude Desktop after editing the config |
+| `Unauthorized` error | Check your API key is active in Dashboard → Settings → API Keys |
+| `Cannot reach Clendan` | Check `CLENDAN_API_BASE` if self-hosting — defaults to `https://api.clendan.com` |

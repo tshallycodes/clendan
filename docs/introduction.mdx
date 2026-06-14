@@ -1,0 +1,51 @@
+---
+title: Introduction
+description: Clendan is an AI Financial Agent OS — execution infrastructure for autonomous finance operations.
+---
+
+# Welcome to Clendan
+
+Clendan is an API platform where companies deploy **AI financial tools** that connect to their financial systems, execute tasks autonomously, enforce policy rules, and produce full audit trails for every action taken.
+
+<CardGroup cols={2}>
+  <Card title="Quickstart" icon="rocket" href="/quickstart">
+    Deploy your first AI tool in under 10 minutes
+  </Card>
+  <Card title="API Reference" icon="code" href="/api-reference/overview">
+    Explore the full API — 5 standalone tools, ready to integrate
+  </Card>
+  <Card title="AI Tools" icon="robot" href="/tools/overview">
+    10 specialised tools covering every finance function
+  </Card>
+  <Card title="Integrations" icon="plug" href="/integrations/overview">
+    Connect Xero, QuickBooks, Plaid, Stripe, and more
+  </Card>
+</CardGroup>
+
+## What Clendan Is
+
+Clendan is **execution infrastructure** — not a dashboard, not a chatbot, not an analytics tool.
+
+When a tool runs, it does not suggest what to do. It executes: parsing invoices, writing bills to your ERP, scheduling payments, flagging fraud, reconciling accounts. Every action is logged to an immutable audit trail with full reasoning traces.
+
+## Architecture
+
+Clendan uses a **master-subagent model**:
+
+- The **Financial Orchestrator** is the master agent. It receives all financial events, classifies them, and routes them to the right tool.
+- Each **AI Tool** is a specialised sub-agent — it has a defined role, tools it can call, and policies it must enforce.
+- Tools never call each other directly. All coordination flows through the Orchestrator.
+
+## Not Sure Where to Start?
+
+<Steps>
+  <Step title="Read the Quickstart">
+    Connect your first integration and process a real invoice end to end.
+  </Step>
+  <Step title="Explore the Tools">
+    See what each AI tool does and which phase it's available in.
+  </Step>
+  <Step title="Try the API Tools">
+    Use the standalone APIs directly from your own system — no platform required.
+  </Step>
+</Steps>

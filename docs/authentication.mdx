@@ -1,0 +1,125 @@
+---
+title: Authentication
+description: How to authenticate with the Clendan API.
+---
+
+# Authentication
+
+All Clendan API requests are authenticated using API keys.
+
+## Getting Your API Key
+
+1. Go to **Dashboard → Docs**
+2. Click **Create new API key**
+3. Give it a name and set permissions (read-only or read-write)
+4. Copy the key immediately — it will not be shown again
+
+## Using Your API Key
+
+Include your API key in the `Authorization` header of every request:
+
+```
+Authorization: Bearer YOUR_API_KEY
+```
+
+<CodeGroup>
+```python Python
+import requests
+
+headers = {"Authorization": "Bearer YOUR_API_KEY"}
+
+response = requests.post(
+    "https://api.clendan.com/v1/parse/invoice",
+    headers=headers,
+    files={"file": open("invoice.pdf", "rb")}
+)
+```
+
+```javascript Node.js
+const response = await fetch('https://api.clendan.com/v1/parse/invoice', {
+  method: 'POST',
+  headers: {
+    'Authorization': 'Bearer YOUR_API_KEY'
+  }
+});
+```
+
+```bash cURL
+curl https://api.clendan.com/v1/parse/invoice \
+  -H "Authorization: Bearer YOUR_API_KEY"
+```
+</CodeGroup>
+
+## API Key Permissions
+
+| Permission | Description |
+|---|---|
+| `read-only` | Can call GET endpoints and retrieve data |
+| `read-write` | Can call all endpoints including POST, PATCH, DELETE |
+| `admin` | Full access including API key management |
+
+## Idempotency Keys
+
+For write operations, we recommend including an `Idempotency-Key` header.
+This ensures that if a request is retried (due to a network error), it will
+not be processed twice.
+
+```
+Idempotency-Key: a-unique-key-you-generate
+```
+
+Keys are valid for 24 hours. Use a UUID or a hash of the request content.
+
+## Response Format
+
+Every API response follows the same structure:
+
+```json
+{
+  "data": { },
+  "error": null,
+  "trace_id": "trace-a1b2c3d4",
+  "timestamp": "2026-06-14T09:14:52Z"
+}
+```
+
+On error:
+
+```json
+{
+  "data": null,
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "message": "Invoice file is required",
+    "details": {}
+  },
+  "trace_id": "trace-a1b2c3d4",
+  "timestamp": "2026-06-14T09:14:52Z"
+}
+```
+
+## Error Codes
+
+| Code | HTTP Status | Description |
+|---|---|---|
+| `UNAUTHORIZED` | 401 | Missing or invalid API key |
+| `FORBIDDEN` | 403 | Valid key but insufficient permissions |
+| `NOT_FOUND` | 404 | Resource does not exist |
+| `VALIDATION_ERROR` | 422 | Invalid request body or parameters |
+| `RATE_LIMITED` | 429 | Too many requests |
+| `INTERNAL_ERROR` | 500 | Something went wrong on our end |
+
+## Rate Limits
+
+| Plan | Requests per minute |
+|---|---|
+| Starter | 60 |
+| Growth | 300 |
+| Enterprise | Custom |
+
+Rate limit headers are included in every response:
+```
+X-RateLimit-Limit: 300
+X-RateLimit-Remaining: 299
+X-RateLimit-Reset: 1716200000
+```

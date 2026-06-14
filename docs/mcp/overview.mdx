@@ -1,0 +1,58 @@
+---
+title: MCP Server
+description: Connect any MCP-compatible AI editor to your Clendan workspace.
+---
+
+# Clendan MCP Server
+
+The Clendan MCP server exposes all 21 platform tools directly inside your AI editor — Claude Desktop, Cursor, or Claude Code. Parse invoices, approve executions, query the audit trail, and manage tools without leaving your editor.
+
+## Hosted Endpoint
+
+Clendan runs a hosted MCP server you can connect to immediately:
+
+```text
+https://mcp.clendan.com/sse
+```
+
+Authentication uses your Clendan API key as a Bearer token. Get your key from **Dashboard → Settings → API Keys**.
+
+## Available Tools (21)
+
+| Category | Tools |
+| --- | --- |
+| **Financial operations** | `parse_invoice`, `run_invoice_tool`, `score_fraud`, `reconcile_datasets`, `extract_contract_data` |
+| **Approval queue** | `get_pending_approvals`, `approve_execution`, `reject_execution`, `get_approval_detail` |
+| **Audit trail** | `get_audit_trail`, `get_execution_detail` |
+| **Tools** | `list_tools`, `get_tool_status`, `pause_tool`, `resume_tool`, `get_policy_rules` |
+| **Integrations** | `list_integrations`, `get_integration_status`, `trigger_sync` |
+| **Analytics** | `get_execution_stats`, `get_hours_saved` |
+
+## Connect Your Editor
+
+- [Claude Desktop](/mcp/claude-desktop) — Add to `claude_desktop_config.json`
+- [Cursor](/mcp/cursor) — Add to `.cursor/mcp.json`
+- [Claude Code](/mcp/claude-code) — One-line CLI command
+
+## Self-Hosting
+
+You can run the MCP server locally or deploy your own instance on Railway.
+
+**Local (stdio transport):**
+
+```bash
+# Install
+pip install clendan-mcp
+
+# Run (Claude Desktop / Cursor stdio mode)
+CLENDAN_API_KEY=your_key clendan-mcp
+```
+
+**Self-hosted HTTP/SSE (Railway):**
+```bash
+# Clone and deploy to Railway
+# Set CLENDAN_API_BASE env var to your FastAPI instance URL
+# The server runs at /sse on the Railway-assigned domain
+```
+
+See the [GitHub repository](https://github.com/clendan/clendan-mcp) for the full Railway deploy guide.

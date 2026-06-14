@@ -1,6 +1,4 @@
-﻿import Link from 'next/link'
-import { ExternalLink } from 'lucide-react'
-import { CodeBlock } from '@/components/dashboard/api/CodeBlock'
+﻿import { CodeBlock } from '@/components/dashboard/api/CodeBlock'
 import { EndpointCard } from '@/components/dashboard/api/EndpointCard'
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'
@@ -10,21 +8,11 @@ export default function ApiDocsPage() {
     <div className="p-6 space-y-10 max-w-4xl">
 
       {/* Header */}
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="font-heading font-bold text-2xl text-brand-text">Developer API</h1>
-          <p className="text-brand-muted text-xs font-mono mt-1">
-            Connect your systems to Clendan — trigger agents, respond to approvals, query audit trails.
-          </p>
-        </div>
-        <Link
-          href={`${BASE_URL}/docs`}
-          target="_blank"
-          className="shrink-0 flex items-center gap-2 text-xs font-mono text-brand-green border border-brand-green/30 bg-brand-green/08 px-3 py-2 rounded-sm hover:bg-brand-green/15 transition-colors"
-        >
-          <ExternalLink className="w-3.5 h-3.5" />
-          Interactive docs
-        </Link>
+      <div>
+        <h1 className="font-heading font-bold text-2xl text-brand-text">Docs</h1>
+        <p className="text-brand-muted text-xs font-mono mt-1">
+          Connect your systems to Clendan — trigger agents, respond to approvals, query audit trails.
+        </p>
       </div>
 
       {/* Base URL */}

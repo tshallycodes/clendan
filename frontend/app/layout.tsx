@@ -27,6 +27,13 @@ export default function RootLayout({
   return (
     <ClerkProvider>
       <html lang="en" className={`${syne.variable} ${ibmPlexMono.variable} h-full`} suppressHydrationWarning>
+        <head>
+          <script
+            dangerouslySetInnerHTML={{
+              __html: `try{var t=localStorage.getItem('theme')||'dark';document.documentElement.classList.toggle('dark',t==='dark')}catch(e){}`,
+            }}
+          />
+        </head>
         <body className="min-h-full bg-brand-bg text-brand-text">
           <div className="w-full bg-[#f5a623] text-black text-[11px] font-mono font-medium text-center py-1.5 px-4 tracking-wide z-[9999] relative">
             This platform is under active development — not intended for public use.

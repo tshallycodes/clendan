@@ -1,0 +1,85 @@
+---
+title: AI Tools Overview
+description: Clendan's 10 specialised AI tools — each one a sub-agent with a defined role.
+---
+
+# AI Tools
+
+Clendan tools are specialised AI sub-agents. Each tool has a defined role,
+a set of tools it can call, and policy rules it must enforce. Tools are
+deployed per organisation and configured independently.
+
+## Architecture
+
+Clendan uses a master-subagent model:
+
+```
+Financial Orchestrator (Master Agent)
+├── Receives all financial events
+├── Classifies the event type
+├── Routes to the correct tool
+└── Tools execute as sub-agents
+    ├── Invoice Processing Tool
+    ├── AI Accountant Tool
+    ├── Reconciliation Tool
+    └── ... (all others)
+```
+
+Tools never call each other directly. All coordination flows through
+the Financial Orchestrator.
+
+## Autonomy Levels
+
+Every tool is configured with one of three autonomy levels:
+
+| Level | Behaviour |
+|---|---|
+| **Auto** | Executes actions autonomously within your policy thresholds |
+| **Approve** | Always requests human approval before executing |
+| **Suggest** | Recommends actions but never executes — you confirm manually |
+
+## Available Tools
+
+| Tool | Phase | Purpose |
+|---|---|---|
+| Invoice Processing | MVP | Automate invoice lifecycle end to end |
+| AI Accountant | MVP | Categorise transactions, update ledger |
+| Reconciliation | V2 | Match accounts across multiple systems |
+| Expense Control | V2 | Enforce spending policy on expense claims |
+| Collections | V2 | Recover overdue invoices automatically |
+| Fraud Detection | V2 | Monitor transactions for suspicious activity |
+| Treasury | V2 | Optimise cash flow and liquidity |
+| Revenue Recognition | V2 | Apply ASC 606 / IFRS 15 automatically |
+| Credit Underwriting | V3 | Evaluate and decide on credit applications |
+| Compliance | V3 | Monitor for regulatory violations |
+
+## Policy Engine
+
+Every tool output passes through the policy engine before any action
+is taken. The policy engine is deterministic — same input always produces
+the same decision.
+
+Policies are configured per tool per organisation:
+- Approval thresholds (amount ranges)
+- Verified supplier/vendor lists
+- Currency allow-lists
+- Restricted fields
+- Human override triggers
+
+See [Policy Engine](/platform/policy-engine) for full configuration reference.
+
+## Audit Trail
+
+Every action taken by every tool is written to the immutable audit trail
+before the response is returned. If the audit write fails, the operation fails.
+
+Each audit entry contains:
+- Tool name and version
+- Full input data
+- Policy evaluation results (each rule, pass/fail)
+- Decision and confidence score
+- Actions executed
+- Reasoning trace
+- Duration
+
+See [Audit Trail](/platform/audit-trail) for details.

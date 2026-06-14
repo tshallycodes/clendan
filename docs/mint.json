@@ -1,0 +1,129 @@
+{
+  "name": "Clendan",
+  "logo": {
+    "dark": "/logo/dark.svg",
+    "light": "/logo/light.svg"
+  },
+  "favicon": "/favicon.svg",
+  "colors": {
+    "primary": "#00C853",
+    "light": "#00E676",
+    "dark": "#00a844",
+    "background": {
+      "dark": "#0a0a0f"
+    }
+  },
+  "topbarLinks": [
+    {
+      "name": "Dashboard",
+      "url": "https://clendan.vercel.app/dashboard"
+    }
+  ],
+  "topbarCtaButton": {
+    "name": "Get Started",
+    "url": "https://clendan.vercel.app/sign-up"
+  },
+  "tabs": [
+    {
+      "name": "API Reference",
+      "url": "api-reference"
+    },
+    {
+      "name": "Tools",
+      "url": "tools"
+    },
+    {
+      "name": "Integrations",
+      "url": "integrations"
+    },
+    {
+      "name": "MCP",
+      "url": "mcp"
+    }
+  ],
+  "anchors": [
+    {
+      "name": "Support",
+      "icon": "envelope",
+      "url": "mailto:support@clendan.com"
+    }
+  ],
+  "navigation": [
+    {
+      "group": "Getting Started",
+      "pages": [
+        "introduction",
+        "quickstart",
+        "authentication"
+      ]
+    },
+    {
+      "group": "API Reference",
+      "pages": [
+        "api-reference/overview",
+        "api-reference/invoice-parser",
+        "api-reference/receipt-ocr",
+        "api-reference/reconciliation",
+        "api-reference/fraud-signal",
+        "api-reference/contract-extraction"
+      ]
+    },
+    {
+      "group": "AI Tools",
+      "pages": [
+        "tools/overview",
+        "tools/invoice-processing",
+        "tools/accountant",
+        "tools/reconciliation",
+        "tools/expense-control",
+        "tools/collections",
+        "tools/fraud-detection",
+        "tools/treasury",
+        "tools/revenue-recognition"
+      ]
+    },
+    {
+      "group": "Integrations",
+      "pages": [
+        "integrations/overview",
+        "integrations/quickbooks",
+        "integrations/xero",
+        "integrations/plaid",
+        "integrations/stripe",
+        "integrations/gocardless",
+        "integrations/gmail"
+      ]
+    },
+    {
+      "group": "Platform",
+      "pages": [
+        "platform/organisations",
+        "platform/team-roles",
+        "platform/policy-engine",
+        "platform/audit-trail",
+        "platform/webhooks",
+        "platform/api-keys"
+      ]
+    },
+    {
+      "group": "Guides",
+      "pages": [
+        "guides/process-first-invoice",
+        "guides/connect-xero",
+        "guides/set-approval-thresholds",
+        "guides/invite-your-team",
+        "guides/month-end-close"
+      ]
+    },
+    {
+      "group": "MCP Server",
+      "pages": [
+        "mcp/overview",
+        "mcp/claude-desktop",
+        "mcp/cursor",
+        "mcp/claude-code"
+      ]
+    }
+  ],
+  "footerSocials": {}
+}

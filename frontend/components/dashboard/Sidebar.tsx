@@ -14,7 +14,7 @@ const NAV = [
   { icon: Plug,        label: 'Integrations', href: '/dashboard/integrations' },
   { icon: Cpu,         label: 'Tools',        href: '/tools' },
   { icon: Settings,    label: 'Settings',     href: '/settings' },
-  { icon: Code2,       label: 'Developer API', href: '/api' },
+  { icon: Code2,       label: 'Docs',         href: 'https://clendan.mintlify.app', external: true },
 ]
 
 export function Sidebar() {
@@ -33,17 +33,19 @@ export function Sidebar() {
       </div>
 
       <nav className="flex-1 py-4">
-        {NAV.map(({ icon: Icon, label, href }) => {
-          const active = pathname === href || (href !== '/dashboard' && pathname.startsWith(href))
-          return (
-            <Link
-              key={href}
-              href={href}
-              className={cn(
-                'flex items-center gap-3 px-5 py-2.5 text-xs font-mono transition-colors relative',
-                active ? 'text-brand-text bg-brand-elevated' : 'text-brand-muted hover:text-brand-text hover:bg-brand-elevated/50',
-              )}
-            >
+        {NAV.map(({ icon: Icon, label, href, external }) => {
+          const active = !external && (pathname === href || (href !== '/dashboard' && pathname.startsWith(href)))
+          const cls = cn(
+            'flex items-center gap-3 px-5 py-2.5 text-xs font-mono transition-colors relative',
+            active ? 'text-brand-text bg-brand-elevated' : 'text-brand-muted hover:text-brand-text hover:bg-brand-elevated/50',
+          )
+          return external ? (
+            <a key={href} href={href} target="_blank" rel="noopener noreferrer" className={cls}>
+              <Icon className="w-4 h-4 shrink-0" />
+              <span>{label}</span>
+            </a>
+          ) : (
+            <Link key={href} href={href} className={cls}>
               {active && <span className="absolute left-0 top-1 bottom-1 w-0.5 bg-brand-green rounded-r-full" />}
               <Icon className="w-4 h-4 shrink-0" />
               <span>{label}</span>

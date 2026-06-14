@@ -1,0 +1,132 @@
+---
+title: Webhooks
+description: Receive real-time notifications when Clendan events occur.
+---
+
+# Webhooks
+
+Clendan can send HTTP POST requests to your endpoint when events occur.
+Use webhooks to trigger actions in your own systems — without polling.
+
+## Setting Up a Webhook
+
+1. Go to **Dashboard → Docs → Webhooks**
+2. Click **Add webhook**
+3. Enter your endpoint URL
+4. Select the events to subscribe to
+5. Copy your signing secret
+
+## Available Events
+
+| Event | Description |
+|---|---|
+| `execution.completed` | A tool completed an execution |
+| `execution.auto_approved` | Tool auto-approved and executed |
+| `approval.requested` | Tool requested human approval |
+| `approval.completed` | A human approved or rejected |
+| `integration.connected` | An integration was successfully connected |
+| `integration.error` | An integration encountered an error |
+| `fraud.flagged` | Fraud Detection Tool flagged a transaction |
+| `tool.error` | A tool encountered an unrecoverable error |
+
+## Webhook Payload
+
+```json
+{
+  "event": "execution.completed",
+  "timestamp": "2026-06-14T09:14:52Z",
+  "data": {
+    "execution_id": "exec-001",
+    "tool": "invoice_processing",
+    "decision": "auto_approved",
+    "trace_id": "trace-a1b2c3d4"
+  }
+}
+```
+
+## Verifying Signatures
+
+Every webhook includes a `Clendan-Signature` header. Always verify this
+before processing to ensure the request came from Clendan.
+
+<CodeGroup>
+```python Python
+import hmac
+import hashlib
+
+def verify_webhook(payload: bytes, signature: str, secret: str) -> bool:
+    expected = hmac.new(
+        secret.encode(),
+        payload,
+        hashlib.sha256
+    ).hexdigest()
+    return hmac.compare_digest(expected, signature)
+
+# In your webhook handler:
+@app.post("/webhooks/clendan")
+async def handle_webhook(request: Request):
+    payload = await request.body()
+    signature = request.headers.get("Clendan-Signature")
+
+    if not verify_webhook(payload, signature, WEBHOOK_SECRET):
+        raise HTTPException(status_code=401)
+
+    event = await request.json()
+    # process event...
+```
+
+```javascript Node.js
+const crypto = require('crypto');
+
+function verifyWebhook(payload, signature, secret) {
+  const expected = crypto
+    .createHmac('sha256', secret)
+    .update(payload)
+    .digest('hex');
+  return crypto.timingSafeEqual(
+    Buffer.from(expected),
+    Buffer.from(signature)
+  );
+}
+
+app.post('/webhooks/clendan', express.raw({ type: 'application/json' }), (req, res) => {
+  const signature = req.headers['clendan-signature'];
+  if (!verifyWebhook(req.body, signature, process.env.WEBHOOK_SECRET)) {
+    return res.status(401).send('Invalid signature');
+  }
+  const event = JSON.parse(req.body);
+  // process event...
+  res.status(200).send('OK');
+});
+```
+
+```bash cURL
+# Test your webhook endpoint manually:
+curl -X POST https://your-endpoint.com/webhooks/clendan \
+  -H "Content-Type: application/json" \
+  -H "Clendan-Signature: YOUR_TEST_SIGNATURE" \
+  -d '{"event": "execution.completed", "data": {}}'
+```
+</CodeGroup>
+
+## Retries
+
+If your endpoint returns a non-2xx response, Clendan retries the webhook:
+
+| Attempt | Delay |
+|---|---|
+| 1st retry | 5 seconds |
+| 2nd retry | 30 seconds |
+| 3rd retry | 5 minutes |
+| 4th retry | 30 minutes |
+| 5th retry | 2 hours |
+
+After 5 failed attempts the webhook is marked as failed and you'll be
+notified by email.
+
+## Best Practices
+
+- Always verify the signature before processing
+- Return `200 OK` immediately — process asynchronously
+- Make your webhook handler idempotent — the same event may arrive more than once
+- Store the `trace_id` for debugging

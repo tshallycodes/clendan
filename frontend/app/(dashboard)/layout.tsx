@@ -48,7 +48,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
         )}
         <main className="flex-1">{children}</main>
       </div>
-      <div className="fixed bottom-6 right-6 z-50">
+      <div className="fixed bottom-6 right-6 z-30">
         <ClenDashboard />
       </div>
     </div>
