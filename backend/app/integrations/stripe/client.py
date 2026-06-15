@@ -82,7 +82,7 @@ def build_stripe_auth_url(state: str) -> str:
     params = {
         "response_type": "code",
         "client_id": settings.stripe_client_id,
-        "scope": "read_only",
+        "scope": "read_write",
         "state": state,
     }
     return f"{STRIPE_CONNECT_AUTH_URL}?{urlencode(params)}"
@@ -112,7 +112,7 @@ async def exchange_stripe_code(code: str) -> dict:
         "access_token": data["access_token"],
         "stripe_user_id": data["stripe_user_id"],
         "token_type": data.get("token_type", "bearer"),
-        "scope": data.get("scope", "read_only"),
+        "scope": data.get("scope", "read_write"),
     }
 
 
