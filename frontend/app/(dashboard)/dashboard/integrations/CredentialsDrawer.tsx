@@ -26,15 +26,13 @@ const CONFIGS: Record<string, IntegrationCredConfig> = {
     title: 'Adyen',
     fields: [
       { name: 'api_key', label: 'API Key', type: 'password', placeholder: 'AQEt...' },
-      { name: 'merchant_account', label: 'Merchant Account', type: 'text', placeholder: 'YourCompany_TEST' },
-      { name: 'environment', label: 'Environment', type: 'select', options: ['test', 'live'] },
+      { name: 'merchant_account', label: 'Merchant Account', type: 'text', placeholder: 'YourCompanyECOM' },
     ],
   },
   wise: {
     title: 'Wise',
     fields: [
       { name: 'api_token', label: 'API Token', type: 'password', placeholder: 'paste your Wise API token' },
-      { name: 'environment', label: 'Environment', type: 'select', options: ['sandbox', 'live'] },
     ],
   },
   netsuite: {

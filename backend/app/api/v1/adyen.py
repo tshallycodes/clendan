@@ -27,7 +27,7 @@ INTEGRATION_TYPE = "adyen"
 class AdyenConnectRequest(BaseModel):
     api_key: str
     merchant_account: str
-    environment: str = "test"
+    environment: str = "live"
 
     @field_validator("environment")
     @classmethod

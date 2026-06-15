@@ -26,7 +26,7 @@ INTEGRATION_TYPE = "wise"
 
 class WiseConnectRequest(BaseModel):
     api_token: str
-    environment: str = "sandbox"
+    environment: str = "live"
 
     @field_validator("environment")
     @classmethod
