@@ -82,7 +82,7 @@ async def quickbooks_callback(
             where={"id": existing.id},
             data={
                 "encrypted_credentials": credentials,
-                "status": "connected",
+                "status": "syncing",
                 "connected_at": datetime.now(UTC),
             },
         )
@@ -92,7 +92,7 @@ async def quickbooks_callback(
                 "tenant_id": tenant_id,
                 "type": "quickbooks",
                 "encrypted_credentials": credentials,
-                "status": "connected",
+                "status": "syncing",
                 "connected_at": datetime.now(UTC),
             }
         )
@@ -116,6 +116,12 @@ async def quickbooks_callback(
             "QB company info fetch failed after connect: %s", type(exc).__name__
         )
         # Don't fail — tokens are stored, sync will retry
+
+    from app.integrations.quickbooks.sync import enqueue_quickbooks_sync
+    try:
+        await enqueue_quickbooks_sync(integration_id=integration.id, tenant_id=tenant_id)
+    except Exception as exc:
+        logger.warning("quickbooks_initial_sync_enqueue_failed integration=%s error=%s", integration.id, type(exc).__name__)
 
     return RedirectResponse(f"{_frontend_url}/dashboard/integrations?connected=quickbooks")
 
@@ -265,7 +271,7 @@ async def xero_callback(
             where={"id": existing.id},
             data={
                 "encrypted_credentials": final_creds,
-                "status": "connected",
+                "status": "syncing",
                 "connected_at": datetime.now(UTC),
             },
         )
@@ -275,12 +281,19 @@ async def xero_callback(
                 "tenant_id": tenant_id,
                 "type": "xero",
                 "encrypted_credentials": final_creds,
-                "status": "connected",
+                "status": "syncing",
                 "connected_at": datetime.now(UTC),
             }
         )
 
     logger.info("xero_connected tenant=%s org=%s", tenant_id, creds.get("org_name"))
+
+    from app.integrations.xero.sync import enqueue_xero_sync
+    try:
+        await enqueue_xero_sync(integration_id=integration.id, tenant_id=tenant_id)
+    except Exception as exc:
+        logger.warning("xero_initial_sync_enqueue_failed integration=%s error=%s", integration.id, type(exc).__name__)
+
     return RedirectResponse(f"{_frontend_url}/dashboard/integrations?connected=xero")
 
 
