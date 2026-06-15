@@ -43,10 +43,20 @@ def verify_stripe_signature(payload: bytes, sig_header: str, secret: str) -> boo
 def parse_stripe_event_type(event_type: str) -> str | None:
     """Map Stripe event type to Clendan orchestrator event type."""
     _MAP: dict[str, str] = {
+        # Reconciliation
         "invoice.payment_succeeded": "invoice_received",
         "invoice.finalized": "invoice_received",
+        "invoice.payment_failed": "invoice_payment_failed",
+        # Transactions
         "charge.succeeded": "transaction_posted",
         "payment_intent.succeeded": "transaction_posted",
+        "charge.refunded": "charge_refunded",
+        # Disputes
+        "charge.dispute.created": "dispute_created",
+        "charge.dispute.closed": "dispute_closed",
+        # Payouts / cash position
+        "payout.paid": "payout_received",
+        "payout.failed": "payout_failed",
     }
     return _MAP.get(event_type)
 
