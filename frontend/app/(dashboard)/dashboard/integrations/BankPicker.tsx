@@ -12,16 +12,19 @@ interface BankPickerProps {
   connectedBankName: string | null
   truelayerStatus: IntegrationStatus
   connectedTruelayerName: string | null
+  monoStatus: IntegrationStatus
+  connectedMonoName: string | null
   connecting: boolean
   onViewDetail: (bank: BankDef) => void
   onConnect: (region: Region) => void
 }
 
-type Region = 'us' | 'eu'
+type Region = 'us' | 'eu' | 'africa'
 
 const REGIONS: { label: string; value: Region }[] = [
   { label: 'US', value: 'us' },
   { label: 'EU', value: 'eu' },
+  { label: 'Africa', value: 'africa' },
 ]
 
 function abbrSize(abbr: string): string {
@@ -75,12 +78,14 @@ function BankCard({ bank, onViewDetail }: { bank: BankDef; onViewDetail: (b: Ban
 export function BankPicker({
   plaidStatus, connectedInstitutionId, connectedBankName,
   truelayerStatus, connectedTruelayerName,
+  monoStatus, connectedMonoName,
   connecting, onViewDetail, onConnect,
 }: BankPickerProps) {
   const [region, setRegion] = useState<Region>('us')
 
   const plaidConnected = plaidStatus === 'connected' || plaidStatus === 'syncing'
   const truelayerConnected = truelayerStatus === 'connected' || truelayerStatus === 'syncing'
+  const monoConnected = monoStatus === 'connected' || monoStatus === 'syncing'
 
   // Only show cards for banks we can actually identify — no generic fallback cards
   const connectedCards: BankDef[] = (() => {
@@ -97,6 +102,14 @@ export function BankPicker({
         (b) => b.region === 'eu' && (
           connectedTruelayerName.toLowerCase().includes(b.name.toLowerCase()) ||
           b.name.toLowerCase().includes(connectedTruelayerName.toLowerCase())
+        )
+      )
+    }
+    if (region === 'africa' && monoConnected && connectedMonoName) {
+      return BANKS.filter(
+        (b) => b.region === 'africa' && (
+          connectedMonoName.toLowerCase().includes(b.name.toLowerCase()) ||
+          b.name.toLowerCase().includes(connectedMonoName.toLowerCase())
         )
       )
     }

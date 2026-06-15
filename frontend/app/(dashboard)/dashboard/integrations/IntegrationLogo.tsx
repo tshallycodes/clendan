@@ -36,6 +36,7 @@ const SLUG_TO_DOMAIN: Record<string, string> = {
   'google-drive': 'drive.google.com',
   dropbox:        'dropbox.com',
   plaid:          'plaid.com',
+  mono:           'mono.co',
   freshbooks:     'freshbooks.com',
   wave:           'waveapps.com',
   gocardless:     'gocardless.com',

@@ -42,7 +42,7 @@ const INTEGRATIONS: IntegrationDef[] = [
 ]
 
 const STATUSABLE_SLUGS = [
-  'quickbooks', 'plaid', 'truelayer', 'xero', 'stripe', 'gocardless', 'square',
+  'quickbooks', 'plaid', 'truelayer', 'mono', 'xero', 'stripe', 'gocardless', 'square',
   'codat', 'hubspot', 'gmail', 'outlook', 'google-drive',
   'freshbooks', 'adyen', 'wise',
   'netsuite', 'sap', 'dynamics365', 'salesforce', 'dropbox', 'onedrive',
@@ -59,6 +59,7 @@ export function IntegrationsClient() {
   const [connectedBankId, setConnectedBankId] = useState<string | null>(null)
   const [connectedBankName, setConnectedBankName] = useState<string | null>(null)
   const [connectedTruelayerName, setConnectedTruelayerName] = useState<string | null>(null)
+  const [connectedMonoName, setConnectedMonoName] = useState<string | null>(null)
   const [toast, setToast] = useState<string | null>(null)
   const [plaidToken, setPlaidToken] = useState<string | null>(null)
 
@@ -124,7 +125,7 @@ export function IntegrationsClient() {
         const raw: string = json.data?.status ?? json.status ?? 'not_connected'
         const synced: string | null = json.data?.last_synced_at ?? null
         const institutionId: string | null = slug === 'plaid' ? (json.data?.institution_id ?? null) : null
-        const institutionName: string | null = (slug === 'plaid' || slug === 'truelayer') ? (json.data?.institution_name ?? null) : null
+        const institutionName: string | null = (slug === 'plaid' || slug === 'truelayer' || slug === 'mono') ? (json.data?.institution_name ?? null) : null
         return { slug, status: raw as IntegrationStatus, last_synced_at: synced, institution_id: institutionId, institution_name: institutionName }
       }),
     )
@@ -140,6 +141,9 @@ export function IntegrationsClient() {
         }
         if (r.value.slug === 'truelayer' && r.value.institution_name) {
           setConnectedTruelayerName(r.value.institution_name)
+        }
+        if (r.value.slug === 'mono' && r.value.institution_name) {
+          setConnectedMonoName(r.value.institution_name)
         }
       }
     }
@@ -289,6 +293,25 @@ export function IntegrationsClient() {
         window.location.href = url
       } catch {
         setStatus('truelayer', 'error')
+        setConnecting(null)
+      }
+      return
+    }
+
+    if (bank.provider === 'mono') {
+      setBankDetailBank(null)
+      setConnecting('mono')
+      try {
+        const authToken = await getToken()
+        const res = await fetch(`${API}/v1/integrations/mono/connect`, {
+          headers: { Authorization: `Bearer ${authToken}` },
+        })
+        if (!res.ok) throw new Error('Failed to get Mono Connect URL')
+        const json = await res.json()
+        const url: string = json.data?.auth_url ?? json.auth_url
+        window.location.href = url
+      } catch {
+        setStatus('mono', 'error')
         setConnecting(null)
       }
       return
@@ -451,11 +474,15 @@ export function IntegrationsClient() {
               connectedBankName={connectedBankName}
               truelayerStatus={statuses['truelayer'] ?? 'not_connected'}
               connectedTruelayerName={connectedTruelayerName}
-              connecting={connecting === 'plaid' || connecting === 'truelayer'}
+              monoStatus={statuses['mono'] ?? 'not_connected'}
+              connectedMonoName={connectedMonoName}
+              connecting={connecting === 'plaid' || connecting === 'truelayer' || connecting === 'mono'}
               onViewDetail={setBankDetailBank}
               onConnect={(region) => {
                 if (region === 'eu') {
                   handleConnectBank({ id: 'truelayer', name: 'Bank', abbr: 'EU', color: '#1a1a1a', domain: '', provider: 'truelayer', region: 'eu' })
+                } else if (region === 'africa') {
+                  handleConnectBank({ id: 'mono', name: 'Bank', abbr: 'AF', color: '#1a1a1a', domain: '', provider: 'mono', region: 'africa' })
                 } else {
                   handleConnectBank({ id: 'other', name: 'Other Bank', abbr: '+', color: '#1a1a1a', domain: '', provider: 'plaid', region: 'us' })
                 }

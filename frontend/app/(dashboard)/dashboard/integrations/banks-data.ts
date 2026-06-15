@@ -4,9 +4,9 @@ export interface BankDef {
   abbr: string
   color: string
   domain: string
-  provider: 'plaid' | 'truelayer'
+  provider: 'plaid' | 'truelayer' | 'mono'
   institution_id?: string
-  region: 'us' | 'eu'
+  region: 'us' | 'eu' | 'africa'
 }
 
 export const BANKS: BankDef[] = [
@@ -34,4 +34,17 @@ export const BANKS: BankDef[] = [
   { id: 'ing', name: 'ING', abbr: 'ING', color: '#FF6200', domain: 'ing.com', provider: 'truelayer', region: 'eu' },
   { id: 'bunq', name: 'Bunq', abbr: 'BUNQ', color: '#00B9A9', domain: 'bunq.com', provider: 'truelayer', region: 'eu' },
   { id: 'deutsche', name: 'Deutsche Bank', abbr: 'DB', color: '#0018A8', domain: 'db.com', provider: 'truelayer', region: 'eu' },
+  // African Banks (via Mono)
+  { id: 'gtbank', name: 'GTBank', abbr: 'GTB', color: '#F3830A', domain: 'gtbank.com', provider: 'mono', region: 'africa' },
+  { id: 'zenith', name: 'Zenith Bank', abbr: 'ZEN', color: '#CC0000', domain: 'zenithbank.com', provider: 'mono', region: 'africa' },
+  { id: 'access', name: 'Access Bank', abbr: 'ACC', color: '#F5831F', domain: 'accessbankplc.com', provider: 'mono', region: 'africa' },
+  { id: 'firstbank', name: 'First Bank', abbr: 'FBN', color: '#003087', domain: 'firstbanknigeria.com', provider: 'mono', region: 'africa' },
+  { id: 'uba', name: 'UBA', abbr: 'UBA', color: '#CC0000', domain: 'ubagroup.com', provider: 'mono', region: 'africa' },
+  { id: 'sterling', name: 'Sterling Bank', abbr: 'STB', color: '#CC0000', domain: 'sterlingbank.com', provider: 'mono', region: 'africa' },
+  { id: 'stanbic_ng', name: 'Stanbic IBTC', abbr: 'SIB', color: '#009BD7', domain: 'stanbicibtcbank.com', provider: 'mono', region: 'africa' },
+  { id: 'gcb', name: 'GCB Bank', abbr: 'GCB', color: '#006B3E', domain: 'gcbbank.com.gh', provider: 'mono', region: 'africa' },
+  { id: 'ecobank', name: 'Ecobank', abbr: 'ECO', color: '#003399', domain: 'ecobank.com', provider: 'mono', region: 'africa' },
+  { id: 'equity', name: 'Equity Bank', abbr: 'EQB', color: '#E31837', domain: 'equitybank.co.ke', provider: 'mono', region: 'africa' },
+  { id: 'kcb', name: 'KCB Bank', abbr: 'KCB', color: '#006600', domain: 'kcbbankgroup.com', provider: 'mono', region: 'africa' },
+  { id: 'coop_ke', name: 'Co-op Bank', abbr: 'CO-OP', color: '#0B5C2A', domain: 'co-opbank.co.ke', provider: 'mono', region: 'africa' },
 ]
