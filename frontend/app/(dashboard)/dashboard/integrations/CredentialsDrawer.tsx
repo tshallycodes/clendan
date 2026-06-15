@@ -20,7 +20,6 @@ const CONFIGS: Record<string, IntegrationCredConfig> = {
     title: 'GoCardless',
     fields: [
       { name: 'access_token', label: 'Access Token', type: 'password', placeholder: 'live_...' },
-      { name: 'environment', label: 'Environment', type: 'select', options: ['sandbox', 'live'] },
     ],
   },
   adyen: {

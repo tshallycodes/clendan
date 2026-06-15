@@ -26,7 +26,7 @@ INTEGRATION_TYPE = "gocardless"
 
 class GoCardlessConnectRequest(BaseModel):
     access_token: str
-    environment: str = "sandbox"
+    environment: str = "live"
 
     @field_validator("environment")
     @classmethod
