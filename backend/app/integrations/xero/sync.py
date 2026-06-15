@@ -64,6 +64,50 @@ async def _sync_entity(
     return {"status": status, "count": count}
 
 
+async def _compute_financial_summary(db, integration_id: str, results: dict) -> dict:
+    """
+    Queries the DB after sync to compute financial aggregates for the drawer.
+    Falls back to entity counts if any query fails.
+    """
+    try:
+        now = datetime.now(UTC)
+
+        inv_all = await db.accountinginvoice.find_many(where={"integration_id": integration_id})
+        inv_outstanding = [i for i in inv_all if i.status == "sent"]
+
+        def _is_overdue(inv) -> bool:
+            if not inv.due_date:
+                return False
+            due = inv.due_date
+            if due.tzinfo is None:
+                from datetime import timezone
+                due = due.replace(tzinfo=timezone.utc)
+            return due < now
+
+        inv_overdue = [i for i in inv_outstanding if _is_overdue(i)]
+
+        contacts_count = await db.accountingcontact.count(where={"integration_id": integration_id})
+
+        payments = await db.accountingpayment.find_many(where={"integration_id": integration_id})
+        expenses = await db.accountingexpense.find_many(where={"integration_id": integration_id})
+
+        return {
+            "total_invoices": len(inv_all),
+            "outstanding_invoices": len(inv_outstanding),
+            "outstanding_amount_cents": sum(i.outstanding_cents for i in inv_outstanding),
+            "overdue_invoices": len(inv_overdue),
+            "overdue_amount_cents": sum(i.outstanding_cents for i in inv_overdue),
+            "total_clients": contacts_count,
+            "total_payments": len(payments),
+            "total_payments_amount_cents": sum(p.amount_cents for p in payments),
+            "total_expenses": len(expenses),
+            "total_expenses_amount_cents": sum(e.amount_cents for e in expenses),
+        }
+    except Exception as exc:
+        logger.warning("xero_financial_summary_failed integration_id=%s: %s", integration_id, type(exc).__name__)
+        return {entity: v["count"] for entity, v in results.items()}
+
+
 async def sync_xero_connection(_ctx: dict, integration_id: str, tenant_id: str) -> dict:
     """
     arq job: sync all Xero financial entities to the database.
@@ -151,7 +195,7 @@ async def sync_xero_connection(_ctx: dict, integration_id: str, tenant_id: str) 
 
     any_success = any(v["status"] == "success" for v in results.values())
     if any_success:
-        sync_metadata = {entity: v["count"] for entity, v in results.items()}
+        sync_metadata = await _compute_financial_summary(db, integration_id, results)
         await db.integration.update(
             where={"id": integration_id},
             data={
