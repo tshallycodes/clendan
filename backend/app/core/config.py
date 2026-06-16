@@ -55,6 +55,10 @@ class Settings(BaseSettings):
     truelayer_redirect_uri: str = "http://localhost:8000/v1/integrations/truelayer/callback"
     truelayer_env: str = "sandbox"  # sandbox | production
 
+    mono_secret_key: str = ""
+    mono_app_id: str = ""
+    mono_webhook_secret: str = ""
+
     codat_api_key: str = ""
 
     gocardless_webhook_secret: str = ""

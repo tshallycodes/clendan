@@ -22,6 +22,7 @@ from app.integrations.gocardless.sync import sync_gocardless_connection
 from app.integrations.square.sync import sync_square_connection
 from app.integrations.paypal.sync import sync_paypal_connection
 from app.integrations.truelayer.sync import sync_truelayer_connection
+from app.integrations.mono.sync import sync_mono_transactions, reconcile_mono_transactions
 from app.integrations.codat.sync import sync_codat_connection
 from app.integrations.codat.sync import poll_codat_status
 from app.integrations.hubspot.sync import sync_hubspot_connection
@@ -561,6 +562,8 @@ class ToolSettings:
         sync_square_connection,
         sync_paypal_connection,
         sync_truelayer_connection,
+        sync_mono_transactions,
+        reconcile_mono_transactions,
         sync_codat_connection,
         poll_codat_status,
         sync_hubspot_connection,

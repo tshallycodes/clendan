@@ -42,6 +42,8 @@ from app.api.v1.generic import router as generic_router
 from app.api.v1.sage import router as sage_router
 from app.api.v1.adyen import router as adyen_router
 from app.api.v1.wise import router as wise_router
+from app.api.v1.mono import router as mono_router
+from app.api.v1.webhooks.mono import router as mono_webhook_router
 from app.clen.router import router as clen_router
 
 v1_router = APIRouter()
@@ -92,4 +94,6 @@ v1_router.include_router(clen_router)
 v1_router.include_router(sage_router)
 v1_router.include_router(adyen_router)
 v1_router.include_router(wise_router)
+v1_router.include_router(mono_router)
+v1_router.include_router(mono_webhook_router)
 v1_router.include_router(generic_router)  # must be last — uses {slug} path params
