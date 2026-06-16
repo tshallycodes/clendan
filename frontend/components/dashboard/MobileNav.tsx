@@ -15,8 +15,8 @@ const NAV = [
   { icon: Receipt,     label: 'Transactions', href: '/transactions' },
   { icon: Plug,        label: 'Integrations', href: '/dashboard/integrations' },
   { icon: Cpu,         label: 'Tools',        href: '/tools' },
+  { icon: Code2,       label: 'Developer',    href: '/developer' },
   { icon: Settings,    label: 'Settings',     href: '/settings' },
-  { icon: Code2,       label: 'Docs',         href: 'https://clendan.mintlify.app', external: true },
 ]
 
 export function MobileNav() {

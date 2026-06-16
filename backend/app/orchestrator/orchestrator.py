@@ -35,6 +35,7 @@ EVENT_TO_WORKER: dict[str, ToolType] = {
     "risk_compliance_run": ToolType.RISK_COMPLIANCE,
     "treasury_cash_run": ToolType.TREASURY_CASH,
     "tax_compliance_run": ToolType.TAX_COMPLIANCE,
+    "credit_assessment_run": ToolType.CREDIT_UNDERWRITING,
 }
 
 EventType = Literal[
@@ -55,6 +56,7 @@ EventType = Literal[
     "risk_compliance_run",
     "treasury_cash_run",
     "tax_compliance_run",
+    "credit_assessment_run",
 ]
 
 

@@ -313,6 +313,17 @@ async def run_orchestrator_job(
                 payload, tenant_id, tool_id, execution_id
             )
 
+        elif event_type == "credit_assessment_run":
+            pool = await get_queue_pool()
+            await pool.enqueue_job(
+                "run_credit_underwriting_job",
+                execution_id=execution_id,
+                tenant_id=tenant_id,
+                tool_id=tool_id,
+                application_data=payload,
+            )
+            decision, confidence, reasoning = "routed", 1.0, "Routed to Credit Underwriting"
+
         else:
             decision = "queued"
             confidence = 1.0

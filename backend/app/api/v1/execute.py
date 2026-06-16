@@ -15,15 +15,26 @@ _logger = get_logger(__name__)
 router = APIRouter(prefix="/execute", tags=["agents"])
 
 TOOL_TYPE_TO_EVENT: dict[str, str] = {
+    # Pre-consolidation names — kept for backwards compatibility
     "invoice_processing":  "invoice_received",
-    "fraud_detection":     "fraud_check_requested",
-    "collections":         "collection_triggered",
-    "expense_control":     "expense_submitted",
-    "reconciliation":      "reconciliation_requested",
-    "revenue_recognition": "revenue_recognition_run",
-    "compliance_check":    "compliance_check_requested",
     "receipt_processing":  "receipt_received",
+    "expense_control":     "expense_submitted",
+    "collections":         "collection_triggered",
+    "fraud_detection":     "fraud_check_requested",
     "treasury":            "treasury_run",
+    "compliance":          "compliance_check_requested",
+    "compliance_check":    "compliance_check_requested",
+    # Current names
+    "reconciliation":      "reconciliation_run",
+    "revenue_recognition": "revenue_recognition_run",
+    "ai_accountant":       "transaction_posted",
+    "credit_underwriting": "credit_assessment_run",
+    "document_intelligence": "document_received",
+    "spend_control":       "spend_control_run",
+    "ar_collections":      "ar_collections_run",
+    "risk_compliance":     "risk_compliance_run",
+    "treasury_cash":       "treasury_cash_run",
+    "tax_compliance":      "tax_compliance_run",
 }
 
 

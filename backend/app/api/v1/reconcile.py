@@ -18,7 +18,6 @@ from pydantic import BaseModel
 from app.core.db import get_db
 from app.core.responses import standard_response
 from app.core.security import RequireOrgAuth
-from app.tools.reconciliation import _execute_reconciliation
 
 router = APIRouter(tags=["reconciliation"])
 
@@ -158,7 +157,7 @@ async def trigger_reconciliation_run(
     body: TriggerRunRequest,
     current_user: RequireOrgAuth,
 ) -> dict:
-    """Trigger a reconciliation run for a given period and tool."""
+    """Trigger a reconciliation run. Enqueued asynchronously — poll GET /v1/reconciliation/runs for results."""
     db = get_db()
     tenant_id = current_user.tenant_id
 
@@ -180,40 +179,24 @@ async def trigger_reconciliation_run(
         "input_ref": f"manual:{period_start.date()}:{period_end.date()}",
         "decision": "pending",
         "confidence": 0.0,
-        "status": "running",
+        "status": "queued",
     })
 
-    await _execute_reconciliation(
+    from app.queue.pool import get_queue_pool
+    pool = await get_queue_pool()
+    await pool.enqueue_job(
+        "run_reconciliation_job",
+        execution_id=execution.id,
         tenant_id=tenant_id,
         tool_id=body.tool_id,
-        execution_id=execution.id,
         period_start=period_start,
         period_end=period_end,
     )
 
-    run = await db.reconciliationrun.find_first(
-        where={"tenant_id": tenant_id, "execution_id": execution.id},
-        order={"created_at": "desc"},
-    )
-    if run is None:
-        raise HTTPException(status_code=500, detail="Reconciliation run record not created")
-
-    run_dict = {
-        "id": run.id,
-        "execution_id": run.execution_id,
-        "period_start": run.period_start.isoformat(),
-        "period_end": run.period_end.isoformat(),
-        "status": run.status,
-        "matched_count": run.matched_count,
-        "unmatched_count": run.unmatched_count,
-        "flagged_count": run.flagged_count,
-        "review_count": run.review_count,
-        "total_txn_count": run.total_txn_count,
-        "total_inv_count": run.total_inv_count,
-        "created_at": run.created_at.isoformat(),
-    }
-
-    return standard_response(data=run_dict)
+    return standard_response(data={
+        "execution_id": execution.id,
+        "status": "queued",
+    })
 
 
 # ---------------------------------------------------------------------------
