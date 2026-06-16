@@ -32,7 +32,6 @@ async def lifespan(app: FastAPI):
 
 
 def create_app() -> FastAPI:
-    settings = get_settings()
     app = FastAPI(
         title="Clendan API",
         version="1.0.0",
@@ -57,18 +56,10 @@ def create_app() -> FastAPI:
         ],
     )
 
-    logger.info("cors_allowed_origins frontend_url=%s cors_origins=%s", settings.frontend_url, settings.cors_origins)
-
-    _allowed_origins = [settings.frontend_url] if settings.frontend_url else []
-    if settings.cors_origins:
-        _allowed_origins.extend(
-            o.strip() for o in settings.cors_origins.split(",") if o.strip()
-        )
-
     app.add_middleware(RateLimitMiddleware)
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=_allowed_origins or ["*"],
+        allow_origins=["*"],
         allow_credentials=False,
         allow_methods=["*"],
         allow_headers=["*"],
