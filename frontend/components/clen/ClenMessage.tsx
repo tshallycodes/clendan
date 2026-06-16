@@ -1,10 +1,106 @@
 'use client'
 
 import { motion } from 'framer-motion'
+import ReactMarkdown from 'react-markdown'
+import type { Components } from 'react-markdown'
 import type { ClenMessage as ClenMessageType } from './useClen'
 
 interface Props {
   message: ClenMessageType
+}
+
+const mdComponents: Components = {
+  p: ({ children }) => (
+    <p className="text-xs font-mono text-brand-text leading-relaxed mb-2 last:mb-0">{children}</p>
+  ),
+  strong: ({ children }) => (
+    <strong className="font-bold text-brand-text">{children}</strong>
+  ),
+  em: ({ children }) => (
+    <em className="italic text-brand-secondary not-italic">{children}</em>
+  ),
+  h1: ({ children }) => (
+    <h1 className="font-heading font-bold text-sm text-brand-text mt-3 mb-1.5 first:mt-0">{children}</h1>
+  ),
+  h2: ({ children }) => (
+    <h2 className="font-heading font-semibold text-xs text-brand-text mt-3 mb-1 first:mt-0 uppercase tracking-wider">{children}</h2>
+  ),
+  h3: ({ children }) => (
+    <h3 className="font-mono font-semibold text-xs text-brand-text mt-2 mb-1 first:mt-0">{children}</h3>
+  ),
+  ul: ({ children }) => (
+    <ul className="my-2 space-y-1 first:mt-0 last:mb-0">{children}</ul>
+  ),
+  ol: ({ children }) => (
+    <ol className="my-2 space-y-1 first:mt-0 last:mb-0 list-none [counter-reset:list-counter]">{children}</ol>
+  ),
+  li: ({ children, ...props }) => {
+    const isOrdered = (props as { ordered?: boolean }).ordered
+    return (
+      <li className="flex items-start gap-2 text-xs font-mono text-brand-text leading-relaxed">
+        <span className={`shrink-0 mt-0.5 text-[10px] ${isOrdered ? 'text-brand-muted [counter-increment:list-counter] before:content-[counter(list-counter)"."]' : 'text-brand-muted'}`}>
+          {isOrdered ? null : '→'}
+        </span>
+        <span>{children}</span>
+      </li>
+    )
+  },
+  code: ({ children, className }) => {
+    const isBlock = className?.startsWith('language-')
+    if (isBlock) {
+      const lang = className?.replace('language-', '') ?? ''
+      return (
+        <div className="my-2 first:mt-0 last:mb-0">
+          {lang && (
+            <div className="flex items-center gap-2 bg-brand-elevated border border-brand-border border-b-0 rounded-t-sm px-3 py-1.5">
+              <span className="text-[10px] font-mono text-brand-muted uppercase tracking-wider">{lang}</span>
+            </div>
+          )}
+          <pre className={`bg-brand-bg border border-brand-border ${lang ? 'rounded-b-sm' : 'rounded-sm'} px-3 py-2.5 overflow-x-auto`}>
+            <code className="text-[11px] font-mono text-brand-secondary leading-relaxed whitespace-pre">{children}</code>
+          </pre>
+        </div>
+      )
+    }
+    return (
+      <code className="bg-brand-elevated border border-brand-border-subtle rounded-sm px-1 py-0.5 text-[11px] font-mono text-[#00a8cc]">
+        {children}
+      </code>
+    )
+  },
+  pre: ({ children }) => <>{children}</>,
+  blockquote: ({ children }) => (
+    <blockquote className="border-l-2 border-brand-border pl-3 my-2 first:mt-0 last:mb-0 text-brand-secondary">
+      {children}
+    </blockquote>
+  ),
+  hr: () => <hr className="border-t border-brand-border my-3" />,
+  a: ({ href, children }) => (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="text-[#00a8cc] underline underline-offset-2 hover:text-brand-text transition-colors"
+    >
+      {children}
+    </a>
+  ),
+  table: ({ children }) => (
+    <div className="my-2 first:mt-0 last:mb-0 overflow-x-auto">
+      <table className="w-full text-[11px] font-mono border border-brand-border rounded-sm">{children}</table>
+    </div>
+  ),
+  thead: ({ children }) => (
+    <thead className="bg-brand-elevated border-b border-brand-border">{children}</thead>
+  ),
+  tbody: ({ children }) => <tbody className="divide-y divide-brand-border">{children}</tbody>,
+  tr: ({ children }) => <tr>{children}</tr>,
+  th: ({ children }) => (
+    <th className="text-left px-3 py-1.5 text-brand-secondary font-semibold uppercase tracking-wider text-[10px]">{children}</th>
+  ),
+  td: ({ children }) => (
+    <td className="px-3 py-1.5 text-brand-text">{children}</td>
+  ),
 }
 
 export function ClenMessage({ message }: Props) {
@@ -61,8 +157,10 @@ export function ClenMessage({ message }: Props) {
           </div>
         )}
         {message.content && (
-          <div className="text-xs font-mono text-brand-text leading-relaxed whitespace-pre-wrap">
-            {message.content}
+          <div className="min-w-0">
+            <ReactMarkdown components={mdComponents}>
+              {message.content}
+            </ReactMarkdown>
           </div>
         )}
         <span className="block mt-1 text-[11px] font-mono text-brand-muted opacity-0 group-hover:opacity-100 transition-opacity">
