@@ -22,12 +22,19 @@ EVENT_TO_WORKER: dict[str, ToolType] = {
     "transaction_posted": ToolType.ACCOUNTANT,
     "expense_submitted": ToolType.EXPENSE_CONTROL,
     "reconciliation_requested": ToolType.RECONCILIATION,
+    "reconciliation_run": ToolType.RECONCILIATION,
     "fraud_check_requested": ToolType.FRAUD_DETECTION,
     "collection_triggered": ToolType.COLLECTIONS,
     "revenue_recognition_run": ToolType.REVENUE_RECOGNITION,
     "compliance_check_requested": ToolType.COMPLIANCE,
     "receipt_received": ToolType.RECEIPT_PROCESSING,
     "treasury_run": ToolType.TREASURY,
+    "document_received": ToolType.DOCUMENT_INTELLIGENCE,
+    "spend_control_run": ToolType.SPEND_CONTROL,
+    "ar_collections_run": ToolType.AR_COLLECTIONS,
+    "risk_compliance_run": ToolType.RISK_COMPLIANCE,
+    "treasury_cash_run": ToolType.TREASURY_CASH,
+    "tax_compliance_run": ToolType.TAX_COMPLIANCE,
 }
 
 EventType = Literal[
@@ -35,12 +42,19 @@ EventType = Literal[
     "transaction_posted",
     "expense_submitted",
     "reconciliation_requested",
+    "reconciliation_run",
     "fraud_check_requested",
     "collection_triggered",
     "revenue_recognition_run",
     "compliance_check_requested",
     "receipt_received",
     "treasury_run",
+    "document_received",
+    "spend_control_run",
+    "ar_collections_run",
+    "risk_compliance_run",
+    "treasury_cash_run",
+    "tax_compliance_run",
 ]
 
 

@@ -7,7 +7,7 @@ from pydantic import BaseModel, field_validator
 from app.core.db import get_db_dep
 from app.core.logging import get_logger
 from app.core.responses import standard_response
-from app.core.security import RequireOrgAuth, CurrentUser
+from app.core.security import RequireOrgAuth
 
 logger = get_logger(__name__)
 router = APIRouter(prefix="/tools", tags=["tools"])
@@ -17,6 +17,8 @@ VALID_TYPES = {
     "reconciliation", "expense_control", "collections",
     "fraud_detection", "treasury", "revenue_recognition",
     "credit_underwriting", "compliance",
+    "document_intelligence", "spend_control", "ar_collections",
+    "risk_compliance", "treasury_cash", "tax_compliance",
 }
 VALID_AUTONOMY_LEVELS = {"auto", "approve", "suggest"}
 VALID_STATUSES = {"active", "inactive"}

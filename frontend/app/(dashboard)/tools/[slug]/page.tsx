@@ -6,11 +6,12 @@ import { GenericToolClient } from './GenericToolClient'
 import type { Tool } from '@/components/dashboard/tools/ToolCard'
 
 interface PageProps {
-  params: { slug: string }
+  params: Promise<{ slug: string }>
 }
 
 export default async function ToolSlugPage({ params }: PageProps) {
-  const tool = slugToTool(params.slug)
+  const { slug } = await params
+  const tool = slugToTool(slug)
   if (!tool) notFound()
 
   let deployed: Tool | null = null

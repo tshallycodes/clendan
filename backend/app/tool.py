@@ -219,6 +219,95 @@ async def run_orchestrator_job(
             )
             decision, confidence, reasoning = "routed", 1.0, "Routed to Tax Compliance tool"
 
+        elif event_type == "document_received":
+            document_type = payload.get("document_type", "invoice")
+            if document_type == "receipt":
+                decision, confidence, reasoning = await _orchestrate_receipt_received(
+                    payload, tenant_id, tool_id, execution_id
+                )
+            else:
+                decision, confidence, reasoning = await _orchestrate_invoice_received(
+                    payload, tenant_id, tool_id
+                )
+
+        elif event_type == "spend_control_run":
+            pool = await get_queue_pool()
+            transaction_ids = payload.get("transaction_ids", [])
+            await pool.enqueue_job(
+                "run_expense_control_job",
+                execution_id=execution_id,
+                tenant_id=tenant_id,
+                tool_id=tool_id,
+                transaction_ids=transaction_ids,
+            )
+            await pool.enqueue_job(
+                "run_accounts_payable_job",
+                execution_id=execution_id,
+                tenant_id=tenant_id,
+                tool_id=tool_id,
+                payload=payload,
+                policy_config=payload.get("policy_config", {}),
+            )
+            decision, confidence, reasoning = "routed", 1.0, "Routed to Spend Control (expense + AP)"
+
+        elif event_type == "ar_collections_run":
+            pool = await get_queue_pool()
+            await pool.enqueue_job(
+                "run_accounts_receivable_job",
+                execution_id=execution_id,
+                tenant_id=tenant_id,
+                tool_id=tool_id,
+                payload=payload,
+                policy_config=payload.get("policy_config", {}),
+            )
+            await pool.enqueue_job(
+                "run_collections_job",
+                execution_id=execution_id,
+                tenant_id=tenant_id,
+                tool_id=tool_id,
+            )
+            decision, confidence, reasoning = "routed", 1.0, "Routed to AR & Collections"
+
+        elif event_type == "risk_compliance_run":
+            pool = await get_queue_pool()
+            transaction_ids = payload.get("transaction_ids", [])
+            frameworks = payload.get("frameworks", ["AML", "KYC"])
+            await pool.enqueue_job(
+                "run_compliance_job",
+                execution_id=execution_id,
+                tenant_id=tenant_id,
+                tool_id=tool_id,
+                transaction_ids=transaction_ids,
+                frameworks=frameworks,
+            )
+            if transaction_ids:
+                await pool.enqueue_job(
+                    "run_fraud_detection_job",
+                    execution_id=execution_id,
+                    tenant_id=tenant_id,
+                    tool_id=tool_id,
+                    transaction_ids=transaction_ids,
+                )
+            decision, confidence, reasoning = "routed", 1.0, "Routed to Risk & Compliance"
+
+        elif event_type == "treasury_cash_run":
+            pool = await get_queue_pool()
+            await pool.enqueue_job(
+                "run_treasury_job",
+                execution_id=execution_id,
+                tenant_id=tenant_id,
+                tool_id=tool_id,
+            )
+            await pool.enqueue_job(
+                "run_cash_flow_forecast_job",
+                execution_id=execution_id,
+                tenant_id=tenant_id,
+                tool_id=tool_id,
+                payload=payload,
+                policy_config=payload.get("policy_config", {}),
+            )
+            decision, confidence, reasoning = "routed", 1.0, "Routed to Treasury & Cash"
+
         elif event_type == "receipt_received":
             decision, confidence, reasoning = await _orchestrate_receipt_received(
                 payload, tenant_id, tool_id, execution_id

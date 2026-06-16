@@ -23,7 +23,7 @@ logger = get_logger(__name__)
 
 _ACTOR = "tool:tax_compliance:v1"
 _MODEL_VERSION = "tax_compliance-v1"
-TOOL_TYPE = ToolType.COMPLIANCE
+TOOL_TYPE = ToolType.TAX_COMPLIANCE
 
 _LOOKBACK_DAYS = 90
 
@@ -298,7 +298,7 @@ async def run_tax_compliance_job(
 
 
 class TaxComplianceTool(BaseTool):
-    TOOL_TYPE = ToolType.COMPLIANCE
+    TOOL_TYPE = ToolType.TAX_COMPLIANCE
     VERSION = 1
 
     async def execute(self, input_data: dict, tenant_id: str) -> ToolOutput:
