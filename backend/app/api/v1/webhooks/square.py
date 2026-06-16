@@ -106,7 +106,7 @@ async def square_webhook(
             "status": inner.get("status") or "",
             "payment_id": inner.get("payment_id") or "",
         }
-    elif orchestrator_event in ("dispute_created", "dispute_evidence_required", "dispute_state_changed", "dispute_closed"):
+    elif orchestrator_event in ("dispute_created", "dispute_state_changed"):
         money = inner.get("amount_money") or {}
         event_payload = {
             **base,

@@ -38,9 +38,7 @@ _EVENT_MAP: dict[str, str] = {
     "refund.updated": "refund_updated",
     # Disputes
     "dispute.created": "dispute_created",
-    "dispute.evidence_required": "dispute_evidence_required",
-    "dispute.state_changed": "dispute_state_changed",
-    "dispute.closed": "dispute_closed",
+    "dispute.state.updated": "dispute_state_changed",
     # Payouts
     "payout.sent": "payout_received",
     "payout.failed": "payout_failed",
