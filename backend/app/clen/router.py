@@ -182,7 +182,7 @@ async def _generate(
     except Exception as exc:
         import traceback
         logger.error("clen_stream_error type=%s msg=%s trace=%s", type(exc).__name__, str(exc), traceback.format_exc())
-        yield f"data: {json.dumps({'type': 'error', 'content': 'Clen encountered an unexpected error'})}\n\n"
+        yield f"data: {json.dumps({'type': 'error', 'content': f'[DEBUG] {type(exc).__name__}: {str(exc)[:200]}'})}\n\n"
 
     yield "data: [DONE]\n\n"
 
