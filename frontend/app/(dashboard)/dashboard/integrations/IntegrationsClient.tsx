@@ -12,6 +12,7 @@ import { IntegrationDetailDrawer } from './IntegrationDetailDrawer'
 import { BankPicker } from './BankPicker'
 import { BankDetailDrawer } from './BankDetailDrawer'
 import { BankDef } from './banks-data'
+import { useToast } from '@/components/Providers'
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
@@ -52,6 +53,7 @@ const CATEGORIES = Array.from(new Set(INTEGRATIONS.map((i) => i.category)))
 
 export function IntegrationsClient() {
   const { getToken } = useAuth()
+  const { toast } = useToast()
   const [statuses, setStatuses] = useState<Record<string, IntegrationStatus>>({})
   const [lastSyncedAt, setLastSyncedAt] = useState<Record<string, string | null>>({})
   const [loading, setLoading] = useState(true)
@@ -60,7 +62,6 @@ export function IntegrationsClient() {
   const [connectedBankName, setConnectedBankName] = useState<string | null>(null)
   const [connectedTruelayerName, setConnectedTruelayerName] = useState<string | null>(null)
   const [connectedMonoName, setConnectedMonoName] = useState<string | null>(null)
-  const [toast, setToast] = useState<string | null>(null)
   const [plaidToken, setPlaidToken] = useState<string | null>(null)
 
   // Drawers / modals
@@ -92,10 +93,11 @@ export function IntegrationsClient() {
         })
         if (institution_id) setConnectedBankId(institution_id)
         if (institution_name) setConnectedBankName(institution_name)
-        showToast('Bank connected — syncing transactions')
-      } catch {
+        toast('Bank connected — syncing transactions', 'success')
+      } catch (err) {
         setStatus('plaid', 'error')
         setConnecting(null)
+        toast(err instanceof Error ? err.message : 'Bank connection failed', 'error')
       }
     }, [getToken]), // eslint-disable-line react-hooks/exhaustive-deps
     onExit: useCallback(() => {
@@ -103,11 +105,6 @@ export function IntegrationsClient() {
       setConnecting(null)
     }, []),
   })
-
-  function showToast(msg: string) {
-    setToast(msg)
-    setTimeout(() => setToast(null), 4000)
-  }
 
   function setStatus(slug: string, status: IntegrationStatus) {
     setStatuses((prev) => ({ ...prev, [slug]: status }))
@@ -168,10 +165,10 @@ export function IntegrationsClient() {
         const oauthError = params.get('error')
         if (connected) {
           setStatus(connected, 'syncing')
-          showToast(`${connected} connected — syncing data`)
+          toast(`${connected} connected — syncing data`, 'success')
         }
         if (oauthError) {
-          showToast(`Connection failed: ${oauthError.replace(/_/g, ' ')}`)
+          toast(`Connection failed: ${oauthError.replace(/_/g, ' ')}`, 'error')
         }
         if (connected || oauthError) {
           params.delete('connected')
@@ -287,13 +284,18 @@ export function IntegrationsClient() {
         const res = await fetch(`${API}/v1/integrations/truelayer/connect`, {
           headers: { Authorization: `Bearer ${authToken}` },
         })
-        if (!res.ok) throw new Error('Failed to get TrueLayer auth URL')
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({}))
+          throw new Error(body.detail ?? body.error ?? `Server error ${res.status}`)
+        }
         const json = await res.json()
         const url: string = json.data?.auth_url ?? json.auth_url
+        if (!url) throw new Error('No auth URL returned from TrueLayer')
         window.location.href = url
-      } catch {
+      } catch (err) {
         setStatus('truelayer', 'error')
         setConnecting(null)
+        toast(err instanceof Error ? err.message : 'TrueLayer connection failed', 'error')
       }
       return
     }
@@ -306,13 +308,18 @@ export function IntegrationsClient() {
         const res = await fetch(`${API}/v1/integrations/mono/connect`, {
           headers: { Authorization: `Bearer ${authToken}` },
         })
-        if (!res.ok) throw new Error('Failed to get Mono Connect URL')
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({}))
+          throw new Error(body.detail ?? body.error ?? `Server error ${res.status}`)
+        }
         const json = await res.json()
         const url: string = json.data?.auth_url ?? json.auth_url
+        if (!url) throw new Error('No connect URL returned from Mono')
         window.location.href = url
-      } catch {
+      } catch (err) {
         setStatus('mono', 'error')
         setConnecting(null)
+        toast(err instanceof Error ? err.message : 'Mono connection failed', 'error')
       }
       return
     }
@@ -334,7 +341,7 @@ export function IntegrationsClient() {
     } catch (err) {
       setStatus('plaid', 'error')
       setConnecting(null)
-      showToast(`Bank connection failed: ${err instanceof Error ? err.message : 'unknown error'}`)
+      toast(err instanceof Error ? err.message : 'Bank connection failed', 'error')
     }
   }
 
@@ -351,7 +358,7 @@ export function IntegrationsClient() {
       }
       setStatus(slug, 'disconnected')
     } catch (err) {
-      showToast(err instanceof Error ? err.message : 'Disconnect failed')
+      toast(err instanceof Error ? err.message : 'Disconnect failed', 'error')
     }
   }
 
@@ -368,7 +375,7 @@ export function IntegrationsClient() {
       }
       await fetchAllStatuses()
     } catch (err) {
-      showToast(err instanceof Error ? err.message : 'Disconnect failed')
+      toast(err instanceof Error ? err.message : 'Disconnect failed', 'error')
     }
   }
 
@@ -397,7 +404,7 @@ export function IntegrationsClient() {
     setShowCredentialsDrawer(false)
     setActiveCredentialSlug(null)
     setStatus(slug, 'syncing')
-    showToast(`${slug} connected â€” syncing data`)
+    toast(`${slug} connected — syncing data`, 'success')
   }
 
   async function handleXeroOrgConfirm(xeroTenantId: string) {
@@ -419,7 +426,7 @@ export function IntegrationsClient() {
     setXeroOrgs([])
     setPendingXeroIntegrationId(null)
     setStatus('xero', 'syncing')
-    showToast('Xero connected â€” syncing data')
+    toast('Xero connected — syncing data', 'success')
   }
 
   async function handleResync(slug: string) {
@@ -577,12 +584,6 @@ export function IntegrationsClient() {
         }}
       />
 
-      {/* Toast notification */}
-      {toast && (
-        <div className="fixed bottom-6 right-6 bg-brand-surface border border-brand-border rounded-sm px-4 py-3 z-50 shadow-none">
-          <p className="text-xs font-mono text-brand-text">{toast}</p>
-        </div>
-      )}
     </div>
   )
 }
