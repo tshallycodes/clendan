@@ -523,6 +523,72 @@ async def delete_invite_link(
     return standard_response(data={"deleted": link_id})
 
 
+@router.get("/join/{token}")
+async def get_invite_link_info(
+    token: str,
+    db: Annotated[Prisma, Depends(get_db_dep)],
+):
+    """Public — returns org name and role for the invite link. No auth required."""
+    link = await db.invitelink.find_first(
+        where={"token": token},
+        include={"tenant": True},
+    )
+    if not link:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Invite link not found")
+    expires = link.expires_at if link.expires_at.tzinfo else link.expires_at.replace(tzinfo=UTC)
+    if expires < datetime.now(UTC):
+        raise HTTPException(status_code=status.HTTP_410_GONE, detail="This invite link has expired")
+    return standard_response(data={
+        "org_name": link.tenant.name,
+        "role": (link.role if isinstance(link.role, str) else link.role.value).lower(),
+        "expires_at": link.expires_at.isoformat(),
+    })
+
+
+@router.post("/join/{token}")
+async def accept_invite_link(
+    token: str,
+    payload: RequireAuth,
+    db: Annotated[Prisma, Depends(get_db_dep)],
+):
+    """Accept an invite link. Creates a Member for the authenticated user in the org."""
+    clerk_user_id = extract_clerk_user_id(payload)
+    email: str = payload.get("email", "") or payload.get("email_address", "")
+
+    link = await db.invitelink.find_first(where={"token": token})
+    if not link:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Invite link not found")
+    expires = link.expires_at if link.expires_at.tzinfo else link.expires_at.replace(tzinfo=UTC)
+    if expires < datetime.now(UTC):
+        raise HTTPException(status_code=status.HTTP_410_GONE, detail="This invite link has expired")
+
+    existing = await db.member.find_first(
+        where={"tenant_id": link.tenant_id, "clerk_user_id": clerk_user_id}
+    )
+    if existing:
+        return standard_response(data={
+            "tenant_id": link.tenant_id,
+            "role": (existing.role if isinstance(existing.role, str) else existing.role.value).lower(),
+            "already_member": True,
+        })
+
+    member = await db.member.create(data={
+        "tenant_id": link.tenant_id,
+        "clerk_user_id": clerk_user_id,
+        "email": email,
+        "role": link.role if isinstance(link.role, str) else link.role.value,
+    })
+    logger.info(
+        "Member joined via invite link",
+        extra={"tenant_id": link.tenant_id, "member_id": member.id, "link_id": link.id},
+    )
+    return standard_response(data={
+        "tenant_id": link.tenant_id,
+        "role": (member.role if isinstance(member.role, str) else member.role.value).lower(),
+        "already_member": False,
+    })
+
+
 @router.patch("/me/settings")
 async def update_domain_settings(
     body: DomainSettingsRequest,
