@@ -1,10 +1,14 @@
-﻿import { getBackendToken } from '@/lib/auth'
+import { getBackendToken } from '@/lib/auth'
 import { apiGet } from '@/lib/api'
 import { StatCard } from '@/components/dashboard/StatCard'
-import { StatusBadge } from '@/components/dashboard/StatusBadge'
 import { ExecutionChart } from '@/components/dashboard/ExecutionChart'
 import { RecentExecutionsTable } from '@/components/dashboard/RecentExecutionsTable'
 import { SystemStatusBar } from '@/components/dashboard/SystemStatusBar'
+import { ToolsList } from '@/components/dashboard/ToolsList'
+import { IntegrationsHealth } from '@/components/dashboard/IntegrationsHealth'
+import { QuickActions } from '@/components/dashboard/QuickActions'
+
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
 interface Stats {
   executions: number
@@ -14,12 +18,62 @@ interface Stats {
   transactions: number
 }
 
+interface DeployedTool {
+  id: string
+  type: string
+  autonomy_level: 'auto' | 'approve' | 'suggest'
+  status: 'active' | 'inactive'
+  version: number
+}
+
+interface IntegrationSummary {
+  name: string
+  slug: string
+  status: string
+  last_synced_at: string | null
+  summary?: string
+}
+
+const INTEGRATION_SLUGS: { slug: string; name: string }[] = [
+  { slug: 'quickbooks', name: 'QuickBooks' },
+  { slug: 'xero', name: 'Xero' },
+  { slug: 'plaid', name: 'Plaid' },
+]
+
 export default async function DashboardPage() {
+  const token = await getBackendToken()
+
   let stats: Stats | null = null
-  try {
-    const token = await getBackendToken()
-    if (token) stats = await apiGet<Stats>('/v1/dashboard/stats', token)
-  } catch { /* backend not running — show zeros */ }
+  let tools: DeployedTool[] = []
+  let integrationStatuses: IntegrationSummary[] = []
+
+  if (token) {
+    const [statsResult, toolsResult, ...integrationResults] = await Promise.allSettled([
+      apiGet<Stats>('/v1/dashboard/stats', token),
+      apiGet<{ tools: DeployedTool[] }>('/v1/tools', token),
+      ...INTEGRATION_SLUGS.map(({ slug }) =>
+        fetch(`${API_BASE}/v1/integrations/${slug}/status`, {
+          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+          cache: 'no-store',
+        }).then((r) => r.json()),
+      ),
+    ])
+
+    if (statsResult.status === 'fulfilled') stats = statsResult.value
+    if (toolsResult.status === 'fulfilled') tools = toolsResult.value?.tools ?? []
+
+    integrationStatuses = INTEGRATION_SLUGS.map(({ slug, name }, i) => {
+      const result = integrationResults[i]
+      const data = result?.status === 'fulfilled' ? result.value?.data : null
+      return {
+        name,
+        slug,
+        status: data?.status ?? 'disconnected',
+        last_synced_at: data?.last_synced_at ?? null,
+        summary: data?.summary,
+      }
+    })
+  }
 
   const s = stats ?? { executions: 0, pending_approvals: 0, active_tools: 0, invoices: 0, transactions: 0 }
 
@@ -57,27 +111,11 @@ export default async function DashboardPage() {
         />
       </div>
 
-      <div className="bg-brand-surface border border-brand-border rounded-sm overflow-hidden">
-        <div className="px-5 py-4 border-b border-brand-border">
-          <h2 className="font-heading font-semibold text-brand-text text-sm">Active Tools</h2>
-        </div>
-        <div className="divide-y divide-brand-border">
-          {s.active_tools === 0 ? (
-            <p className="px-5 py-8 text-xs font-mono text-brand-muted text-center">No active tools — deploy tools to begin</p>
-          ) : (
-            <div className="px-5 py-4 flex items-center gap-4">
-              <span className="relative flex h-2.5 w-2.5">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-green opacity-60" />
-                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-brand-green" />
-              </span>
-              <div className="flex-1 text-xs font-mono text-brand-text">
-                {s.active_tools} tool{s.active_tools !== 1 ? 's' : ''} running
-              </div>
-              <StatusBadge status="active" />
-            </div>
-          )}
-        </div>
-      </div>
+      <QuickActions />
+
+      <ToolsList tools={tools} />
+
+      <IntegrationsHealth integrations={integrationStatuses} />
 
       <ExecutionChart />
 
