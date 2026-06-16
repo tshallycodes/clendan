@@ -150,13 +150,19 @@ async def _retry(fn, *args, **kwargs):
             return await fn(*args, **kwargs)
         except (httpx.HTTPStatusError, httpx.TimeoutException, httpx.NetworkError) as exc:
             last_exc = exc
+            if isinstance(exc, httpx.HTTPStatusError):
+                logger.error(
+                    "Mono API error (attempt %d/%d) status=%d body=%s",
+                    attempt + 1, MAX_ATTEMPTS,
+                    exc.response.status_code,
+                    exc.response.text[:500],
+                )
+            else:
+                logger.warning(
+                    "Mono call failed (attempt %d/%d) type=%s",
+                    attempt + 1, MAX_ATTEMPTS, type(exc).__name__,
+                )
             if attempt < MAX_ATTEMPTS - 1:
                 wait = BACKOFF_SECONDS * (2 ** attempt) + random.uniform(0, 0.5)
-                logger.warning(
-                    "Mono call failed (attempt %d/%d), retry in %.1fs",
-                    attempt + 1,
-                    MAX_ATTEMPTS,
-                    wait,
-                )
                 await asyncio.sleep(wait)
     raise last_exc

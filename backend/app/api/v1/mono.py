@@ -40,10 +40,14 @@ async def mono_connect(current_user: RequireOrgAuth):
             redirect_url=redirect_url,
         )
     except Exception as exc:
-        logger.error("Mono connect session failed for tenant %s: %s", tenant_id, type(exc).__name__)
+        import httpx as _httpx
+        detail = str(exc)
+        if isinstance(exc, _httpx.HTTPStatusError):
+            detail = f"Mono API {exc.response.status_code}: {exc.response.text[:300]}"
+        logger.error("Mono connect session failed tenant=%s detail=%s", tenant_id, detail)
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
-            detail="Failed to create Mono Connect session",
+            detail=detail,
         )
 
     return standard_response(data={"auth_url": session["mono_url"]})
