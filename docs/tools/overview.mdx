@@ -1,12 +1,12 @@
 ---
 title: AI Tools Overview
-description: Clendan's 10 specialised AI tools — each one a sub-agent with a defined role.
+description: Clendan's 10 AI financial tools — each one a sub-agent with a defined role.
 ---
 
 # AI Tools
 
 Clendan tools are specialised AI sub-agents. Each tool has a defined role,
-a set of tools it can call, and policy rules it must enforce. Tools are
+a set of capabilities it can execute, and policy rules it must enforce. Tools are
 deployed per organisation and configured independently.
 
 ## Architecture
@@ -19,9 +19,12 @@ Financial Orchestrator (Master Agent)
 ├── Classifies the event type
 ├── Routes to the correct tool
 └── Tools execute as sub-agents
-    ├── Invoice Processing Tool
-    ├── AI Accountant Tool
-    ├── Reconciliation Tool
+    ├── Document Intelligence
+    ├── AI Accountant
+    ├── Spend Control
+    ├── AR & Collections
+    ├── Risk & Compliance
+    ├── Treasury & Cash
     └── ... (all others)
 ```
 
@@ -40,18 +43,18 @@ Every tool is configured with one of three autonomy levels:
 
 ## Available Tools
 
-| Tool | Phase | Purpose |
-|---|---|---|
-| Invoice Processing | MVP | Automate invoice lifecycle end to end |
-| AI Accountant | MVP | Categorise transactions, update ledger |
-| Reconciliation | V2 | Match accounts across multiple systems |
-| Expense Control | V2 | Enforce spending policy on expense claims |
-| Collections | V2 | Recover overdue invoices automatically |
-| Fraud Detection | V2 | Monitor transactions for suspicious activity |
-| Treasury | V2 | Optimise cash flow and liquidity |
-| Revenue Recognition | V2 | Apply ASC 606 / IFRS 15 automatically |
-| Credit Underwriting | V3 | Evaluate and decide on credit applications |
-| Compliance | V3 | Monitor for regulatory violations |
+| Tool | Purpose |
+|---|---|
+| **Document Intelligence** | OCR and AI extraction for invoices, receipts, and contracts |
+| **AI Accountant** | Transaction categorisation, month-end close, payroll reconciliation |
+| **Spend Control** | AP processing, expense policy enforcement, duplicate detection |
+| **AR & Collections** | Invoice monitoring, urgency classification, debtor follow-ups |
+| **Risk & Compliance** | Fraud detection, AML/KYC monitoring, audit preparation |
+| **Treasury & Cash** | Cash positions, liquidity forecasting, FX exposure, budget vs. actuals |
+| **Reconciliation** | Bank-to-invoice matching, anomaly detection |
+| **Revenue Recognition** | ASC 606 / IFRS 15 schedule generation |
+| **Credit Underwriting** | Credit risk assessment and automated decisions |
+| **Tax Compliance** | VAT computation, missing tax code detection, filing risk |
 
 ## Policy Engine
 

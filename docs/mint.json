@@ -72,14 +72,16 @@
       "group": "AI Tools",
       "pages": [
         "tools/overview",
-        "tools/invoice-processing",
+        "tools/document-intelligence",
         "tools/accountant",
+        "tools/spend-control",
+        "tools/ar-collections",
+        "tools/risk-compliance",
+        "tools/treasury-cash",
         "tools/reconciliation",
-        "tools/expense-control",
-        "tools/collections",
-        "tools/fraud-detection",
-        "tools/treasury",
-        "tools/revenue-recognition"
+        "tools/revenue-recognition",
+        "tools/credit-underwriting",
+        "tools/tax-compliance"
       ]
     },
     {
@@ -89,6 +91,7 @@
         "integrations/quickbooks",
         "integrations/xero",
         "integrations/plaid",
+        "integrations/mono",
         "integrations/stripe",
         "integrations/gocardless",
         "integrations/gmail"
