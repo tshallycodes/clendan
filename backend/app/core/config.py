@@ -16,7 +16,7 @@ class Settings(BaseSettings):
     clerk_publishable_key: str = ""
     clerk_frontend_api: str = ""
 
-    anthropic_api_key: str = ""
+    anthropic_api_key: str | None = None
     claude_model: str = "claude-sonnet-4-6"
 
     sentry_dsn: str = ""
