@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useAuth } from '@clerk/nextjs'
+import { motion } from 'framer-motion'
 import { StatusBadge } from '@/components/dashboard/StatusBadge'
 import { cn } from '@/lib/utils'
 import { useToast } from '@/components/Providers'
@@ -51,6 +52,27 @@ function formatTs(iso: string): string {
     d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
 }
 
+const pageVariants = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.07 } },
+}
+const sectionVariants = {
+  hidden: { opacity: 0, y: 14 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.38, ease: [0.25, 0.46, 0.45, 0.94] as const } },
+}
+const statsVariants = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.06 } },
+}
+const statItemVariants = {
+  hidden: { opacity: 0, y: 10 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.28, ease: [0.25, 0.46, 0.45, 0.94] as const } },
+}
+const rowVariants = {
+  hidden: { opacity: 0 },
+  show: { opacity: 1, transition: { duration: 0.2 } },
+}
+
 function StatsBar({ executions }: { executions: Execution[] }) {
   const total = executions.length
   const autoCount = executions.filter((e) => e.decision === 'auto_approved').length
@@ -68,14 +90,14 @@ function StatsBar({ executions }: { executions: Execution[] }) {
   ]
 
   return (
-    <div className="grid grid-cols-4 gap-3">
+    <motion.div variants={statsVariants} initial="hidden" animate="show" className="grid grid-cols-4 gap-3">
       {stats.map((s) => (
-        <div key={s.label} className="bg-brand-surface border border-brand-border rounded-sm p-4">
+        <motion.div key={s.label} variants={statItemVariants} className="bg-brand-surface border border-brand-border rounded-sm p-4">
           <div className="text-[10px] font-mono text-brand-muted uppercase tracking-widest mb-1">{s.label}</div>
           <div className="text-lg font-heading font-bold text-brand-text">{s.value}</div>
-        </div>
+        </motion.div>
       ))}
-    </div>
+    </motion.div>
   )
 }
 
@@ -277,15 +299,17 @@ export function ExecutionsClient({ initialExecutions, total }: Props) {
   }
 
   return (
-    <div className="p-6 space-y-6">
-      <div>
+    <motion.div variants={pageVariants} initial="hidden" animate="show" className="p-6 space-y-6">
+      <motion.div variants={sectionVariants}>
         <h1 className="font-heading font-bold text-2xl text-brand-text">Execution Log</h1>
         <p className="text-brand-muted text-xs font-mono mt-1">{total} executions total</p>
-      </div>
+      </motion.div>
 
-      <StatsBar executions={executions} />
+      <motion.div variants={sectionVariants}>
+        <StatsBar executions={executions} />
+      </motion.div>
 
-      <div className="flex items-center gap-3">
+      <motion.div variants={sectionVariants} className="flex items-center gap-3">
         <div className="flex gap-1">
           {STATUS_FILTERS.map((f) => (
             <button
@@ -309,9 +333,9 @@ export function ExecutionsClient({ initialExecutions, total }: Props) {
           placeholder="Search by decision…"
           className="flex-1 max-w-xs bg-brand-bg border border-brand-border focus:border-brand-green rounded-sm px-3 py-1.5 text-xs font-mono text-brand-text placeholder:text-brand-muted outline-none transition-colors"
         />
-      </div>
+      </motion.div>
 
-      <div className="bg-brand-surface border border-brand-border rounded-sm overflow-hidden">
+      <motion.div variants={sectionVariants} className="bg-brand-surface border border-brand-border rounded-sm overflow-hidden">
         {filtered.length === 0 ? (
           <p className="px-5 py-12 text-xs font-mono text-brand-muted text-center">
             No executions yet — deploy a tool to begin
@@ -331,10 +355,11 @@ export function ExecutionsClient({ initialExecutions, total }: Props) {
                   ))}
                 </tr>
               </thead>
-              <tbody>
+              <motion.tbody variants={{ hidden: {}, show: { transition: { staggerChildren: 0.04 } } }} initial="hidden" animate="show">
                 {filtered.map((e) => (
-                  <tr
+                  <motion.tr
                     key={e.id}
+                    variants={rowVariants}
                     className="border-b border-brand-border last:border-0 hover:bg-brand-elevated transition-colors cursor-pointer"
                     onClick={() => setSelectedId(e.id === selectedId ? null : e.id)}
                   >
@@ -365,13 +390,13 @@ export function ExecutionsClient({ initialExecutions, total }: Props) {
                         View →
                       </span>
                     </td>
-                  </tr>
+                  </motion.tr>
                 ))}
-              </tbody>
+              </motion.tbody>
             </table>
           </div>
         )}
-      </div>
+      </motion.div>
 
       {executions.length < total && (
         <div className="flex justify-center">
@@ -393,6 +418,6 @@ export function ExecutionsClient({ initialExecutions, total }: Props) {
           loadingState={loadingMap[selected.id] ?? null}
         />
       )}
-    </div>
+    </motion.div>
   )
 }

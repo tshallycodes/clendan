@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useAuth } from '@clerk/nextjs'
+import { motion } from 'framer-motion'
 import { cn } from '@/lib/utils'
 import { TransactionRow, type Transaction } from './TransactionRow'
 
@@ -18,6 +19,15 @@ const FILTERS: { key: StatusFilter; label: string }[] = [
   { key: 'categorised', label: 'Categorised' },
   { key: 'matched', label: 'Matched' },
 ]
+
+const pageVariants = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.07 } },
+}
+const sectionVariants = {
+  hidden: { opacity: 0, y: 14 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.38, ease: [0.25, 0.46, 0.45, 0.94] as const } },
+}
 
 interface Props {
   initialTransactions: Transaction[]
@@ -59,13 +69,13 @@ export function TransactionsClient({ initialTransactions, total }: Props) {
   }
 
   return (
-    <div className="p-6 space-y-6">
-      <div>
+    <motion.div variants={pageVariants} initial="hidden" animate="show" className="p-6 space-y-6">
+      <motion.div variants={sectionVariants}>
         <h1 className="font-heading font-bold text-2xl text-brand-text">Transactions</h1>
         <p className="text-brand-muted text-xs font-mono mt-1">{total} transactions total</p>
-      </div>
+      </motion.div>
 
-      <div className="flex gap-1">
+      <motion.div variants={sectionVariants} className="flex gap-1">
         {FILTERS.map(f => (
           <button
             key={f.key}
@@ -80,9 +90,9 @@ export function TransactionsClient({ initialTransactions, total }: Props) {
             {f.label}
           </button>
         ))}
-      </div>
+      </motion.div>
 
-      <div className="bg-brand-surface border border-brand-border rounded-sm overflow-hidden">
+      <motion.div variants={sectionVariants} className="bg-brand-surface border border-brand-border rounded-sm overflow-hidden">
         {filtered.length === 0 ? (
           <p className="px-5 py-12 text-xs font-mono text-brand-muted text-center">
             No transactions yet — connect Plaid to import bank data
@@ -99,18 +109,18 @@ export function TransactionsClient({ initialTransactions, total }: Props) {
                   ))}
                 </tr>
               </thead>
-              <tbody>
+              <motion.tbody initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.4, delay: 0.2 }}>
                 {filtered.map(t => (
                   <TransactionRow key={t.id} transaction={t} onCategoryUpdate={handleCategoryUpdate} />
                 ))}
-              </tbody>
+              </motion.tbody>
             </table>
           </div>
         )}
-      </div>
+      </motion.div>
 
       {transactions.length < total && (
-        <div className="flex justify-center">
+        <motion.div variants={sectionVariants} className="flex justify-center">
           <button
             onClick={loadMore}
             disabled={loadingMore}
@@ -118,8 +128,8 @@ export function TransactionsClient({ initialTransactions, total }: Props) {
           >
             {loadingMore ? 'Loading…' : 'Load more'}
           </button>
-        </div>
+        </motion.div>
       )}
-    </div>
+    </motion.div>
   )
 }

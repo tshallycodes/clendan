@@ -1,6 +1,7 @@
 'use client'
 
 import { Fragment, useState, useMemo } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 
 export interface AuditEntry {
   id: string
@@ -120,12 +121,18 @@ export function AuditTable({ entries, searchQuery, dateFrom, dateTo }: Props) {
             <th className="px-5 py-3 text-right text-[10px] font-mono text-brand-muted uppercase tracking-widest" aria-label="Expand row" />
           </tr>
         </thead>
-        <tbody className="divide-y divide-brand-border">
+        <motion.tbody
+          className="divide-y divide-brand-border"
+          initial="hidden"
+          animate="show"
+          variants={{ hidden: {}, show: { transition: { staggerChildren: 0.04 } } }}
+        >
           {filtered.map(e => {
             const isExpanded = expandedId === e.id
             return (
               <Fragment key={e.id}>
-                <tr
+                <motion.tr
+                  variants={{ hidden: { opacity: 0 }, show: { opacity: 1, transition: { duration: 0.2 } } }}
                   onClick={() => setExpandedId(isExpanded ? null : e.id)}
                   className="hover:bg-brand-elevated transition-colors cursor-pointer"
                 >
@@ -150,22 +157,38 @@ export function AuditTable({ entries, searchQuery, dateFrom, dateTo }: Props) {
                   <td className="px-5 py-3 text-right text-brand-muted">
                     {isExpanded ? '↑' : '↓'}
                   </td>
-                </tr>
-                {isExpanded && (
-                  <tr className="bg-brand-bg">
-                    <td colSpan={6} className="px-5 py-4">
-                      <pre className="bg-brand-bg border border-brand-border rounded-sm p-4 text-xs font-mono text-brand-secondary overflow-x-auto whitespace-pre-wrap break-all">
-                        {e.reasoning_trace_json
-                          ? JSON.stringify(e.reasoning_trace_json, null, 2)
-                          : '— no reasoning trace recorded —'}
-                      </pre>
-                    </td>
-                  </tr>
-                )}
+                </motion.tr>
+                <AnimatePresence>
+                  {isExpanded && (
+                    <motion.tr
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.15 }}
+                      className="bg-brand-bg"
+                    >
+                      <td colSpan={6} className="px-5 py-4">
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: 'auto' }}
+                          exit={{ opacity: 0, height: 0 }}
+                          transition={{ duration: 0.22, ease: 'easeOut' }}
+                          className="overflow-hidden"
+                        >
+                          <pre className="bg-brand-bg border border-brand-border rounded-sm p-4 text-xs font-mono text-brand-secondary overflow-x-auto whitespace-pre-wrap break-all">
+                            {e.reasoning_trace_json
+                              ? JSON.stringify(e.reasoning_trace_json, null, 2)
+                              : '— no reasoning trace recorded —'}
+                          </pre>
+                        </motion.div>
+                      </td>
+                    </motion.tr>
+                  )}
+                </AnimatePresence>
               </Fragment>
             )
           })}
-        </tbody>
+        </motion.tbody>
       </table>
     </div>
   )

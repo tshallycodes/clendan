@@ -41,7 +41,7 @@ export function StatCard({ value, label, change, changeDirection = 'neutral', de
     <motion.div
       initial={{ opacity: 0, y: 14 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.38, delay, ease: [0.25, 0.46, 0.45, 0.94] }}
+      transition={{ duration: 0.38, delay, ease: [0.25, 0.46, 0.45, 0.94] as const }}
       className="bg-brand-surface border border-brand-border rounded-sm p-4"
     >
       <div className="font-heading text-3xl font-bold text-brand-text mb-1">{display}</div>

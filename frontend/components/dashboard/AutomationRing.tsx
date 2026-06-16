@@ -44,7 +44,7 @@ export function AutomationRing({ autoApproved, total }: Props) {
             strokeDasharray={circumference}
             initial={{ strokeDashoffset: circumference }}
             animate={{ strokeDashoffset: circumference - strokeDash }}
-            transition={{ duration: 1.4, ease: [0.25, 0.46, 0.45, 0.94], delay: 0.3 }}
+            transition={{ duration: 1.4, ease: [0.25, 0.46, 0.45, 0.94] as const, delay: 0.3 }}
           />
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center">
@@ -116,7 +116,7 @@ export function AutomationRing({ autoApproved, total }: Props) {
                 style={{ backgroundColor: tier.color }}
                 initial={{ width: 0 }}
                 animate={{ width: `${Math.min((rate / 90) * 100, 100)}%` }}
-                transition={{ duration: 1.4, ease: [0.25, 0.46, 0.45, 0.94], delay: 0.3 }}
+                transition={{ duration: 1.4, ease: [0.25, 0.46, 0.45, 0.94] as const, delay: 0.3 }}
               />
             </div>
           </div>

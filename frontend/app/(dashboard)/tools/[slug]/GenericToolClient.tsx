@@ -11,6 +11,7 @@ import type { Tool } from '@/components/dashboard/tools/ToolCard'
 import type { ToolDef } from '../tools-data'
 import { useAuth } from '@clerk/nextjs'
 import { useCanConfigure } from '@/lib/auth-client'
+import { motion, AnimatePresence } from 'framer-motion'
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
@@ -32,6 +33,24 @@ const AUTONOMY_BADGE: Record<string, { label: string; className: string }> = {
   auto:    { label: 'Auto',    className: 'bg-[rgba(0,200,83,0.08)] text-[#00C853] border border-[rgba(0,200,83,0.2)]' },
   approve: { label: 'Approve', className: 'bg-[rgba(0,168,204,0.08)] text-[#00a8cc] border border-[rgba(0,168,204,0.2)]' },
   suggest: { label: 'Suggest', className: 'bg-brand-surface text-brand-muted border border-brand-border' },
+}
+
+const pageVariants = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.07 } },
+}
+const EASE = [0.25, 0.46, 0.45, 0.94] as const
+const sectionVariants = {
+  hidden: { opacity: 0, y: 14 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.38, ease: EASE } },
+}
+const capabilityVariants = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.05 } },
+}
+const capItemVariants = {
+  hidden: { opacity: 0, x: -8 },
+  show: { opacity: 1, x: 0, transition: { duration: 0.25, ease: EASE } },
 }
 
 function NotDeployedTab({ message }: { message: string }) {
@@ -95,12 +114,14 @@ export function GenericToolClient({ tool, deployed }: Props) {
   const actionLoading = toggling || deploying
 
   return (
-    <div className="p-6 space-y-6">
-      <Link href="/tools" className="text-[11px] font-mono text-brand-muted hover:text-brand-secondary transition-colors">
-        ← Tools
-      </Link>
+    <motion.div variants={pageVariants} initial="hidden" animate="show" className="p-6 space-y-6">
+      <motion.div variants={sectionVariants}>
+        <Link href="/tools" className="text-[11px] font-mono text-brand-muted hover:text-brand-secondary transition-colors">
+          ← Tools
+        </Link>
+      </motion.div>
 
-      <div className="flex items-start justify-between gap-4 flex-wrap">
+      <motion.div variants={sectionVariants} className="flex items-start justify-between gap-4 flex-wrap">
         <div className="space-y-1">
           <div className="flex items-center gap-2 flex-wrap">
             <h1 className="font-heading font-bold text-2xl text-brand-text">{tool.name}</h1>
@@ -126,9 +147,9 @@ export function GenericToolClient({ tool, deployed }: Props) {
             </button>
           </div>
         )}
-      </div>
+      </motion.div>
 
-      <div className="flex items-center gap-2">
+      <motion.div variants={sectionVariants} className="flex items-center gap-2">
         {isActive ? (
           <>
             <span className="relative flex h-2 w-2">
@@ -143,9 +164,9 @@ export function GenericToolClient({ tool, deployed }: Props) {
             <span className="text-xs font-mono text-brand-muted">{deployed ? 'Paused' : 'Not deployed'}</span>
           </>
         )}
-      </div>
+      </motion.div>
 
-      <div className="flex gap-1 border-b border-brand-border">
+      <motion.div variants={sectionVariants} className="flex gap-1 border-b border-brand-border">
         {TABS.map(t => (
           <button key={t.key} type="button" onClick={() => setActiveTab(t.key)}
             className={`text-xs font-mono px-4 py-2.5 border-b-2 transition-colors -mb-px ${
@@ -156,34 +177,42 @@ export function GenericToolClient({ tool, deployed }: Props) {
             {t.label}
           </button>
         ))}
-      </div>
+      </motion.div>
 
-      <div>
-        {activeTab === 'overview' && (
-          tool.capabilities.length > 0
-            ? <ul className="bg-brand-surface border border-brand-border rounded-sm divide-y divide-brand-border">
-                {tool.capabilities.map(cap => (
-                  <li key={cap} className="flex items-start gap-3 px-4 py-3">
-                    <span className="text-brand-muted font-mono text-[10px] mt-0.5 shrink-0">→</span>
-                    <span className="text-xs font-mono text-brand-secondary">{cap}</span>
-                  </li>
-                ))}
-              </ul>
-            : <NotDeployedTab message="No capabilities listed." />
-        )}
-        {activeTab === 'executions' && (deployed
-          ? <ToolExecutionsTab toolId={deployed.id} />
-          : <NotDeployedTab message="Deploy this tool to start tracking executions." />
-        )}
-        {activeTab === 'approvals' && (deployed
-          ? <ToolApprovalsTab toolId={deployed.id} />
-          : <NotDeployedTab message="Deploy this tool to manage approvals." />
-        )}
-        {activeTab === 'audit' && (deployed
-          ? <ToolAuditTab toolId={deployed.id} />
-          : <NotDeployedTab message="Deploy this tool to view the audit trail." />
-        )}
-      </div>
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={activeTab}
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -8 }}
+          transition={{ duration: 0.2, ease: 'easeOut' }}
+        >
+          {activeTab === 'overview' && (
+            tool.capabilities.length > 0
+              ? <motion.ul variants={capabilityVariants} initial="hidden" animate="show" className="bg-brand-surface border border-brand-border rounded-sm divide-y divide-brand-border">
+                  {tool.capabilities.map(cap => (
+                    <motion.li key={cap} variants={capItemVariants} className="flex items-start gap-3 px-4 py-3">
+                      <span className="text-brand-muted font-mono text-[10px] mt-0.5 shrink-0">→</span>
+                      <span className="text-xs font-mono text-brand-secondary">{cap}</span>
+                    </motion.li>
+                  ))}
+                </motion.ul>
+              : <NotDeployedTab message="No capabilities listed." />
+          )}
+          {activeTab === 'executions' && (deployed
+            ? <ToolExecutionsTab toolId={deployed.id} />
+            : <NotDeployedTab message="Deploy this tool to start tracking executions." />
+          )}
+          {activeTab === 'approvals' && (deployed
+            ? <ToolApprovalsTab toolId={deployed.id} />
+            : <NotDeployedTab message="Deploy this tool to manage approvals." />
+          )}
+          {activeTab === 'audit' && (deployed
+            ? <ToolAuditTab toolId={deployed.id} />
+            : <NotDeployedTab message="Deploy this tool to view the audit trail." />
+          )}
+        </motion.div>
+      </AnimatePresence>
 
       {showConfig && (
         <ConfigDrawer
@@ -193,6 +222,6 @@ export function GenericToolClient({ tool, deployed }: Props) {
           onSaved={() => { setShowConfig(false); router.refresh() }}
         />
       )}
-    </div>
+    </motion.div>
   )
 }

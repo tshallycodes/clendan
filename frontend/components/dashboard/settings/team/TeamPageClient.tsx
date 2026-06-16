@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { useAuth } from '@clerk/nextjs'
+import { motion } from 'framer-motion'
 import { useCanConfigure, useIsOwner } from '@/lib/auth-client'
 import { MembersTable } from './MembersTable'
 import { InvitationsTable } from './InvitationsTable'
@@ -11,6 +12,15 @@ import { InviteLinksSection } from './InviteLinksSection'
 import type { Member, Invitation } from './types'
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+
+const pageVariants = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.08 } },
+}
+const sectionVariants = {
+  hidden: { opacity: 0, y: 14 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.38, ease: [0.25, 0.46, 0.45, 0.94] as const } },
+}
 
 interface OrgSettings {
   domain: string
@@ -96,65 +106,75 @@ export function TeamPageClient() {
   }, [fetchMembers, fetchInvitations, getToken])
 
   return (
-    <div className="p-6 max-w-3xl space-y-10">
-      <div>
+    <motion.div variants={pageVariants} initial="hidden" animate="show" className="p-6 max-w-3xl space-y-10">
+      <motion.div variants={sectionVariants}>
         <h1 className="font-heading font-bold text-2xl text-brand-text">Team</h1>
         <p className="text-brand-muted text-xs font-mono mt-1">Manage members, roles, and invitations</p>
-      </div>
+      </motion.div>
 
-      <section className="space-y-4">
-        <h2 className="text-[10px] font-mono uppercase tracking-widest text-brand-muted border-b border-brand-border pb-2">
-          Members
-        </h2>
-        {loadingMembers ? (
-          <SectionSkeleton />
-        ) : members.length === 0 ? (
-          <p className="text-xs font-mono text-brand-muted">No members found.</p>
-        ) : (
-          <MembersTable members={members} isCurrentUserOwner={isOwner} onChanged={fetchMembers} />
-        )}
-      </section>
-
-      <section className="space-y-4">
-        <h2 className="text-[10px] font-mono uppercase tracking-widest text-brand-muted border-b border-brand-border pb-2">
-          Pending Invitations
-        </h2>
-        {loadingInvites ? (
-          <SectionSkeleton />
-        ) : (
-          <InvitationsTable invitations={invitations} onChanged={fetchInvitations} />
-        )}
-      </section>
-
-      {canConfigure && (
+      <motion.div variants={sectionVariants}>
         <section className="space-y-4">
           <h2 className="text-[10px] font-mono uppercase tracking-widest text-brand-muted border-b border-brand-border pb-2">
-            Invite Team Member
+            Members
           </h2>
-          <InviteForm onInvited={fetchInvitations} />
+          {loadingMembers ? (
+            <SectionSkeleton />
+          ) : members.length === 0 ? (
+            <p className="text-xs font-mono text-brand-muted">No members found.</p>
+          ) : (
+            <MembersTable members={members} isCurrentUserOwner={isOwner} onChanged={fetchMembers} />
+          )}
         </section>
+      </motion.div>
+
+      <motion.div variants={sectionVariants}>
+        <section className="space-y-4">
+          <h2 className="text-[10px] font-mono uppercase tracking-widest text-brand-muted border-b border-brand-border pb-2">
+            Pending Invitations
+          </h2>
+          {loadingInvites ? (
+            <SectionSkeleton />
+          ) : (
+            <InvitationsTable invitations={invitations} onChanged={fetchInvitations} />
+          )}
+        </section>
+      </motion.div>
+
+      {canConfigure && (
+        <motion.div variants={sectionVariants}>
+          <section className="space-y-4">
+            <h2 className="text-[10px] font-mono uppercase tracking-widest text-brand-muted border-b border-brand-border pb-2">
+              Invite Team Member
+            </h2>
+            <InviteForm onInvited={fetchInvitations} />
+          </section>
+        </motion.div>
       )}
 
       {canConfigure && (
-        <section className="space-y-4">
-          <h2 className="text-[10px] font-mono uppercase tracking-widest text-brand-muted border-b border-brand-border pb-2">
-            Invite Links
-          </h2>
-          <InviteLinksSection />
-        </section>
+        <motion.div variants={sectionVariants}>
+          <section className="space-y-4">
+            <h2 className="text-[10px] font-mono uppercase tracking-widest text-brand-muted border-b border-brand-border pb-2">
+              Invite Links
+            </h2>
+            <InviteLinksSection />
+          </section>
+        </motion.div>
       )}
 
       {isOwner && settings && (
-        <section className="space-y-4">
-          <h2 className="text-[10px] font-mono uppercase tracking-widest text-brand-muted border-b border-brand-border pb-2">
-            Google SSO Domain Matching
-          </h2>
-          <DomainMatchingToggle
-            initialEnabled={settings.domain_matching}
-            domain={settings.domain}
-          />
-        </section>
+        <motion.div variants={sectionVariants}>
+          <section className="space-y-4">
+            <h2 className="text-[10px] font-mono uppercase tracking-widest text-brand-muted border-b border-brand-border pb-2">
+              Google SSO Domain Matching
+            </h2>
+            <DomainMatchingToggle
+              initialEnabled={settings.domain_matching}
+              domain={settings.domain}
+            />
+          </section>
+        </motion.div>
       )}
-    </div>
+    </motion.div>
   )
 }

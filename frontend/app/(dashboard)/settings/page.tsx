@@ -6,6 +6,7 @@ import { DangerZone } from '@/components/dashboard/settings/DangerZone'
 import { IntegrationsSection } from '@/components/dashboard/settings/IntegrationsSection'
 import { TeamSection } from '@/components/dashboard/settings/TeamSection'
 import { InviteLinksSection } from '@/components/dashboard/settings/team/InviteLinksSection'
+import { AnimatedPage, AnimatedSection } from '@/components/dashboard/AnimatedPage'
 
 interface TenantData {
   tenant: { id: string; name: string; created_at: string }
@@ -28,93 +29,109 @@ export default async function SettingsPage() {
   }
 
   return (
-    <div className="p-6 max-w-2xl space-y-10">
-      <div>
-        <h1 className="font-heading font-bold text-2xl text-brand-text">Settings</h1>
-        <p className="text-brand-muted text-xs font-mono mt-1">Manage your organisation and credentials</p>
-      </div>
+    <AnimatedPage className="p-6 max-w-2xl space-y-10">
+      <AnimatedSection>
+        <div>
+          <h1 className="font-heading font-bold text-2xl text-brand-text">Settings</h1>
+          <p className="text-brand-muted text-xs font-mono mt-1">Manage your organisation and credentials</p>
+        </div>
+      </AnimatedSection>
 
       {/* Organisation */}
-      <section className="space-y-4">
-        <h2 className="text-[10px] font-mono uppercase tracking-widest text-brand-muted border-b border-brand-border pb-2">Organisation</h2>
-        <div className="space-y-3">
-          <div>
-            <p className="text-[10px] font-mono text-brand-muted mb-1.5 uppercase tracking-wide">Name</p>
-            {data ? (
-              <OrgNameForm initialName={data.tenant.name} />
-            ) : (
-              <p className="text-xs font-mono text-brand-muted">Backend unavailable</p>
-            )}
-          </div>
-          <div>
-            <p className="text-[10px] font-mono text-brand-muted mb-1.5 uppercase tracking-wide">Tenant ID</p>
-            <div className="flex items-center gap-2">
-              <code className="text-xs font-mono text-brand-text bg-brand-bg border border-brand-border rounded-sm px-3 py-2">
-                {data?.tenant.id ?? '—'}
-              </code>
-              <span className="text-[10px] font-mono text-brand-muted">use as X-Tenant-ID in API calls</span>
+      <AnimatedSection>
+        <section className="space-y-4">
+          <h2 className="text-[10px] font-mono uppercase tracking-widest text-brand-muted border-b border-brand-border pb-2">Organisation</h2>
+          <div className="space-y-3">
+            <div>
+              <p className="text-[10px] font-mono text-brand-muted mb-1.5 uppercase tracking-wide">Name</p>
+              {data ? (
+                <OrgNameForm initialName={data.tenant.name} />
+              ) : (
+                <p className="text-xs font-mono text-brand-muted">Backend unavailable</p>
+              )}
+            </div>
+            <div>
+              <p className="text-[10px] font-mono text-brand-muted mb-1.5 uppercase tracking-wide">Tenant ID</p>
+              <div className="flex items-center gap-2">
+                <code className="text-xs font-mono text-brand-text bg-brand-bg border border-brand-border rounded-sm px-3 py-2">
+                  {data?.tenant.id ?? '—'}
+                </code>
+                <span className="text-[10px] font-mono text-brand-muted">use as X-Tenant-ID in API calls</span>
+              </div>
+            </div>
+            <div>
+              <p className="text-[10px] font-mono text-brand-muted mb-1.5 uppercase tracking-wide">Created</p>
+              <p className="text-xs font-mono text-brand-text">
+                {data ? new Date(data.tenant.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) : '—'}
+              </p>
             </div>
           </div>
-          <div>
-            <p className="text-[10px] font-mono text-brand-muted mb-1.5 uppercase tracking-wide">Created</p>
-            <p className="text-xs font-mono text-brand-text">
-              {data ? new Date(data.tenant.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) : '—'}
-            </p>
-          </div>
-        </div>
-      </section>
+        </section>
+      </AnimatedSection>
 
       {/* Account */}
-      <section className="space-y-4">
-        <h2 className="text-[10px] font-mono uppercase tracking-widest text-brand-muted border-b border-brand-border pb-2">Your Account</h2>
-        <div className="space-y-3">
-          <div>
-            <p className="text-[10px] font-mono text-brand-muted mb-1.5 uppercase tracking-wide">Email</p>
-            <p className="text-xs font-mono text-brand-text">{data?.user.email ?? '—'}</p>
+      <AnimatedSection>
+        <section className="space-y-4">
+          <h2 className="text-[10px] font-mono uppercase tracking-widest text-brand-muted border-b border-brand-border pb-2">Your Account</h2>
+          <div className="space-y-3">
+            <div>
+              <p className="text-[10px] font-mono text-brand-muted mb-1.5 uppercase tracking-wide">Email</p>
+              <p className="text-xs font-mono text-brand-text">{data?.user.email ?? '—'}</p>
+            </div>
+            <div>
+              <p className="text-[10px] font-mono text-brand-muted mb-1.5 uppercase tracking-wide">Role</p>
+              {data ? (
+                <span className={`text-[10px] font-mono px-2 py-0.5 rounded-sm border ${ROLE_COLORS[data.user.role.toLowerCase()] ?? ROLE_COLORS.member}`}>
+                  {data.user.role.charAt(0).toUpperCase() + data.user.role.slice(1).toLowerCase()}
+                </span>
+              ) : <p className="text-xs font-mono text-brand-muted">—</p>}
+            </div>
           </div>
-          <div>
-            <p className="text-[10px] font-mono text-brand-muted mb-1.5 uppercase tracking-wide">Role</p>
-            {data ? (
-              <span className={`text-[10px] font-mono px-2 py-0.5 rounded-sm border ${ROLE_COLORS[data.user.role.toLowerCase()] ?? ROLE_COLORS.member}`}>
-                {data.user.role.charAt(0).toUpperCase() + data.user.role.slice(1).toLowerCase()}
-              </span>
-            ) : <p className="text-xs font-mono text-brand-muted">—</p>}
-          </div>
-        </div>
-      </section>
+        </section>
+      </AnimatedSection>
 
       {/* Team */}
-      <section className="space-y-4">
-        <h2 className="text-[10px] font-mono uppercase tracking-widest text-brand-muted border-b border-brand-border pb-2">Team</h2>
-        <TeamSection />
-      </section>
+      <AnimatedSection>
+        <section className="space-y-4">
+          <h2 className="text-[10px] font-mono uppercase tracking-widest text-brand-muted border-b border-brand-border pb-2">Team</h2>
+          <TeamSection />
+        </section>
+      </AnimatedSection>
 
       {/* Invite Links */}
-      <section className="space-y-4">
-        <h2 className="text-[10px] font-mono uppercase tracking-widest text-brand-muted border-b border-brand-border pb-2">Invite Links</h2>
-        <InviteLinksSection />
-      </section>
+      <AnimatedSection>
+        <section className="space-y-4">
+          <h2 className="text-[10px] font-mono uppercase tracking-widest text-brand-muted border-b border-brand-border pb-2">Invite Links</h2>
+          <InviteLinksSection />
+        </section>
+      </AnimatedSection>
 
       {/* Integrations */}
-      <section className="space-y-4">
-        <div className="border-b border-brand-border pb-2 flex items-baseline justify-between">
-          <h2 className="text-[10px] font-mono uppercase tracking-widest text-brand-muted">Integrations</h2>
-          <p className="text-[10px] font-mono text-brand-muted">External systems connected to your tools</p>
-        </div>
-        <IntegrationsSection />
-      </section>
+      <AnimatedSection>
+        <section className="space-y-4">
+          <div className="border-b border-brand-border pb-2 flex items-baseline justify-between">
+            <h2 className="text-[10px] font-mono uppercase tracking-widest text-brand-muted">Integrations</h2>
+            <p className="text-[10px] font-mono text-brand-muted">External systems connected to your tools</p>
+          </div>
+          <IntegrationsSection />
+        </section>
+      </AnimatedSection>
 
       {/* Notifications */}
-      <section className="space-y-4">
-        <h2 className="text-[10px] font-mono uppercase tracking-widest text-brand-muted border-b border-brand-border pb-2">Notifications</h2>
-        <NotificationsSection />
-      </section>
+      <AnimatedSection>
+        <section className="space-y-4">
+          <h2 className="text-[10px] font-mono uppercase tracking-widest text-brand-muted border-b border-brand-border pb-2">Notifications</h2>
+          <NotificationsSection />
+        </section>
+      </AnimatedSection>
 
       {/* Danger Zone */}
-      <section className="space-y-4">
-        <h2 className="text-[10px] font-mono uppercase tracking-widest text-[#ff4d6d] border-b border-[#ff4d6d]/20 pb-2">Danger Zone</h2>
-        <DangerZone />
-      </section>
-    </div>
+      <AnimatedSection>
+        <section className="space-y-4">
+          <h2 className="text-[10px] font-mono uppercase tracking-widest text-[#ff4d6d] border-b border-[#ff4d6d]/20 pb-2">Danger Zone</h2>
+          <DangerZone />
+        </section>
+      </AnimatedSection>
+    </AnimatedPage>
   )
 }

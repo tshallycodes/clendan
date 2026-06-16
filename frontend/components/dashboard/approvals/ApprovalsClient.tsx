@@ -1,6 +1,7 @@
 ﻿'use client'
 
 import { useState } from 'react'
+import { motion } from 'framer-motion'
 import { useAuth } from '@clerk/nextjs'
 import { StatusBadge } from '@/components/dashboard/StatusBadge'
 import { cn } from '@/lib/utils'
@@ -201,6 +202,23 @@ function ResolvedCard({ approval }: { approval: Approval }) {
   )
 }
 
+const pageVariants = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.07 } },
+}
+const sectionVariants = {
+  hidden: { opacity: 0, y: 14 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.38, ease: [0.25, 0.46, 0.45, 0.94] as const } },
+}
+const cardListVariants = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.06 } },
+}
+const cardVariants = {
+  hidden: { opacity: 0, y: 10 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] as const } },
+}
+
 interface Props {
   initialApprovals: Approval[]
 }
@@ -248,15 +266,15 @@ export function ApprovalsClient({ initialApprovals }: Props) {
   const pendingCount = approvals.filter((a) => a.status === 'pending').length
 
   return (
-    <div className="p-6 space-y-6">
-      <div>
+    <motion.div variants={pageVariants} initial="hidden" animate="show" className="p-6 space-y-6">
+      <motion.div variants={sectionVariants}>
         <h1 className="font-heading font-bold text-2xl text-brand-text">Approval Queue</h1>
         <p className="text-brand-muted text-xs font-mono mt-1">
           {pendingCount} pending {pendingCount === 1 ? 'approval' : 'approvals'}
         </p>
-      </div>
+      </motion.div>
 
-      <div className="flex gap-1">
+      <motion.div variants={sectionVariants} className="flex gap-1">
         {TABS.map((tab) => (
           <button
             type="button"
@@ -272,37 +290,38 @@ export function ApprovalsClient({ initialApprovals }: Props) {
             {tab.label}
           </button>
         ))}
-      </div>
+      </motion.div>
 
       {filtered.length === 0 && activeTab === 'pending' ? (
-        <div className="bg-brand-surface border border-brand-border rounded-sm p-12 flex flex-col items-center gap-3">
+        <motion.div variants={sectionVariants} className="bg-brand-surface border border-brand-border rounded-sm p-12 flex flex-col items-center gap-3">
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-brand-green animate-pulse" />
             <p className="text-xs font-mono text-brand-muted">
               No pending approvals — tools are executing autonomously
             </p>
           </div>
-        </div>
+        </motion.div>
       ) : filtered.length === 0 ? (
-        <div className="bg-brand-surface border border-brand-border rounded-sm p-12 text-center">
+        <motion.div variants={sectionVariants} className="bg-brand-surface border border-brand-border rounded-sm p-12 text-center">
           <p className="text-xs font-mono text-brand-muted">No approvals in this category</p>
-        </div>
+        </motion.div>
       ) : (
-        <div className="space-y-3">
-          {filtered.map((approval) =>
-            approval.status === 'pending' ? (
-              <PendingCard
-                key={approval.id}
-                approval={approval}
-                onAction={handleAction}
-                loadingState={loadingMap[approval.id] ?? null}
-              />
-            ) : (
-              <ResolvedCard key={approval.id} approval={approval} />
-            ),
-          )}
-        </div>
+        <motion.div variants={cardListVariants} className="space-y-3">
+          {filtered.map((approval) => (
+            <motion.div key={approval.id} variants={cardVariants}>
+              {approval.status === 'pending' ? (
+                <PendingCard
+                  approval={approval}
+                  onAction={handleAction}
+                  loadingState={loadingMap[approval.id] ?? null}
+                />
+              ) : (
+                <ResolvedCard approval={approval} />
+              )}
+            </motion.div>
+          ))}
+        </motion.div>
       )}
-    </div>
+    </motion.div>
   )
 }

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '@clerk/nextjs'
 import { Copy, Check, ExternalLink, Plus, X } from 'lucide-react'
 import { useToast } from '@/components/Providers'
+import { motion } from 'framer-motion'
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 const BASE_URL = 'https://api.clendan.com/v1'
@@ -20,6 +21,19 @@ interface ApiKey {
   status: string
   created_at: string
   expires_at: string | null
+}
+
+const pageVariants = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.08 } },
+}
+const sectionVariants = {
+  hidden: { opacity: 0, y: 14 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.38, ease: [0.25, 0.46, 0.45, 0.94] as const } },
+}
+const keyRowVariants = {
+  hidden: { opacity: 0, x: -8 },
+  show: { opacity: 1, x: 0, transition: { duration: 0.28, ease: [0.25, 0.46, 0.45, 0.94] as const } },
 }
 
 function CopyButton({ text }: { text: string }) {
@@ -117,14 +131,15 @@ export function DeveloperPageClient() {
   }
 
   return (
-    <div className="p-6 max-w-2xl space-y-10">
-      <div>
+    <motion.div variants={pageVariants} initial="hidden" animate="show" className="p-6 max-w-2xl space-y-10">
+      <motion.div variants={sectionVariants}>
         <h1 className="font-heading font-bold text-2xl text-brand-text">Developer</h1>
         <p className="text-brand-secondary text-xs font-mono mt-1">
           Connect external systems to Clendan via API key.
         </p>
-      </div>
+      </motion.div>
 
+      <motion.div variants={sectionVariants}>
       <section className="space-y-3">
         <SectionLabel>API Keys</SectionLabel>
 
@@ -173,9 +188,9 @@ export function DeveloperPageClient() {
             No API keys — generate your first key to connect external systems.
           </p>
         ) : (
-          <div className="divide-y divide-brand-border border border-brand-border rounded-sm overflow-hidden">
+          <motion.div initial="hidden" animate="show" variants={{ hidden: {}, show: { transition: { staggerChildren: 0.06 } } }} className="divide-y divide-brand-border border border-brand-border rounded-sm overflow-hidden">
             {keys.map((k) => (
-              <div key={k.id} className="bg-brand-surface px-4 py-3 flex items-center gap-4">
+              <motion.div key={k.id} variants={keyRowVariants} className="bg-brand-surface px-4 py-3 flex items-center gap-4">
                 <div className="flex-1 min-w-0">
                   <span className="text-xs font-mono text-brand-text">{k.name}</span>
                   <code className="ml-3 text-[10px] font-mono text-brand-muted">{k.key_prefix}••••••••</code>
@@ -196,9 +211,9 @@ export function DeveloperPageClient() {
                     Revoke
                   </button>
                 )}
-              </div>
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
         )}
 
         {!showForm && (
@@ -209,7 +224,9 @@ export function DeveloperPageClient() {
           </button>
         )}
       </section>
+      </motion.div>
 
+      <motion.div variants={sectionVariants}>
       <section className="space-y-3">
         <SectionLabel>Base URL</SectionLabel>
         <div className="flex items-center gap-3 bg-brand-bg border border-brand-border rounded-sm px-4 py-3">
@@ -217,7 +234,9 @@ export function DeveloperPageClient() {
           <CopyButton text={BASE_URL} />
         </div>
       </section>
+      </motion.div>
 
+      <motion.div variants={sectionVariants}>
       <section className="space-y-3">
         <SectionLabel>Quick Start</SectionLabel>
         <div className="flex items-start gap-3 bg-brand-bg border border-brand-border rounded-sm px-4 py-3">
@@ -225,7 +244,9 @@ export function DeveloperPageClient() {
           <CopyButton text={QUICK_START} />
         </div>
       </section>
+      </motion.div>
 
+      <motion.div variants={sectionVariants}>
       <section className="space-y-3">
         <SectionLabel>Documentation</SectionLabel>
         <a href="https://clendan.mintlify.app" target="_blank" rel="noopener noreferrer"
@@ -237,6 +258,7 @@ export function DeveloperPageClient() {
           <ExternalLink className="w-4 h-4 text-brand-muted shrink-0" />
         </a>
       </section>
-    </div>
+      </motion.div>
+    </motion.div>
   )
 }
