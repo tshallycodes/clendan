@@ -1,4 +1,5 @@
 from functools import lru_cache
+from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -31,7 +32,7 @@ class Settings(BaseSettings):
 
     quickbooks_client_id: str = ""
     quickbooks_client_secret: str = ""
-    quickbooks_redirect_uri: str = "http://localhost:8000/v1/integrations/quickbooks/callback"
+    quickbooks_redirect_uri: str = ""
     quickbooks_sandbox: bool = True
     quickbooks_webhook_verifier_token: str = ""
     quickbooks_default_account_id: str = ""  # optional override; falls back to querying first Expense account
@@ -47,12 +48,12 @@ class Settings(BaseSettings):
 
     xero_client_id: str = ""
     xero_client_secret: str = ""
-    xero_redirect_uri: str = "http://localhost:8000/v1/integrations/xero/callback"
+    xero_redirect_uri: str = ""
     xero_webhook_key: str = ""
 
     truelayer_client_id: str = ""
     truelayer_client_secret: str = ""
-    truelayer_redirect_uri: str = "http://localhost:8000/v1/integrations/truelayer/callback"
+    truelayer_redirect_uri: str = ""
     truelayer_env: str = "sandbox"  # sandbox | production
 
     mono_secret_key: str = ""
@@ -65,29 +66,29 @@ class Settings(BaseSettings):
 
     hubspot_client_id: str = ""
     hubspot_client_secret: str = ""
-    hubspot_redirect_uri: str = "http://localhost:8000/v1/integrations/hubspot/callback"
+    hubspot_redirect_uri: str = ""
 
     google_client_id: str = ""
     google_client_secret: str = ""
-    google_redirect_uri_gmail: str = "http://localhost:8000/v1/integrations/gmail/callback"
-    google_redirect_uri_drive: str = "http://localhost:8000/v1/integrations/google-drive/callback"
+    google_redirect_uri_gmail: str = ""
+    google_redirect_uri_drive: str = ""
     google_pubsub_topic: str = ""
 
     microsoft_client_id: str = ""
     microsoft_client_secret: str = ""
-    microsoft_redirect_uri: str = "http://localhost:8000/v1/integrations/outlook/callback"
+    microsoft_redirect_uri: str = ""
     microsoft_tenant_id: str = "common"
 
     integration_master_secret: str = ""
 
     square_client_id: str = ""
     square_client_secret: str = ""
-    square_redirect_uri: str = "http://localhost:8000/v1/integrations/square/callback"
+    square_redirect_uri: str = ""
     square_webhook_signature_key: str = ""
 
     paypal_client_id: str = ""
     paypal_client_secret: str = ""
-    paypal_redirect_uri: str = "http://localhost:8000/v1/integrations/paypal/callback"
+    paypal_redirect_uri: str = ""
     paypal_webhook_id: str = ""
     paypal_env: str = "sandbox"  # sandbox | live
 
@@ -97,11 +98,11 @@ class Settings(BaseSettings):
 
     freshbooks_client_id: str = ""
     freshbooks_client_secret: str = ""
-    freshbooks_redirect_uri: str = "http://localhost:8000/v1/integrations/freshbooks/callback"
+    freshbooks_redirect_uri: str = ""
 
     sage_client_id: str = ""
     sage_client_secret: str = ""
-    sage_redirect_uri: str = "http://localhost:8000/v1/integrations/sage/callback"
+    sage_redirect_uri: str = ""
 
     wave_client_id: str = ""
     wave_client_secret: str = ""
@@ -114,6 +115,27 @@ class Settings(BaseSettings):
 
     dropbox_client_id: str = ""
     dropbox_client_secret: str = ""
+
+    @model_validator(mode="after")
+    def _compute_redirect_uris(self) -> "Settings":
+        base = self.backend_base_url.rstrip("/")
+        defaults = {
+            "quickbooks_redirect_uri": f"{base}/v1/integrations/quickbooks/callback",
+            "xero_redirect_uri": f"{base}/v1/integrations/xero/callback",
+            "truelayer_redirect_uri": f"{base}/v1/integrations/truelayer/callback",
+            "hubspot_redirect_uri": f"{base}/v1/integrations/hubspot/callback",
+            "google_redirect_uri_gmail": f"{base}/v1/integrations/gmail/callback",
+            "google_redirect_uri_drive": f"{base}/v1/integrations/google-drive/callback",
+            "microsoft_redirect_uri": f"{base}/v1/integrations/outlook/callback",
+            "square_redirect_uri": f"{base}/v1/integrations/square/callback",
+            "paypal_redirect_uri": f"{base}/v1/integrations/paypal/callback",
+            "freshbooks_redirect_uri": f"{base}/v1/integrations/freshbooks/callback",
+            "sage_redirect_uri": f"{base}/v1/integrations/sage/callback",
+        }
+        for field, value in defaults.items():
+            if not getattr(self, field):
+                setattr(self, field, value)
+        return self
 
 
 @lru_cache()
