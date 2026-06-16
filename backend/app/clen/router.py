@@ -18,7 +18,7 @@ from pydantic import BaseModel
 from app.core.config import get_settings
 from app.core.db import get_db_dep
 from app.core.logging import get_logger
-from app.core.security import _fetch_jwks, ROLE_MAP
+from app.core.security import _fetch_jwks
 from app.clen.context import build_system_prompt
 from app.clen.tools import ACCOUNT_TOOLS, execute_tool
 
@@ -112,7 +112,14 @@ async def _generate(
     settings = get_settings()
     client = anthropic.AsyncAnthropic(api_key=settings.anthropic_api_key)
 
-    system = await build_system_prompt(mode, tenant_id, db)
+    try:
+        system = await build_system_prompt(mode, tenant_id, db)
+    except Exception as exc:
+        logger.error("clen_system_prompt_failed error=%s", type(exc).__name__)
+        yield f"data: {json.dumps({'type': 'error', 'content': 'Clen failed to initialise — please try again'})}\n\n"
+        yield "data: [DONE]\n\n"
+        return
+
     tools = ACCOUNT_TOOLS if mode == "account" else []
 
     # Mutable copy so we can append tool results for multi-turn agentic loop

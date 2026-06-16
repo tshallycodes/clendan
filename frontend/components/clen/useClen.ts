@@ -102,6 +102,13 @@ export function useClen(mode: ClenMode) {
                 updated[updated.length - 1] = { ...last, content: last.content + event.content }
                 return updated
               })
+            } else if (event.type === 'error') {
+              setError(event.content ?? 'Clen encountered an error — please try again')
+              setMessages(prev => {
+                const updated = [...prev]
+                updated.pop()
+                return updated
+              })
             } else if (event.type === 'tool_call') {
               setMessages(prev => {
                 const updated = [...prev]
@@ -129,8 +136,22 @@ export function useClen(mode: ClenMode) {
           }
         }
       }
+      // Stream ended without [DONE] — remove orphaned empty assistant message
+      setMessages(prev => {
+        const last = prev[prev.length - 1]
+        if (last?.role === 'assistant' && !last.content && !last.toolCalls?.length) {
+          setError('Connection lost — please try again')
+          return prev.slice(0, -1)
+        }
+        return prev
+      })
     } catch {
       setError('Connection failed. Please try again.')
+      setMessages(prev => {
+        const last = prev[prev.length - 1]
+        if (last?.role === 'assistant' && !last.content) return prev.slice(0, -1)
+        return prev
+      })
     } finally {
       setIsLoading(false)
     }
