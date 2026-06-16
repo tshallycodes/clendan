@@ -1,5 +1,6 @@
 'use client'
 
+import React from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Home, CheckSquare, Plug, Code2, Cpu, Settings, LogOut, Receipt } from 'lucide-react'
@@ -7,7 +8,7 @@ import { useClerk } from '@clerk/nextjs'
 import { cn } from '@/lib/utils'
 import { ThemeToggle } from '@/components/ThemeToggle'
 
-const NAV = [
+const NAV: { icon: React.ElementType; label: string; href: string; external?: boolean }[] = [
   { icon: Home,        label: 'Dashboard',    href: '/dashboard' },
   { icon: CheckSquare, label: 'Approvals',    href: '/approvals' },
   { icon: Receipt,     label: 'Transactions', href: '/transactions' },
