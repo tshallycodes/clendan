@@ -2,14 +2,14 @@
 
 /* ─── Light mode (default) ─────────────────────────────────────────────── */
 :root {
-  --brand-bg:             #f5f6f5;
+  --brand-bg:             #f5f5f5;
   --brand-surface:        #ffffff;
-  --brand-elevated:       #eef2ee;
-  --brand-border:         #d8e4d8;
-  --brand-border-subtle:  #e6eee6;
-  --brand-text:           #0e160e;
-  --brand-secondary:      #3a5c3a;
-  --brand-muted:          #4a6a4a;
+  --brand-elevated:       #f0f0f0;
+  --brand-border:         #e0e0e0;
+  --brand-border-subtle:  #ebebeb;
+  --brand-text:           #111111;
+  --brand-secondary:      #444444;
+  --brand-muted:          #888888;
 }
 
 /* ─── Dark mode ─────────────────────────────────────────────────────────── */
@@ -17,11 +17,11 @@
   --brand-bg:             #0a0a0a;
   --brand-surface:        #111111;
   --brand-elevated:       #1a1a1a;
-  --brand-border:         #1a2a1a;
-  --brand-border-subtle:  #1e1e1e;
-  --brand-text:           #e8f0e8;
-  --brand-secondary:      #a0b8a0;
-  --brand-muted:          #6e8c6e;
+  --brand-border:         #2c2c2c;
+  --brand-border-subtle:  #222222;
+  --brand-text:           #f0f0f0;
+  --brand-secondary:      #a0a0a0;
+  --brand-muted:          #666666;
 }
 
 /* ─── Tailwind tokens (reference the switchable CSS vars) ────────────────── */
@@ -74,6 +74,16 @@ body {
 @keyframes cursorBlink {
   0%, 100% { opacity: 1; }
   50%       { opacity: 0; }
+}
+
+@keyframes clen-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.55; }
+}
+
+@keyframes clen-dot {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.3; }
 }
 
 .terminal-cursor {

@@ -1,4 +1,4 @@
-import Link from 'next/link'
+﻿import Link from 'next/link'
 
 export const metadata = {
   title: 'Security — Clendan',
@@ -12,7 +12,7 @@ const PRINCIPLES = [
   },
   {
     title: 'Tenant Isolation',
-    body: 'PostgreSQL row-level security enforced on every table. No query executes without tenant scope. Agent instances are fully isolated — one tenant\'s workers cannot access another\'s data or tools.',
+    body: 'PostgreSQL row-level security enforced on every table. No query executes without tenant scope. Agent instances are fully isolated — one tenant\'s tools cannot access another\'s data or tools.',
   },
   {
     title: 'Audit Immutability',

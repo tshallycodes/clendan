@@ -1,4 +1,4 @@
-import Link from 'next/link'
+﻿import Link from 'next/link'
 import { INTEGRATIONS, type Integration } from './integrations-data'
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
@@ -115,7 +115,7 @@ export default function IntegrationsPage() {
             <HowItWorksStep
               step="03"
               title="Live"
-              desc="Continuous updates via webhooks and polling. Your workers always operate on current data."
+              desc="Continuous updates via webhooks and polling. Your tools always operate on current data."
             />
           </div>
         </div>

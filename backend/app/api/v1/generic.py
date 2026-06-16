@@ -2,7 +2,7 @@
 Generic integration routes for all non-dedicated integrations.
 
 OAuth (redirect flow):
-    freshbooks, sage, wave, wise, dynamics365, salesforce, dropbox, onedrive
+    sage, wave, wise, dynamics365, salesforce, dropbox, onedrive
 
 API key (live validation before store):
     nordigen  — Secret ID + Secret Key (GoCardless for Banks)
@@ -149,7 +149,8 @@ async def generic_oauth_callback(
         )
 
     logger.info("%s_connected tenant=%s integration=%s", slug, tenant_id, integration.id)
-    return RedirectResponse(url=f"/dashboard/integrations?connected={slug}", status_code=status.HTTP_302_FOUND)
+    frontend_url = get_settings().frontend_url.rstrip("/")
+    return RedirectResponse(url=f"{frontend_url}/dashboard/integrations?connected={slug}", status_code=status.HTTP_302_FOUND)
 
 
 # ---------------------------------------------------------------------------
@@ -255,7 +256,9 @@ async def generic_status(
     return standard_response(data={
         "status": integration.status,
         "connected_at": integration.connected_at.isoformat() if integration.connected_at else None,
+        "last_synced_at": integration.last_synced_at.isoformat() if integration.last_synced_at else None,
         "integration_id": integration.id,
+        "summary": integration.sync_metadata,
     })
 
 

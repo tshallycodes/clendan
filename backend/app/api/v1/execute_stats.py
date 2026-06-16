@@ -1,4 +1,4 @@
-"""GET /execute/stats — execution aggregate stats per worker, authenticated via API key."""
+﻿"""GET /execute/stats — execution aggregate stats per tool, authenticated via API key."""
 import hashlib
 from datetime import datetime, timezone, timedelta
 
@@ -12,7 +12,7 @@ _logger = get_logger(__name__)
 
 router = APIRouter(prefix="/execute", tags=["agents"])
 
-_WORKER_TYPES = [
+_TOOL_TYPES = [
     "invoice_processing",
     "fraud_detection",
     "ai_accountant",
@@ -30,7 +30,7 @@ async def execution_stats(
     authorization: str = Header(..., alias="Authorization"),
 ):
     """
-    Returns aggregate execution counts per worker type for the authenticated tenant.
+    Returns aggregate execution counts per tool type for the authenticated tenant.
     Authenticated via API key (same as POST /execute).
     """
     if not authorization.startswith("Bearer ck_live_"):
@@ -56,28 +56,28 @@ async def execution_stats(
 
     tenant_id: str = api_key.tenant_id
 
-    # Fetch all executions for this tenant with worker relation
+    # Fetch all executions for this tenant with tool relation
     executions = await db.execution.find_many(
         where={"tenant_id": tenant_id},
-        include={"worker": True},
+        include={"tool": True},
     )
 
     cutoff_30d = datetime.now(tz=timezone.utc) - timedelta(days=30)
 
     by_tool: dict[str, dict[str, int]] = {
         wt: {"total": 0, "auto_approved": 0, "pending": 0, "blocked": 0}
-        for wt in _WORKER_TYPES
+        for wt in _TOOL_TYPES
     }
 
     total_executions = 0
     last_30_days = 0
 
     for ex in executions:
-        worker_type = (ex.worker.type if ex.worker else None) or "unknown"
-        if worker_type not in by_tool:
-            by_tool[worker_type] = {"total": 0, "auto_approved": 0, "pending": 0, "blocked": 0}
+        tool_type = (ex.tool.type if ex.tool else None) or "unknown"
+        if tool_type not in by_tool:
+            by_tool[tool_type] = {"total": 0, "auto_approved": 0, "pending": 0, "blocked": 0}
 
-        by_tool[worker_type]["total"] += 1
+        by_tool[tool_type]["total"] += 1
         total_executions += 1
 
         created = ex.created_at
@@ -92,11 +92,11 @@ async def execution_stats(
         if decision in ("approved", "auto_approved") or (
             ex_status == "completed" and decision not in ("blocked", "approval_required", "pending", "failed")
         ):
-            by_tool[worker_type]["auto_approved"] += 1
+            by_tool[tool_type]["auto_approved"] += 1
         elif decision == "blocked" or ex_status == "failed":
-            by_tool[worker_type]["blocked"] += 1
+            by_tool[tool_type]["blocked"] += 1
         elif decision in ("approval_required", "pending") or ex_status in ("pending", "queued"):
-            by_tool[worker_type]["pending"] += 1
+            by_tool[tool_type]["pending"] += 1
 
     return standard_response(
         data={

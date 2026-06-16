@@ -1,5 +1,5 @@
-"""
-Square sync job — runs via arq worker.
+﻿"""
+Square sync job — runs via arq tool.
 Fetches recent payments and invoices for a connected Square integration.
 Writes sync log entries per entity type.
 """
@@ -145,6 +145,12 @@ async def sync_square_connection(ctx: dict, integration_id: str, tenant_id: str)
         results["invoices_error"] = type(exc).__name__
         logger.error("Square invoices sync failed: %s", type(exc).__name__)
 
+    # Re-read status — integration may have been disconnected while sync was running
+    current = await db.integration.find_unique(where={"id": integration_id})
+    if not current or current.status == "disconnected":
+        logger.info("Square sync aborted — integration %s was disconnected during run", integration_id)
+        return {"status": "skipped", "reason": "disconnected_during_sync"}
+
     # Mark integration as connected after first sync
     await db.integration.update(
         where={"id": integration_id},
@@ -158,6 +164,6 @@ async def enqueue_square_sync(integration_id: str, tenant_id: str) -> None:
     """Enqueues a Square sync job onto the arq Redis queue."""
     import arq
     settings = get_settings()
-    redis = await arq.create_pool(arq.connections.RedisSettings.from_dsn(settings.redis_url))
+    redis = await arq.create_pool(arq.connections.RedisSettings.from_dsn(settings.redis_public_url))
     await redis.enqueue_job("sync_square_connection", integration_id, tenant_id)
     await redis.aclose()

@@ -1,4 +1,4 @@
-"""
+﻿"""
 PostHog analytics — fire-and-forget event tracking.
 All calls are non-blocking: posthog batches and flushes in a background thread.
 Never log financial data — only trace IDs and aggregate metrics.
@@ -34,7 +34,7 @@ def track_execution(
     tenant_id: str,
     decision: str,
     confidence: float,
-    worker_type: str,
+    tool_type: str,
     duration_ms: Optional[int] = None,
 ) -> None:
     """Track an agent execution outcome. No financial amounts — decision + confidence only."""
@@ -48,7 +48,7 @@ def track_execution(
             properties={
                 "decision": decision,
                 "confidence": round(confidence, 2),
-                "worker_type": worker_type,
+                "tool_type": tool_type,
                 "duration_ms": duration_ms,
                 "trace_id": get_trace_id(),
             },
@@ -80,16 +80,16 @@ def track_approval(
         _logger.error("analytics_capture_failed", extra={"error": str(exc)})
 
 
-def track_worker_status(tenant_id: str, worker_type: str, status: str) -> None:
-    """Track worker status changes."""
+def track_tool_status(tenant_id: str, tool_type: str, status: str) -> None:
+    """Track tool status changes."""
     ph = _get_client()
     if ph is None:
         return
     try:
         ph.capture(
             distinct_id=tenant_id,
-            event="worker_status_changed",
-            properties={"worker_type": worker_type, "status": status, "trace_id": get_trace_id()},
+            event="tool_status_changed",
+            properties={"tool_type": tool_type, "status": status, "trace_id": get_trace_id()},
         )
     except Exception as exc:
         _logger.error("analytics_capture_failed", extra={"error": str(exc)})

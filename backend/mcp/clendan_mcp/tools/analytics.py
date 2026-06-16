@@ -1,8 +1,8 @@
-"""
+﻿"""
 tools/analytics.py — Execution statistics and ROI measurement tools.
 
 These tools aggregate data from the Clendan API to give you high-level
-visibility into how your workers are performing and how much time they're
+visibility into how your tools are performing and how much time they're
 saving your team.
 """
 from __future__ import annotations
@@ -37,7 +37,7 @@ async def get_execution_stats(period: str = "7d") -> dict[str, Any]:
     """
     Get execution statistics for a time period.
 
-    Shows how many tasks your workers processed, what decisions they made,
+    Shows how many tasks your tools processed, what decisions they made,
     and how efficiently they're running.
 
     Args:
@@ -46,16 +46,16 @@ async def get_execution_stats(period: str = "7d") -> dict[str, Any]:
 
     Returns:
         period (str): The period analysed
-        total_executions (int): Total worker executions in the period
+        total_executions (int): Total tool executions in the period
         auto_approved (int): Executions auto-approved without human review
         approval_required (int): Executions routed for human approval
         blocked (int): Executions blocked by policy rules
         failed (int): Executions that errored
         auto_approval_rate (float): Fraction of executions handled automatically (0.0–1.0)
-        avg_confidence (float): Average worker confidence across all executions
-        active_workers (int): Number of currently active workers
-        total_workers (int): Total workers deployed (active + inactive)
-        breakdown_by_worker (dict): Per-worker-type execution counts
+        avg_confidence (float): Average tool confidence across all executions
+        active_tools (int): Number of currently active tools
+        total_tools (int): Total tools deployed (active + inactive)
+        breakdown_by_tool (dict): Per-tool-type execution counts
         dashboard_url (str): Direct link to the full dashboard
     """
     if period not in VALID_PERIODS:
@@ -83,10 +83,10 @@ async def get_execution_stats(period: str = "7d") -> dict[str, Any]:
     confidences = [e.get("confidence", 0.0) for e in executions if e.get("confidence") is not None]
     avg_confidence = sum(confidences) / len(confidences) if confidences else 0.0
 
-    # Per-worker breakdown
+    # Per-tool breakdown
     breakdown: dict[str, int] = {}
     for e in executions:
-        wt = e.get("worker_type", "unknown")
+        wt = e.get("tool_type", "unknown")
         breakdown[wt] = breakdown.get(wt, 0) + 1
 
     return {
@@ -98,17 +98,17 @@ async def get_execution_stats(period: str = "7d") -> dict[str, Any]:
         "failed": failed,
         "auto_approval_rate": round(auto_approved / total, 3) if total > 0 else 0.0,
         "avg_confidence": round(avg_confidence, 3),
-        "active_workers": stats.get("active_workers", 0),
-        "total_workers": stats.get("active_workers", 0),
+        "active_tools": stats.get("active_tools", 0),
+        "total_tools": stats.get("active_tools", 0),
         "pending_approvals": stats.get("pending_approvals", 0),
-        "breakdown_by_worker": breakdown,
+        "breakdown_by_tool": breakdown,
         "dashboard_url": "https://app.clendan.com/dashboard",
     }
 
 
 async def get_hours_saved(period: str = "30d") -> dict[str, Any]:
     """
-    Calculate hours saved by Clendan workers over a period.
+    Calculate hours saved by Clendan tools over a period.
 
     Compares the average manual processing time for each task type against
     Clendan's automated processing time, multiplied by the number of executions.
@@ -118,14 +118,14 @@ async def get_hours_saved(period: str = "30d") -> dict[str, Any]:
 
     Returns:
         period (str): The period analysed
-        total_hours_saved (float): Total hours saved across all workers
+        total_hours_saved (float): Total hours saved across all tools
         total_executions (int): Total executions in the period
-        breakdown_by_worker (list): Per-worker breakdown, each with:
-            worker_type (str): Worker type
+        breakdown_by_tool (list): Per-tool breakdown, each with:
+            tool_type (str): Tool type
             executions (int): Number of executions
             manual_minutes_each (float): Estimated manual time per task
             auto_minutes_each (float): Automated processing time per task
-            hours_saved (float): Hours saved by this worker type
+            hours_saved (float): Hours saved by this tool type
         assumptions (dict): The time estimates used in the calculation
         equivalent_fte_days (float): Equivalent full-time employee days saved
             (assuming 8-hour workdays)
@@ -139,21 +139,21 @@ async def get_hours_saved(period: str = "30d") -> dict[str, Any]:
     exec_data = exec_response.get("data", exec_response)
     executions = exec_data.get("executions", [])
 
-    # Count by worker type
+    # Count by tool type
     counts: dict[str, int] = {}
     for e in executions:
-        wt = e.get("worker_type", "unknown")
+        wt = e.get("tool_type", "unknown")
         counts[wt] = counts.get(wt, 0) + 1
 
     total_minutes_saved = 0.0
     breakdown = []
-    for worker_type, count in sorted(counts.items()):
-        manual_minutes = _MANUAL_MINUTES_PER_TASK.get(worker_type, 15.0)
+    for tool_type, count in sorted(counts.items()):
+        manual_minutes = _MANUAL_MINUTES_PER_TASK.get(tool_type, 15.0)
         minutes_saved = (manual_minutes - _AUTO_MINUTES_PER_TASK) * count
         hours_saved = minutes_saved / 60.0
         total_minutes_saved += minutes_saved
         breakdown.append({
-            "worker_type": worker_type,
+            "tool_type": tool_type,
             "executions": count,
             "manual_minutes_each": manual_minutes,
             "auto_minutes_each": _AUTO_MINUTES_PER_TASK,
@@ -167,7 +167,7 @@ async def get_hours_saved(period: str = "30d") -> dict[str, Any]:
         "period": period,
         "total_hours_saved": round(total_hours, 2),
         "total_executions": len(executions),
-        "breakdown_by_worker": breakdown,
+        "breakdown_by_tool": breakdown,
         "equivalent_fte_days": round(fte_days, 2),
         "assumptions": {
             "note": "Manual time estimates are industry averages. Actual savings may vary.",

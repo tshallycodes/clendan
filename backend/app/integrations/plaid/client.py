@@ -28,15 +28,17 @@ def _headers() -> dict:
     }
 
 
-async def create_link_token(user_id: str, tenant_id: str) -> str:
+async def create_link_token(user_id: str, tenant_id: str, institution_id: str | None = None) -> str:
     """Creates a Plaid Link token. Returns the link_token string."""
-    payload = {
+    payload: dict = {
         "user": {"client_user_id": f"{tenant_id}:{user_id}"},
         "client_name": "Clendan",
         "products": ["transactions"],
         "country_codes": ["US", "GB"],
         "language": "en",
     }
+    if institution_id:
+        payload["institution_id"] = institution_id
 
     async def _call():
         async with httpx.AsyncClient() as c:

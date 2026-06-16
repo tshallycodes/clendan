@@ -5,7 +5,7 @@ import { useAuth } from '@clerk/nextjs'
 import { useCanConfigure } from '@/lib/auth-client'
 import { ROLE_COLORS, ROLE_LABEL, type Invitation } from './types'
 
-const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001'
+const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
 interface Props {
   invitations: Invitation[]

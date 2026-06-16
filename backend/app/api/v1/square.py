@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import RedirectResponse
 from prisma import Prisma
 
+from app.core.config import get_settings
 from app.core.db import get_db_dep
 from app.core.logging import get_logger
 from app.core.responses import standard_response
@@ -98,8 +99,9 @@ async def square_callback(
             type(exc).__name__,
         )
 
+    frontend_url = get_settings().frontend_url
     return RedirectResponse(
-        url="/dashboard/integrations?connected=square",
+        url=f"{frontend_url}/dashboard/integrations?connected=square",
         status_code=status.HTTP_302_FOUND,
     )
 
@@ -122,7 +124,9 @@ async def square_status(
             "connected_at": (
                 integration.connected_at.isoformat() if integration.connected_at else None
             ),
+            "last_synced_at": integration.last_synced_at.isoformat() if integration.last_synced_at else None,
             "integration_id": integration.id,
+            "summary": integration.sync_metadata,
         }
     )
 

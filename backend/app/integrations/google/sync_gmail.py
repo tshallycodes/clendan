@@ -1,9 +1,8 @@
-"""
-Gmail sync job — runs via arq worker.
+﻿"""
+Gmail sync job — runs via arq tool.
 Sets up Gmail watch, scans the last 30 days of emails with attachments,
 downloads PDF attachments, and enqueues each one through the invoice worker.
 """
-import base64
 import time
 from datetime import datetime, UTC, timedelta
 
@@ -67,10 +66,12 @@ async def sync_gmail_connection(ctx: dict, integration_id: str, tenant_id: str) 
         except Exception as exc:
             logger.error("gmail_token_refresh_failed integration_id=%s: %s", integration_id, type(exc).__name__)
 
+    initial_status = integration.status
     sync_start = time.monotonic()
     sync_status = "success"
     message_count = 0
     pdf_count = 0
+    pdf_attachments: list[tuple[str, str]] = []  # (message_id, attachment_id)
 
     try:
         # Set up Gmail watch if pubsub topic is configured
@@ -102,60 +103,11 @@ async def sync_gmail_connection(ctx: dict, integration_id: str, tenant_id: str) 
                 for part in parts:
                     mime = part.get("mimeType", "")
                     filename = part.get("filename", "")
-                    body = part.get("body", {})
-                    attachment_id = body.get("attachmentId", "")
-                    inline_data = body.get("data", "")
-
-                    is_pdf = mime == "application/pdf" or filename.lower().endswith(".pdf")
-                    if not is_pdf or (not attachment_id and not inline_data):
-                        continue
-
-                    try:
+                    if mime == "application/pdf" or filename.lower().endswith(".pdf"):
+                        pdf_count += 1
+                        attachment_id = (part.get("body") or {}).get("attachmentId", "")
                         if attachment_id:
-                            file_bytes = await google.download_attachment(
-                                access_token, stub["id"], attachment_id
-                            )
-                        else:
-                            file_bytes = base64.urlsafe_b64decode(inline_data + "==")
-                    except Exception as exc:
-                        logger.warning(
-                            "gmail_attachment_download_failed message_id=%s: %s",
-                            stub["id"], type(exc).__name__,
-                        )
-                        continue
-
-                    worker = await db.worker.find_first(
-                        where={"tenant_id": tenant_id, "type": "invoice_processing", "status": "active"}
-                    )
-                    if not worker:
-                        logger.info("gmail_no_invoice_worker tenant=%s — skipping PDF", tenant_id)
-                        continue
-
-                    # Idempotency: skip if this attachment was already queued
-                    input_ref = f"gmail:{stub['id']}:{attachment_id or 'inline'}"
-                    if await db.execution.find_first(where={"input_ref": input_ref}):
-                        continue
-
-                    execution = await db.execution.create(data={
-                        "tenant_id": tenant_id,
-                        "worker_id": worker.id,
-                        "status": "queued",
-                        "input_ref": input_ref,
-                    })
-
-                    await _enqueue_invoice_job(
-                        execution_id=execution.id,
-                        tenant_id=tenant_id,
-                        worker_id=worker.id,
-                        file_bytes=file_bytes,
-                        content_type="application/pdf",
-                        policy_config={},
-                    )
-                    pdf_count += 1
-                    logger.info(
-                        "gmail_invoice_queued execution_id=%s tenant=%s filename=%s",
-                        execution.id, tenant_id, filename,
-                    )
+                            pdf_attachments.append((stub["id"], attachment_id))
             except Exception as exc:
                 logger.warning(
                     "gmail_message_processing_failed message_id=%s: %s",
@@ -192,6 +144,27 @@ async def sync_gmail_connection(ctx: dict, integration_id: str, tenant_id: str) 
             where={"id": integration_id},
             data={"status": "connected", "connected_at": datetime.now(UTC)},
         )
+        if initial_status == "connected" and pdf_attachments:
+            try:
+                from app.orchestrator.events import enqueue_orchestrator_event
+                for message_id, attachment_id in pdf_attachments:
+                    await enqueue_orchestrator_event(
+                        tenant_id=tenant_id,
+                        event_type="receipt_received",
+                        payload={
+                            "source": "gmail",
+                            "integration_id": integration_id,
+                            "message_id": message_id,
+                            "attachment_id": attachment_id,
+                        },
+                        idempotency_key=f"gmail:receipt:{message_id}:{attachment_id}",
+                        db=db,
+                    )
+            except Exception as exc:
+                logger.error(
+                    "gmail_receipt_event_failed integration_id=%s: %s",
+                    integration_id, type(exc).__name__,
+                )
         logger.info(
             "gmail_sync_ok tenant=%s messages=%d pdfs=%d",
             tenant_id, message_count, pdf_count,
@@ -211,35 +184,10 @@ def _flatten_parts(parts: list) -> list:
     return result
 
 
-async def _enqueue_invoice_job(
-    *,
-    execution_id: str,
-    tenant_id: str,
-    worker_id: str,
-    file_bytes: bytes,
-    content_type: str,
-    policy_config: dict,
-) -> None:
-    """Enqueues run_invoice_job onto the arq Redis queue."""
-    import arq
-    settings = get_settings()
-    redis = await arq.create_pool(arq.connections.RedisSettings.from_dsn(settings.redis_url))
-    await redis.enqueue_job(
-        "run_invoice_job",
-        execution_id=execution_id,
-        tenant_id=tenant_id,
-        worker_id=worker_id,
-        file_bytes=file_bytes,
-        content_type=content_type,
-        policy_config=policy_config,
-    )
-    await redis.aclose()
-
-
 async def enqueue_gmail_sync(integration_id: str, tenant_id: str) -> None:
     """Enqueues a Gmail sync job onto the arq Redis queue."""
     import arq
     settings = get_settings()
-    redis = await arq.create_pool(arq.connections.RedisSettings.from_dsn(settings.redis_url))
+    redis = await arq.create_pool(arq.connections.RedisSettings.from_dsn(settings.redis_public_url))
     await redis.enqueue_job("sync_gmail_connection", integration_id, tenant_id)
     await redis.aclose()

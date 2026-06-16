@@ -1,4 +1,4 @@
-import Link from 'next/link'
+﻿import Link from 'next/link'
 
 const POSTS = [
   {
@@ -13,7 +13,7 @@ const POSTS = [
   {
     title: 'How to reduce month-end close from 6 days to 2',
     excerpt:
-      'Month-end close is the most reliable source of finance team burnout. We break down exactly where the time goes and how AI workers eliminate each bottleneck.',
+      'Month-end close is the most reliable source of finance team burnout. We break down exactly where the time goes and how AI tools eliminate each bottleneck.',
     date: '2026-05-22',
     readTime: '6 min read',
     category: 'Guide',

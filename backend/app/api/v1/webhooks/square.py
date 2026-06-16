@@ -78,19 +78,55 @@ async def square_webhook(
     square_object_id: str = inner.get("id", "")
     idempotency_key = f"square:{event_id}"
 
-    if orchestrator_event == "invoice_received":
+    base = {"square_event_type": event_type, "square_object_id": square_object_id}
+
+    if orchestrator_event in ("invoice_received", "invoice_created", "invoice_updated", "invoice_canceled"):
+        payment_requests = inner.get("payment_requests") or [{}]
+        money = payment_requests[0].get("computed_amount_money") or {}
         event_payload = {
-            "square_event_type": event_type,
-            "square_object_id": square_object_id,
-        }
-    else:
-        money = inner.get("amount_money") or {}
-        event_payload = {
-            "square_event_type": event_type,
-            "square_object_id": square_object_id,
+            **base,
             "amount_minor": money.get("amount", 0),
             "currency": (money.get("currency") or "USD").upper(),
+            "status": inner.get("status") or "",
         }
+    elif orchestrator_event in ("transaction_posted",):
+        money = inner.get("amount_money") or {}
+        event_payload = {
+            **base,
+            "amount_minor": money.get("amount", 0),
+            "currency": (money.get("currency") or "USD").upper(),
+            "status": inner.get("status") or "",
+        }
+    elif orchestrator_event in ("refund_created", "refund_updated"):
+        money = inner.get("amount_money") or {}
+        event_payload = {
+            **base,
+            "amount_minor": money.get("amount", 0),
+            "currency": (money.get("currency") or "USD").upper(),
+            "status": inner.get("status") or "",
+            "payment_id": inner.get("payment_id") or "",
+        }
+    elif orchestrator_event in ("dispute_created", "dispute_state_changed"):
+        money = inner.get("amount_money") or {}
+        event_payload = {
+            **base,
+            "amount_minor": money.get("amount", 0),
+            "currency": (money.get("currency") or "USD").upper(),
+            "state": inner.get("state") or "",
+            "reason": inner.get("reason") or "",
+            "due_at": inner.get("evidence_ids") and inner.get("due_at") or None,
+        }
+    elif orchestrator_event in ("payout_received", "payout_failed"):
+        money = inner.get("amount_money") or {}
+        event_payload = {
+            **base,
+            "amount_minor": money.get("amount", 0),
+            "currency": (money.get("currency") or "USD").upper(),
+            "status": inner.get("status") or "",
+            "arrival_date": inner.get("arrival_date"),
+        }
+    else:
+        event_payload = base
 
     execution_id = await enqueue_orchestrator_event(
         tenant_id=tenant_id,

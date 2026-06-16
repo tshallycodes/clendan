@@ -1,20 +1,20 @@
-# Clendan — Claude Code Configuration
+﻿# Clendan — Claude Code Configuration
 
 ## Project Overview
 
-Clendan is an AI Financial Agent OS. A platform where companies deploy autonomous AI workers
+Clendan is an AI Financial Agent OS. A platform where companies deploy autonomous AI tools
 that connect to financial systems, execute tasks, enforce policy, and produce full audit trails.
 
 **Stack:** Next.js 14 (frontend) · FastAPI (backend) · PostgreSQL + Prisma · Clerk (auth) ·
-Anthropic SDK · BullMQ + Redis · Vercel + Railway · Sentry + PostHog
+Anthropic SDK · arq + Redis · Vercel + Railway · Sentry + PostHog
 
 **Architecture:** Master-subagent model. Financial Orchestrator is the master agent.
-All other workers are sub-agents called as tools. Workers never call each other directly.
+All other tools are sub-agents called as tools. Tools never call each other directly.
 
 ---
 
 ## Rules
-
+- Use the playwright mcp to help you navigate and understand the codebase
 - Do what has been asked; nothing more, nothing less
 - NEVER create files unless absolutely necessary — prefer editing existing files
 - NEVER create documentation files unless explicitly requested
@@ -26,12 +26,21 @@ All other workers are sub-agents called as tools. Workers never call each other 
 - When fixing bugs: read only the specific lines needed, not full files
 - ALWAYS run database migrations after schema changes
 - If an error persists after two attempts, stop and discuss options
+- Do not hardcode API keys, secrets, or any credentials, or design styles
+- Always pull before pushing your changes to github with
+
+```bash
+git pull
+git add .
+git commit -m "Task title"
+git push -u origin main
+```
 
 ---
 
 ## Code Quality
 
-- Delete dead code immediately — unused imports, unreachable branches, commented-out blocks
+- Delete dead code immediately — unused imports, unreachable branches, commented-out blocks ESPECIALLY after edits
 - No tangled dependencies — each module has one clear responsibility
 - No duplicated logic — extract shared behaviour into utilities or hooks
 - No magic numbers or hardcoded strings — use constants and config
@@ -48,7 +57,7 @@ All other workers are sub-agents called as tools. Workers never call each other 
 No agent feature is complete unless it follows every step:
 
 ```
-receive → classify → select worker → execute → policy check → output → audit
+receive → classify → select tool → execute → policy check → output → audit
 ```
 
 ### Step Definitions
@@ -56,20 +65,20 @@ receive → classify → select worker → execute → policy check → output �
 | Step | Rule |
 |------|------|
 | Receive | Event or API call arrives at Orchestrator. Input validated before any processing. |
-| Classify | Orchestrator identifies event type and determines which worker(s) to invoke. |
-| Select Worker | Orchestrator calls the appropriate sub-agent worker as a tool. Never assumed. |
-| Execute | Worker runs its task using connected tools (bank API, ERP, OCR, etc). |
+| Classify | Orchestrator identifies event type and determines which tool(s) to invoke. |
+| Select Tool | Orchestrator calls the appropriate sub-agent tool as a tool. Never assumed. |
+| Execute | Tool runs its task using connected tools (bank API, ERP, OCR, etc). |
 | Policy Check | Policy engine validates output before any action is taken. Cannot be skipped. |
 | Output | Decision returned with confidence score and full reasoning trace. |
 | Audit | Every action written to immutable audit log before returning response to caller. |
 
 ### Required Patterns
 
-**Worker invocation:**
+**Tool invocation:**
 ```python
-# Orchestrator calls workers as tools — never direct execution
-result = await orchestrator.invoke_worker(
-    worker_type="invoice_processing",
+# Orchestrator calls tools as tools — never direct execution
+result = await orchestrator.invoke_tool(
+    tool_type="invoice_processing",
     input=event_payload,
     tenant_id=tenant_id,
     policy_context=policy_rules
@@ -93,13 +102,13 @@ else:
 
 ### Hard Fail Anti-Patterns
 
-- Worker executing without policy check
-- Orchestrator calling workers directly without classifying first
+- Tool executing without policy check
+- Orchestrator calling tools directly without classifying first
 - Single external API call with no retry logic
 - Writing to ERP/accounting system before audit log entry
 - Agent returning success when external API returned empty
 - Skipping the audit step for any reason
-- Two workers calling each other directly (bypassing Orchestrator)
+- Two tools calling each other directly (bypassing Orchestrator)
 
 **If any step in the agent flow is missing: the feature is incomplete and must not be marked done.**
 
@@ -115,7 +124,7 @@ These rules apply to every feature that touches financial data. No exceptions.
 - **Audit log immutability** — never UPDATE or DELETE audit rows. Append only.
 - **Reconciliation** — every external data sync must have a reconciliation job to detect drift
 - **Rollback capability** — any financial action taken by an agent must be reversable where technically possible. Document explicitly where it is not.
-- **Zero trust on external data** — data from Plaid, Xero, QuickBooks, Stripe is always validated before writing to DB. Never pass external data directly to ledger.
+- **Zero trust on external data** — data from Plaid, Xero, QuickBooks, Stripe, FreshBooks is always validated before writing to DB. Never pass external data directly to ledger.
 
 ---
 
@@ -125,8 +134,8 @@ Clendan is a multi-tenant platform. Every feature must enforce tenant isolation.
 
 - **Row-level security (RLS)** on every PostgreSQL table — no exceptions
 - **Tenant ID on every query** — never query without scoping to tenant
-- **Tool credentials isolated per tenant** — API keys for Xero, Plaid, QuickBooks stored encrypted, scoped to tenant only
-- **Agent instances isolated per tenant** — one tenant's workers cannot access another's tools or data
+- **Tool credentials isolated per tenant** — API keys for Xero, Plaid, QuickBooks, FreshBooks stored encrypted, scoped to tenant only
+- **Agent instances isolated per tenant** — one tenant's tools cannot access another's tools or data
 - **Audit logs scoped per tenant** — tenants can only query their own audit trail
 - **Cross-tenant data leakage is a critical security failure** — treat it as such
 
@@ -167,7 +176,7 @@ return {
 - Modular boundaries: agents, tools, policy, auth, billing — no cross-domain shortcuts
 - Stateless FastAPI services — all state in PostgreSQL or Redis
 - Event-driven patterns for agent execution, notifications, audit trails
-- BullMQ queues for all async agent jobs — never block request threads with long-running tasks
+- arq queues for all async agent jobs — never block request threads with long-running tasks
 - Backward-compatible API versioning — v1 never breaks
 
 ### Data Layer
@@ -179,7 +188,7 @@ return {
 - Audit log table: append-only, no UPDATE, no DELETE, no exceptions
 
 ### Performance
-- Redis cache for tenant config, policy rules, worker definitions — strict TTL invalidation
+- Redis cache for tenant config, policy rules, tool definitions — strict TTL invalidation
 - Rate limiting and backpressure on all Plaid, Xero, QuickBooks, Stripe API calls
 - Batch processing for reconciliation jobs — never run in request thread
 - Agent execution target: 2–5 seconds. Flag and investigate anything above 10 seconds.
@@ -188,7 +197,7 @@ return {
 - Circuit breakers on all external API integrations (Plaid, Xero, QuickBooks, Stripe)
 - Retries with exponential backoff and jitter on all external calls
 - Dead-letter queues for failed agent jobs — replay without data loss
-- Graceful degradation — a failing integration does not stop other workers
+- Graceful degradation — a failing integration does not stop other tools
 - Health check endpoints for all services: `/health` and `/ready`
 
 ### Security
@@ -204,7 +213,7 @@ return {
 - Sentry for error monitoring — all unhandled exceptions captured
 - Structured logs only — JSON, never freeform strings
 - Audit logs are separate from application logs — different table, different retention
-- PostHog for product analytics — track agent executions, approval rates, worker usage
+- PostHog for product analytics — track agent executions, approval rates, tool usage
 
 ---
 
@@ -218,7 +227,7 @@ Default pattern:
 - Spawn one subagent for schema/migration work, separate from application code
 - Spawn one subagent for reading existing code before any writing subagent starts
 - Never read and write in the same sequential pass when parallelism is possible
-- For phases with multiple components (route + worker + DB migration), always fan out
+- For phases with multiple components (route + tool + DB migration), always fan out
 - When in doubt: more subagents, not fewer
 
 ---
@@ -255,7 +264,7 @@ SendMessage({ to: "researcher", summary: "Start", message: "[task context]" })
 |---------|------|----------|
 | **Pipeline** | A → B → C → D | Sequential dependencies (feature dev) |
 | **Fan-out** | Lead → A, B, C → Lead | Independent parallel work (multiple files) |
-| **Supervisor** | Lead ↔ workers | Ongoing coordination (complex refactor) |
+| **Supervisor** | Lead ↔ tools | Ongoing coordination (complex refactor) |
 
 ### Rules
 - ALWAYS name agents — `name: "role"` makes them addressable
@@ -269,7 +278,7 @@ SendMessage({ to: "researcher", summary: "Start", message: "[task context]" })
 | Use | Don't Use |
 |-----|-----------|
 | 3+ files touched | Single file edits |
-| New agent workers | 1–2 line fixes |
+| New agent tools | 1–2 line fixes |
 | Cross-module changes | Config changes |
 | New FastAPI routes | Documentation updates |
 | New integrations (Plaid, Xero) | Simple questions |
@@ -290,8 +299,11 @@ SendMessage({ to: "researcher", summary: "Start", message: "[task context]" })
 # Frontend
 cd frontend && npm run build && npm test
 
-# Backend
-cd backend && pytest && uvicorn main:app --reload
+# Backend API
+cd backend && pytest && uvicorn app.main:app --reload
+
+# Background tool
+cd backend && python run_tool.py app.tool.ToolSettings
 
 # Full stack
 docker-compose up --build
@@ -306,65 +318,78 @@ docker-compose up --build
 
 ## Design System
 
-### Color Tokens
+### Theme Architecture
+
+The app uses **light mode by default**. Dark mode activates via the `.dark` class on `<html>`.
+All colors are CSS variables defined in `globals.css` — never hardcode hex values in components.
+Always use Tailwind design token classes (`bg-brand-surface`, `text-brand-text`, etc.).
+
+### Brand Color Tokens
+
+| Tailwind Class | Light value | Dark value | Usage |
+| -------------- | ----------- | ---------- | ----- |
+| `bg-brand-bg` / `text-brand-bg` | `#f5f5f5` | `#0a0a0a` | Page background |
+| `bg-brand-surface` | `#ffffff` | `#111111` | Cards, panels, drawers, sidebars |
+| `bg-brand-elevated` | `#f0f0f0` | `#1a1a1a` | Modals, dropdowns, nested cards |
+| `border-brand-border` / `divide-brand-border` | `#e0e0e0` | `#2c2c2c` | Card borders, dividers |
+| `border-brand-border-subtle` | `#ebebeb` | `#222222` | Subtle separators |
+| `text-brand-text` | `#111111` | `#f0f0f0` | Primary text |
+| `text-brand-secondary` | `#444444` | `#a0a0a0` | Labels, metadata |
+| `text-brand-muted` | `#888888` | `#666666` | Timestamps, captions, placeholders |
+
+**Hard rule: never write raw hex values for any of the above.** Use the Tailwind token class.
+Inline styles are allowed only for dynamic values (e.g. computed chart colours, bank brand colours).
+
+### Semantic Colors — Same in Both Modes
+
+These never change between light and dark. Use raw hex or `brand-*` token:
 
 | Token | Value | Usage |
-|-------|-------|-------|
-| `background` | `#0a0a0a` | Page background — darkest layer |
-| `surface` | `#111111` | Cards, panels, sidebars |
-| `surface-elevated` | `#1a1a1a` | Modals, dropdowns, popovers |
-| `border` | `#1a2a1a` | Card borders, dividers |
-| `border-subtle` | `#1e1e1e` | Subtle separators |
-| `text` | `#e8f0e8` | Primary text |
-| `text-secondary` | `#a0b8a0` | Labels, metadata |
-| `text-muted` | `#4a6a4a` | Timestamps, captions |
+| ----- | ----- | ----- |
+| `bg-brand-green` / `#00C853` | Electric Green | Primary CTA, success states — see strict rules below |
+| `#ff4d6d` | Danger red | Blocked actions, fraud flags, policy violations |
+| `rgba(255,77,109,0.08)` | Danger tint | Danger card backgrounds |
+| `#00a8cc` | Info blue | Approval-required states, neutral info |
+| `#f5a623` | Warning amber | Stale data, slow execution, pending states |
+| `rgba(0,0,0,0.7)` | Overlay | Modal backdrops |
 
 ### Electric Green Rules — STRICT
 
 Electric Green `#00C853` appears ONLY on:
+
 - Logo mark
 - Primary CTA button (one per page/screen max)
 - Active nav indicator (dot or underline only — NOT the icon itself)
 - Successful execution status indicators
 - Positive financial values and auto-approved states
-- Worker active/running pulse indicators
+- Tool active/running pulse indicators
 - Toggle switches (on state)
-- Input focus border
+- Input focus border (`1px solid #00C853`)
 - Chart lines showing positive trends
 - Confidence score bars above 0.9
 
 Electric Green NEVER appears on:
-- Nav icons — inactive `#4a6a4a`, active `#e8f0e8`
-- Card borders or dividers — use `#1a2a1a`
-- Secondary buttons — white/muted outline only
+
+- Nav icons — use `text-brand-muted` inactive, `text-brand-text` active
+- Card borders or dividers — use `border-brand-border`
+- Secondary buttons — use `border-brand-border` outline only
 - Page titles and section headers
 - Badges and status tags (use semantic colors)
 - Background fills or decorative elements
 - Anything that does not represent a successful or positive execution outcome
 
-**The dashboard reads as black and white. Green appears where execution succeeds.**
+**The dashboard reads as monochrome. Green appears only where execution succeeds.**
 
-### Semantic Colors
-
-| Token | Value | Usage |
-|-------|-------|-------|
-| `primary` | `#00C853` | Electric Green — see strict rules above |
-| `danger` | `#ff4d6d` | Blocked actions, fraud flags, policy violations |
-| `danger-bg` | `rgba(255,77,109,0.08)` | Danger card backgrounds |
-| `info` | `#00a8cc` | Approval-required states, V2 badges, neutral info |
-| `warning` | `#f5a623` | Stale data, slow execution, pending states |
-| `overlay` | `rgba(0,0,0,0.7)` | Modal backdrops |
-
-### Worker Status Colors
+### Tool Status Colors
 
 | Status | Color | Usage |
 |--------|-------|-------|
-| Running / Auto-executed | `#00C853` | Active worker indicators, success states |
+| Running / Auto-executed | `#00C853` | Active tool indicators, success states |
 | Approval Required | `#00a8cc` | Pending human review |
 | Blocked / Flagged | `#ff4d6d` | Policy violation, fraud flag, escalated |
-| Inactive / Disabled | `#4a6a4a` | Worker turned off, V2/V3 not yet deployed |
+| Inactive / Disabled | `text-brand-muted` | Tool turned off, not yet deployed |
 
-Never repurpose status colors outside worker/execution display.
+Never repurpose status colors outside tool/execution display.
 
 ### Typography Scale
 
@@ -380,7 +405,7 @@ Never repurpose status colors outside worker/execution display.
 | Label | 10px | 500 | IBM Plex Mono | Uppercase section labels |
 | Code | 12px | 400 | IBM Plex Mono | API endpoints, trace IDs, JSON |
 
-Financial values: `#e8f0e8` neutral, `#00C853` auto-approved, `#ff4d6d` blocked. Labels never green.
+Financial values: `text-brand-text` neutral · `#00C853` auto-approved · `#ff4d6d` blocked. Labels never green.
 
 ### Spacing — 8pt Grid
 
@@ -396,26 +421,27 @@ Clendan is sharp-edged — infrastructure product aesthetic. Default: `sm`. Max:
 
 ### Component Patterns
 
-**Primary Button:** background `#00C853`, text `#000000` (black for contrast), hover `#00a844`, active scale `0.97`. One per page.
+**Primary Button:** `bg-[#00C853] text-black hover:bg-[#00a844] active:scale-[0.97]`. One per page.
 
-**Secondary Button:** transparent background, border `1px solid #1a2a1a`, text `#e8f0e8`, hover background `#111118`.
+**Secondary Button:** `bg-transparent border border-brand-border text-brand-text hover:bg-brand-elevated`.
 
-**Danger Button:** background `rgba(255,77,109,0.1)`, border `1px solid #ff4d6d`, text `#ff4d6d`. Used for block/reject actions only.
+**Danger Button:** `bg-[rgba(255,77,109,0.1)] border border-[#ff4d6d] text-[#ff4d6d]`. Block/reject actions only.
 
-**Cards:** background `#111118`, border `1px solid #1a2a1a`, radius `sm`, padding `md`. No shadows — flat is correct.
+**Cards:** `bg-brand-surface border border-brand-border rounded-sm p-4`. No shadows — flat is correct.
 
-**Inputs:** background `#0a0a0a`, border `1px solid #1a2a1a`, focus border `1px solid #00C853`, text `#e8f0e8`, placeholder `#4a6a4a`, radius `sm`.
+**Inputs:** `bg-brand-bg border border-brand-border focus:border-[#00C853] text-brand-text placeholder:text-brand-muted rounded-sm`.
 
 **Status Badge:**
-- Auto: background `rgba(0,200,83,0.08)`, text `#00C853`, border `1px solid rgba(0,200,83,0.2)`
-- Pending: background `rgba(0,168,204,0.08)`, text `#00a8cc`, border `1px solid rgba(0,168,204,0.2)`
-- Blocked: background `rgba(255,77,109,0.08)`, text `#ff4d6d`, border `1px solid rgba(255,77,109,0.2)`
 
-**API Code Block:** background `#0a0a0a`, border `1px solid #1a2a1a`, font IBM Plex Mono 12px. Keywords: `#f5a623`. Strings: `#00C853`. Comments: `#4a6a4a`. Copy button top-right.
+- Auto: `bg-[rgba(0,200,83,0.08)] text-[#00C853] border border-[rgba(0,200,83,0.2)]`
+- Pending: `bg-[rgba(0,168,204,0.08)] text-[#00a8cc] border border-[rgba(0,168,204,0.2)]`
+- Blocked: `bg-[rgba(255,77,109,0.08)] text-[#ff4d6d] border border-[rgba(255,77,109,0.2)]`
 
-**Audit Trail Row:** background `#111118`, hover background `#1a1a28`, expandable. Expanded state shows full reasoning trace in monospace. Trace IDs in `#4a6a4a`.
+**API Code Block:** `bg-brand-bg border border-brand-border` font IBM Plex Mono 12px. Keywords: `#f5a623`. Strings: `#00C853`. Comments: `text-brand-muted`. Copy button top-right.
 
-**Worker Card:** background `#111118`, border `1px solid #1a2a1a`. Active workers: left border `3px solid #00C853`. Approval-required: left border `3px solid #00a8cc`. Blocked: left border `3px solid #ff4d6d`. Inactive: no accent border.
+**Audit Trail Row:** `bg-brand-surface hover:bg-brand-elevated`, expandable. Expanded state shows full reasoning trace in monospace. Trace IDs in `text-brand-muted`.
+
+**Tool Card:** `bg-brand-surface border border-brand-border`. Active: `border-l-[3px] border-l-[#00C853]`. Approval-required: `border-l-[3px] border-l-[#00a8cc]`. Blocked: `border-l-[3px] border-l-[#ff4d6d]`. Inactive: no accent border.
 
 ### Motion Rules
 
@@ -426,7 +452,7 @@ Clendan is sharp-edged — infrastructure product aesthetic. Default: `sm`. Max:
 - Skeleton loaders only — no full-screen spinners
 - Every button: idle → hover → active (scale 0.97) → loading → success/error
 - Execution log lines animate in sequentially — 150ms stagger per line
-- Worker status changes: fade + slight translate, 200ms ease
+- Tool status changes: fade + slight translate, 200ms ease
 - Charts animate on load and between time ranges — static charts are not acceptable
 - Approval queue counter changes: number interpolates, never jumps
 
@@ -444,19 +470,19 @@ Clendan is sharp-edged — infrastructure product aesthetic. Default: `sm`. Max:
 ## Clendan-Specific Rules
 
 - All Anthropic API calls via FastAPI backend — never from Next.js client directly
-- Worker execution always goes through BullMQ queue — never block API request threads
+- Tool execution always goes through arq queue — never block API request threads
 - Policy engine runs on every agent output before any action is taken — cannot be bypassed
 - Audit log written before returning response — if audit write fails, the operation fails
 - Tenant isolation enforced at DB layer (RLS) AND application layer — both required
-- Tool credentials (Xero OAuth, Plaid tokens) encrypted with tenant-specific keys — never logged
+- Tool credentials (Xero OAuth, Plaid tokens, FreshBooks OAuth) encrypted with tenant-specific keys — never logged
 - Agent reasoning traces stored in full — never truncate reasoning for storage savings
 - Completed tasks: move to done.md, never delete — audit trail for development
 - Every 10 Claude Code tasks ≈ 5% weekly limit — be surgical with file reads
 - Currency: store as integer (pence/cents), convert to decimal at display layer only
-- Worker versioning: every worker has a version field — agent decisions log the version used
+- Tool versioning: every tool has a version field — agent decisions log the version used
 - Human approval API: approval expiry must be enforced — stale approvals rejected after configured TTL
 - Clerk auth: verify JWT server-side on every protected FastAPI route — `requireAuth()` in middleware
-- Never expose raw Plaid, Xero, or QuickBooks error messages to the frontend — map to structured errors
+- Never expose raw Plaid, Xero, QuickBooks, or FreshBooks error messages to the frontend — map to structured errors
 - Integration connection flow: OAuth → callback → store encrypted token → trigger initial sync → poll → confirm data present → mark connected. All steps required.
 - `POST /v1/agents/{id}/run` is idempotent — same idempotency key must return same result
 - Dashboard reads from DB-backed endpoints only — never calls external APIs directly from UI

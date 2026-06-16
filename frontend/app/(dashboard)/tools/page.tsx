@@ -1,18 +1,16 @@
-import { getBackendToken } from '@/lib/auth'
+﻿import { getBackendToken } from '@/lib/auth'
 import { apiGet } from '@/lib/api'
-import type { Worker } from '@/components/dashboard/tools/WorkerCard'
 import { ToolsClient } from './ToolsClient'
+import type { Tool } from '@/components/dashboard/tools/ToolCard'
 
 export default async function ToolsPage() {
-  let workers: Worker[] = []
-
+  let tools: Tool[] = []
   try {
     const token = await getBackendToken()
     if (token) {
-      const res = await apiGet<{ workers: Worker[] }>('/v1/workers', token)
-      workers = res.workers ?? []
+      const res = await apiGet<{ tools: Tool[] }>('/v1/tools', token)
+      tools = res.tools ?? []
     }
-  } catch { /* backend not running — show empty state */ }
-
-  return <ToolsClient initialWorkers={workers} />
+  } catch { /* backend not running */ }
+  return <ToolsClient deployedTools={tools} />
 }

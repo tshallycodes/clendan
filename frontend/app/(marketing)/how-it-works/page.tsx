@@ -1,4 +1,4 @@
-import Link from 'next/link'
+﻿import Link from 'next/link'
 
 // ─── Step mock UIs ────────────────────────────────────────────────────────────
 
@@ -23,13 +23,13 @@ function OAuthMockup() {
   )
 }
 
-function WorkerConfigMockup() {
+function ToolConfigMockup() {
   return (
     <div className="bg-brand-bg border border-brand-border rounded-sm p-4 font-mono text-xs space-y-3">
-      <p className="text-brand-muted uppercase tracking-widest text-[10px]">Worker config</p>
+      <p className="text-brand-muted uppercase tracking-widest text-[10px]">Tool config</p>
       <div className="space-y-1">
         <div className="flex justify-between">
-          <span className="text-brand-muted">Worker</span>
+          <span className="text-brand-muted">Tool</span>
           <span className="text-brand-text">Invoice Processing</span>
         </div>
         <div className="flex justify-between">
@@ -111,7 +111,7 @@ function AuditMockup() {
       <p className="text-brand-muted uppercase tracking-widest text-[10px]">Audit entry</p>
       <div className="space-y-1">
         <div className="flex justify-between"><span className="text-brand-muted">Action</span><span className="text-brand-text">payment.scheduled</span></div>
-        <div className="flex justify-between"><span className="text-brand-muted">Worker</span><span className="text-brand-text">invoice_processing@1.4.2</span></div>
+        <div className="flex justify-between"><span className="text-brand-muted">Tool</span><span className="text-brand-text">invoice_processing@1.4.2</span></div>
         <div className="flex justify-between"><span className="text-brand-muted">Trace ID</span><span className="text-brand-muted">cln_tr_8f4d2a</span></div>
         <div className="flex justify-between"><span className="text-brand-muted">Timestamp</span><span className="text-brand-secondary">2026-06-05 09:14:32Z</span></div>
       </div>
@@ -133,26 +133,26 @@ const STEPS = [
   },
   {
     n: '02',
-    title: 'Deploy a Worker',
-    desc: 'Select a worker, set its role, define its autonomy level, and connect its tools.',
-    mockup: <WorkerConfigMockup />,
+    title: 'Deploy a Tool',
+    desc: 'Select a tool, set its role, define its autonomy level, and connect its tools.',
+    mockup: <ToolConfigMockup />,
   },
   {
     n: '03',
     title: 'Set Your Policies',
-    desc: 'Define exactly when workers act autonomously and when they ask for your approval.',
+    desc: 'Define exactly when tools act autonomously and when they ask for your approval.',
     mockup: <PolicyMockup />,
   },
   {
     n: '04',
-    title: 'Workers Execute',
-    desc: 'Workers run continuously. Every invoice, every transaction, every decision — handled.',
+    title: 'Tools Execute',
+    desc: 'Tools run continuously. Every invoice, every transaction, every decision — handled.',
     mockup: <TerminalMockup />,
   },
   {
     n: '05',
     title: 'Review & Approve',
-    desc: 'For anything above your threshold, workers pause and route to your queue. One click to approve.',
+    desc: 'For anything above your threshold, tools pause and route to your queue. One click to approve.',
     mockup: <ApprovalMockup />,
   },
   {
@@ -256,7 +256,7 @@ export default function HowItWorksPage() {
           Start Automating in 10 Minutes
         </h2>
         <p className="font-mono text-sm text-brand-secondary mb-8">
-          Connect your tools, deploy a worker, set your policies. Done.
+          Connect your tools, deploy a tool, set your policies. Done.
         </p>
         <Link
           href="/sign-up"

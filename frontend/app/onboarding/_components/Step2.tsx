@@ -5,7 +5,7 @@ import { useAuth } from '@clerk/nextjs'
 import { InviteRow } from './InviteRow'
 import type { Invitation } from './InviteRow'
 
-const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001'
+const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 const MAX_INVITES = 10
 
 interface Step2Props {

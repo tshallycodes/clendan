@@ -82,7 +82,7 @@ async def quickbooks_callback(
             where={"id": existing.id},
             data={
                 "encrypted_credentials": credentials,
-                "status": "connected",
+                "status": "syncing",
                 "connected_at": datetime.now(UTC),
             },
         )
@@ -92,7 +92,7 @@ async def quickbooks_callback(
                 "tenant_id": tenant_id,
                 "type": "quickbooks",
                 "encrypted_credentials": credentials,
-                "status": "connected",
+                "status": "syncing",
                 "connected_at": datetime.now(UTC),
             }
         )
@@ -117,6 +117,12 @@ async def quickbooks_callback(
         )
         # Don't fail — tokens are stored, sync will retry
 
+    from app.integrations.quickbooks.sync import enqueue_quickbooks_sync
+    try:
+        await enqueue_quickbooks_sync(integration_id=integration.id, tenant_id=tenant_id)
+    except Exception as exc:
+        logger.warning("quickbooks_initial_sync_enqueue_failed integration=%s error=%s", integration.id, type(exc).__name__)
+
     return RedirectResponse(f"{_frontend_url}/dashboard/integrations?connected=quickbooks")
 
 
@@ -138,6 +144,7 @@ async def quickbooks_status(
             "connected_at": integration.connected_at.isoformat() if integration.connected_at else None,
             "last_synced_at": integration.last_synced_at.isoformat() if integration.last_synced_at else None,
             "integration_id": integration.id,
+            "summary": integration.sync_metadata,
         }
     )
 
@@ -147,7 +154,7 @@ async def quickbooks_sync(
     current_user: RequireOrgAuth,
     db: Annotated[Prisma, Depends(get_db_dep)],
 ):
-    """Verifies the QuickBooks connection inline. Used by the Resync button."""
+    """Enqueues a QuickBooks sync job via arq."""
     integration = await db.integration.find_first(
         where={"tenant_id": current_user.tenant_id, "type": "quickbooks", "status": "connected"}
     )
@@ -157,13 +164,13 @@ async def quickbooks_sync(
             detail="No connected QuickBooks integration found",
         )
 
-    from app.integrations.quickbooks.sync import sync_quickbooks_connection
-    result = await sync_quickbooks_connection(
-        ctx={},
-        integration_id=integration.id,
-        tenant_id=current_user.tenant_id,
-    )
-    return standard_response(data={"result": result, "integration_id": integration.id})
+    from app.integrations.quickbooks.sync import enqueue_quickbooks_sync
+    try:
+        await enqueue_quickbooks_sync(integration_id=integration.id, tenant_id=current_user.tenant_id)
+    except Exception as exc:
+        logger.error("quickbooks_manual_sync_enqueue_failed integration=%s error=%s", integration.id, type(exc).__name__)
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Failed to enqueue sync job")
+    return standard_response(data={"status": "sync_enqueued", "integration_id": integration.id})
 
 
 class XeroSelectTenantRequest(BaseModel):
@@ -191,9 +198,11 @@ async def xero_connect(
 
 @router.get("/integrations/xero/callback")
 async def xero_callback(
-    code: str = Query(...),
-    state: str = Query(...),
     db: Prisma = Depends(get_db_dep),
+    code: str | None = Query(default=None),
+    state: str | None = Query(default=None),
+    error: str | None = Query(default=None),
+    error_description: str | None = Query(default=None),
 ):
     """
     OAuth callback from Xero. Exchanges code+PKCE for tokens, fetches connected orgs,
@@ -201,6 +210,14 @@ async def xero_callback(
     """
     from app.core.config import get_settings as _get_settings
     _frontend_url = _get_settings().frontend_url
+
+    # Xero returns error param when user denies or scopes are wrong
+    if error:
+        logger.warning("Xero OAuth error: %s — %s", error, error_description)
+        return RedirectResponse(f"{_frontend_url}/dashboard/integrations?error={error}")
+
+    if not code or not state:
+        return RedirectResponse(f"{_frontend_url}/dashboard/integrations?error=invalid_callback")
 
     parts = state.split(":", 1)
     if len(parts) != 2:
@@ -254,7 +271,7 @@ async def xero_callback(
             where={"id": existing.id},
             data={
                 "encrypted_credentials": final_creds,
-                "status": "connected",
+                "status": "syncing",
                 "connected_at": datetime.now(UTC),
             },
         )
@@ -264,12 +281,19 @@ async def xero_callback(
                 "tenant_id": tenant_id,
                 "type": "xero",
                 "encrypted_credentials": final_creds,
-                "status": "connected",
+                "status": "syncing",
                 "connected_at": datetime.now(UTC),
             }
         )
 
     logger.info("xero_connected tenant=%s org=%s", tenant_id, creds.get("org_name"))
+
+    from app.integrations.xero.sync import enqueue_xero_sync
+    try:
+        await enqueue_xero_sync(integration_id=integration.id, tenant_id=tenant_id)
+    except Exception as exc:
+        logger.warning("xero_initial_sync_enqueue_failed integration=%s error=%s", integration.id, type(exc).__name__)
+
     return RedirectResponse(f"{_frontend_url}/dashboard/integrations?connected=xero")
 
 
@@ -291,6 +315,7 @@ async def xero_status(
             "connected_at": integration.connected_at.isoformat() if integration.connected_at else None,
             "last_synced_at": integration.last_synced_at.isoformat() if integration.last_synced_at else None,
             "integration_id": integration.id,
+            "summary": integration.sync_metadata,
         }
     )
 
@@ -300,7 +325,7 @@ async def xero_sync(
     current_user: RequireOrgAuth,
     db: Annotated[Prisma, Depends(get_db_dep)],
 ):
-    """Verifies the Xero connection inline. Used by the Resync button."""
+    """Enqueues a Xero sync job via arq."""
     integration = await db.integration.find_first(
         where={"tenant_id": current_user.tenant_id, "type": "xero", "status": "connected"}
     )
@@ -310,13 +335,13 @@ async def xero_sync(
             detail="No connected Xero integration found",
         )
 
-    from app.integrations.xero.sync import sync_xero_connection
-    result = await sync_xero_connection(
-        ctx={},
-        integration_id=integration.id,
-        tenant_id=current_user.tenant_id,
-    )
-    return standard_response(data={"result": result, "integration_id": integration.id})
+    from app.integrations.xero.sync import enqueue_xero_sync
+    try:
+        await enqueue_xero_sync(integration_id=integration.id, tenant_id=current_user.tenant_id)
+    except Exception as exc:
+        logger.error("xero_manual_sync_enqueue_failed integration=%s error=%s", integration.id, type(exc).__name__)
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Failed to enqueue sync job")
+    return standard_response(data={"status": "sync_enqueued", "integration_id": integration.id})
 
 
 @router.post("/integrations/xero/select-tenant")
@@ -378,6 +403,39 @@ async def xero_disconnect(
         data={"status": "disconnected", "encrypted_credentials": "{}"},
     )
     return standard_response(data={"status": "disconnected"})
+
+
+@router.get("/integrations/{slug}/sync-log")
+async def integration_sync_log(
+    slug: str,
+    current_user: RequireOrgAuth,
+    db: Annotated[Prisma, Depends(get_db_dep)],
+    limit: int = Query(default=50, le=200),
+):
+    """Returns recent sync log entries for an integration."""
+    integration = await db.integration.find_first(
+        where={"tenant_id": current_user.tenant_id, "type": slug}
+    )
+    if not integration:
+        return standard_response(data=[])
+
+    logs = await db.integrationsynclog.find_many(
+        where={"integration_id": integration.id, "tenant_id": current_user.tenant_id},
+        order={"created_at": "desc"},
+        take=limit,
+    )
+    return standard_response(data=[
+        {
+            "id": log.id,
+            "timestamp": log.created_at.isoformat(),
+            "entity_type": log.entity_type,
+            "status": log.status,
+            "records_synced": log.records_synced,
+            "error_message": log.error_message,
+            "duration_ms": log.duration_ms,
+        }
+        for log in logs
+    ])
 
 
 @router.delete("/integrations/quickbooks/disconnect")

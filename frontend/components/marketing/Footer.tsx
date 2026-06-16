@@ -1,11 +1,11 @@
-import Link from 'next/link'
+﻿import Link from 'next/link'
 
 const FOOTER_LINKS: { heading: string; links: { label: string; href: string }[] }[] = [
   {
     heading: 'Product',
     links: [
       { label: 'How It Works', href: '/how-it-works' },
-      { label: 'Workers', href: '/workers' },
+      { label: 'Tools', href: '/tools' },
       { label: 'API Tools', href: '/api-tools' },
       { label: 'Integrations', href: '/integrations' },
       { label: 'Pricing', href: '/pricing' },

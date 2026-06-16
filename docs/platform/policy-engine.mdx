@@ -1,0 +1,84 @@
+---
+title: Policy Engine
+description: Configure exactly when tools act autonomously and when they escalate.
+---
+
+# Policy Engine
+
+The policy engine evaluates every tool output before any action is taken.
+It is deterministic — the same input always produces the same decision.
+It cannot be bypassed.
+
+## How It Works
+
+```
+Tool produces output
+        ↓
+Policy engine evaluates all rules
+        ↓
+    ┌───────────┬──────────────┬──────────┐
+    ▼           ▼              ▼
+  PASS      APPROVE        BLOCK
+  Auto-     Request        Hold action
+  execute   approval       escalate
+```
+
+## Configuring Policies
+
+Policies are configured per tool in **Dashboard → Tools → Configure**.
+
+### Amount Thresholds
+
+The most common policy — controls when tools act autonomously vs escalate:
+
+| Range | Action |
+|---|---|
+| Under threshold 1 | Auto-execute |
+| Threshold 1 to threshold 2 | Request approval |
+| Above threshold 2 | Block and escalate |
+
+**Example:**
+- Auto-approve: under £500
+- Approval required: £500 – £5,000
+- Block: above £5,000
+
+### Supplier Verification
+
+Restrict tools to only process invoices from approved vendors:
+
+- **Verified list only** — only process invoices from vendors in your approved list
+- **Flag unrecognised** — process but flag invoices from unrecognised vendors
+- **Allow all** — no vendor restriction
+
+### Currency Rules
+
+Restrict which currencies a tool will process:
+- Allow specific currencies only (e.g. GBP, USD, EUR)
+- Block specific currencies
+- Flag unusual currencies for review
+
+### Human Override Triggers
+
+Define conditions that always require human review regardless of other rules:
+- New vendor (first invoice from a supplier)
+- Amount above X regardless of threshold
+- Specific expense categories
+- Invoices without PO numbers
+
+## Policy Evaluation Order
+
+Rules are evaluated in this order:
+1. Amount threshold check
+2. Supplier verification check
+3. Currency allowlist check
+4. PO number check
+5. Human override triggers
+6. Custom rules (if configured)
+
+The first BLOCK result stops evaluation. The first APPROVE result
+(with no subsequent BLOCK) routes to the approval queue.
+
+## Viewing Policy Decisions
+
+Every policy evaluation is recorded in the audit trail. For each execution
+you can see exactly which rules were evaluated and whether they passed or failed.

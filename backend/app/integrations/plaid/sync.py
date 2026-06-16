@@ -1,15 +1,57 @@
-"""
-Plaid sync job — runs via arq worker.
+﻿"""
+Plaid sync job — runs via arq tool.
 Fetches and stores bank accounts + transactions for a connected Plaid item.
 """
 import json
-from datetime import datetime
+import time
+from datetime import datetime, UTC
 
 from app.core.db import get_db
 from app.core.logging import get_logger
 from app.integrations.plaid import client as plaid
 
 logger = get_logger(__name__)
+
+
+async def _dedup_plaid_connections(db, integration_id: str, tenant_id: str) -> None:
+    """
+    After a successful sync, check if any older Plaid integration for this tenant has accounts
+    that are all contained within the new integration. If so, the new connection is a superset
+    (or same bank reconnected) — delete the old integration and reassign its sync logs.
+    """
+    new_accounts = await db.bankaccount.find_many(
+        where={"integration_id": integration_id, "tenant_id": tenant_id}
+    )
+    new_ids = {a.plaid_account_id for a in new_accounts if a.plaid_account_id}
+    if not new_ids:
+        return
+
+    other_integrations = await db.integration.find_many(
+        where={
+            "tenant_id": tenant_id,
+            "type": "plaid",
+            "id": {"not": integration_id},
+            "status": {"not": "disconnected"},
+        }
+    )
+
+    for old_intg in other_integrations:
+        old_accounts = await db.bankaccount.find_many(
+            where={"integration_id": old_intg.id, "tenant_id": tenant_id}
+        )
+        old_ids = {a.plaid_account_id for a in old_accounts if a.plaid_account_id}
+        if old_ids and old_ids.issubset(new_ids):
+            # Old integration's accounts are fully covered — clean it up
+            await db.integrationsynclog.delete_many(where={"integration_id": old_intg.id})
+            await db.bankaccount.update_many(
+                where={"integration_id": old_intg.id},
+                data={"integration_id": integration_id},
+            )
+            await db.integration.delete(where={"id": old_intg.id})
+            logger.info(
+                "Plaid dedup: removed duplicate integration %s (accounts reassigned to %s)",
+                old_intg.id, integration_id,
+            )
 
 
 async def sync_plaid_transactions(ctx: dict, integration_id: str, tenant_id: str) -> dict:
@@ -36,6 +78,7 @@ async def sync_plaid_transactions(ctx: dict, integration_id: str, tenant_id: str
         return {"status": "error", "reason": "incomplete_credentials"}
 
     try:
+        _start = time.monotonic()
         # Sync accounts first
         accounts_data = await plaid.get_accounts(encrypted_access)
         accounts_synced = 0
@@ -51,11 +94,15 @@ async def sync_plaid_transactions(ctx: dict, integration_id: str, tenant_id: str
             if existing:
                 await db.bankaccount.update(
                     where={"id": existing.id},
-                    data={"current_balance_minor": plaid.plaid_amount_to_minor(current, currency)},
+                    data={
+                        "current_balance_minor": plaid.plaid_amount_to_minor(current, currency),
+                        "integration_id": integration_id,
+                    },
                 )
             else:
                 await db.bankaccount.create(data={
                     "tenant_id": tenant_id,
+                    "integration_id": integration_id,
                     "plaid_account_id": plaid_account_id,
                     "plaid_item_id": item_id,
                     "name": acct.get("name", ""),
@@ -109,6 +156,12 @@ async def sync_plaid_transactions(ctx: dict, integration_id: str, tenant_id: str
             cursor = result["next_cursor"]
             has_more = result["has_more"]
 
+        # Re-read status — integration may have been disconnected while sync was running
+        current = await db.integration.find_unique(where={"id": integration_id})
+        if not current or current.status == "disconnected":
+            logger.info("Plaid sync aborted — integration %s was disconnected during run", integration_id)
+            return {"status": "skipped", "reason": "disconnected_during_sync"}
+
         # Persist updated cursor
         creds["sync_cursor"] = cursor
         await db.integration.update(
@@ -116,7 +169,7 @@ async def sync_plaid_transactions(ctx: dict, integration_id: str, tenant_id: str
             data={"encrypted_credentials": json.dumps(creds)},
         )
 
-        # Emit transaction_posted event for newly synced transactions
+        # Emit orchestrator events for newly synced transactions
         if total_added > 0:
             try:
                 from app.orchestrator.events import enqueue_orchestrator_event
@@ -127,16 +180,57 @@ async def sync_plaid_transactions(ctx: dict, integration_id: str, tenant_id: str
                     order={"created_at": "desc"},
                 )
                 if new_txns:
-                    idempotency_key = f"plaid:sync:{integration_id}:{cursor[:24] if cursor else 'initial'}"
+                    txn_ids = [t.id for t in new_txns]
+                    sync_key = cursor[:24] if cursor else "initial"
                     await enqueue_orchestrator_event(
                         tenant_id=tenant_id,
                         event_type="transaction_posted",
-                        payload={"transaction_ids": [t.id for t in new_txns]},
-                        idempotency_key=idempotency_key,
+                        payload={"transaction_ids": txn_ids},
+                        idempotency_key=f"plaid:sync:{integration_id}:{sync_key}",
+                        db=db,
+                    )
+                    await enqueue_orchestrator_event(
+                        tenant_id=tenant_id,
+                        event_type="compliance_check_requested",
+                        payload={"transaction_ids": txn_ids},
+                        idempotency_key=f"plaid:compliance:{integration_id}:{sync_key}",
+                        db=db,
+                    )
+                    await enqueue_orchestrator_event(
+                        tenant_id=tenant_id,
+                        event_type="treasury_run",
+                        payload={},
+                        idempotency_key=f"plaid:treasury:{integration_id}:{sync_key}",
                         db=db,
                     )
             except Exception as exc:
                 logger.error("plaid_sync_event_enqueue_failed", extra={"error": str(exc)})
+
+        elapsed_ms = int((time.monotonic() - _start) * 1000)
+
+        await db.integrationsynclog.create(data={
+            "tenant_id": tenant_id,
+            "integration_id": integration_id,
+            "entity_type": "accounts",
+            "status": "success",
+            "records_synced": accounts_synced,
+            "duration_ms": elapsed_ms // 2,
+        })
+        await db.integrationsynclog.create(data={
+            "tenant_id": tenant_id,
+            "integration_id": integration_id,
+            "entity_type": "transactions",
+            "status": "success",
+            "records_synced": total_added,
+            "duration_ms": elapsed_ms // 2,
+        })
+        await db.integration.update(
+            where={"id": integration_id},
+            data={"last_synced_at": datetime.now(UTC)},
+        )
+
+        # Dedup: if an older integration has accounts that are all present in this one, delete it
+        await _dedup_plaid_connections(db, integration_id, tenant_id)
 
         logger.info(
             "Plaid sync done: tenant=%s accounts=%d txns_added=%d",
@@ -147,6 +241,16 @@ async def sync_plaid_transactions(ctx: dict, integration_id: str, tenant_id: str
         return {"status": "ok", "accounts_synced": accounts_synced, "transactions_added": total_added}
 
     except Exception as exc:
+        elapsed_ms = int((time.monotonic() - _start) * 1000)
+        await db.integrationsynclog.create(data={
+            "tenant_id": tenant_id,
+            "integration_id": integration_id,
+            "entity_type": "transactions",
+            "status": "error",
+            "records_synced": 0,
+            "duration_ms": elapsed_ms,
+            "error_message": type(exc).__name__,
+        })
         logger.error("Plaid sync failed for integration %s: %s", integration_id, type(exc).__name__)
         return {"status": "error", "reason": type(exc).__name__}
 
@@ -200,6 +304,6 @@ async def enqueue_plaid_sync(integration_id: str, tenant_id: str) -> None:
     import arq
     from app.core.config import get_settings
     settings = get_settings()
-    redis = await arq.create_pool(arq.connections.RedisSettings.from_dsn(settings.redis_url))
+    redis = await arq.create_pool(arq.connections.RedisSettings.from_dsn(settings.redis_public_url))
     await redis.enqueue_job("sync_plaid_transactions", integration_id, tenant_id)
     await redis.aclose()

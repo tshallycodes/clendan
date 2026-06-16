@@ -1,0 +1,67 @@
+---
+title: Audit Trail
+description: Every action Clendan takes is logged to an immutable audit trail.
+---
+
+# Audit Trail
+
+Every action taken by every tool is written to the immutable audit trail
+before the response is returned. Records cannot be edited or deleted.
+
+## What Is Logged
+
+For every execution:
+
+```json
+{
+  "trace_id": "trace-a1b2c3d4",
+  "tool": "Invoice Processing Tool",
+  "tool_version": "1.2",
+  "timestamp": "2026-06-14T09:14:52Z",
+  "actor": "system",
+  "input": {
+    "document": "invoice_acme_0041.pdf",
+    "vendor": "Acme Supplies Ltd",
+    "amount_minor": 124000,
+    "currency": "GBP",
+    "confidence": 0.97
+  },
+  "policy_evaluation": {
+    "amount_threshold_check": "PASS",
+    "supplier_verified_check": "PASS",
+    "currency_allowlist_check": "PASS",
+    "po_match_check": "PASS"
+  },
+  "decision": "APPROVAL_REQUIRED",
+  "actions_taken": [
+    "Approval request sent to sarah@company.com"
+  ],
+  "duration_ms": 1847,
+  "model_version": "claude-sonnet-4-6"
+}
+```
+
+## Accessing the Audit Trail
+
+**Dashboard:** Go to **Dashboard → Audit Trail** to browse, filter, and export.
+
+**API:**
+```
+GET /v1/audit?tool_type=invoice_processing&status=auto&from=2026-05-01&to=2026-05-31
+```
+
+## Exporting
+
+Export your full audit trail as CSV or JSON for any date range.
+Used for external audits, compliance reporting, and financial reviews.
+
+From the dashboard: **Audit Trail → Export → Select date range → Download**
+
+## Immutability Guarantee
+
+Audit records are append-only. No UPDATE or DELETE operations are permitted
+on audit log rows at the database level. This is enforced at both the
+application layer and the database layer (row-level security policy).
+
+If you require a signed certificate of audit trail integrity for compliance
+purposes, contact support@clendan.com.

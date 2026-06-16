@@ -1,4 +1,4 @@
-from fastapi import APIRouter
+﻿from fastapi import APIRouter
 from app.api.v1 import dashboard, integrations, onboarding, plaid, tenants
 from app.api.v1.events import router as events_router
 from app.api.v1.parse.invoice import router as invoice_parse_router
@@ -10,7 +10,7 @@ from app.api.v1.webhooks.quickbooks import router as qb_webhook_router
 from app.api.v1.webhooks.stripe import router as stripe_webhook_router
 from app.api.v1.webhooks.xero import router as xero_webhook_router
 from app.api.v1.dlq import router as dlq_router
-from app.api.v1.workers import router as workers_router
+from app.api.v1.tools import router as tools_router
 from app.api.v1.decisions import router as decisions_router
 from app.api.v1.api_keys import router as api_keys_router
 from app.api.v1.reconcile import router as reconcile_router
@@ -18,6 +18,7 @@ from app.api.v1.fraud_score import router as fraud_score_router
 from app.api.v1.parse_contract import router as parse_contract_router
 from app.api.v1.organisations import router as organisations_router
 from app.api.v1.xero import router as xero_router
+from app.api.v1.freshbooks import router as freshbooks_router
 from app.api.v1.stripe import router as stripe_routes_router
 from app.api.v1.gocardless import router as gocardless_router
 from app.api.v1.truelayer import router as truelayer_router
@@ -38,6 +39,11 @@ from app.api.v1.paypal import router as paypal_router
 from app.api.v1.webhooks.square import router as square_webhook_router
 from app.api.v1.webhooks.paypal import router as paypal_webhook_router
 from app.api.v1.generic import router as generic_router
+from app.api.v1.sage import router as sage_router
+from app.api.v1.adyen import router as adyen_router
+from app.api.v1.wise import router as wise_router
+from app.api.v1.mono import router as mono_router
+from app.api.v1.webhooks.mono import router as mono_webhook_router
 from app.clen.router import router as clen_router
 
 v1_router = APIRouter()
@@ -47,6 +53,7 @@ v1_router.include_router(tenants.router)
 v1_router.include_router(integrations.router)
 v1_router.include_router(plaid.router)
 v1_router.include_router(xero_router)
+v1_router.include_router(freshbooks_router)
 v1_router.include_router(dashboard.router)
 v1_router.include_router(events_router)
 v1_router.include_router(invoice_parse_router)
@@ -58,7 +65,7 @@ v1_router.include_router(qb_webhook_router)
 v1_router.include_router(stripe_webhook_router)
 v1_router.include_router(xero_webhook_router)
 v1_router.include_router(dlq_router)
-v1_router.include_router(workers_router)
+v1_router.include_router(tools_router)
 v1_router.include_router(decisions_router)
 v1_router.include_router(api_keys_router)
 v1_router.include_router(reconcile_router)
@@ -84,4 +91,9 @@ v1_router.include_router(paypal_router)
 v1_router.include_router(square_webhook_router)
 v1_router.include_router(paypal_webhook_router)
 v1_router.include_router(clen_router)
+v1_router.include_router(sage_router)
+v1_router.include_router(adyen_router)
+v1_router.include_router(wise_router)
+v1_router.include_router(mono_router)
+v1_router.include_router(mono_webhook_router)
 v1_router.include_router(generic_router)  # must be last — uses {slug} path params

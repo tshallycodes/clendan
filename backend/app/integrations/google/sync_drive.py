@@ -1,5 +1,5 @@
-"""
-Google Drive sync job — runs via arq worker.
+﻿"""
+Google Drive sync job — runs via arq tool.
 Lists PDF files in Drive, writes sync log, updates integration status.
 """
 import time
@@ -63,9 +63,11 @@ async def sync_drive_connection(ctx: dict, integration_id: str, tenant_id: str) 
         except Exception as exc:
             logger.error("drive_token_refresh_failed integration_id=%s: %s", integration_id, type(exc).__name__)
 
+    initial_status = integration.status
     sync_start = time.monotonic()
     sync_status = "success"
     file_count = 0
+    files: list = []
 
     try:
         files = await google.list_pdf_files(access_token)
@@ -91,6 +93,28 @@ async def sync_drive_connection(ctx: dict, integration_id: str, tenant_id: str) 
             where={"id": integration_id},
             data={"status": "connected", "connected_at": datetime.now(UTC)},
         )
+        if initial_status == "connected" and files:
+            try:
+                from app.orchestrator.events import enqueue_orchestrator_event
+                for f in files:
+                    file_id = f.get("id", "")
+                    if file_id:
+                        await enqueue_orchestrator_event(
+                            tenant_id=tenant_id,
+                            event_type="receipt_received",
+                            payload={
+                                "source": "google_drive",
+                                "integration_id": integration_id,
+                                "file_id": file_id,
+                            },
+                            idempotency_key=f"drive:receipt:{file_id}",
+                            db=db,
+                        )
+            except Exception as exc:
+                logger.error(
+                    "drive_receipt_event_failed integration_id=%s: %s",
+                    integration_id, type(exc).__name__,
+                )
         logger.info("drive_sync_ok tenant=%s files=%d", tenant_id, file_count)
         return {"status": "ok", "files_found": file_count}
 
@@ -102,6 +126,6 @@ async def enqueue_drive_sync(integration_id: str, tenant_id: str) -> None:
     """Enqueues a Google Drive sync job onto the arq Redis queue."""
     import arq
     settings = get_settings()
-    redis = await arq.create_pool(arq.connections.RedisSettings.from_dsn(settings.redis_url))
+    redis = await arq.create_pool(arq.connections.RedisSettings.from_dsn(settings.redis_public_url))
     await redis.enqueue_job("sync_drive_connection", integration_id, tenant_id)
     await redis.aclose()

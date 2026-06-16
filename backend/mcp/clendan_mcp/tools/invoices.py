@@ -1,10 +1,10 @@
-"""
+﻿"""
 tools/invoices.py — Invoice parsing and processing tools.
 
 parse_invoice: Upload a local file, call the invoice parser, and return
                structured invoice data synchronously (polls until done).
 
-run_invoice_worker: Run the Invoice Processing Worker on parsed invoice data.
+run_invoice_tool: Run the Invoice Processing Tool on parsed invoice data.
 """
 from __future__ import annotations
 
@@ -47,7 +47,7 @@ async def parse_invoice(file_path: str) -> dict[str, Any]:
         vat_minor (int | null): VAT/tax in minor units or null
         po_number (str | null): Purchase order number or null
         confidence (float): Extraction confidence score 0.0–1.0
-        parse_id (str): ID for this parse operation (use in run_invoice_worker)
+        parse_id (str): ID for this parse operation (use in run_invoice_tool)
 
     Raises MCPError if the file doesn't exist, has an unsupported type,
     or parsing fails.
@@ -110,11 +110,11 @@ async def parse_invoice(file_path: str) -> dict[str, Any]:
     )
 
 
-async def run_invoice_worker(invoice_data: dict[str, Any]) -> dict[str, Any]:
+async def run_invoice_tool(invoice_data: dict[str, Any]) -> dict[str, Any]:
     """
-    Run the Invoice Processing Worker on parsed invoice data.
+    Run the Invoice Processing Tool on parsed invoice data.
 
-    The worker validates the invoice against policy rules and takes one of
+    The tool validates the invoice against policy rules and takes one of
     three actions:
       - auto_approve: within thresholds, no approval needed
       - route_for_approval: above threshold, requires human review
@@ -124,13 +124,13 @@ async def run_invoice_worker(invoice_data: dict[str, Any]) -> dict[str, Any]:
     with at least: vendor, amount_minor, currency, invoice_number.
 
     Returns:
-        execution_id (str): Unique ID for this worker execution
+        execution_id (str): Unique ID for this tool execution
         decision (str): "auto_approve" | "route_for_approval" | "block"
-        confidence (float): Worker confidence 0.0–1.0
+        confidence (float): Tool confidence 0.0–1.0
         reasoning (str): Plain-English explanation of the decision
-        actions_taken (list): What the worker did (e.g. created QuickBooks bill)
+        actions_taken (list): What the tool did (e.g. created QuickBooks bill)
         approval_id (str | null): Set if decision is route_for_approval
-        duration_ms (int): How long the worker took in milliseconds
+        duration_ms (int): How long the tool took in milliseconds
     """
     if not isinstance(invoice_data, dict):
         raise MCPError("invoice_data must be a dict. Pass the output of parse_invoice() directly.")
@@ -140,7 +140,7 @@ async def run_invoice_worker(invoice_data: dict[str, Any]) -> dict[str, Any]:
     response = await api_post(
         "/v1/agents/run",
         data={
-            "worker_type": "invoice_processing",
+            "tool_type": "invoice_processing",
             "input": invoice_data,
         },
     )

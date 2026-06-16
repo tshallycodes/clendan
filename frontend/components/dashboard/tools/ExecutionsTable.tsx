@@ -1,6 +1,6 @@
 ﻿'use client'
 
-import type { Execution } from './WorkerDetail'
+import type { Execution } from './ToolDetail'
 
 const DECISION_BADGE: Record<string, string> = {
   auto_approved:     'bg-[rgba(0,200,83,0.08)] text-[#00C853] border border-[rgba(0,200,83,0.2)]',
@@ -25,17 +25,17 @@ interface Props {
 export function ExecutionsTable({ executions }: Props) {
   if (executions.length === 0) {
     return (
-      <div className="border border-[#1a2a1a] rounded-sm p-8 text-center">
-        <p className="text-xs font-mono text-[#4a6a4a]">No executions yet. Use Run test to trigger this worker.</p>
+      <div className="border border-brand-border rounded-sm p-8 text-center">
+        <p className="text-xs font-mono text-[#4a6a4a]">No executions yet. Use Run test to trigger this tool.</p>
       </div>
     )
   }
 
   return (
-    <div className="border border-[#1a2a1a] rounded-sm overflow-hidden">
+    <div className="border border-brand-border rounded-sm overflow-hidden">
       <table className="w-full text-xs font-mono">
         <thead>
-          <tr className="border-b border-[#1a2a1a]">
+          <tr className="border-b border-brand-border">
             {['Time', 'Decision', 'Confidence', 'Duration', 'Status'].map((h) => (
               <th key={h} className="text-left text-[10px] font-mono text-[#4a6a4a] px-3 py-2 uppercase tracking-wide">{h}</th>
             ))}
@@ -43,18 +43,18 @@ export function ExecutionsTable({ executions }: Props) {
         </thead>
         <tbody>
           {executions.map((e) => (
-            <tr key={e.id} className="border-b border-[#1a2a1a] last:border-0 hover:bg-[#1a1a1a] transition-colors">
+            <tr key={e.id} className="border-b border-brand-border last:border-0 hover:bg-[#1a1a1a] transition-colors">
               <td className="px-3 py-2 text-[#4a6a4a]">{formatDate(e.created_at)}</td>
               <td className="px-3 py-2">
-                <span className={`text-[10px] px-2 py-0.5 rounded-sm ${DECISION_BADGE[e.decision] ?? 'text-[#a0b8a0] border border-[#1a2a1a]'}`}>
+                <span className={`text-[10px] px-2 py-0.5 rounded-sm ${DECISION_BADGE[e.decision] ?? 'text-brand-muted border border-brand-border'}`}>
                   {e.decision.replace(/_/g, ' ')}
                 </span>
               </td>
-              <td className="px-3 py-2 text-[#a0b8a0]">
+              <td className="px-3 py-2 text-brand-muted">
                 {e.confidence !== null ? `${(e.confidence * 100).toFixed(1)}%` : 'â€”'}
               </td>
-              <td className="px-3 py-2 text-[#a0b8a0]">{formatDuration(e.duration_ms)}</td>
-              <td className="px-3 py-2 text-[#a0b8a0]">{e.status}</td>
+              <td className="px-3 py-2 text-brand-muted">{formatDuration(e.duration_ms)}</td>
+              <td className="px-3 py-2 text-brand-muted">{e.status}</td>
             </tr>
           ))}
         </tbody>

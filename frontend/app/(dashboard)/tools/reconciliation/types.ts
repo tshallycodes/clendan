@@ -1,0 +1,27 @@
+export interface ReconciliationRun {
+  id: string
+  period_start: string
+  period_end: string
+  status: string
+  matched_count: number
+  unmatched_count: number
+  flagged_count: number
+  review_count: number
+  total_txn_count: number
+  created_at: string
+}
+
+export interface ReconciliationItem {
+  id: string
+  date: string
+  account_name: string | null
+  account_id: string
+  description: string
+  merchant_name: string | null
+  amount_minor: number
+  currency: string
+  status: string
+  matched_invoice_number: string | null
+  matched_vendor: string | null
+  reasoning: string
+}

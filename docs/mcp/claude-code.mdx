@@ -1,0 +1,58 @@
+---
+title: Claude Code
+description: Connect the Clendan MCP server to Claude Code CLI.
+---
+
+# Connect to Claude Code
+
+## One-Line Setup
+
+Run this once from your terminal. Claude Code stores the connection permanently.
+
+```bash
+claude mcp add --transport sse clendan https://mcp.clendan.com/sse \
+  -H "Authorization: Bearer YOUR_API_KEY"
+```
+
+Replace `YOUR_API_KEY` with an active key from **Dashboard → Settings → API Keys**.
+
+## Verify Your Claude Code Connection
+
+```bash
+claude mcp list
+# clendan   sse   https://mcp.clendan.com/sse   active
+```
+
+Then in a Claude Code session:
+
+```
+> list my clendan tools
+```
+
+## Remove the Connection
+
+```bash
+claude mcp remove clendan
+```
+
+## Usage Examples
+
+**Check pending approvals from the terminal:**
+```
+> show me pending approvals in clendan
+```
+
+**Pause a tool while debugging:**
+```
+> pause the invoice processing tool in clendan
+```
+
+**Query the audit trail:**
+```
+> show me all auto-approved executions in clendan from the last 7 days
+```
+
+**Score a transaction for fraud:**
+```
+> use clendan to score this transaction for fraud: £8,400 to "New Vendor Ltd" from our GBP account
+```

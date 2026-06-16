@@ -12,6 +12,7 @@ interface IntegrationCardProps {
   onDisconnect: () => void
   onResync: () => void
   onViewLog: () => void
+  onViewDetail: () => void
   lastSyncedAt: string | null
   confirming: boolean
   onCancelConfirm: () => void
@@ -26,6 +27,7 @@ export function IntegrationCard({
   onDisconnect,
   onResync,
   onViewLog,
+  onViewDetail,
   lastSyncedAt,
   confirming,
   onCancelConfirm,
@@ -45,7 +47,11 @@ export function IntegrationCard({
         leftBorderClass(status),
       ].join(' ')}
     >
-      <div className="flex items-start gap-3">
+      <button
+        type="button"
+        onClick={onViewDetail}
+        className="flex items-start gap-3 text-left hover:opacity-80 transition-opacity w-full"
+      >
         <IntegrationLogo slug={intg.slug} size={20} />
         <div className="space-y-0.5 min-w-0 flex-1">
           <div className="flex items-center gap-2 flex-wrap">
@@ -59,7 +65,7 @@ export function IntegrationCard({
           </div>
           <p className="text-xs font-mono text-brand-muted">{intg.desc}</p>
         </div>
-      </div>
+      </button>
 
       <AnimatePresence mode="wait">
         {status === 'connected' && (
@@ -68,7 +74,7 @@ export function IntegrationCard({
               Last sync: {lastSyncedAt ? new Date(lastSyncedAt).toLocaleString() : '—'}
             </p>
             {disconnecting ? (
-              <p className="text-[10px] font-mono text-[#4a6a4a]">Disconnecting...</p>
+              <p className="text-[10px] font-mono text-brand-muted">Disconnecting...</p>
             ) : confirming ? (
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="text-[10px] font-mono text-[#ff4d6d]">Disconnect {intg.name}?</span>

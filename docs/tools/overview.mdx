@@ -1,0 +1,88 @@
+---
+title: AI Tools Overview
+description: Clendan's 10 AI financial tools — each one a sub-agent with a defined role.
+---
+
+# AI Tools
+
+Clendan tools are specialised AI sub-agents. Each tool has a defined role,
+a set of capabilities it can execute, and policy rules it must enforce. Tools are
+deployed per organisation and configured independently.
+
+## Architecture
+
+Clendan uses a master-subagent model:
+
+```
+Financial Orchestrator (Master Agent)
+├── Receives all financial events
+├── Classifies the event type
+├── Routes to the correct tool
+└── Tools execute as sub-agents
+    ├── Document Intelligence
+    ├── AI Accountant
+    ├── Spend Control
+    ├── AR & Collections
+    ├── Risk & Compliance
+    ├── Treasury & Cash
+    └── ... (all others)
+```
+
+Tools never call each other directly. All coordination flows through
+the Financial Orchestrator.
+
+## Autonomy Levels
+
+Every tool is configured with one of three autonomy levels:
+
+| Level | Behaviour |
+|---|---|
+| **Auto** | Executes actions autonomously within your policy thresholds |
+| **Approve** | Always requests human approval before executing |
+| **Suggest** | Recommends actions but never executes — you confirm manually |
+
+## Available Tools
+
+| Tool | Purpose |
+|---|---|
+| **Document Intelligence** | OCR and AI extraction for invoices, receipts, and contracts |
+| **AI Accountant** | Transaction categorisation, month-end close, payroll reconciliation |
+| **Spend Control** | AP processing, expense policy enforcement, duplicate detection |
+| **AR & Collections** | Invoice monitoring, urgency classification, debtor follow-ups |
+| **Risk & Compliance** | Fraud detection, AML/KYC monitoring, audit preparation |
+| **Treasury & Cash** | Cash positions, liquidity forecasting, FX exposure, budget vs. actuals |
+| **Reconciliation** | Bank-to-invoice matching, anomaly detection |
+| **Revenue Recognition** | ASC 606 / IFRS 15 schedule generation |
+| **Credit Underwriting** | Credit risk assessment and automated decisions |
+| **Tax Compliance** | VAT computation, missing tax code detection, filing risk |
+
+## Policy Engine
+
+Every tool output passes through the policy engine before any action
+is taken. The policy engine is deterministic — same input always produces
+the same decision.
+
+Policies are configured per tool per organisation:
+- Approval thresholds (amount ranges)
+- Verified supplier/vendor lists
+- Currency allow-lists
+- Restricted fields
+- Human override triggers
+
+See [Policy Engine](/platform/policy-engine) for full configuration reference.
+
+## Audit Trail
+
+Every action taken by every tool is written to the immutable audit trail
+before the response is returned. If the audit write fails, the operation fails.
+
+Each audit entry contains:
+- Tool name and version
+- Full input data
+- Policy evaluation results (each rule, pass/fail)
+- Decision and confidence score
+- Actions executed
+- Reasoning trace
+- Duration
+
+See [Audit Trail](/platform/audit-trail) for details.

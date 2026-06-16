@@ -1,5 +1,5 @@
-"""
-HubSpot sync job — runs via arq worker.
+﻿"""
+HubSpot sync job — runs via arq tool.
 Fetches contacts, companies, and deals. Writes a sync log entry per entity type.
 """
 import time
@@ -28,6 +28,10 @@ async def sync_hubspot_connection(ctx: dict, integration_id: str, tenant_id: str
     if integration.tenant_id != tenant_id:
         logger.error("hubspot_sync_tenant_mismatch integration=%s — blocked", integration_id)
         return {"status": "error", "reason": "tenant_mismatch"}
+
+    if integration.status == "disconnected":
+        logger.warning("hubspot_sync_skipped integration=%s reason=disconnected", integration_id)
+        return {"status": "skipped", "reason": "disconnected"}
 
     try:
         access_token = await get_valid_token(integration_id, db)
@@ -121,6 +125,12 @@ async def sync_hubspot_connection(ctx: dict, integration_id: str, tenant_id: str
         })
         results["deals_error"] = type(exc).__name__
 
+    # Re-read status — integration may have been disconnected while sync was running
+    current = await db.integration.find_unique(where={"id": integration_id})
+    if not current or current.status == "disconnected":
+        logger.info("hubspot_sync_aborted_disconnected integration=%s", integration_id)
+        return {"status": "skipped", "reason": "disconnected_during_sync"}
+
     # Mark integration as connected after sync completes
     await db.integration.update(
         where={"id": integration_id},
@@ -162,6 +172,6 @@ async def enqueue_hubspot_sync(integration_id: str, tenant_id: str) -> None:
     import arq
     from app.core.config import get_settings
     settings = get_settings()
-    redis = await arq.create_pool(arq.connections.RedisSettings.from_dsn(settings.redis_url))
+    redis = await arq.create_pool(arq.connections.RedisSettings.from_dsn(settings.redis_public_url))
     await redis.enqueue_job("sync_hubspot_connection", integration_id, tenant_id)
     await redis.aclose()

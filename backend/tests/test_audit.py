@@ -1,4 +1,4 @@
-import pytest
+﻿import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 
 
@@ -21,7 +21,7 @@ async def test_write_audit_log_returns_id():
         from app.audit.logger import write_audit_log
         result = await write_audit_log(
             tenant_id="tenant-1",
-            actor="worker:invoice_processing:v1",
+            actor="tool:invoice_processing:v1",
             action="invoice_processed",
             reasoning_trace={"decision": "auto_approved"},
             model_version="invoice_processing-v1",
@@ -56,7 +56,7 @@ async def test_write_audit_log_passes_correct_fields():
         from app.audit.logger import write_audit_log
         await write_audit_log(
             tenant_id="t1",
-            actor="worker:x",
+            actor="tool:x",
             action="test_action",
             reasoning_trace={"key": "value"},
             model_version="v1",
@@ -64,7 +64,7 @@ async def test_write_audit_log_passes_correct_fields():
         )
     data = db.auditlog.create.call_args.kwargs["data"]
     assert data["tenant_id"] == "t1"
-    assert data["actor"] == "worker:x"
+    assert data["actor"] == "tool:x"
     assert data["action"] == "test_action"
     assert data["reasoning_trace_json"] == {"key": "value"}
     assert data["model_version"] == "v1"
@@ -80,7 +80,7 @@ async def test_write_audit_log_raises_on_db_failure():
         with pytest.raises(RuntimeError, match="Audit log write failed"):
             await write_audit_log(
                 tenant_id="t1",
-                actor="worker:x",
+                actor="tool:x",
                 action="action",
                 reasoning_trace={},
                 model_version="v1",

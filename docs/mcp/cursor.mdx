@@ -1,0 +1,47 @@
+---
+title: Cursor
+description: Connect the Clendan MCP server to Cursor.
+---
+
+# Connect to Cursor
+
+## Step 1 — Get Your API Key
+
+Go to **Dashboard → Settings → API Keys** and copy an active key.
+
+## Step 2 — Add to Cursor MCP Config
+
+Create or edit `.cursor/mcp.json` in your project root:
+
+```json
+{
+  "mcpServers": {
+    "clendan": {
+      "url": "https://mcp.clendan.com/sse",
+      "headers": {
+        "Authorization": "Bearer YOUR_API_KEY"
+      }
+    }
+  }
+}
+```
+
+Alternatively, add it globally in **Cursor Settings → Features → MCP Servers**.
+
+## Step 3 — Enable in Cursor
+
+Open the Cursor command palette (`Cmd+Shift+P`) and run **MCP: Refresh Servers**. The Clendan tools will be available in Agent mode.
+
+## Verify Your Cursor Connection
+
+In a Cursor Agent chat, type:
+
+> "Show me the Clendan audit trail for this month"
+
+Cursor will call `get_audit_trail` with the current date range.
+
+## Using in Composer
+
+Clendan tools work in Cursor Composer (Agent mode). To process an invoice from a file in your project:
+
+> "Parse this invoice PDF using Clendan and tell me the vendor and amount"

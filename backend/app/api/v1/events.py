@@ -1,7 +1,7 @@
-"""
+﻿"""
 POST /v1/events — single orchestrator entry point.
 External triggers and partner systems submit financial events here.
-The orchestrator classifies, routes to the right worker, applies policy, and audits.
+The orchestrator classifies, routes to the right tool, applies policy, and audits.
 """
 from typing import Annotated
 
@@ -66,12 +66,12 @@ async def submit_event(
     )
 
     if execution_id is None:
-        worker_type = EVENT_TO_WORKER[body.event_type]
+        tool_type = EVENT_TO_WORKER[body.event_type]
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail=(
-                f"No active '{worker_type.value}' worker deployed for your tenant. "
-                "Deploy one via POST /v1/workers."
+                f"No active '{tool_type.value}' tool deployed for your tenant. "
+                "Deploy one via POST /v1/tools."
             ),
         )
 

@@ -12,17 +12,21 @@ from app.integrations.truelayer.circuit_breaker import _circuit
 
 logger = get_logger(__name__)
 
-TL_AUTH_URL = "https://auth.truelayer.com/"
-TL_TOKEN_URL = "https://auth.truelayer.com/connect/token"
-TL_API_BASE = "https://api.truelayer.com/data/v1/"
-TL_SCOPES = "info accounts balance transactions cards offline_access"
+def _tl_auth_base() -> str:
+    s = get_settings()
+    return "https://auth.truelayer-sandbox.com" if s.truelayer_env == "sandbox" else "https://auth.truelayer.com"
+
+def _tl_api_base() -> str:
+    s = get_settings()
+    return "https://api.truelayer-sandbox.com/data/v1/" if s.truelayer_env == "sandbox" else "https://api.truelayer.com/data/v1/"
+TL_SCOPES = "info accounts balance transactions offline_access"
 TOKEN_TTL_SECONDS = 3540  # 1 hour minus 60s safety margin
 MAX_ATTEMPTS = 3
 BACKOFF_SECONDS = 1.0
 
 
 def build_auth_url(state: str) -> str:
-    """Builds TrueLayer OAuth2 authorisation URL including UK bank provider list."""
+    """Builds TrueLayer OAuth2 authorisation URL."""
     settings = get_settings()
     params = {
         "response_type": "code",
@@ -30,9 +34,11 @@ def build_auth_url(state: str) -> str:
         "redirect_uri": settings.truelayer_redirect_uri,
         "scope": TL_SCOPES,
         "state": state,
-        "providers": "uk-ob-all+uk-oauth-all",
     }
-    return f"{TL_AUTH_URL}?{urlencode(params)}"
+    url = f"{_tl_auth_base()}/?{urlencode(params)}"
+    logger.info("TrueLayer auth URL: %s", url)
+    logger.info("TrueLayer redirect_uri: %s", settings.truelayer_redirect_uri)
+    return url
 
 
 async def exchange_code(code: str, tenant_id: str) -> dict:
@@ -45,7 +51,7 @@ async def exchange_code(code: str, tenant_id: str) -> dict:
     async def _call():
         async with httpx.AsyncClient() as client:
             response = await client.post(
-                TL_TOKEN_URL,
+                f"{_tl_auth_base()}/connect/token",
                 data={
                     "grant_type": "authorization_code",
                     "client_id": settings.truelayer_client_id,
@@ -81,7 +87,7 @@ async def refresh_truelayer_token(refresh_token: str) -> dict:
     async def _call():
         async with httpx.AsyncClient() as client:
             response = await client.post(
-                TL_TOKEN_URL,
+                f"{_tl_auth_base()}/connect/token",
                 data={
                     "grant_type": "refresh_token",
                     "client_id": settings.truelayer_client_id,
@@ -102,13 +108,33 @@ async def refresh_truelayer_token(refresh_token: str) -> dict:
     }
 
 
+async def get_provider_info(access_token: str) -> dict:
+    """Fetches provider (institution) info for the connected bank. Returns empty dict on failure."""
+    async def _call():
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                f"{_tl_api_base()}info",
+                headers={"Authorization": f"Bearer {access_token}"},
+                timeout=15.0,
+            )
+            response.raise_for_status()
+            return response.json()
+
+    try:
+        raw = await _circuit.call(_retry, _call)
+        results = raw.get("results", [])
+        return results[0] if results else {}
+    except Exception:
+        return {}
+
+
 async def get_accounts(access_token: str) -> list:
     """Fetches all accounts for the connected bank. Returns list of account dicts."""
 
     async def _call():
         async with httpx.AsyncClient() as client:
             response = await client.get(
-                f"{TL_API_BASE}accounts",
+                f"{_tl_api_base()}accounts",
                 headers={"Authorization": f"Bearer {access_token}"},
                 timeout=15.0,
             )
@@ -128,7 +154,7 @@ async def get_account_balance(access_token: str, account_id: str) -> dict:
     async def _call():
         async with httpx.AsyncClient() as client:
             response = await client.get(
-                f"{TL_API_BASE}accounts/{account_id}/balance",
+                f"{_tl_api_base()}accounts/{account_id}/balance",
                 headers={"Authorization": f"Bearer {access_token}"},
                 timeout=15.0,
             )
@@ -153,7 +179,7 @@ async def get_transactions(
     async def _call():
         async with httpx.AsyncClient() as client:
             response = await client.get(
-                f"{TL_API_BASE}accounts/{account_id}/transactions",
+                f"{_tl_api_base()}accounts/{account_id}/transactions",
                 headers={"Authorization": f"Bearer {access_token}"},
                 params={"from": from_date, "to": to_date},
                 timeout=30.0,

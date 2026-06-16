@@ -10,7 +10,13 @@ from app.integrations.xero.client_auth import (
 )
 from app.integrations.xero.client_api import (
     get_accounts,
+    get_bills,
     get_contacts,
+    get_credit_notes,
+    get_expenses,
+    get_invoices,
+    get_payments,
+    get_tax_rates,
     revoke_connection,
 )
 
@@ -20,6 +26,12 @@ __all__ = [
     "get_connections",
     "refresh_xero_token",
     "get_accounts",
+    "get_bills",
     "get_contacts",
+    "get_credit_notes",
+    "get_expenses",
+    "get_invoices",
+    "get_payments",
+    "get_tax_rates",
     "revoke_connection",
 ]

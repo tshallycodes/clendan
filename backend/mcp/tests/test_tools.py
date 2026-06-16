@@ -1,4 +1,4 @@
-"""
+﻿"""
 tests/test_tools.py — Unit tests for tool input validation.
 
 Tests that tools validate their inputs correctly and raise MCPError with
@@ -40,17 +40,17 @@ async def test_parse_invoice_empty_file(tmp_path):
 
 
 @pytest.mark.asyncio
-async def test_run_invoice_worker_wrong_type():
-    from clendan_mcp.tools.invoices import run_invoice_worker
+async def test_run_invoice_tool_wrong_type():
+    from clendan_mcp.tools.invoices import run_invoice_tool
     with pytest.raises(MCPError, match="must be a dict"):
-        await run_invoice_worker("not a dict")  # type: ignore
+        await run_invoice_tool("not a dict")  # type: ignore
 
 
 @pytest.mark.asyncio
-async def test_run_invoice_worker_empty_dict():
-    from clendan_mcp.tools.invoices import run_invoice_worker
+async def test_run_invoice_tool_empty_dict():
+    from clendan_mcp.tools.invoices import run_invoice_tool
     with pytest.raises(MCPError, match="empty"):
-        await run_invoice_worker({})
+        await run_invoice_tool({})
 
 
 # ---------------------------------------------------------------------------
@@ -90,10 +90,10 @@ async def test_get_approval_detail_missing_id():
 # ---------------------------------------------------------------------------
 
 @pytest.mark.asyncio
-async def test_get_audit_trail_invalid_worker_type():
+async def test_get_audit_trail_invalid_tool_type():
     from clendan_mcp.tools.audit import get_audit_trail
-    with pytest.raises(MCPError, match="Invalid worker_type"):
-        await get_audit_trail(worker_type="banana_worker")
+    with pytest.raises(MCPError, match="Invalid tool_type"):
+        await get_audit_trail(tool_type="banana_tool")
 
 
 @pytest.mark.asyncio
@@ -118,20 +118,20 @@ async def test_get_execution_detail_missing_id():
 
 
 # ---------------------------------------------------------------------------
-# Worker tool tests
+# Tool tool tests
 # ---------------------------------------------------------------------------
 
 @pytest.mark.asyncio
-async def test_get_worker_status_invalid_type():
-    from clendan_mcp.tools.workers import get_worker_status
-    with pytest.raises(MCPError, match="Unknown worker type"):
-        await get_worker_status("super_ai_worker")
+async def test_get_tool_status_invalid_type():
+    from clendan_mcp.tools.tools import get_tool_status
+    with pytest.raises(MCPError, match="Unknown tool type"):
+        await get_tool_status("super_ai_tool")
 
 
 @pytest.mark.asyncio
 async def test_get_policy_rules_invalid_type():
-    from clendan_mcp.tools.workers import get_policy_rules
-    with pytest.raises(MCPError, match="Unknown worker type"):
+    from clendan_mcp.tools.tools import get_policy_rules
+    with pytest.raises(MCPError, match="Unknown tool type"):
         await get_policy_rules("unknown_type")
 
 

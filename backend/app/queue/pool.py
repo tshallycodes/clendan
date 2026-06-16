@@ -15,7 +15,7 @@ _pool: Optional[ArqRedis] = None
 
 
 def _redis_settings() -> RedisSettings:
-    return RedisSettings.from_dsn(get_settings().redis_url)
+    return RedisSettings.from_dsn(get_settings().redis_public_url)
 
 
 async def get_queue_pool() -> ArqRedis:

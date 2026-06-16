@@ -12,16 +12,6 @@ class OAuthConfig:
 
 
 OAUTH_REGISTRY: dict[str, OAuthConfig] = {
-    "freshbooks": OAuthConfig(
-        auth_url="https://auth.freshbooks.com/oauth/authorize",
-        token_url="https://api.freshbooks.com/auth/oauth/token",
-        scope=(
-            "user:profile:read user:bills:read user:bills:write "
-            "user:invoices:read user:invoices:write user:payments:read"
-        ),
-        client_id_attr="freshbooks_client_id",
-        client_secret_attr="freshbooks_client_secret",
-    ),
     "sage": OAuthConfig(
         auth_url="https://www.sageone.com/oauth2/auth/central",
         token_url="https://oauth.accounting.sage.com/token",

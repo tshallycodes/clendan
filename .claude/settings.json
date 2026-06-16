@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(Remove-Item -Recurse -Force \"c:\\\\Users\\\\bubut\\\\Documents\\\\personalprojects\\\\Clendan\\\\frontend\\\\.next\" -ErrorAction SilentlyContinue)",
+      "Bash(Write-Host \"done\")"
+    ]
+  }
+}

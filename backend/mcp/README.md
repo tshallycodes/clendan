@@ -1,4 +1,4 @@
-# Clendan MCP Server
+﻿# Clendan MCP Server
 
 An [MCP (Model Context Protocol)](https://modelcontextprotocol.io) server that exposes
 Clendan's AI Financial Agent OS as tools any MCP client can call.
@@ -53,7 +53,7 @@ claude mcp add clendan \
 | Tool | Description |
 |---|---|
 | `parse_invoice` | Parse a PDF/PNG/JPG invoice and extract structured data |
-| `run_invoice_worker` | Run the Invoice Processing Worker on parsed invoice data |
+| `run_invoice_tool` | Run the Invoice Processing Tool on parsed invoice data |
 | `score_fraud` | Score a transaction for fraud risk |
 | `reconcile_datasets` | Reconcile two financial datasets |
 | `extract_contract_data` | Extract structured data from a contract PDF |
@@ -74,15 +74,15 @@ claude mcp add clendan \
 | `get_audit_trail` | Query the immutable audit trail (filter by type, status, date) |
 | `get_execution_detail` | Get complete detail of an execution by trace ID |
 
-### Workers
+### Tools
 
 | Tool | Description |
 |---|---|
-| `list_workers` | List all deployed workers and their status |
-| `get_worker_status` | Get detailed status of a specific worker |
-| `pause_worker` | Pause a running worker |
-| `resume_worker` | Resume a paused worker |
-| `get_policy_rules` | Get policy rules and thresholds for a worker |
+| `list_tools` | List all deployed tools and their status |
+| `get_tool_status` | Get detailed status of a specific tool |
+| `pause_tool` | Pause a running tool |
+| `resume_tool` | Resume a paused tool |
+| `get_policy_rules` | Get policy rules and thresholds for a tool |
 
 ### Integrations
 
@@ -97,7 +97,7 @@ claude mcp add clendan \
 | Tool | Description |
 |---|---|
 | `get_execution_stats` | Get execution statistics for a period (1d/7d/30d/90d) |
-| `get_hours_saved` | Calculate hours saved by workers over a period |
+| `get_hours_saved` | Calculate hours saved by tools over a period |
 
 ---
 
@@ -108,7 +108,7 @@ You: What invoices are waiting for my approval?
 Claude: [calls get_pending_approvals] You have 3 pending approvals...
 
 You: Show me the reasoning for the Acme Corp invoice
-Claude: [calls get_approval_detail] The worker escalated because the amount (£45,200)
+Claude: [calls get_approval_detail] The tool escalated because the amount (£45,200)
         exceeds your auto-approval threshold of £25,000...
 
 You: Approve it — it looks fine
@@ -116,7 +116,7 @@ Claude: [calls approve_execution] Done. The invoice has been approved and will
         be posted to QuickBooks automatically.
 
 You: How much time has Clendan saved us this month?
-Claude: [calls get_hours_saved] Over the last 30 days, your workers processed
+Claude: [calls get_hours_saved] Over the last 30 days, your tools processed
         847 tasks and saved approximately 127 hours of manual work...
 ```
 

@@ -54,7 +54,7 @@ export function ClenInput({ onSend, disabled }: Props) {
         placeholder="Ask Clen anything..."
         rows={1}
         disabled={disabled}
-        className="flex-1 resize-none bg-brand-bg border border-brand-border focus:border-brand-green focus:outline-none rounded-sm px-3 py-2 text-xs font-mono text-brand-text placeholder:text-brand-muted transition-colors leading-5 min-h-[36px] disabled:opacity-50"
+        className="flex-1 resize-none bg-brand-bg border border-brand-border focus:border-brand-green focus:outline-none rounded-sm px-3 py-2 text-xs font-mono text-brand-text placeholder:text-brand-muted transition-colors leading-5 min-h-[36px] disabled:opacity-50 overflow-y-hidden"
       />
       <button
         onClick={submit}

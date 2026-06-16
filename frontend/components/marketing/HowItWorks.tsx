@@ -5,8 +5,8 @@ import { FadeInUp, StaggerContainer, StaggerItem } from './AnimationWrappers'
 
 const STEPS = [
   { num: '01', title: 'Connect', desc: 'Link your bank, ERP, and accounting tools via OAuth in minutes.' },
-  { num: '02', title: 'Configure', desc: 'Set policy rules, approval thresholds, and worker permissions.' },
-  { num: '03', title: 'Execute', desc: 'Workers run autonomously, enforcing policy on every action.' },
+  { num: '02', title: 'Configure', desc: 'Set policy rules, approval thresholds, and tool permissions.' },
+  { num: '03', title: 'Execute', desc: 'Tools run autonomously, enforcing policy on every action.' },
   { num: '04', title: 'Monitor', desc: 'Full audit trail. Every decision, every outcome, every trace ID.' },
 ]
 

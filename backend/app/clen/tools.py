@@ -1,4 +1,4 @@
-"""
+﻿"""
 Tool executor for Clen account mode.
 Tool schema definitions live in tools_defs.py.
 All tools are tenant-scoped. Action tools write audit log before mutating DB.
@@ -67,16 +67,16 @@ async def _dispatch(
         case "get_audit_trail":
             return await _get_audit_trail(
                 tenant_id, db,
-                worker_type=input.get("worker_type"),
+                tool_type=input.get("tool_type"),
                 status=input.get("status"),
                 limit=min(int(input.get("limit", 10)), 50),
             )
         case "get_execution_stats":
             return await _get_execution_stats(tenant_id, db, period=input.get("period", "7d"))
-        case "list_workers":
-            return await _list_workers(tenant_id, db)
-        case "get_worker_status":
-            return await _get_worker_status(input.get("worker_type", ""), tenant_id, db)
+        case "list_tools":
+            return await _list_tools(tenant_id, db)
+        case "get_tool_status":
+            return await _get_tool_status(input.get("tool_type", ""), tenant_id, db)
         case "list_integrations":
             return await _list_integrations(tenant_id, db)
         case "get_integration_status":
@@ -89,8 +89,8 @@ async def _dispatch(
             return await _reject_execution(
                 input.get("approval_id", ""), input.get("reason", ""), tenant_id, user_id, db
             )
-        case "pause_worker":
-            return await _pause_worker(input.get("worker_type", ""), tenant_id, user_id, db)
+        case "pause_tool":
+            return await _pause_tool(input.get("tool_type", ""), tenant_id, user_id, db)
         case _:
             return {"error": f"Unknown tool: {name}"}
 
@@ -127,14 +127,14 @@ async def _get_execution_detail(execution_id: str, tenant_id: str, db: Prisma) -
         return {"error": "execution_id is required"}
     execution = await db.execution.find_first(
         where={"id": execution_id, "tenant_id": tenant_id},
-        include={"worker": True, "approval": True},
+        include={"tool": True, "approval": True},
     )
     if not execution:
         return {"error": f"Execution {execution_id} not found"}
     return {
         "id": execution.id,
-        "worker_id": execution.worker_id,
-        "worker_type": execution.worker.type if execution.worker else "unknown",
+        "tool_id": execution.tool_id,
+        "tool_type": execution.tool.type if execution.tool else "unknown",
         "decision": execution.decision,
         "confidence": execution.confidence,
         "status": execution.status,
@@ -148,17 +148,17 @@ async def _get_execution_detail(execution_id: str, tenant_id: str, db: Prisma) -
 async def _get_audit_trail(
     tenant_id: str,
     db: Prisma,
-    worker_type: Optional[str],
+    tool_type: Optional[str],
     status: Optional[str],
     limit: int,
 ) -> dict:
     where: dict[str, Any] = {"tenant_id": tenant_id}
-    if worker_type or status:
+    if tool_type or status:
         execution_filter: dict[str, Any] = {}
         if status:
             execution_filter["status"] = status
-        if worker_type:
-            execution_filter["worker"] = {"is": {"type": worker_type}}
+        if tool_type:
+            execution_filter["tool"] = {"is": {"type": tool_type}}
         where["execution"] = {"is": execution_filter}
     entries = await db.auditlog.find_many(
         where=where,
@@ -197,13 +197,13 @@ async def _get_execution_stats(tenant_id: str, db: Prisma, period: str) -> dict:
     }
 
 
-async def _list_workers(tenant_id: str, db: Prisma) -> dict:
-    workers = await db.worker.find_many(
+async def _list_tools(tenant_id: str, db: Prisma) -> dict:
+    tools = await db.tool.find_many(
         where={"tenant_id": tenant_id},
         order={"type": "asc"},
     )
     return {
-        "workers": [
+        "tools": [
             {
                 "id": w.id,
                 "type": w.type,
@@ -211,24 +211,24 @@ async def _list_workers(tenant_id: str, db: Prisma) -> dict:
                 "autonomy_level": w.autonomy_level,
                 "version": w.version,
             }
-            for w in workers
+            for w in tools
         ],
-        "count": len(workers),
+        "count": len(tools),
     }
 
 
-async def _get_worker_status(worker_type: str, tenant_id: str, db: Prisma) -> dict:
-    if not worker_type:
-        return {"error": "worker_type is required"}
-    worker = await db.worker.find_first(where={"tenant_id": tenant_id, "type": worker_type})
-    if not worker:
-        return {"error": f"Worker type '{worker_type}' not found"}
+async def _get_tool_status(tool_type: str, tenant_id: str, db: Prisma) -> dict:
+    if not tool_type:
+        return {"error": "tool_type is required"}
+    tool = await db.tool.find_first(where={"tenant_id": tenant_id, "type": tool_type})
+    if not tool:
+        return {"error": f"Tool type '{tool_type}' not found"}
     return {
-        "id": worker.id,
-        "type": worker.type,
-        "status": worker.status,
-        "autonomy_level": worker.autonomy_level,
-        "version": worker.version,
+        "id": tool.id,
+        "type": tool.type,
+        "status": tool.status,
+        "autonomy_level": tool.autonomy_level,
+        "version": tool.version,
     }
 
 
@@ -327,24 +327,24 @@ async def _reject_execution(
     return {"rejected": True, "approval_id": approval_id}
 
 
-async def _pause_worker(
-    worker_type: str, tenant_id: str, user_id: Optional[str], db: Prisma
+async def _pause_tool(
+    tool_type: str, tenant_id: str, user_id: Optional[str], db: Prisma
 ) -> dict:
-    if not worker_type:
-        return {"error": "worker_type is required"}
-    existing = await db.worker.find_first(where={"tenant_id": tenant_id, "type": worker_type})
+    if not tool_type:
+        return {"error": "tool_type is required"}
+    existing = await db.tool.find_first(where={"tenant_id": tenant_id, "type": tool_type})
     if not existing:
-        return {"error": f"Worker type '{worker_type}' not found"}
+        return {"error": f"Tool type '{tool_type}' not found"}
     actor = f"clen/{user_id}" if user_id else "clen/unknown"
     await write_audit_log(
         tenant_id=tenant_id,
         actor=actor,
-        action="pause_worker",
-        reasoning_trace={"worker_type": worker_type},
+        action="pause_tool",
+        reasoning_trace={"tool_type": tool_type},
         model_version=CLEN_MODEL_VERSION,
     )
-    updated = await db.worker.update_many(
-        where={"tenant_id": tenant_id, "type": worker_type},
+    updated = await db.tool.update_many(
+        where={"tenant_id": tenant_id, "type": tool_type},
         data={"status": "inactive"},
     )
-    return {"paused": True, "worker_type": worker_type, "updated_count": updated}
+    return {"paused": True, "tool_type": tool_type, "updated_count": updated}

@@ -1,11 +1,11 @@
-'use client'
+﻿'use client'
 
 import { useState } from 'react'
 import { useAuth } from '@clerk/nextjs'
 import Link from 'next/link'
 import { CheckCircle } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
-import type { Worker } from './WorkerCard'
+import type { Tool } from './ToolCard'
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
@@ -14,15 +14,15 @@ function formatType(type: string): string {
 }
 
 export interface RunDrawerProps {
-  worker: Worker
+  tool: Tool
   onClose: () => void
   onQueued: (executionId: string) => void
 }
 
-const inputClass = 'w-full bg-[#0a0a0a] border border-[#1a2a1a] focus:border-[#00C853] text-[#e8f0e8] rounded-sm px-3 py-2 text-xs font-mono outline-none transition-colors resize-none'
+const inputClass = 'w-full bg-[#0a0a0a] border border-brand-border focus:border-[#00C853] text-[#e8f0e8] rounded-sm px-3 py-2 text-xs font-mono outline-none transition-colors resize-none'
 const labelClass = 'text-[10px] font-mono text-[#6e8c6e] uppercase tracking-widest'
 
-export function RunDrawer({ worker, onClose, onQueued }: RunDrawerProps) {
+export function RunDrawer({ tool, onClose, onQueued }: RunDrawerProps) {
   const { getToken } = useAuth()
   const [payloadText, setPayloadText]   = useState('{}')
   const [submitting, setSubmitting]     = useState(false)
@@ -45,7 +45,7 @@ export function RunDrawer({ worker, onClose, onQueued }: RunDrawerProps) {
     setSubmitting(true)
     try {
       const token = await getToken()
-      const res = await fetch(`${API}/v1/agents/${worker.id}/trigger`, {
+      const res = await fetch(`${API}/v1/agents/${tool.id}/trigger`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -88,15 +88,15 @@ export function RunDrawer({ worker, onClose, onQueued }: RunDrawerProps) {
         onClick={onClose}
       >
         <motion.div
-          className="w-full max-w-md bg-[#111111] border border-[#1a2a1a] rounded-sm overflow-hidden"
+          className="w-full max-w-md bg-[#111111] border border-brand-border rounded-sm overflow-hidden"
           initial={{ y: 32, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: 32, opacity: 0 }}
           transition={{ duration: 0.2, ease: 'easeOut' }}
           onClick={(e) => e.stopPropagation()}
         >
-          <div className="flex items-center justify-between px-5 py-4 border-b border-[#1a2a1a]">
-            <h2 className="font-heading font-semibold text-[#e8f0e8] text-sm">{formatType(worker.type)}</h2>
+          <div className="flex items-center justify-between px-5 py-4 border-b border-brand-border">
+            <h2 className="font-heading font-semibold text-[#e8f0e8] text-sm">{formatType(tool.type)}</h2>
             <button type="button" onClick={onClose} className="text-[#6e8c6e] hover:text-[#e8f0e8] transition-colors text-lg leading-none">✕</button>
           </div>
 
@@ -111,7 +111,7 @@ export function RunDrawer({ worker, onClose, onQueued }: RunDrawerProps) {
               <Link href="/executions" className="text-xs font-mono text-[#00C853] underline underline-offset-2 hover:text-[#00a844] transition-colors">
                 View in Executions
               </Link>
-              <button type="button" onClick={onClose} className="border border-[#1a2a1a] text-[#e8f0e8] rounded-sm px-3 py-2 text-xs font-mono hover:bg-[#1a1a1a] transition-colors w-full">
+              <button type="button" onClick={onClose} className="border border-brand-border text-[#e8f0e8] rounded-sm px-3 py-2 text-xs font-mono hover:bg-[#1a1a1a] transition-colors w-full">
                 Close
               </button>
             </div>
@@ -139,7 +139,7 @@ export function RunDrawer({ worker, onClose, onQueued }: RunDrawerProps) {
                 {error && <p className="text-xs font-mono text-[#ff4d6d]">{error}</p>}
               </div>
 
-              <div className="flex items-center gap-2 px-5 py-4 border-t border-[#1a2a1a]">
+              <div className="flex items-center gap-2 px-5 py-4 border-t border-brand-border">
                 <button
                   type="button"
                   onClick={handleSubmit}
@@ -151,7 +151,7 @@ export function RunDrawer({ worker, onClose, onQueued }: RunDrawerProps) {
                 <button
                   type="button"
                   onClick={onClose}
-                  className="border border-[#1a2a1a] text-[#e8f0e8] rounded-sm px-3 py-2 text-xs font-mono hover:bg-[#1a1a1a] transition-colors"
+                  className="border border-brand-border text-[#e8f0e8] rounded-sm px-3 py-2 text-xs font-mono hover:bg-[#1a1a1a] transition-colors"
                 >
                   Cancel
                 </button>

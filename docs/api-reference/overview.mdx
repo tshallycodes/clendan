@@ -1,0 +1,44 @@
+---
+title: API Overview
+description: Clendan's 5 standalone API tools — use them inside the platform or from your own systems.
+---
+
+# API Reference
+
+Clendan provides 5 standalone API tools. Each one solves a specific financial
+data problem. Use them inside the Clendan platform or call them directly
+from your own systems.
+
+## Base URL
+
+```
+https://api.clendan.com
+```
+
+## Available APIs
+
+<CardGroup cols={2}>
+  <Card title="Invoice Parser" icon="file-invoice" href="/api-reference/invoice-parser">
+    `POST /v1/parse/invoice` — extract structured data from any invoice format
+  </Card>
+  <Card title="Receipt OCR + Policy" icon="receipt" href="/api-reference/receipt-ocr">
+    `POST /v1/parse/receipt` — extract receipt data and validate against policy
+  </Card>
+  <Card title="Document Reconciliation" icon="scale-balanced" href="/api-reference/reconciliation">
+    `POST /v1/reconcile` — match two financial datasets and flag mismatches
+  </Card>
+  <Card title="Fraud Signal" icon="shield-halved" href="/api-reference/fraud-signal">
+    `POST /v1/fraud/score` — score transaction risk with full reasoning
+  </Card>
+  <Card title="Contract Extraction" icon="file-contract" href="/api-reference/contract-extraction">
+    `POST /v1/parse/contract` — extract structured data from contract PDFs
+  </Card>
+</CardGroup>
+
+## Common Headers
+
+| Header | Required | Description |
+|---|---|---|
+| `Authorization` | Yes | `Bearer YOUR_API_KEY` |
+| `Idempotency-Key` | Recommended | Unique key to prevent duplicate processing |
+| `Content-Type` | Auto | Set automatically for multipart/form-data uploads |

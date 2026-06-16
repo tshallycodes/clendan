@@ -1,4 +1,4 @@
-"""
+﻿"""
 tools/approvals.py — Approval queue tools.
 
 Lets Claude (or any MCP client) list pending approvals and approve or
@@ -17,12 +17,12 @@ async def get_pending_approvals() -> list[dict[str, Any]]:
 
     Returns a list of pending approval items. Each item includes:
         id (str): Approval ID — use this in approve_execution or reject_execution
-        execution_id (str): The worker execution that needs review
+        execution_id (str): The tool execution that needs review
         status (str): Always "pending"
         requested_at (str): ISO 8601 timestamp when approval was requested
         expires_at (str): ISO 8601 timestamp when approval expires (after which it auto-rejects)
-        decision (str): The worker's proposed decision
-        confidence (float): Worker confidence score 0.0–1.0
+        decision (str): The tool's proposed decision
+        confidence (float): Tool confidence score 0.0–1.0
 
     Returns an empty list if no approvals are pending.
     """
@@ -33,9 +33,9 @@ async def get_pending_approvals() -> list[dict[str, Any]]:
 
 async def approve_execution(approval_id: str, note: str = "") -> dict[str, Any]:
     """
-    Approve a pending execution. The worker will complete the action immediately.
+    Approve a pending execution. The tool will complete the action immediately.
 
-    IMPORTANT: This action is irreversible. The worker will proceed to execute
+    IMPORTANT: This action is irreversible. The tool will proceed to execute
     whatever action it was waiting to take (e.g. posting a payment, creating a
     bill). Only approve if you have reviewed the details via get_approval_detail().
 
@@ -95,8 +95,8 @@ async def get_approval_detail(approval_id: str) -> dict[str, Any]:
     """
     Get full details of a pending approval including the complete reasoning trace.
 
-    Use this before approving or rejecting to understand why the worker escalated.
-    Returns the worker's full reasoning, policy evaluation results, and all
+    Use this before approving or rejecting to understand why the tool escalated.
+    Returns the tool's full reasoning, policy evaluation results, and all
     input data that was used in the decision.
 
     Args:
@@ -104,10 +104,10 @@ async def get_approval_detail(approval_id: str) -> dict[str, Any]:
 
     Returns:
         approval (dict): The approval record with status, timing, and expiry
-        execution (dict): The worker execution that triggered this approval
-        reasoning_traces (list): Ordered list of reasoning steps from the worker,
+        execution (dict): The tool execution that triggered this approval
+        reasoning_traces (list): Ordered list of reasoning steps from the tool,
             each with actor, action, model_version, and reasoning_trace_json
-        input_data (dict): The original data the worker processed
+        input_data (dict): The original data the tool processed
     """
     if not approval_id or not approval_id.strip():
         raise MCPError("approval_id is required. Get it from get_pending_approvals().")

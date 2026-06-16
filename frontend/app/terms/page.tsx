@@ -1,4 +1,4 @@
-import { Navbar } from '@/components/marketing/Navbar'
+﻿import { Navbar } from '@/components/marketing/Navbar'
 import { Footer } from '@/components/marketing/Footer'
 
 export const metadata = {
@@ -17,7 +17,7 @@ const SECTIONS = [
   {
     heading: 'Description of Service',
     body: [
-      'Clendan is an AI Financial Agent OS — a platform for deploying autonomous AI workers that connect to financial systems, execute tasks, enforce policy, and produce audit trails.',
+      'Clendan is an AI Financial Agent OS — a platform for deploying autonomous AI tools that connect to financial systems, execute tasks, enforce policy, and produce audit trails.',
       'The service is provided as a subscription, billed monthly or annually.',
       'We reserve the right to modify or discontinue any part of the service with reasonable notice.',
     ],
@@ -54,7 +54,7 @@ const SECTIONS = [
     heading: 'Limitation of Liability',
     body: [
       'The service is provided "as is" without warranty of any kind, express or implied.',
-      'Clendan is not liable for financial decisions made by AI workers operating without human oversight.',
+      'Clendan is not liable for financial decisions made by AI tools operating without human oversight.',
       'Human approval workflows exist for this reason — we strongly recommend enabling approval thresholds for high-value transactions.',
       'In no event shall Clendan\'s total liability exceed the fees paid by you in the three months preceding the claim.',
       'We are not liable for indirect, incidental, or consequential damages of any kind.',

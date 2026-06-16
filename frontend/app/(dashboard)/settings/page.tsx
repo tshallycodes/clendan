@@ -1,7 +1,6 @@
-import { getBackendToken } from '@/lib/auth'
+﻿import { getBackendToken } from '@/lib/auth'
 import { apiGet } from '@/lib/api'
 import { OrgNameForm } from '@/components/dashboard/settings/OrgNameForm'
-import { ApiKeysSection } from '@/components/dashboard/settings/ApiKeysSection'
 import { NotificationsSection } from '@/components/dashboard/settings/NotificationsSection'
 import { DangerZone } from '@/components/dashboard/settings/DangerZone'
 import { IntegrationsSection } from '@/components/dashboard/settings/IntegrationsSection'
@@ -100,18 +99,9 @@ export default async function SettingsPage() {
       <section className="space-y-4">
         <div className="border-b border-brand-border pb-2 flex items-baseline justify-between">
           <h2 className="text-[10px] font-mono uppercase tracking-widest text-brand-muted">Integrations</h2>
-          <p className="text-[10px] font-mono text-brand-muted">External systems connected to your workers</p>
+          <p className="text-[10px] font-mono text-brand-muted">External systems connected to your tools</p>
         </div>
         <IntegrationsSection />
-      </section>
-
-      {/* API Keys */}
-      <section className="space-y-4">
-        <div className="border-b border-brand-border pb-2 flex items-baseline justify-between">
-          <h2 className="text-[10px] font-mono uppercase tracking-widest text-brand-muted">API Keys</h2>
-          <p className="text-[10px] font-mono text-brand-muted">Keys authenticate requests to the Clendan API</p>
-        </div>
-        <ApiKeysSection />
       </section>
 
       {/* Notifications */}

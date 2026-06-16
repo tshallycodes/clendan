@@ -16,7 +16,7 @@ model Tenant {
 
   users        User[]
   integrations Integration[]
-  workers      Worker[]
+  tools      Tool[]
   executions   Execution[]
   approvals    Approval[]
   audit_logs   AuditLog[]
@@ -33,7 +33,16 @@ model Tenant {
   members             Member[]
   invitations         Invitation[]
   invite_links        InviteLink[]
-  sync_logs           IntegrationSyncLog[]
+  sync_logs               IntegrationSyncLog[]
+  reconciliation_runs     ReconciliationRun[]
+  accounting_invoices     AccountingInvoice[]
+  accounting_bills        AccountingBill[]
+  accounting_contacts     AccountingContact[]
+  accounting_payments     AccountingPayment[]
+  accounting_expenses     AccountingExpense[]
+  accounting_accounts     AccountingAccount[]
+  accounting_credit_notes AccountingCreditNote[]
+  accounting_tax_rates    AccountingTaxRate[]
 }
 
 model User {
@@ -54,15 +63,29 @@ model Integration {
   id                    String    @id @default(cuid())
   tenant_id             String
   type                  String
+  institution_id        String?   // Provider-specific bank identifier (e.g. Plaid ins_xxxxx)
+  institution_name      String?   // Display name returned by the provider
   encrypted_credentials String
   status                String    @default("pending")
   connected_at          DateTime?
   last_synced_at        DateTime?
+  sync_metadata         Json?
 
-  tenant    Tenant               @relation(fields: [tenant_id], references: [id])
-  sync_logs IntegrationSyncLog[]
+  tenant                  Tenant                 @relation(fields: [tenant_id], references: [id])
+  sync_logs               IntegrationSyncLog[]
+  bank_accounts           BankAccount[]
+  accounting_invoices     AccountingInvoice[]
+  accounting_bills        AccountingBill[]
+  accounting_contacts     AccountingContact[]
+  accounting_payments     AccountingPayment[]
+  accounting_expenses     AccountingExpense[]
+  accounting_accounts     AccountingAccount[]
+  accounting_credit_notes AccountingCreditNote[]
+  accounting_tax_rates    AccountingTaxRate[]
 
   @@index([tenant_id])
+  @@index([tenant_id, type])
+  @@index([tenant_id, type, institution_id])
 }
 
 model IntegrationSyncLog {
@@ -84,7 +107,7 @@ model IntegrationSyncLog {
   @@index([tenant_id, integration_id])
 }
 
-model Worker {
+model Tool {
   id             String @id @default(cuid())
   tenant_id      String
   type           String
@@ -102,7 +125,7 @@ model Worker {
 model Execution {
   id          String   @id @default(cuid())
   tenant_id   String
-  worker_id   String
+  tool_id   String
   input_ref   String
   decision    String
   confidence  Float
@@ -111,12 +134,12 @@ model Execution {
   created_at  DateTime @default(now())
 
   tenant   Tenant     @relation(fields: [tenant_id], references: [id])
-  worker   Worker     @relation(fields: [worker_id], references: [id])
+  tool   Tool     @relation(fields: [tool_id], references: [id])
   approval Approval?
   audit    AuditLog[]
 
   @@index([tenant_id])
-  @@index([worker_id])
+  @@index([tool_id])
 }
 
 model Approval {
@@ -177,38 +200,49 @@ model Invoice {
 model BankAccount {
   id                    String   @id @default(cuid())
   tenant_id             String
-  plaid_account_id      String   @unique
-  plaid_item_id         String
+  integration_id        String?
+  source                String   @default("plaid")
+  plaid_account_id      String?  @unique
+  plaid_item_id         String?
+  truelayer_account_id  String?  @unique
+  mono_account_id       String?  @unique
   name                  String
   type                  String
-  subtype               String
+  subtype               String?
   current_balance_minor Int
-  currency              String   @default("USD")
+  currency              String   @default("GBP")
   created_at            DateTime @default(now())
   updated_at            DateTime @updatedAt
 
   tenant       Tenant            @relation(fields: [tenant_id], references: [id])
+  integration  Integration?      @relation(fields: [integration_id], references: [id])
   transactions BankTransaction[]
 
   @@index([tenant_id])
+  @@index([integration_id])
   @@index([plaid_account_id])
+  @@index([truelayer_account_id])
+  @@index([mono_account_id])
 }
 
 model BankTransaction {
-  id                   String    @id @default(cuid())
-  tenant_id            String
-  account_id           String
-  plaid_transaction_id String    @unique
-  amount_minor         Int
-  currency             String    @default("USD")
-  merchant_name        String?
-  description          String
-  date                 DateTime
-  category             String?
-  ai_category          String?
-  matched_invoice_id   String?
-  status               String    @default("pending")
-  created_at           DateTime  @default(now())
+  id                       String    @id @default(cuid())
+  tenant_id                String
+  account_id               String
+  source                   String    @default("plaid")
+  plaid_transaction_id     String?   @unique
+  truelayer_transaction_id String?   @unique
+  mono_transaction_id      String?   @unique
+  amount_minor             Int
+  currency                 String    @default("GBP")
+  merchant_name            String?
+  description              String
+  date                     DateTime
+  category                 String?
+  ai_category              String?
+  matched_invoice_id       String?
+  status                   String    @default("pending")
+  created_at               DateTime  @default(now())
 
   tenant          Tenant      @relation(fields: [tenant_id], references: [id])
   account         BankAccount @relation(fields: [account_id], references: [id])
@@ -217,7 +251,230 @@ model BankTransaction {
   @@index([tenant_id])
   @@index([account_id])
   @@index([plaid_transaction_id])
+  @@index([truelayer_transaction_id])
+  @@index([mono_transaction_id])
   @@index([tenant_id, status])
+}
+
+// ---------------------------------------------------------------------------
+// Accounting entity models — synced from Xero, QuickBooks, FreshBooks
+// All amounts stored as integer minor units (pence/cents). Currency at display layer only.
+// Every model: unique(integration_id, external_id) for idempotent upserts.
+// ---------------------------------------------------------------------------
+
+model AccountingInvoice {
+  id                String    @id @default(cuid())
+  tenant_id         String
+  integration_id    String
+  source            String
+  external_id       String
+
+  number            String?
+  status            String
+  type              String    @default("invoice")
+  contact_id        String?
+  contact_name      String?
+  currency          String    @default("GBP")
+  subtotal_cents    Int       @default(0)
+  tax_cents         Int       @default(0)
+  total_cents       Int       @default(0)
+  outstanding_cents Int       @default(0)
+  issue_date        DateTime?
+  due_date          DateTime?
+  paid_at           DateTime?
+  line_items        Json?
+  raw_data          Json?
+  created_at        DateTime  @default(now())
+  updated_at        DateTime  @updatedAt
+
+  tenant      Tenant      @relation(fields: [tenant_id], references: [id])
+  integration Integration @relation(fields: [integration_id], references: [id])
+
+  @@unique([integration_id, external_id])
+  @@index([tenant_id])
+  @@index([tenant_id, status])
+  @@index([tenant_id, due_date])
+  @@index([integration_id])
+}
+
+model AccountingBill {
+  id                String    @id @default(cuid())
+  tenant_id         String
+  integration_id    String
+  source            String
+  external_id       String
+
+  number            String?
+  status            String
+  contact_id        String?
+  contact_name      String?
+  currency          String    @default("GBP")
+  total_cents       Int       @default(0)
+  outstanding_cents Int       @default(0)
+  issue_date        DateTime?
+  due_date          DateTime?
+  paid_at           DateTime?
+  raw_data          Json?
+  created_at        DateTime  @default(now())
+  updated_at        DateTime  @updatedAt
+
+  tenant      Tenant      @relation(fields: [tenant_id], references: [id])
+  integration Integration @relation(fields: [integration_id], references: [id])
+
+  @@unique([integration_id, external_id])
+  @@index([tenant_id])
+  @@index([tenant_id, status])
+  @@index([integration_id])
+}
+
+model AccountingContact {
+  id           String   @id @default(cuid())
+  tenant_id    String
+  integration_id String
+  source       String
+  external_id  String
+  contact_type String
+
+  name         String
+  email        String?
+  phone        String?
+  currency     String?
+  raw_data     Json?
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+
+  tenant      Tenant      @relation(fields: [tenant_id], references: [id])
+  integration Integration @relation(fields: [integration_id], references: [id])
+
+  @@unique([integration_id, external_id])
+  @@index([tenant_id])
+  @@index([integration_id])
+}
+
+model AccountingPayment {
+  id             String    @id @default(cuid())
+  tenant_id      String
+  integration_id String
+  source         String
+  external_id    String
+  payment_type   String
+
+  amount_cents   Int
+  currency       String    @default("GBP")
+  reference      String?
+  contact_name   String?
+  paid_at        DateTime?
+  raw_data       Json?
+  created_at     DateTime  @default(now())
+  updated_at     DateTime  @updatedAt
+
+  tenant      Tenant      @relation(fields: [tenant_id], references: [id])
+  integration Integration @relation(fields: [integration_id], references: [id])
+
+  @@unique([integration_id, external_id])
+  @@index([tenant_id])
+  @@index([tenant_id, paid_at])
+  @@index([integration_id])
+}
+
+model AccountingExpense {
+  id             String    @id @default(cuid())
+  tenant_id      String
+  integration_id String
+  source         String
+  external_id    String
+
+  category       String?
+  account_code   String?
+  description    String?
+  contact_name   String?
+  amount_cents   Int
+  currency       String    @default("GBP")
+  tax_cents      Int       @default(0)
+  expense_date   DateTime?
+  approved       Boolean   @default(false)
+  raw_data       Json?
+  created_at     DateTime  @default(now())
+  updated_at     DateTime  @updatedAt
+
+  tenant      Tenant      @relation(fields: [tenant_id], references: [id])
+  integration Integration @relation(fields: [integration_id], references: [id])
+
+  @@unique([integration_id, external_id])
+  @@index([tenant_id])
+  @@index([tenant_id, expense_date])
+  @@index([integration_id])
+}
+
+model AccountingAccount {
+  id             String   @id @default(cuid())
+  tenant_id      String
+  integration_id String
+  source         String
+  external_id    String
+
+  code           String?
+  name           String
+  account_type   String
+  description    String?
+  raw_data       Json?
+  created_at     DateTime @default(now())
+  updated_at     DateTime @updatedAt
+
+  tenant      Tenant      @relation(fields: [tenant_id], references: [id])
+  integration Integration @relation(fields: [integration_id], references: [id])
+
+  @@unique([integration_id, external_id])
+  @@index([tenant_id])
+  @@index([integration_id])
+}
+
+model AccountingCreditNote {
+  id              String    @id @default(cuid())
+  tenant_id       String
+  integration_id  String
+  source          String
+  external_id     String
+
+  number          String?
+  status          String?
+  contact_name    String?
+  currency        String    @default("GBP")
+  total_cents     Int       @default(0)
+  remaining_cents Int       @default(0)
+  issue_date      DateTime?
+  raw_data        Json?
+  created_at      DateTime  @default(now())
+  updated_at      DateTime  @updatedAt
+
+  tenant      Tenant      @relation(fields: [tenant_id], references: [id])
+  integration Integration @relation(fields: [integration_id], references: [id])
+
+  @@unique([integration_id, external_id])
+  @@index([tenant_id])
+  @@index([integration_id])
+}
+
+model AccountingTaxRate {
+  id             String   @id @default(cuid())
+  tenant_id      String
+  integration_id String
+  source         String
+  external_id    String
+
+  name           String
+  rate_pct       Float
+  tax_type       String?
+  raw_data       Json?
+  created_at     DateTime @default(now())
+  updated_at     DateTime @updatedAt
+
+  tenant      Tenant      @relation(fields: [tenant_id], references: [id])
+  integration Integration @relation(fields: [integration_id], references: [id])
+
+  @@unique([integration_id, external_id])
+  @@index([tenant_id])
+  @@index([integration_id])
 }
 
 model ApiKey {
@@ -294,4 +551,26 @@ model InviteLink {
 
   @@index([tenant_id])
   @@index([token])
+}
+
+model ReconciliationRun {
+  id              String   @id @default(cuid())
+  tenant_id       String
+  execution_id    String?
+  period_start    DateTime
+  period_end      DateTime
+  status          String   @default("completed")
+  matched_count   Int      @default(0)
+  unmatched_count Int      @default(0)
+  flagged_count   Int      @default(0)
+  review_count    Int      @default(0)
+  total_txn_count Int      @default(0)
+  total_inv_count Int      @default(0)
+  details_json    Json?
+  created_at      DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenant_id], references: [id])
+
+  @@index([tenant_id])
+  @@index([tenant_id, created_at])
 }

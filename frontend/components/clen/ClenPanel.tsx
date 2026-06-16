@@ -74,7 +74,7 @@ export function ClenPanel({ mode, isOpen, onClose, position, pathname = '/dashbo
               <p className="text-[11px] font-mono text-brand-muted">Clendan Assistant</p>
             </div>
             <button
-              onClick={() => { clearConversation(); onClose() }}
+              onClick={onClose}
               aria-label="Close assistant"
               className="w-6 h-6 flex items-center justify-center text-brand-muted hover:text-brand-text transition-colors"
             >

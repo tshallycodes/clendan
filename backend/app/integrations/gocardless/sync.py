@@ -1,5 +1,5 @@
-"""
-GoCardless sync job — runs via arq worker.
+﻿"""
+GoCardless sync job — runs via arq tool.
 Fetches mandates, payments, and payouts for a connected GoCardless integration.
 Writes sync log entries per entity type.
 """
@@ -144,6 +144,12 @@ async def sync_gocardless_connection(ctx: dict, integration_id: str, tenant_id: 
         results["payouts_error"] = type(exc).__name__
         logger.error("GoCardless payouts sync failed: %s", type(exc).__name__)
 
+    # Re-read status — integration may have been disconnected while sync was running
+    current = await db.integration.find_unique(where={"id": integration_id})
+    if not current or current.status == "disconnected":
+        logger.info("GoCardless sync aborted — integration %s was disconnected during run", integration_id)
+        return {"status": "skipped", "reason": "disconnected_during_sync"}
+
     # Update integration status to connected after first sync
     await db.integration.update(
         where={"id": integration_id},
@@ -158,6 +164,6 @@ async def enqueue_gocardless_sync(integration_id: str, tenant_id: str) -> None:
     import arq
     from app.core.config import get_settings
     settings = get_settings()
-    redis = await arq.create_pool(arq.connections.RedisSettings.from_dsn(settings.redis_url))
+    redis = await arq.create_pool(arq.connections.RedisSettings.from_dsn(settings.redis_public_url))
     await redis.enqueue_job("sync_gocardless_connection", integration_id, tenant_id)
     await redis.aclose()

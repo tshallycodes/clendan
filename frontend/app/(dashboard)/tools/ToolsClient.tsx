@@ -1,84 +1,61 @@
-'use client'
+﻿'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { WorkerCard } from '@/components/dashboard/tools/WorkerCard'
-import type { Worker } from '@/components/dashboard/tools/WorkerCard'
-import { ConfigDrawer } from '@/components/dashboard/tools/ConfigDrawer'
-import { DeployWorkerForm } from '@/components/dashboard/tools/DeployWorkerForm'
-import { useCanConfigure } from '@/lib/auth-client'
+import Link from 'next/link'
+import { ArrowRight } from 'lucide-react'
+import { TOOLS } from './tools-data'
+import type { Tool } from '@/components/dashboard/tools/ToolCard'
 
-export function ToolsClient({ initialWorkers }: { initialWorkers: Worker[] }) {
-  const router = useRouter()
-  const canConfigure = useCanConfigure()
-  const [drawerWorker, setDrawerWorker] = useState<Worker | null>(null)
-  const [showDeployForm, setShowDeployForm] = useState(false)
+interface Props {
+  deployedTools: Tool[]
+}
 
+function StatusBadge({ tool }: { tool: Tool | undefined }) {
+  if (!tool) return <span className="text-[10px] font-mono text-brand-muted">Not deployed</span>
+  const active = tool.status === 'active'
   return (
-    <div className="p-6 space-y-8">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="font-heading font-bold text-2xl text-brand-text">Tools</h1>
-          <p className="text-brand-muted text-xs font-mono mt-1">Manage deployed AI financial tools</p>
-        </div>
-        {canConfigure && (
-          <button
-            type="button"
-            onClick={() => setShowDeployForm(true)}
-            className="bg-brand-green text-black hover:bg-[#00a844] active:scale-[0.97] rounded-sm px-4 py-2 text-xs font-mono font-medium transition-all"
-          >
-            Deploy Tool
-          </button>
-        )}
+    <span className={`text-[10px] font-mono px-2 py-0.5 rounded-sm ${
+      active
+        ? 'bg-[rgba(0,200,83,0.08)] text-brand-green border border-[rgba(0,200,83,0.2)]'
+        : 'bg-brand-elevated text-brand-muted border border-brand-border'
+    }`}>
+      {active ? 'Active' : 'Inactive'}
+    </span>
+  )
+}
+
+export function ToolsClient({ deployedTools }: Props) {
+  return (
+    <div className="p-6 space-y-6">
+      <div>
+        <h1 className="font-heading font-bold text-2xl text-brand-text">Tools</h1>
+        <p className="text-[10px] font-mono text-brand-muted mt-1 uppercase tracking-widest">
+          AI financial tools
+        </p>
       </div>
 
-      {initialWorkers.length === 0 ? (
-        <div className="bg-brand-surface border border-brand-border rounded-sm p-16 flex flex-col items-center justify-center gap-4">
-          <p className="text-xs font-mono text-brand-muted">No tools deployed yet</p>
-          {canConfigure && (
-            <button
-              type="button"
-              onClick={() => setShowDeployForm(true)}
-              className="bg-brand-green text-black hover:bg-[#00a844] active:scale-[0.97] rounded-sm px-4 py-2 text-xs font-mono font-medium transition-all"
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        {TOOLS.map((tool) => {
+          const deployed = deployedTools.find((w) => w.type === tool.type)
+          return (
+            <Link
+              key={tool.slug}
+              href={`/tools/${tool.slug}`}
+              className="group bg-brand-surface border border-brand-border rounded-sm p-4 flex flex-col gap-3 hover:bg-brand-elevated transition-colors"
             >
-              Deploy your first tool
-            </button>
-          )}
-        </div>
-      ) : (
-        <section className="space-y-3">
-          {initialWorkers.map((worker) => (
-            <WorkerCard
-              key={worker.id}
-              worker={worker}
-              onConfigure={() => setDrawerWorker(worker)}
-              onStatusChange={() => router.refresh()}
-            />
-          ))}
-        </section>
-      )}
-
-      {showDeployForm && (
-        <div className="fixed inset-0 bg-[rgba(0,0,0,0.7)] z-40 flex items-start justify-center p-6 overflow-y-auto">
-          <div className="bg-brand-surface border border-brand-border rounded-sm w-full max-w-sm my-auto">
-            <div className="sticky top-0 bg-brand-surface border-b border-brand-border flex items-center justify-between px-6 py-4 z-10">
-              <h2 className="font-heading font-semibold text-brand-text text-sm">Deploy Tool</h2>
-              <button type="button" onClick={() => setShowDeployForm(false)} className="text-brand-muted hover:text-brand-text text-xs font-mono transition-colors">✕</button>
-            </div>
-            <div className="p-6">
-              <DeployWorkerForm onDeployed={() => { setShowDeployForm(false); router.refresh() }} />
-            </div>
-          </div>
-        </div>
-      )}
-
-      {drawerWorker && (
-        <ConfigDrawer
-          worker={drawerWorker}
-          onClose={() => setDrawerWorker(null)}
-          onSaved={() => { setDrawerWorker(null); router.refresh() }}
-        />
-      )}
+              <div className="flex items-start justify-between gap-2">
+                <p className="text-sm font-mono font-medium text-brand-text group-hover:text-brand-green transition-colors">
+                  {tool.name}
+                </p>
+                <StatusBadge tool={deployed} />
+              </div>
+              <p className="text-[11px] font-mono text-brand-muted leading-relaxed flex-1">{tool.desc}</p>
+              <div className="flex items-center gap-1 text-[10px] font-mono text-brand-muted group-hover:text-brand-secondary transition-colors">
+                Open <ArrowRight className="w-3 h-3" />
+              </div>
+            </Link>
+          )
+        })}
+      </div>
     </div>
   )
 }

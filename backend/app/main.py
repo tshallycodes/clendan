@@ -1,4 +1,4 @@
-from contextlib import asynccontextmanager
+﻿from contextlib import asynccontextmanager
 from datetime import datetime, UTC
 import uuid
 
@@ -32,7 +32,6 @@ async def lifespan(app: FastAPI):
 
 
 def create_app() -> FastAPI:
-    settings = get_settings()
     app = FastAPI(
         title="Clendan API",
         version="1.0.0",
@@ -49,19 +48,19 @@ def create_app() -> FastAPI:
         openapi_tags=[
             {"name": "health", "description": "Liveness and readiness probes."},
             {"name": "onboarding", "description": "Create tenant and user on first sign-in."},
-            {"name": "dashboard", "description": "Aggregated stats, executions, approvals, audit trail, and workers."},
-            {"name": "agents", "description": "Trigger agent workers. Idempotent via `Idempotency-Key`."},
+            {"name": "dashboard", "description": "Aggregated stats, executions, approvals, audit trail, and tools."},
+            {"name": "agents", "description": "Trigger agent tools. Idempotent via `Idempotency-Key`."},
             {"name": "approvals", "description": "Respond to pending human-approval requests."},
             {"name": "integrations", "description": "Manage Plaid, Xero, and QuickBooks connections."},
-            {"name": "tenants", "description": "Tenant and worker configuration."},
+            {"name": "tenants", "description": "Tenant and tool configuration."},
         ],
     )
 
     app.add_middleware(RateLimitMiddleware)
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["http://localhost:3000"],
-        allow_credentials=True,
+        allow_origins=["*"],
+        allow_credentials=False,
         allow_methods=["*"],
         allow_headers=["*"],
     )

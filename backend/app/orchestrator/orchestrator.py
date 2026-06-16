@@ -1,8 +1,8 @@
-"""
+﻿"""
 Financial Orchestrator — master agent.
-Receives all financial events, classifies them, invokes the correct worker as a tool,
+Receives all financial events, classifies them, invokes the correct tool as a tool,
 applies global policy, compiles output, writes audit log.
-Workers are NEVER called directly — always through _invoke_worker().
+Tools are NEVER called directly — always through _invoke_tool().
 """
 import asyncio
 from datetime import datetime
@@ -12,20 +12,30 @@ from pydantic import BaseModel
 
 from app.core.config import get_settings as _get_settings
 from app.core.logging import get_logger
-from app.orchestrator.registry import get_worker
-from app.workers.base import WorkerOutput, WorkerType
+from app.orchestrator.registry import get_tool
+from app.tools.base import ToolOutput, ToolType
 
 logger = get_logger(__name__)
 
-EVENT_TO_WORKER: dict[str, WorkerType] = {
-    "invoice_received": WorkerType.INVOICE_PROCESSING,
-    "transaction_posted": WorkerType.ACCOUNTANT,
-    "expense_submitted": WorkerType.EXPENSE_CONTROL,
-    "reconciliation_requested": WorkerType.RECONCILIATION,
-    "fraud_check_requested": WorkerType.FRAUD_DETECTION,
-    "collection_triggered": WorkerType.COLLECTIONS,
-    "revenue_recognition_run": WorkerType.REVENUE_RECOGNITION,
-    "compliance_check_requested": WorkerType.COMPLIANCE,
+EVENT_TO_WORKER: dict[str, ToolType] = {
+    "invoice_received": ToolType.INVOICE_PROCESSING,
+    "transaction_posted": ToolType.ACCOUNTANT,
+    "expense_submitted": ToolType.EXPENSE_CONTROL,
+    "reconciliation_requested": ToolType.RECONCILIATION,
+    "reconciliation_run": ToolType.RECONCILIATION,
+    "fraud_check_requested": ToolType.FRAUD_DETECTION,
+    "collection_triggered": ToolType.COLLECTIONS,
+    "revenue_recognition_run": ToolType.REVENUE_RECOGNITION,
+    "compliance_check_requested": ToolType.COMPLIANCE,
+    "receipt_received": ToolType.RECEIPT_PROCESSING,
+    "treasury_run": ToolType.TREASURY,
+    "document_received": ToolType.DOCUMENT_INTELLIGENCE,
+    "spend_control_run": ToolType.SPEND_CONTROL,
+    "ar_collections_run": ToolType.AR_COLLECTIONS,
+    "risk_compliance_run": ToolType.RISK_COMPLIANCE,
+    "treasury_cash_run": ToolType.TREASURY_CASH,
+    "tax_compliance_run": ToolType.TAX_COMPLIANCE,
+    "credit_assessment_run": ToolType.CREDIT_UNDERWRITING,
 }
 
 EventType = Literal[
@@ -33,10 +43,20 @@ EventType = Literal[
     "transaction_posted",
     "expense_submitted",
     "reconciliation_requested",
+    "reconciliation_run",
     "fraud_check_requested",
     "collection_triggered",
     "revenue_recognition_run",
     "compliance_check_requested",
+    "receipt_received",
+    "treasury_run",
+    "document_received",
+    "spend_control_run",
+    "ar_collections_run",
+    "risk_compliance_run",
+    "treasury_cash_run",
+    "tax_compliance_run",
+    "credit_assessment_run",
 ]
 
 
@@ -51,7 +71,7 @@ class FinancialEvent(BaseModel):
 
 class OrchestratorOutput(BaseModel):
     event_id: str
-    worker_type: WorkerType
+    tool_type: ToolType
     decision: str
     confidence: float
     reasoning: str
@@ -63,74 +83,74 @@ class OrchestratorOutput(BaseModel):
 class FinancialOrchestrator:
 
     async def handle_event(self, event: FinancialEvent, tenant_id: str) -> OrchestratorOutput:
-        """Entry point. Classify → select worker → invoke → policy → output."""
-        worker_type = await self._classify_event(event)
-        worker_output = await self._invoke_worker(worker_type, event.payload, tenant_id)
-        return await self._compile_output(event, worker_output)
+        """Entry point. Classify → select tool → invoke → policy → output."""
+        tool_type = await self._classify_event(event)
+        tool_output = await self._invoke_tool(tool_type, event.payload, tenant_id)
+        return await self._compile_output(event, tool_output)
 
-    async def _classify_event(self, event: FinancialEvent) -> WorkerType:
-        """Determine which worker should handle this event."""
-        worker_type = EVENT_TO_WORKER.get(event.event_type)
-        if worker_type is None:
-            raise ValueError(f"No worker registered for event type: {event.event_type}")
-        return worker_type
+    async def _classify_event(self, event: FinancialEvent) -> ToolType:
+        """Determine which tool should handle this event."""
+        tool_type = EVENT_TO_WORKER.get(event.event_type)
+        if tool_type is None:
+            raise ValueError(f"No tool registered for event type: {event.event_type}")
+        return tool_type
 
-    async def _invoke_worker(
+    async def _invoke_tool(
         self,
-        worker_type: WorkerType,
+        tool_type: ToolType,
         input_data: dict,
         tenant_id: str,
-    ) -> WorkerOutput:
+    ) -> ToolOutput:
         """
-        Call a sub-agent worker as a tool with timeout and exponential-backoff retry.
-        All worker invocations go through here — never directly.
+        Call a sub-agent tool as a tool with timeout and exponential-backoff retry.
+        All tool invocations go through here — never directly.
         """
-        worker = get_worker(worker_type)
+        tool = get_tool(tool_type)
         settings = _get_settings()
         timeout = 30.0
 
         last_exc: Exception = RuntimeError("No attempts made")
         for attempt in range(settings.max_agent_attempts):
             logger.info(
-                "invoking_worker",
-                extra={"worker_type": worker_type, "tenant_id": tenant_id, "attempt": attempt + 1},
+                "invoking_tool",
+                extra={"tool_type": tool_type, "tenant_id": tenant_id, "attempt": attempt + 1},
             )
             try:
                 return await asyncio.wait_for(
-                    worker.execute(input_data, tenant_id),
+                    tool.execute(input_data, tenant_id),
                     timeout=timeout,
                 )
             except asyncio.TimeoutError:
                 last_exc = RuntimeError(
-                    f"Worker {worker_type} timed out after {timeout}s on attempt {attempt + 1}"
+                    f"Tool {tool_type} timed out after {timeout}s on attempt {attempt + 1}"
                 )
-                logger.warning("worker_timeout", extra={"worker_type": worker_type, "attempt": attempt + 1})
+                logger.warning("tool_timeout", extra={"tool_type": tool_type, "attempt": attempt + 1})
             except Exception as exc:
                 last_exc = exc
                 logger.warning(
-                    "worker_error",
-                    extra={"worker_type": worker_type, "attempt": attempt + 1, "error": str(exc)},
+                    "tool_error",
+                    extra={"tool_type": tool_type, "attempt": attempt + 1, "error": str(exc)},
                 )
             if attempt < settings.max_agent_attempts - 1:
                 await asyncio.sleep(settings.backoff_seconds * (attempt + 1))
 
         raise RuntimeError(
-            f"Worker {worker_type} failed after {settings.max_agent_attempts} attempts: {last_exc}"
+            f"Tool {tool_type} failed after {settings.max_agent_attempts} attempts: {last_exc}"
         ) from last_exc
 
     async def _compile_output(
         self,
         event: FinancialEvent,
-        worker_output: WorkerOutput,
+        tool_output: ToolOutput,
     ) -> OrchestratorOutput:
         """Compile final decision and reasoning trace for audit."""
         return OrchestratorOutput(
             event_id=event.event_id,
-            worker_type=worker_output.worker_type,
-            decision=worker_output.decision,
-            confidence=worker_output.confidence,
-            reasoning=worker_output.reasoning,
-            actions_taken=worker_output.actions_taken,
+            tool_type=tool_output.tool_type,
+            decision=tool_output.decision,
+            confidence=tool_output.confidence,
+            reasoning=tool_output.reasoning,
+            actions_taken=tool_output.actions_taken,
             trace_id=event.idempotency_key,
             timestamp=event.timestamp,
         )
@@ -139,37 +159,37 @@ class FinancialOrchestrator:
     # Multi-step chaining
     # -------------------------------------------------------------------------
 
-    async def invoke_workers_sequential(
+    async def invoke_tools_sequential(
         self,
-        worker_types: list[WorkerType],
+        tool_types: list[ToolType],
         payload: dict,
         tenant_id: str,
-    ) -> list[WorkerOutput]:
+    ) -> list[ToolOutput]:
         """
-        Invoke workers one at a time in order.
-        Each worker's output_data is merged into the payload for the next step.
-        Stops immediately if any worker returns decision == "blocked".
+        Invoke tools one at a time in order.
+        Each tool's output_data is merged into the payload for the next step.
+        Stops immediately if any tool returns decision == "blocked".
         """
-        results: list[WorkerOutput] = []
+        results: list[ToolOutput] = []
         current_payload = dict(payload)
 
-        for worker_type in worker_types:
+        for tool_type in tool_types:
             logger.info(
                 "sequential_chain_step",
                 extra={
-                    "worker_type": worker_type,
+                    "tool_type": tool_type,
                     "tenant_id": tenant_id,
                     "step": len(results) + 1,
-                    "total": len(worker_types),
+                    "total": len(tool_types),
                 },
             )
-            output = await self._invoke_worker(worker_type, current_payload, tenant_id)
+            output = await self._invoke_tool(tool_type, current_payload, tenant_id)
             results.append(output)
 
             if output.decision == "blocked":
                 logger.info(
                     "sequential_chain_blocked",
-                    extra={"worker_type": worker_type, "reasoning": output.reasoning},
+                    extra={"tool_type": tool_type, "reasoning": output.reasoning},
                 )
                 break
 
@@ -181,24 +201,24 @@ class FinancialOrchestrator:
     # Parallel invocation
     # -------------------------------------------------------------------------
 
-    async def invoke_workers_parallel(
+    async def invoke_tools_parallel(
         self,
-        worker_types: list[WorkerType],
+        tool_types: list[ToolType],
         payload: dict,
         tenant_id: str,
-    ) -> list[WorkerOutput]:
+    ) -> list[ToolOutput]:
         """
-        Invoke all workers simultaneously with the same original payload.
-        Uses asyncio.gather — all workers receive the unmodified input.
+        Invoke all tools simultaneously with the same original payload.
+        Uses asyncio.gather — all tools receive the unmodified input.
         """
         logger.info(
             "parallel_invocation_start",
-            extra={"worker_types": [w.value for w in worker_types], "tenant_id": tenant_id},
+            extra={"tool_types": [w.value for w in tool_types], "tenant_id": tenant_id},
         )
-        results: list[WorkerOutput] = await asyncio.gather(
+        results: list[ToolOutput] = await asyncio.gather(
             *[
-                self._invoke_worker(worker_type, payload, tenant_id)
-                for worker_type in worker_types
+                self._invoke_tool(tool_type, payload, tenant_id)
+                for tool_type in tool_types
             ]
         )
         return list(results)
@@ -207,9 +227,9 @@ class FinancialOrchestrator:
     # Conflict resolution
     # -------------------------------------------------------------------------
 
-    def resolve_conflict(self, outputs: list[WorkerOutput]) -> WorkerOutput:
+    def resolve_conflict(self, outputs: list[ToolOutput]) -> ToolOutput:
         """
-        Priority order when multiple workers return results:
+        Priority order when multiple tools return results:
         1. blocked       — highest severity wins
         2. approval_required
         3. auto_approved — highest confidence wins; ties go to first
@@ -241,8 +261,8 @@ class FinancialOrchestrator:
         If fraud check blocks → returns blocked output.
         Otherwise compiles final output from the fraud check result (last step).
         """
-        chain = await self.invoke_workers_sequential(
-            worker_types=[WorkerType.INVOICE_PROCESSING, WorkerType.FRAUD_DETECTION],
+        chain = await self.invoke_tools_sequential(
+            tool_types=[ToolType.INVOICE_PROCESSING, ToolType.FRAUD_DETECTION],
             payload=event.payload,
             tenant_id=tenant_id,
         )

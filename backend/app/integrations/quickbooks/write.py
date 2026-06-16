@@ -1,5 +1,5 @@
-"""
-QuickBooks bill write — called by invoice_processing worker after AUTO_APPROVED decision.
+﻿"""
+QuickBooks bill write — called by invoice_processing tool after AUTO_APPROVED decision.
 Audit log is always written before this runs (enforced in invoice_processing.py).
 """
 import json

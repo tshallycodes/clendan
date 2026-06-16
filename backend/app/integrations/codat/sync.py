@@ -1,5 +1,5 @@
-"""
-Codat sync jobs — run via arq worker.
+﻿"""
+Codat sync jobs — run via arq tool.
 Polls Codat for active connections, fetches invoices, writes sync logs.
 """
 import json
@@ -97,6 +97,12 @@ async def sync_codat_connection(ctx: dict, integration_id: str, tenant_id: str) 
         "duration_ms": elapsed_ms,
     })
 
+    # Re-read status — integration may have been disconnected while sync was running
+    current = await db.integration.find_unique(where={"id": integration_id})
+    if not current or current.status == "disconnected":
+        logger.info("Codat sync aborted — integration %s was disconnected during run", integration_id)
+        return {"status": "skipped", "reason": "disconnected_during_sync"}
+
     if total_invoices > 0:
         await db.integration.update(
             where={"id": integration_id},
@@ -170,6 +176,6 @@ async def enqueue_codat_sync(integration_id: str, tenant_id: str) -> None:
     """Enqueues a sync_codat_connection arq job onto the Redis queue."""
     import arq
     settings = get_settings()
-    redis = await arq.create_pool(arq.connections.RedisSettings.from_dsn(settings.redis_url))
+    redis = await arq.create_pool(arq.connections.RedisSettings.from_dsn(settings.redis_public_url))
     await redis.enqueue_job("sync_codat_connection", integration_id, tenant_id)
     await redis.aclose()

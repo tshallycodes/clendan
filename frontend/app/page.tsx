@@ -1,9 +1,9 @@
-import { Navbar } from '@/components/marketing/Navbar'
+﻿import { Navbar } from '@/components/marketing/Navbar'
 import { Footer } from '@/components/marketing/Footer'
 import { HeroSection } from '@/components/marketing/HeroSection'
 import { SocialProofStrip, ProblemStatement, SolutionOverview, CTABanner } from '@/components/marketing/LandingSections'
 import { HowItWorks } from '@/components/marketing/HowItWorks'
-import { WorkerShowcase } from '@/components/marketing/WorkerShowcase'
+import { ToolShowcase } from '@/components/marketing/ToolShowcase'
 
 export default function HomePage() {
   return (
@@ -15,7 +15,7 @@ export default function HomePage() {
         <ProblemStatement />
         <SolutionOverview />
         <HowItWorks />
-        <WorkerShowcase />
+        <ToolShowcase />
         <CTABanner />
       </main>
       <Footer />

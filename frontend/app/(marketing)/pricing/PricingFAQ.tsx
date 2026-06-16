@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState } from 'react'
 
@@ -10,15 +10,15 @@ interface FAQItem {
 const FAQ_ITEMS: FAQItem[] = [
   {
     q: 'What counts as an execution?',
-    a: 'Any time a worker processes a document or makes a financial decision. This includes invoice processing, payment approvals, reconciliation checks, and policy evaluations.',
+    a: 'Any time a tool processes a document or makes a financial decision. This includes invoice processing, payment approvals, reconciliation checks, and policy evaluations.',
   },
   {
-    q: 'Can I build custom workers?',
-    a: 'Enterprise plan includes custom worker development with our team. We work directly with your engineering team to build workers that map to your specific financial workflows and systems.',
+    q: 'Can I build custom tools?',
+    a: 'Enterprise plan includes custom tool development with our team. We work directly with your engineering team to build tools that map to your specific financial workflows and systems.',
   },
   {
     q: 'How does the audit trail work?',
-    a: 'Every action written to an immutable, append-only log. No UPDATE, no DELETE — ever. The audit trail records the worker version, input data, policy evaluation, output, and full reasoning trace. Can be exported as CSV or JSON at any time.',
+    a: 'Every action written to an immutable, append-only log. No UPDATE, no DELETE — ever. The audit trail records the tool version, input data, policy evaluation, output, and full reasoning trace. Can be exported as CSV or JSON at any time.',
   },
   {
     q: 'Is my financial data encrypted?',

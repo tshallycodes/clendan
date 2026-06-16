@@ -1,4 +1,4 @@
-"""
+﻿"""
 Phase 7 hardening tests.
 Covers: rate limiter logic, Plaid webhook verification, DLQ operations, analytics (no-op when unconfigured).
 """
@@ -163,5 +163,5 @@ def test_analytics_track_execution_does_not_raise_when_unconfigured():
             tenant_id="t1",
             decision="auto_approved",
             confidence=0.95,
-            worker_type="invoice_processing",
+            tool_type="invoice_processing",
         )  # must not raise

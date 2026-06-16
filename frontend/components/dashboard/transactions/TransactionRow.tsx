@@ -4,7 +4,7 @@ import { useRef, useState, useEffect } from 'react'
 import { useAuth } from '@clerk/nextjs'
 import { cn } from '@/lib/utils'
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001'
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
 export interface Transaction {
   id: string

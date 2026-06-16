@@ -67,20 +67,49 @@ async def stripe_webhook(
     stripe_object_id: str = stripe_object.get("id", "")
     idempotency_key = f"stripe:{event_id}"
 
-    # Build event payload based on orchestrator event type
-    if orchestrator_event == "invoice_received":
+    # Build event payload — extract fields relevant to each workflow
+    base = {"stripe_event_type": event_type, "stripe_object_id": stripe_object_id}
+
+    if orchestrator_event in ("invoice_received", "invoice_payment_failed"):
         event_payload = {
-            "stripe_event_type": event_type,
-            "stripe_object_id": stripe_object_id,
+            **base,
+            "amount_minor": stripe_object.get("amount_due", 0),
+            "currency": (stripe_object.get("currency") or "usd").upper(),
+            "customer": stripe_object.get("customer") or "",
+        }
+    elif orchestrator_event in ("transaction_posted", "charge_refunded"):
+        event_payload = {
+            **base,
+            "amount_minor": stripe_object.get("amount_refunded" if orchestrator_event == "charge_refunded" else "amount", 0),
+            "currency": (stripe_object.get("currency") or "usd").upper(),
+        }
+    elif orchestrator_event == "dispute_created":
+        evidence = stripe_object.get("evidence_details") or {}
+        event_payload = {
+            **base,
+            "amount_minor": stripe_object.get("amount", 0),
+            "currency": (stripe_object.get("currency") or "usd").upper(),
+            "charge_id": stripe_object.get("charge") or "",
+            "reason": stripe_object.get("reason") or "",
+            "due_by": evidence.get("due_by"),
+        }
+    elif orchestrator_event == "dispute_closed":
+        event_payload = {
+            **base,
+            "status": stripe_object.get("status") or "",
+            "amount_minor": stripe_object.get("amount", 0),
+            "currency": (stripe_object.get("currency") or "usd").upper(),
+        }
+    elif orchestrator_event in ("payout_received", "payout_failed"):
+        event_payload = {
+            **base,
+            "amount_minor": stripe_object.get("amount", 0),
+            "currency": (stripe_object.get("currency") or "usd").upper(),
+            "arrival_date": stripe_object.get("arrival_date"),
+            "failure_message": stripe_object.get("failure_message") or "",
         }
     else:
-        # transaction_posted — include amount and currency
-        event_payload = {
-            "stripe_event_type": event_type,
-            "stripe_object_id": stripe_object_id,
-            "amount_minor": stripe_object.get("amount", 0),
-            "currency": stripe_object.get("currency", "usd").upper(),
-        }
+        event_payload = base
 
     execution_id = await enqueue_orchestrator_event(
         tenant_id=tenant_id,
