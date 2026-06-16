@@ -48,11 +48,12 @@ async def initiate_connect_session(tenant_id: str, redirect_url: str) -> dict:
             r.raise_for_status()
             return r.json()
 
-    data = await _circuit.call(_retry, _call)
-    mono_url = data.get("mono_url", "")
+    resp = await _circuit.call(_retry, _call)
+    inner = resp.get("data", resp)
+    mono_url = inner.get("mono_url", "")
     if not mono_url:
-        raise ValueError("Mono returned empty mono_url")
-    return {"token": data.get("token", ""), "mono_url": mono_url}
+        raise ValueError(f"Mono returned empty mono_url. Response keys: {list(resp.keys())}")
+    return {"token": inner.get("token", ""), "mono_url": mono_url}
 
 
 async def exchange_code(code: str) -> str:
@@ -72,11 +73,11 @@ async def exchange_code(code: str) -> str:
             r.raise_for_status()
             return r.json()
 
-    data = await _circuit.call(_retry, _call)
-    # Response may be { id: "..." } or { data: { id: "..." } }
-    account_id = data.get("id") or (data.get("data") or {}).get("id", "")
+    resp = await _circuit.call(_retry, _call)
+    inner = resp.get("data", resp)
+    account_id = inner.get("id", "")
     if not account_id:
-        raise ValueError("Mono code exchange returned no account ID")
+        raise ValueError(f"Mono code exchange returned no account ID. Response keys: {list(resp.keys())}")
     return encrypt(account_id)
 
 
@@ -97,11 +98,11 @@ async def get_account(encrypted_account_id: str) -> dict:
             r.raise_for_status()
             return r.json()
 
-    data = await _circuit.call(_retry, _call)
-    # Response: { account: { id, name, account_number, type, balance, currency, institution: {...} } }
-    account = data.get("account") or data
+    resp = await _circuit.call(_retry, _call)
+    inner = resp.get("data", resp)
+    account = inner.get("account", inner)
     if not account.get("id"):
-        raise ValueError("Mono get_account returned malformed response")
+        raise ValueError(f"Mono get_account returned malformed response. Response keys: {list(resp.keys())}")
     return account
 
 
@@ -124,10 +125,11 @@ async def get_transactions(encrypted_account_id: str, page: int = 1) -> dict:
             r.raise_for_status()
             return r.json()
 
-    data = await _circuit.call(_retry, _call)
+    resp = await _circuit.call(_retry, _call)
+    inner = resp.get("data", resp)
     return {
-        "data": data.get("data", []),
-        "meta": data.get("meta", {"total": 0, "pages": 1}),
+        "data": inner if isinstance(inner, list) else inner.get("data", []),
+        "meta": resp.get("meta", {"total": 0, "pages": 1}),
     }
 
 
@@ -148,13 +150,19 @@ async def _retry(fn, *args, **kwargs):
             return await fn(*args, **kwargs)
         except (httpx.HTTPStatusError, httpx.TimeoutException, httpx.NetworkError) as exc:
             last_exc = exc
+            if isinstance(exc, httpx.HTTPStatusError):
+                logger.error(
+                    "Mono API error (attempt %d/%d) status=%d body=%s",
+                    attempt + 1, MAX_ATTEMPTS,
+                    exc.response.status_code,
+                    exc.response.text[:500],
+                )
+            else:
+                logger.warning(
+                    "Mono call failed (attempt %d/%d) type=%s",
+                    attempt + 1, MAX_ATTEMPTS, type(exc).__name__,
+                )
             if attempt < MAX_ATTEMPTS - 1:
                 wait = BACKOFF_SECONDS * (2 ** attempt) + random.uniform(0, 0.5)
-                logger.warning(
-                    "Mono call failed (attempt %d/%d), retry in %.1fs",
-                    attempt + 1,
-                    MAX_ATTEMPTS,
-                    wait,
-                )
                 await asyncio.sleep(wait)
     raise last_exc

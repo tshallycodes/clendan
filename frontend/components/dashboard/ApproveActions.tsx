@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { useToast } from '@/components/Providers'
 
 interface Props {
   approvalId: string
@@ -10,6 +11,7 @@ interface Props {
 
 export function ApproveActions({ approvalId, token }: Props) {
   const router = useRouter()
+  const { toast } = useToast()
   const [loading, setLoading] = useState<'approve' | 'reject' | null>(null)
 
   async function respond(action: 'approve' | 'reject') {
@@ -23,7 +25,12 @@ export function ApproveActions({ approvalId, token }: Props) {
           body: JSON.stringify({ action }),
         }
       )
-      if (res.ok) router.refresh()
+      if (res.ok) {
+        toast(action === 'approve' ? 'Approved' : 'Rejected', action === 'approve' ? 'success' : 'info')
+        router.refresh()
+      } else {
+        toast('Action failed — try again', 'error')
+      }
     } finally {
       setLoading(null)
     }

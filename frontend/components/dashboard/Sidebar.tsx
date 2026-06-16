@@ -7,6 +7,7 @@ import { Home, CheckSquare, Plug, Code2, Cpu, Settings, LogOut, Receipt } from '
 import { useClerk } from '@clerk/nextjs'
 import { cn } from '@/lib/utils'
 import { ThemeToggle } from '@/components/ThemeToggle'
+import { motion } from 'framer-motion'
 
 const NAV: { icon: React.ElementType; label: string; href: string; external?: boolean }[] = [
   { icon: Home,        label: 'Dashboard',    href: '/dashboard' },
@@ -47,7 +48,13 @@ export function Sidebar() {
             </a>
           ) : (
             <Link key={href} href={href} className={cls}>
-              {active && <span className="absolute left-0 top-1 bottom-1 w-0.5 bg-brand-green rounded-r-full" />}
+              {active && (
+                <motion.span
+                  layoutId="sidebar-active"
+                  className="absolute left-0 top-1 bottom-1 w-0.5 bg-brand-green rounded-r-full"
+                  transition={{ duration: 0.2, ease: 'easeOut' }}
+                />
+              )}
               <Icon className="w-4 h-4 shrink-0" />
               <span>{label}</span>
             </Link>

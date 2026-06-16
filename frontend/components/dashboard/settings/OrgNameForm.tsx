@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useAuth } from '@clerk/nextjs'
+import { useToast } from '@/components/Providers'
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
@@ -11,6 +12,7 @@ interface Props {
 
 export function OrgNameForm({ initialName }: Props) {
   const { getToken } = useAuth()
+  const { toast } = useToast()
   const [name, setName] = useState(initialName)
   const [status, setStatus] = useState<'idle' | 'saving' | 'success' | 'error'>('idle')
   const [errorMsg, setErrorMsg] = useState('')
@@ -31,10 +33,12 @@ export function OrgNameForm({ initialName }: Props) {
       })
       if (!res.ok) throw new Error(`${res.status}`)
       setStatus('success')
+      toast('Organisation name saved', 'success')
       setTimeout(() => setStatus('idle'), 2000)
     } catch (err) {
       setErrorMsg(err instanceof Error ? err.message : 'Save failed')
       setStatus('error')
+      toast(err instanceof Error ? err.message : 'Save failed', 'error')
     }
   }
 

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useAuth } from '@clerk/nextjs'
+import { useToast } from '@/components/Providers'
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
@@ -46,6 +47,7 @@ interface IntegrationState {
 
 export function IntegrationsSection() {
   const { getToken } = useAuth()
+  const { toast } = useToast()
   const [integrations, setIntegrations] = useState<IntegrationState[]>([])
   const [loading, setLoading] = useState(true)
   const [disconnecting, setDisconnecting] = useState<string | null>(null)
@@ -89,6 +91,9 @@ export function IntegrationsSection() {
         headers: { Authorization: `Bearer ${token}` },
       })
       await fetchStatuses()
+      toast('Integration disconnected', 'success')
+    } catch {
+      toast('Failed to disconnect integration', 'error')
     } finally {
       setDisconnecting(null)
     }

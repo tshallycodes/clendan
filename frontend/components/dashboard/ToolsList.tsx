@@ -1,3 +1,17 @@
+'use client'
+
+import { motion } from 'framer-motion'
+
+const listVariants = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.06 } },
+}
+
+const rowVariants = {
+  hidden: { opacity: 0, x: -8 },
+  show: { opacity: 1, x: 0, transition: { duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] } },
+}
+
 interface DeployedTool {
   id: string
   type: string
@@ -36,16 +50,21 @@ export function ToolsList({ tools }: { tools: DeployedTool[] }) {
         <h2 className="font-heading font-semibold text-brand-text text-sm">Active Tools</h2>
       </div>
       {tools.length === 0 ? (
-        <p className="px-5 py-8 text-xs font-mono text-brand-muted text-center">
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.4, delay: 0.2 }}
+          className="px-5 py-8 text-xs font-mono text-brand-muted text-center"
+        >
           No tools deployed yet — deploy your first tool to get started
-        </p>
+        </motion.p>
       ) : (
-        <div className="divide-y divide-brand-border">
+        <motion.div variants={listVariants} initial="hidden" animate="show" className="divide-y divide-brand-border">
           {tools.map((tool) => {
             const isActive = tool.status === 'active'
             const autonomy = AUTONOMY_STYLES[tool.autonomy_level] ?? AUTONOMY_STYLES.suggest
             return (
-              <div key={tool.id} className="px-5 py-3 flex items-center gap-4">
+              <motion.div key={tool.id} variants={rowVariants} className="px-5 py-3 flex items-center gap-4 hover:bg-brand-elevated transition-colors">
                 <span className="relative flex h-2.5 w-2.5 shrink-0">
                   {isActive && (
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#00C853] opacity-60" />
@@ -60,10 +79,10 @@ export function ToolsList({ tools }: { tools: DeployedTool[] }) {
                   {autonomy.label}
                 </span>
                 <span className="text-[10px] font-mono text-brand-muted shrink-0">v{tool.version}</span>
-              </div>
+              </motion.div>
             )
           })}
-        </div>
+        </motion.div>
       )}
     </div>
   )

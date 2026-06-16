@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useAuth } from '@clerk/nextjs'
 import { StatusBadge } from '@/components/dashboard/StatusBadge'
 import { cn } from '@/lib/utils'
+import { useToast } from '@/components/Providers'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
@@ -209,6 +210,7 @@ interface Props {
 
 export function ExecutionsClient({ initialExecutions, total }: Props) {
   const { getToken } = useAuth()
+  const { toast } = useToast()
   const [executions, setExecutions] = useState<Execution[]>(initialExecutions)
   const [statusFilter, setStatusFilter] = useState<DecisionFilter>('all')
   const [search, setSearch] = useState('')
@@ -246,6 +248,9 @@ export function ExecutionsClient({ initialExecutions, total }: Props) {
               : e,
           ),
         )
+        toast(action === 'approve' ? 'Execution approved' : 'Execution rejected', action === 'approve' ? 'success' : 'info')
+      } else {
+        toast('Action failed — try again', 'error')
       }
     } finally {
       setLoadingMap((prev) => ({ ...prev, [executionId]: null }))
@@ -261,7 +266,7 @@ export function ExecutionsClient({ initialExecutions, total }: Props) {
         `${API_BASE}/v1/dashboard/executions?limit=${PAGE_SIZE}&offset=${offset}`,
         { headers: { Authorization: `Bearer ${token}` } },
       )
-      if (!res.ok) return
+      if (!res.ok) { toast('Failed to load more executions', 'error'); return }
       const json = await res.json()
       const next: Execution[] = json.data?.executions ?? []
       setExecutions((prev) => [...prev, ...next])

@@ -7,6 +7,8 @@ import { SystemStatusBar } from '@/components/dashboard/SystemStatusBar'
 import { ToolsList } from '@/components/dashboard/ToolsList'
 import { IntegrationsHealth } from '@/components/dashboard/IntegrationsHealth'
 import { QuickActions } from '@/components/dashboard/QuickActions'
+import { AnimatedPage, AnimatedSection } from '@/components/dashboard/AnimatedPage'
+import { AutomationRing } from '@/components/dashboard/AutomationRing'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
@@ -78,50 +80,65 @@ export default async function DashboardPage() {
   const s = stats ?? { executions: 0, pending_approvals: 0, active_tools: 0, invoices: 0, transactions: 0 }
 
   return (
-    <div className="p-6 space-y-6">
-      <div>
-        <h1 className="font-heading font-bold text-2xl text-brand-text">Dashboard</h1>
-        <p className="text-brand-muted text-xs font-mono mt-1">Agent execution summary</p>
-      </div>
+    <AnimatedPage className="p-6 space-y-6">
+      <AnimatedSection>
+        <div>
+          <h1 className="font-heading font-bold text-2xl text-brand-text">Dashboard</h1>
+          <p className="text-brand-muted text-xs font-mono mt-1">Agent execution summary</p>
+        </div>
+      </AnimatedSection>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <StatCard
-          value={s.executions}
-          label="Total Executions"
-          change="+0 today"
-          changeDirection="neutral"
+      <AnimatedSection>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <StatCard
+            value={s.executions}
+            label="Total Executions"
+            change="+0 today"
+            changeDirection="neutral"
+            delay={0}
+          />
+          <StatCard
+            value={s.pending_approvals}
+            label="Pending Approvals"
+            change={s.pending_approvals > 0 ? `${s.pending_approvals} pending review` : '+0 today'}
+            changeDirection={s.pending_approvals > 0 ? 'warning' : 'neutral'}
+            delay={0.08}
+          />
+          <StatCard
+            value={s.invoices}
+            label="Invoices Processed"
+            change="+0 today"
+            changeDirection="neutral"
+            delay={0.16}
+          />
+          <StatCard
+            value={s.transactions}
+            label="Transactions Synced"
+            change="+0 today"
+            changeDirection="neutral"
+            delay={0.24}
+          />
+        </div>
+      </AnimatedSection>
+
+      <AnimatedSection>
+        <AutomationRing
+          autoApproved={Math.max(0, s.executions - s.pending_approvals)}
+          total={s.executions}
         />
-        <StatCard
-          value={s.pending_approvals}
-          label="Pending Approvals"
-          change={s.pending_approvals > 0 ? `${s.pending_approvals} pending review` : '+0 today'}
-          changeDirection={s.pending_approvals > 0 ? 'warning' : 'neutral'}
-        />
-        <StatCard
-          value={s.invoices}
-          label="Invoices Processed"
-          change="+0 today"
-          changeDirection="neutral"
-        />
-        <StatCard
-          value={s.transactions}
-          label="Transactions Synced"
-          change="+0 today"
-          changeDirection="neutral"
-        />
-      </div>
+      </AnimatedSection>
 
-      <QuickActions />
+      <AnimatedSection><QuickActions /></AnimatedSection>
 
-      <ToolsList tools={tools} />
+      <AnimatedSection><ToolsList tools={tools} /></AnimatedSection>
 
-      <IntegrationsHealth integrations={integrationStatuses} />
+      <AnimatedSection><IntegrationsHealth integrations={integrationStatuses} /></AnimatedSection>
 
-      <ExecutionChart />
+      <AnimatedSection><ExecutionChart /></AnimatedSection>
 
-      <RecentExecutionsTable />
+      <AnimatedSection><RecentExecutionsTable /></AnimatedSection>
 
-      <SystemStatusBar />
-    </div>
+      <AnimatedSection><SystemStatusBar /></AnimatedSection>
+    </AnimatedPage>
   )
 }
