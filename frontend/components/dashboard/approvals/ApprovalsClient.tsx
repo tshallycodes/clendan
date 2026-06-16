@@ -5,6 +5,7 @@ import { useAuth } from '@clerk/nextjs'
 import { StatusBadge } from '@/components/dashboard/StatusBadge'
 import { cn } from '@/lib/utils'
 import { useCanApprove } from '@/lib/auth-client'
+import { useToast } from '@/components/Providers'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
@@ -206,6 +207,7 @@ interface Props {
 
 export function ApprovalsClient({ initialApprovals }: Props) {
   const { getToken } = useAuth()
+  const { toast } = useToast()
   const [approvals, setApprovals] = useState<Approval[]>(initialApprovals)
   const [activeTab, setActiveTab] = useState<Tab>('pending')
   const [loadingMap, setLoadingMap] = useState<Record<string, 'approve' | 'reject' | null>>({})
@@ -226,6 +228,9 @@ export function ApprovalsClient({ initialApprovals }: Props) {
             a.id === id ? { ...a, status: action === 'approve' ? 'approved' : 'rejected' } : a,
           ),
         )
+        toast(action === 'approve' ? 'Approval approved' : 'Approval rejected', action === 'approve' ? 'success' : 'info')
+      } else {
+        toast('Action failed — try again', 'error')
       }
     } finally {
       setLoadingMap((prev) => ({ ...prev, [id]: null }))

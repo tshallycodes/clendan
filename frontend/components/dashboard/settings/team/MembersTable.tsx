@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useAuth } from '@clerk/nextjs'
 import { ROLE_COLORS, ROLE_LABEL, type Member } from './types'
+import { useToast } from '@/components/Providers'
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
@@ -26,6 +27,7 @@ interface Props {
 
 export function MembersTable({ members, isCurrentUserOwner, onChanged }: Props) {
   const { getToken } = useAuth()
+  const { toast } = useToast()
   const [loadingId, setLoadingId] = useState<string | null>(null)
   const [transferConfirmId, setTransferConfirmId] = useState<string | null>(null)
 
@@ -39,6 +41,9 @@ export function MembersTable({ members, isCurrentUserOwner, onChanged }: Props) 
         body: JSON.stringify({ role }),
       })
       onChanged()
+      toast('Role updated', 'success')
+    } catch {
+      toast('Failed to update role', 'error')
     } finally {
       setLoadingId(null)
     }
@@ -53,6 +58,9 @@ export function MembersTable({ members, isCurrentUserOwner, onChanged }: Props) 
         headers: { Authorization: `Bearer ${token}` },
       })
       onChanged()
+      toast('Member removed', 'success')
+    } catch {
+      toast('Failed to remove member', 'error')
     } finally {
       setLoadingId(null)
     }
@@ -69,6 +77,9 @@ export function MembersTable({ members, isCurrentUserOwner, onChanged }: Props) 
         body: JSON.stringify({ new_owner_id: id }),
       })
       onChanged()
+      toast('Ownership transferred', 'success')
+    } catch {
+      toast('Failed to transfer ownership', 'error')
     } finally {
       setLoadingId(null)
     }

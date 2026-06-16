@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '@clerk/nextjs'
 import { Copy, Check, ExternalLink, Plus, X } from 'lucide-react'
+import { useToast } from '@/components/Providers'
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 const BASE_URL = 'https://api.clendan.com/v1'
@@ -46,6 +47,7 @@ function SectionLabel({ children }: { children: string }) {
 
 export function DeveloperPageClient() {
   const { getToken } = useAuth()
+  const { toast } = useToast()
   const [keys, setKeys] = useState<ApiKey[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
@@ -61,6 +63,8 @@ export function DeveloperPageClient() {
       if (res.ok) {
         const json = await res.json()
         setKeys(json.data.api_keys ?? [])
+      } else {
+        toast('Failed to load API keys', 'error')
       }
     } finally {
       setLoading(false)
@@ -82,9 +86,12 @@ export function DeveloperPageClient() {
       if (res.ok) {
         const json = await res.json()
         setRevealedKey(json.data.key)
+        toast('API key generated — copy it now', 'success')
         setNewName('')
         setShowForm(false)
         await fetchKeys()
+      } else {
+        toast('Failed to generate API key', 'error')
       }
     } finally {
       setCreating(false)
@@ -92,9 +99,14 @@ export function DeveloperPageClient() {
   }
 
   async function handleRevoke(id: string) {
-    const token = await getToken()
-    await fetch(`${API}/v1/api-keys/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } })
-    await fetchKeys()
+    try {
+      const token = await getToken()
+      await fetch(`${API}/v1/api-keys/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } })
+      await fetchKeys()
+      toast('API key revoked', 'success')
+    } catch {
+      toast('Failed to revoke key', 'error')
+    }
   }
 
   async function copyRevealedKey() {

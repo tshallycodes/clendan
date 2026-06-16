@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useAuth } from '@clerk/nextjs'
 import { Check } from 'lucide-react'
 import { ROLE_LABEL } from './types'
+import { useToast } from '@/components/Providers'
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
@@ -16,6 +17,7 @@ interface Props {
 
 export function InviteForm({ onInvited }: Props) {
   const { getToken } = useAuth()
+  const { toast } = useToast()
   const [email, setEmail] = useState('')
   const [role, setRole] = useState<InviteRole>('org:viewer')
   const [sending, setSending] = useState(false)
@@ -37,9 +39,11 @@ export function InviteForm({ onInvited }: Props) {
       if (!res.ok) {
         const json = await res.json().catch(() => ({}))
         setError((json as { error?: string }).error ?? 'Failed to send invitation')
+        toast((json as { error?: string }).error ?? 'Failed to send invitation', 'error')
         return
       }
       setSuccess(true)
+      toast('Invitation sent', 'success')
       setEmail('')
       setRole('org:viewer')
       onInvited()

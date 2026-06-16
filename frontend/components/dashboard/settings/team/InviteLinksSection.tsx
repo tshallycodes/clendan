@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '@clerk/nextjs'
+import { useToast } from '@/components/Providers'
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
@@ -42,6 +43,7 @@ function formatExpiry(iso: string): string {
 
 export function InviteLinksSection() {
   const { getToken } = useAuth()
+  const { toast } = useToast()
   const [links, setLinks] = useState<InviteLink[]>([])
   const [loading, setLoading] = useState(true)
   const [creating, setCreating] = useState(false)
@@ -85,9 +87,11 @@ export function InviteLinksSection() {
       if (!res.ok) {
         const j = await res.json().catch(() => null)
         setError(j?.detail ?? 'Failed to create invite link')
+        toast(j?.detail ?? 'Failed to create invite link', 'error')
         return
       }
       await fetchLinks()
+      toast('Invite link generated', 'success')
     } finally {
       setCreating(false)
     }
@@ -101,6 +105,9 @@ export function InviteLinksSection() {
     })
     if (res.ok) {
       setLinks((prev) => prev.filter((l) => l.id !== id))
+      toast('Invite link deleted', 'success')
+    } else {
+      toast('Failed to delete link', 'error')
     }
   }
 
@@ -108,6 +115,7 @@ export function InviteLinksSection() {
     const url = `${window.location.origin}/join/${link.token}`
     navigator.clipboard.writeText(url).then(() => {
       setCopiedId(link.id)
+      toast('Link copied to clipboard', 'info')
       setTimeout(() => setCopiedId(null), 2000)
     })
   }

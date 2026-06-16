@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useAuth } from '@clerk/nextjs'
 import { useIsOwner } from '@/lib/auth-client'
+import { useToast } from '@/components/Providers'
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
@@ -14,6 +15,7 @@ export function DangerZone() {
   const [pauseDone, setPauseDone] = useState(false)
   const [deleteConfirm, setDeleteConfirm] = useState(false)
   const [deleteInput, setDeleteInput] = useState('')
+  const { toast } = useToast()
 
   async function handlePauseAll() {
     if (!pauseConfirm) { setPauseConfirm(true); return }
@@ -37,6 +39,9 @@ export function DangerZone() {
       setPauseDone(true)
       setPauseConfirm(false)
       setTimeout(() => setPauseDone(false), 3000)
+      toast('All tools paused', 'success')
+    } catch {
+      toast('Failed to pause tools', 'error')
     } finally {
       setPausing(false)
     }
