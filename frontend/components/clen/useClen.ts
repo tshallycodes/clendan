@@ -1,9 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useAuth } from '@clerk/nextjs'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+const STORAGE_KEY = 'clen_messages'
+const MAX_MESSAGES = 20
 
 export interface ClenMessage {
   id: string
@@ -28,12 +30,31 @@ function makeId(): string {
   return Math.random().toString(36).slice(2, 10)
 }
 
+function loadMessages(): ClenMessage[] {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY)
+    if (!raw) return []
+    const parsed = JSON.parse(raw) as ClenMessage[]
+    return parsed.map(m => ({ ...m, timestamp: new Date(m.timestamp) }))
+  } catch {
+    return []
+  }
+}
+
 export function useClen(mode: ClenMode) {
   const { getToken } = useAuth()
-  const [messages, setMessages] = useState<ClenMessage[]>([])
+  const [messages, setMessages] = useState<ClenMessage[]>(loadMessages)
   const [isLoading, setIsLoading] = useState(false)
   const [isOpen, setIsOpen] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(messages))
+    } catch {
+      // localStorage unavailable — silently skip
+    }
+  }, [messages])
 
   async function sendMessage(content: string): Promise<void> {
     const userMsg: ClenMessage = {
@@ -50,7 +71,10 @@ export function useClen(mode: ClenMode) {
       toolCalls: [],
     }
 
-    setMessages(prev => [...prev, userMsg, assistantMsg])
+    setMessages(prev => {
+      const next = [...prev, userMsg, assistantMsg]
+      return next.length > MAX_MESSAGES ? next.slice(next.length - MAX_MESSAGES) : next
+    })
     setIsLoading(true)
     setError(null)
 
