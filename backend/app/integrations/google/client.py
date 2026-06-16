@@ -288,6 +288,30 @@ async def get_message_parts(access_token: str, message_id: str) -> dict:
     return await _circuit.call(_retry, _call)
 
 
+async def download_attachment(access_token: str, message_id: str, attachment_id: str) -> bytes:
+    """
+    Downloads a Gmail attachment by attachmentId and returns raw bytes.
+    Gmail returns base64url-encoded data — decoded here before returning.
+    """
+    import base64
+
+    async def _call():
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                f"{GMAIL_API_BASE}/messages/{message_id}/attachments/{attachment_id}",
+                headers={"Authorization": f"Bearer {access_token}"},
+                timeout=30.0,
+            )
+            response.raise_for_status()
+            return response.json()
+
+    data = await _circuit.call(_retry, _call)
+    encoded = data.get("data", "")
+    if not encoded:
+        raise ValueError(f"Empty attachment data for message_id={message_id} attachment_id={attachment_id}")
+    return base64.urlsafe_b64decode(encoded + "==")
+
+
 # ---------------------------------------------------------------------------
 # Drive-specific functions
 # ---------------------------------------------------------------------------

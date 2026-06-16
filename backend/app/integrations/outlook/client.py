@@ -285,6 +285,19 @@ async def list_messages_with_attachments(
     return data.get("value", [])
 
 
+def extract_attachment_bytes(attachment: dict) -> bytes:
+    """
+    Extracts and base64-decodes contentBytes from a Graph API fileAttachment dict.
+    Graph API returns contentBytes as standard base64 (not url-safe).
+    Raises ValueError if the attachment carries no content.
+    """
+    import base64
+    content = attachment.get("contentBytes", "")
+    if not content:
+        raise ValueError(f"No contentBytes in attachment '{attachment.get('name', 'unknown')}'")
+    return base64.b64decode(content)
+
+
 async def get_message_attachments(access_token: str, message_id: str) -> list:
     """
     GET /me/messages/{id}/attachments

@@ -63,20 +63,15 @@ async def outlook_webhook(request: Request):
             _logger.warning("outlook_webhook_missing_fields subscription_id=%s", subscription_id)
             continue
 
-        # client_state encodes the internal tenant_id — verify before processing
+        # client_state == tenant_id (set at subscription creation time)
+        # Scope lookup to the specific tenant to enforce isolation
         integration = await db.integration.find_first(
-            where={"type": "outlook", "status": "connected"}
+            where={"type": "outlook", "status": "connected", "tenant_id": client_state}
         )
         if not integration:
             _logger.warning(
-                "outlook_webhook_no_integration subscription_id=%s", subscription_id
-            )
-            continue
-
-        # Verify clientState matches the stored tenant_id for this subscription
-        if integration.tenant_id != client_state:
-            _logger.warning(
-                "outlook_webhook_client_state_mismatch subscription_id=%s", subscription_id
+                "outlook_webhook_no_integration subscription_id=%s client_state=%s",
+                subscription_id, client_state,
             )
             continue
 
