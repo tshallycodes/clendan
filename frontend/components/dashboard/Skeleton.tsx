@@ -2,7 +2,9 @@ import { cn } from '@/lib/utils'
 
 export function Skeleton({ className }: { className?: string }) {
   return (
-    <div className={cn('animate-pulse bg-brand-elevated rounded-sm', className)} />
+    <div className={cn('relative overflow-hidden rounded-sm bg-brand-elevated', className)}>
+      <div className="absolute inset-0 -translate-x-full animate-[shimmer_1.6s_ease-in-out_infinite] bg-gradient-to-r from-transparent via-white/5 to-transparent" />
+    </div>
   )
 }
 

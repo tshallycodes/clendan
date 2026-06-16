@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { motion } from 'framer-motion'
 import { cn } from '@/lib/utils'
 
 function useCountUp(target: number, duration = 1200) {
@@ -28,15 +29,21 @@ interface StatCardProps {
   label: string
   change?: string
   changeDirection?: 'up' | 'down' | 'neutral' | 'warning'
+  delay?: number
 }
 
-export function StatCard({ value, label, change, changeDirection = 'neutral' }: StatCardProps) {
+export function StatCard({ value, label, change, changeDirection = 'neutral', delay = 0 }: StatCardProps) {
   const numeric = typeof value === 'number' ? value : null
   const animated = useCountUp(numeric ?? 0)
   const display = numeric !== null ? animated : value
 
   return (
-    <div className="bg-brand-surface border border-brand-border rounded-sm p-4">
+    <motion.div
+      initial={{ opacity: 0, y: 14 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.38, delay, ease: [0.25, 0.46, 0.45, 0.94] }}
+      className="bg-brand-surface border border-brand-border rounded-sm p-4"
+    >
       <div className="font-heading text-3xl font-bold text-brand-text mb-1">{display}</div>
       <div className="text-brand-muted text-[10px] font-mono uppercase tracking-widest mb-2">{label}</div>
       {change && (
@@ -51,6 +58,6 @@ export function StatCard({ value, label, change, changeDirection = 'neutral' }: 
           {change}
         </div>
       )}
-    </div>
+    </motion.div>
   )
 }

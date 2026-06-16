@@ -1,5 +1,7 @@
 'use client'
 
+import { useEffect, useState } from 'react'
+
 // TODO: wire to /v1/dashboard/executions?grouped_by=day
 
 interface DayData {
@@ -28,7 +30,7 @@ interface TooltipState {
   pending: number
 }
 
-function BarGroup({ day, maxValue }: { day: DayData; maxValue: number }) {
+function BarGroup({ day, maxValue, animated }: { day: DayData; maxValue: number; animated: boolean }) {
   const autoH = maxValue > 0 ? (day.auto / maxValue) * 100 : 0
   const pendingH = maxValue > 0 ? (day.pending / maxValue) * 100 : 0
 
@@ -57,12 +59,20 @@ function BarGroup({ day, maxValue }: { day: DayData; maxValue: number }) {
       {/* Bars */}
       <div className="flex items-end gap-px w-full h-32">
         <div
-          className="flex-1 bg-brand-green/70 rounded-none transition-all duration-300"
-          style={{ height: `${autoH}%`, minHeight: autoH > 0 ? 2 : 0 }}
+          className="flex-1 bg-brand-green/70 rounded-none"
+          style={{
+            height: `${animated ? autoH : 0}%`,
+            minHeight: autoH > 0 && animated ? 2 : 0,
+            transition: 'height 0.9s cubic-bezier(0.25, 0.46, 0.45, 0.94)'
+          }}
         />
         <div
-          className="flex-1 bg-brand-info/70 rounded-none transition-all duration-300"
-          style={{ height: `${pendingH}%`, minHeight: pendingH > 0 ? 2 : 0 }}
+          className="flex-1 bg-brand-info/70 rounded-none"
+          style={{
+            height: `${animated ? pendingH : 0}%`,
+            minHeight: pendingH > 0 && animated ? 2 : 0,
+            transition: 'height 0.9s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.1s'
+          }}
         />
       </div>
 
@@ -72,6 +82,13 @@ function BarGroup({ day, maxValue }: { day: DayData; maxValue: number }) {
 }
 
 export function ExecutionChart() {
+  const [animated, setAnimated] = useState(false)
+
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setAnimated(true))
+    return () => cancelAnimationFrame(id)
+  }, [])
+
   const data = PLACEHOLDER_DATA
   const maxValue = Math.max(...data.map(d => d.auto + d.pending), 1)
   const isEmpty = data.every(d => d.auto === 0 && d.pending === 0)
@@ -101,7 +118,7 @@ export function ExecutionChart() {
         ) : (
           <div className="flex items-end gap-2">
             {data.map((day) => (
-              <BarGroup key={day.label} day={day} maxValue={maxValue} />
+              <BarGroup key={day.label} day={day} maxValue={maxValue} animated={animated} />
             ))}
           </div>
         )}
