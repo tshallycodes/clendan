@@ -177,10 +177,11 @@ async def _generate(
             current_messages.append({"role": "user", "content": tool_results})
 
     except anthropic.APIError as exc:
-        logger.error("clen_stream_api_error error=%s", type(exc).__name__)
+        logger.error("clen_stream_api_error type=%s msg=%s", type(exc).__name__, str(exc))
         yield f"data: {json.dumps({'type': 'error', 'content': 'Clen encountered an error — please try again'})}\n\n"
     except Exception as exc:
-        logger.error("clen_stream_error error=%s", type(exc).__name__)
+        import traceback
+        logger.error("clen_stream_error type=%s msg=%s trace=%s", type(exc).__name__, str(exc), traceback.format_exc())
         yield f"data: {json.dumps({'type': 'error', 'content': 'Clen encountered an unexpected error'})}\n\n"
 
     yield "data: [DONE]\n\n"
