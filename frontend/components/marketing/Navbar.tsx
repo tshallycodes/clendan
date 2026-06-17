@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useAuth } from '@clerk/nextjs'
 import { ThemeToggle } from '@/components/ThemeToggle'
+import { Logo } from '@/components/Logo'
 
 const NAV_LINKS = [
   { label: 'How It Works', href: '/how-it-works' },
@@ -12,45 +13,6 @@ const NAV_LINKS = [
   { label: 'Pricing', href: '/pricing' },
 ]
 
-function LogoMark() {
-  return (
-    <div className="flex items-center gap-2.5">
-      <div
-        className="flex items-center justify-center"
-        style={{
-          width: 28,
-          height: 28,
-          border: '1px solid #00C853',
-          borderRadius: 2,
-          flexShrink: 0,
-        }}
-      >
-        <span
-          style={{
-            fontFamily: 'var(--font-syne)',
-            fontWeight: 800,
-            fontSize: 14,
-            color: '#00C853',
-            lineHeight: 1,
-          }}
-        >
-          C
-        </span>
-      </div>
-      <span
-        style={{
-          fontFamily: 'var(--font-syne)',
-          fontWeight: 700,
-          fontSize: 13,
-          letterSpacing: '0.18em',
-          color: 'var(--brand-text)',
-        }}
-      >
-        CLENDAN
-      </span>
-    </div>
-  )
-}
 
 function MobileMenu({ open, isSignedIn }: { open: boolean; isSignedIn: boolean | null | undefined }) {
   if (!open) return null
@@ -123,7 +85,7 @@ export function Navbar() {
     >
       <div className="relative max-w-6xl mx-auto px-6 md:px-8 h-14 flex items-center justify-between">
         <Link href="/" aria-label="Clendan home">
-          <LogoMark />
+          <Logo size="md" />
         </Link>
 
         <nav className="hidden md:flex items-center gap-7">

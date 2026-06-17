@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { Logo } from '@/components/Logo'
 import { StepProgress } from './_components/StepProgress'
 import { StepName } from './_components/StepName'
 import { Step1 } from './_components/Step1'
@@ -36,13 +37,8 @@ export default function OnboardingPage() {
       )}
 
       <div className="w-full max-w-md">
-        <div className="flex flex-col items-center gap-3 mb-10">
-          <span className="w-10 h-10 rounded-sm border border-brand-green flex items-center justify-center font-heading font-bold text-brand-green text-lg">
-            C
-          </span>
-          <span className="font-heading font-bold text-brand-text text-xs tracking-[0.15em] uppercase">
-            Clendan
-          </span>
+        <div className="flex justify-center mb-10">
+          <Logo size="lg" href={null} />
         </div>
 
         <StepProgress current={step} total={TOTAL_STEPS} />

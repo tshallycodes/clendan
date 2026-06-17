@@ -1,45 +1,14 @@
+import { Logo } from '@/components/Logo'
+
 export const metadata = {
   title: 'Maintenance — Clendan',
-}
-
-function LogoMark() {
-  return (
-    <div className="flex items-center gap-2.5">
-      <div
-        className="flex items-center justify-center"
-        style={{ width: 32, height: 32, border: '1px solid #00C853', borderRadius: 2 }}
-      >
-        <span
-          style={{
-            fontFamily: 'var(--font-heading)',
-            fontWeight: 800,
-            fontSize: 16,
-            color: '#00C853',
-          }}
-        >
-          C
-        </span>
-      </div>
-      <span
-        style={{
-          fontFamily: 'var(--font-heading)',
-          fontWeight: 700,
-          fontSize: 13,
-          letterSpacing: '0.18em',
-          color: '#e8f0e8',
-        }}
-      >
-        CLENDAN
-      </span>
-    </div>
-  )
 }
 
 export default function MaintenancePage() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-brand-bg text-brand-text px-6 text-center">
       <div className="mb-10">
-        <LogoMark />
+        <Logo size="lg" href={null} />
       </div>
 
       <h1

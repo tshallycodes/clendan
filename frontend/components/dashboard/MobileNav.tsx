@@ -8,6 +8,7 @@ import { useClerk } from '@clerk/nextjs'
 import { motion, AnimatePresence } from 'framer-motion'
 import { cn } from '@/lib/utils'
 import { ThemeToggle } from '@/components/ThemeToggle'
+import { Logo } from '@/components/Logo'
 
 const NAV: { icon: React.ElementType; label: string; href: string; external?: boolean }[] = [
   { icon: Home,        label: 'Dashboard',    href: '/dashboard' },
@@ -28,14 +29,7 @@ export function MobileNav() {
     <>
       {/* Fixed top bar — mobile/tablet only */}
       <div className="lg:hidden fixed top-0 left-0 right-0 z-40 flex items-center justify-between px-4 py-4 bg-brand-surface border-b border-brand-border">
-        <div className="flex items-center gap-2.5">
-          <span className="w-6 h-6 rounded-sm border border-brand-green flex items-center justify-center font-heading font-bold text-brand-green text-xs">
-            C
-          </span>
-          <span className="font-heading font-bold text-brand-text text-xs tracking-[0.15em] uppercase">
-            Clendan
-          </span>
-        </div>
+        <Logo size="sm" />
         <button
           type="button"
           onClick={() => setOpen(true)}
@@ -67,15 +61,8 @@ export function MobileNav() {
               transition={{ duration: 0.25, ease: [0.25, 0.1, 0.25, 1] }}
               className="fixed left-0 top-0 bottom-0 z-50 w-56 bg-brand-surface border-r border-brand-border flex flex-col lg:hidden"
             >
-              <div className="flex items-center justify-between px-5 py-4 border-b border-brand-border">
-                <div className="flex items-center gap-2.5">
-                  <span className="w-6 h-6 rounded-sm border border-brand-green flex items-center justify-center font-heading font-bold text-brand-green text-xs">
-                    C
-                  </span>
-                  <span className="font-heading font-bold text-brand-text text-xs tracking-[0.15em] uppercase">
-                    Clendan
-                  </span>
-                </div>
+              <div className="flex items-center justify-between px-4 py-4 border-b border-brand-border">
+                <Logo size="sm" />
                 <button
                   type="button"
                   onClick={() => setOpen(false)}

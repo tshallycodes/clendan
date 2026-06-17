@@ -8,6 +8,7 @@ import { useClerk } from '@clerk/nextjs'
 import { cn } from '@/lib/utils'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { motion } from 'framer-motion'
+import { Logo } from '@/components/Logo'
 
 const NAV: { icon: React.ElementType; label: string; href: string; external?: boolean }[] = [
   { icon: Home,        label: 'Dashboard',    href: '/dashboard' },
@@ -25,13 +26,8 @@ export function Sidebar() {
 
   return (
     <aside className="hidden lg:flex w-56 shrink-0 bg-brand-surface border-r border-brand-border flex-col h-screen sticky top-0">
-      <div className="flex items-center gap-2.5 px-5 py-4 border-b border-brand-border">
-        <span className="w-6 h-6 rounded-sm border border-brand-green flex items-center justify-center font-heading font-bold text-brand-green text-xs">
-          C
-        </span>
-        <span className="font-heading font-bold text-brand-text text-xs tracking-[0.15em] uppercase">
-          Clendan
-        </span>
+      <div className="px-4 py-4 border-b border-brand-border">
+        <Logo size="sm" />
       </div>
 
       <nav className="flex-1 py-4">

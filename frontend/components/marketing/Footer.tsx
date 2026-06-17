@@ -1,4 +1,5 @@
 ﻿import Link from 'next/link'
+import { Logo } from '@/components/Logo'
 
 const FOOTER_LINKS: { heading: string; links: { label: string; href: string }[] }[] = [
   {
@@ -38,31 +39,13 @@ const FOOTER_LINKS: { heading: string; links: { label: string; href: string }[] 
   },
 ]
 
-function LogoMark() {
-  return (
-    <div className="flex items-center gap-2.5">
-      <div
-        className="flex items-center justify-center"
-        style={{ width: 28, height: 28, border: '1px solid #00C853', borderRadius: 2 }}
-      >
-        <span style={{ fontFamily: 'var(--font-syne)', fontWeight: 800, fontSize: 14, color: '#00C853' }}>
-          C
-        </span>
-      </div>
-      <span style={{ fontFamily: 'var(--font-syne)', fontWeight: 700, fontSize: 13, letterSpacing: '0.18em', color: 'var(--brand-text)' }}>
-        CLENDAN
-      </span>
-    </div>
-  )
-}
-
 export function Footer() {
   return (
     <footer className="bg-brand-bg border-t border-brand-border">
       <div className="max-w-6xl mx-auto px-6 md:px-8 py-14">
         <div className="flex flex-col md:flex-row gap-10 md:gap-16">
           <div className="flex flex-col gap-3 md:w-48 shrink-0">
-            <LogoMark />
+            <Logo size="md" href={null} />
             <p className="text-xs font-mono text-brand-muted mt-1">AI Financial Agent OS</p>
           </div>
 
