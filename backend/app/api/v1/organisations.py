@@ -529,17 +529,16 @@ async def get_invite_link_info(
     db: Annotated[Prisma, Depends(get_db_dep)],
 ):
     """Public — returns org name and role for the invite link. No auth required."""
-    link = await db.invitelink.find_first(
-        where={"token": token},
-        include={"tenant": True},
-    )
+    link = await db.invitelink.find_first(where={"token": token})
     if not link:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Invite link not found")
     expires = link.expires_at if link.expires_at.tzinfo else link.expires_at.replace(tzinfo=UTC)
     if expires < datetime.now(UTC):
         raise HTTPException(status_code=status.HTTP_410_GONE, detail="This invite link has expired")
+    tenant = await db.tenant.find_unique(where={"id": link.tenant_id})
+    org_name = tenant.name if tenant else "Unknown Organisation"
     return standard_response(data={
-        "org_name": link.tenant.name,
+        "org_name": org_name,
         "role": (link.role if isinstance(link.role, str) else link.role.value).lower(),
         "expires_at": link.expires_at.isoformat(),
     })
