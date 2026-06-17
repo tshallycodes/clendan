@@ -29,7 +29,7 @@ export function ApiKeysSection() {
       const res = await fetch(`${API}/v1/api-keys`, { headers: { Authorization: `Bearer ${token}` } })
       if (res.ok) {
         const json = await res.json()
-        setKeys(json.data.api_keys)
+        setKeys(json.data?.api_keys ?? [])
       }
     } finally {
       setLoading(false)

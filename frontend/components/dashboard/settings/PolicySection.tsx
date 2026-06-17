@@ -30,7 +30,7 @@ export function PolicySection() {
     })
     if (res.ok) {
       const json = await res.json()
-      setTools((json.data ?? []) as Tool[])
+      setTools((json.data?.tools ?? json.data ?? []) as Tool[])
     }
     setLoading(false)
   }
