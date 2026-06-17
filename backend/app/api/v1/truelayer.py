@@ -75,6 +75,19 @@ async def truelayer_callback(
         except Exception:
             pass
 
+        # Fallback: get_provider_info returns empty in sandbox — try accounts instead
+        if not institution_name:
+            try:
+                accounts = await tl.get_accounts(access_token)
+                if accounts:
+                    first_provider = accounts[0].get("provider") or {}
+                    institution_name = (
+                        first_provider.get("display_name")
+                        or first_provider.get("provider_id")
+                    )
+            except Exception:
+                pass
+
     # Always create a new integration — dedup happens after sync based on account IDs
     integration = await db.integration.create(
         data={
