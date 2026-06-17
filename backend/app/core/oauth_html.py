@@ -14,6 +14,9 @@ def connected_page(integration_name: str, redirect_url: str) -> HTMLResponse:
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{integration_name} Connected — Clendan</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Syne:wght@700&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after {{ box-sizing: border-box; margin: 0; padding: 0; }}
     body {{
@@ -54,6 +57,7 @@ def connected_page(integration_name: str, redirect_url: str) -> HTMLResponse:
       border-radius: 50%;
     }}
     h1 {{
+      font-family: 'Syne', sans-serif;
       font-size: 18px;
       font-weight: 700;
       color: #f0f0f0;
@@ -81,7 +85,7 @@ def connected_page(integration_name: str, redirect_url: str) -> HTMLResponse:
     .btn:hover {{ background: #00a844; }}
     .wordmark {{
       font-size: 10px;
-      color: #2c2c2c;
+      color: #666666;
       text-align: center;
       margin-top: 32px;
       text-transform: uppercase;

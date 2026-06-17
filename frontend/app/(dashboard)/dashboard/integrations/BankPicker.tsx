@@ -17,6 +17,7 @@ interface BankPickerProps {
   connecting: boolean
   onViewDetail: (bank: BankDef) => void
   onConnect: (region: Region) => void
+  onDisconnectAll: (region: Region) => void
 }
 
 type Region = 'us' | 'eu' | 'africa'
@@ -79,9 +80,10 @@ export function BankPicker({
   plaidStatus, connectedInstitutionId, connectedBankName,
   truelayerStatus, connectedTruelayerName,
   monoStatus, connectedMonoName,
-  connecting, onViewDetail, onConnect,
+  connecting, onViewDetail, onConnect, onDisconnectAll,
 }: BankPickerProps) {
   const [region, setRegion] = useState<Region>('us')
+  const [disconnecting, setDisconnecting] = useState(false)
 
   const plaidConnected = plaidStatus === 'connected' || plaidStatus === 'syncing'
   const truelayerConnected = truelayerStatus === 'connected' || truelayerStatus === 'syncing'
@@ -164,22 +166,38 @@ export function BankPicker({
 
       {isConnected ? (
         /* Connected state — show only connected banks + add button */
-        <div className="flex items-start gap-4 flex-wrap">
-          {displayCards.map((bank) => (
-            <BankCard key={bank.id} bank={bank} onViewDetail={onViewDetail} />
-          ))}
+        <div className="space-y-3">
+          <div className="flex items-start gap-4 flex-wrap">
+            {displayCards.map((bank) => (
+              <BankCard key={bank.id} bank={bank} onViewDetail={onViewDetail} />
+            ))}
 
-          {/* Add another bank */}
-          <button
-            onClick={() => onConnect(region)}
-            disabled={connecting}
-            className="flex flex-col items-center gap-1.5 cursor-pointer disabled:opacity-40"
-            title="Connect another bank"
-          >
-            <div className="w-16 h-16 rounded-sm flex items-center justify-center bg-[#00C853] hover:bg-[#00a844] active:scale-[0.97] transition-all">
-              <Plus size={20} className="text-black" />
-            </div>
-          </button>
+            {/* Add another bank */}
+            <button
+              onClick={() => onConnect(region)}
+              disabled={connecting}
+              className="flex flex-col items-center gap-1.5 cursor-pointer disabled:opacity-40"
+              title="Connect another bank"
+            >
+              <div className="w-16 h-16 rounded-sm flex items-center justify-center bg-[#00C853] hover:bg-[#00a844] active:scale-[0.97] transition-all">
+                <Plus size={20} className="text-black" />
+              </div>
+            </button>
+          </div>
+
+          {/* Stale generic connection — show a direct disconnect option */}
+          {connectedCards.length === 0 && (
+            <button
+              disabled={disconnecting}
+              onClick={async () => {
+                setDisconnecting(true)
+                try { await onDisconnectAll(region) } finally { setDisconnecting(false) }
+              }}
+              className="text-[10px] font-mono text-[#ff4d6d] hover:underline disabled:opacity-40"
+            >
+              {disconnecting ? 'Disconnecting...' : 'Disconnect stale connection'}
+            </button>
+          )}
         </div>
       ) : (
         /* Not connected — single connect button */

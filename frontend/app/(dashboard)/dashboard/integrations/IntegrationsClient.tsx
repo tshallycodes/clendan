@@ -132,14 +132,14 @@ export function IntegrationsClient() {
       if (r.status === 'fulfilled') {
         nextStatuses[r.value.slug] = r.value.status
         nextSynced[r.value.slug] = r.value.last_synced_at
-        if (r.value.slug === 'plaid' && r.value.institution_id) {
+        if (r.value.slug === 'plaid') {
           setConnectedBankId(r.value.institution_id)
           setConnectedBankName(r.value.institution_name)
         }
-        if (r.value.slug === 'truelayer' && r.value.institution_name) {
+        if (r.value.slug === 'truelayer') {
           setConnectedTruelayerName(r.value.institution_name)
         }
-        if (r.value.slug === 'mono' && r.value.institution_name) {
+        if (r.value.slug === 'mono') {
           setConnectedMonoName(r.value.institution_name)
         }
       }
@@ -396,7 +396,13 @@ export function IntegrationsClient() {
         const json = await res.json().catch(() => ({}))
         throw new Error(json.detail ?? json.error ?? 'Disconnect failed')
       }
-      await fetchAllStatuses()
+      // Optimistically clear so the UI reflects disconnected state immediately.
+      // Do NOT call fetchAllStatuses() here — the backend status endpoint may still
+      // return 'connected' (OAuth token still present), which would override the clear.
+      setStatus(provider, 'not_connected')
+      if (provider === 'plaid') { setConnectedBankId(null); setConnectedBankName(null) }
+      if (provider === 'truelayer') setConnectedTruelayerName(null)
+      if (provider === 'mono') setConnectedMonoName(null)
     } catch (err) {
       toast(err instanceof Error ? err.message : 'Disconnect failed', 'error')
     }
@@ -516,6 +522,13 @@ export function IntegrationsClient() {
                 } else {
                   handleConnectBank({ id: 'other', name: 'Other Bank', abbr: '+', color: '#1a1a1a', domain: '', provider: 'plaid', region: 'us' })
                 }
+              }}
+              onDisconnectAll={async (region) => {
+                const slug = region === 'eu' ? 'truelayer' : region === 'africa' ? 'mono' : 'plaid'
+                await handleDisconnectDirect(slug)
+                if (slug === 'plaid') { setConnectedBankId(null); setConnectedBankName(null) }
+                if (slug === 'truelayer') setConnectedTruelayerName(null)
+                if (slug === 'mono') setConnectedMonoName(null)
               }}
             />
           </section>

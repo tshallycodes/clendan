@@ -180,6 +180,7 @@ async def list_transactions(
         order={"date": "desc"},
         take=limit,
         skip=offset,
+        include={"account": True},
     )
     total = await db.banktransaction.count(where=where)
 
@@ -197,6 +198,9 @@ async def list_transactions(
                     "plaid_category": t.category,
                     "status": t.status,
                     "matched_invoice_id": t.matched_invoice_id,
+                    "account_id": t.account_id,
+                    "account_name": t.account.name if t.account else None,
+                    "account_subtype": t.account.subtype if t.account else None,
                 }
                 for t in transactions
             ],

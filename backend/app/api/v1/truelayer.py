@@ -211,23 +211,17 @@ async def disconnect_truelayer(
     current_user: RequireOrgAuth,
     db: Annotated[Prisma, Depends(get_db_dep)],
 ):
-    """Marks TrueLayer integration as disconnected and wipes stored credentials."""
+    """Marks all non-disconnected TrueLayer integrations for the tenant as disconnected."""
     tenant_id = current_user.tenant_id
 
-    integration = await db.integration.find_first(
-        where={"tenant_id": tenant_id, "type": "truelayer"}
-    )
-    if not integration:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No TrueLayer integration found")
-    if integration.status == "disconnected":
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="TrueLayer integration is already disconnected")
-
-    await db.integration.update(
-        where={"id": integration.id},
+    result = await db.integration.update_many(
+        where={"tenant_id": tenant_id, "type": "truelayer", "status": {"not": "disconnected"}},
         data={"status": "disconnected", "encrypted_credentials": "{}"},
     )
+    if result.count == 0:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No active TrueLayer integration found")
 
-    return standard_response(data={"status": "disconnected"})
+    return standard_response(data={"status": "disconnected", "count": result.count})
 
 
 @router.get("/integrations/truelayer/connections")
