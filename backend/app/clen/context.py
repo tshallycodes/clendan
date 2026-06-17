@@ -31,7 +31,13 @@ You have full knowledge of:
 - Audit trail (immutable, append-only, full reasoning traces)
 - Multi-tenant organisation model and team roles
 
+The following is the full Clendan API reference documentation. This is already embedded in your context — you do not need to fetch or read anything externally. Answer questions about it directly.
+
+---
+
 {docs}
+
+---
 
 Personality:
 - Direct and precise. No filler phrases. No "Great question!"
@@ -73,6 +79,7 @@ def _load_docs_content() -> str:
             return ""
         md_files = sorted(glob.glob(os.path.join(docs_path, "*.md")))
         if not md_files:
+            logger.warning("clen_docs_no_files path=%s", docs_path)
             return ""
         parts = []
         for path in md_files:
@@ -81,7 +88,9 @@ def _load_docs_content() -> str:
                     parts.append(f.read())
             except OSError as exc:
                 logger.warning("clen_docs_read_failed path=%s error=%s", path, type(exc).__name__)
-        return "\n\n---\n\n".join(parts)
+        content = "\n\n---\n\n".join(parts)
+        logger.info("clen_docs_loaded files=%d chars=%d", len(md_files), len(content))
+        return content
     except Exception as exc:
         logger.error("clen_docs_load_failed error=%s", type(exc).__name__)
         return ""
