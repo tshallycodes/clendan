@@ -163,6 +163,8 @@ export function IntegrationsClient() {
         const params = new URLSearchParams(window.location.search)
         const connected = params.get('connected')
         const oauthError = params.get('error')
+        const xeroSelect = params.get('xero_select')
+
         if (connected) {
           setStatus(connected, 'syncing')
           toast(`${connected} connected — syncing data`, 'success')
@@ -170,9 +172,30 @@ export function IntegrationsClient() {
         if (oauthError) {
           toast(`Connection failed: ${oauthError.replace(/_/g, ' ')}`, 'error')
         }
-        if (connected || oauthError) {
+        if (xeroSelect) {
+          try {
+            const authToken = await getToken()
+            const res = await fetch(`${API}/v1/integrations/xero/pending-orgs/${xeroSelect}`, {
+              headers: { Authorization: `Bearer ${authToken}` },
+            })
+            if (res.ok) {
+              const json = await res.json()
+              const orgs: XeroOrg[] = json.data?.orgs ?? []
+              if (orgs.length > 0) {
+                setXeroOrgs(orgs)
+                setPendingXeroIntegrationId(xeroSelect)
+                setShowXeroModal(true)
+              }
+            }
+          } catch {
+            toast('Xero org selection failed — please try connecting again', 'error')
+          }
+        }
+
+        if (connected || oauthError || xeroSelect) {
           params.delete('connected')
           params.delete('error')
+          params.delete('xero_select')
           const newSearch = params.toString()
           window.history.replaceState(null, '', newSearch ? `?${newSearch}` : window.location.pathname)
         }

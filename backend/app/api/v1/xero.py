@@ -288,14 +288,15 @@ async def xero_status(
 
 @router.post("/integrations/xero/sync")
 async def xero_sync(
+    background_tasks: BackgroundTasks,
     current_user: RequireOrgAuth,
     db: Annotated[Prisma, Depends(get_db_dep)],
 ):
-    """Enqueues a Xero sync job for the authenticated tenant."""
+    """Triggers a background Xero sync for the authenticated tenant."""
     tenant_id = current_user.tenant_id
 
     integration = await db.integration.find_first(
-        where={"tenant_id": tenant_id, "type": "xero", "status": "connected"}
+        where={"tenant_id": tenant_id, "type": "xero", "status": {"not": "disconnected"}}
     )
     if not integration:
         raise HTTPException(
@@ -303,15 +304,8 @@ async def xero_sync(
             detail="No active Xero connection found",
         )
 
-    try:
-        await enqueue_xero_sync(integration_id=integration.id, tenant_id=tenant_id)
-    except Exception as exc:
-        logger.error("xero_manual_sync_enqueue_failed: %s", type(exc).__name__)
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Failed to enqueue sync job",
-        )
-
+    await db.integration.update(where={"id": integration.id}, data={"status": "syncing"})
+    background_tasks.add_task(sync_xero_connection, {}, integration.id, tenant_id)
     return standard_response(data={"status": "sync_queued", "integration_id": integration.id})
 
 
