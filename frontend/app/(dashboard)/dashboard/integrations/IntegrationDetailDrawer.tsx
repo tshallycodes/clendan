@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -122,13 +122,13 @@ export function IntegrationDetailDrawer({ slug, intg, status, lastSyncedAt, onCl
 
   const lastSyncDisplay = lastSyncedAt
     ? new Date(lastSyncedAt).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
-    : '—'
+    : 'â€”'
 
   return (
     <AnimatePresence>
       {open && intg && (
         <>
-          <motion.div key="intg-bd" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }} className="fixed inset-0 bg-black/70 z-40" onClick={onClose} />
+          <motion.div key="intg-bd" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }} className="fixed inset-0 z-40" onClick={onClose} />
           <motion.aside key="intg-dr" initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }} transition={{ type: 'tween', duration: 0.25 }} className="fixed right-0 top-0 h-full w-[480px] max-w-full bg-brand-surface border-l border-brand-border z-50 flex flex-col">
 
             {/* Header */}
@@ -340,3 +340,4 @@ function SummaryCard({ label, value, sub, accent }: SummaryCardProps) {
     </div>
   )
 }
+

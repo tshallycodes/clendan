@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useCallback, useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -235,7 +235,7 @@ export function BankDetailDrawer({ bank, onClose, onConnect, onDisconnect, onRes
             key="bank-bd"
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="fixed inset-0 bg-black/70 z-40"
+            className="fixed inset-0 z-40"
             onClick={onClose}
           />
           <motion.aside
@@ -336,3 +336,4 @@ export function BankDetailDrawer({ bank, onClose, onConnect, onDisconnect, onRes
     </AnimatePresence>
   )
 }
+

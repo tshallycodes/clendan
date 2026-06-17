@@ -39,7 +39,7 @@ export function XeroOrgModal({ open, orgs, onConfirm, onClose }: XeroOrgModalPro
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="fixed inset-0 bg-black/70 z-40"
+            className="fixed inset-0 z-40"
             onClick={loading ? undefined : onClose}
           />
           <motion.div
@@ -114,3 +114,4 @@ export function XeroOrgModal({ open, orgs, onConfirm, onClose }: XeroOrgModalPro
     </AnimatePresence>
   )
 }
+
