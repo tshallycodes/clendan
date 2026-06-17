@@ -329,7 +329,7 @@ async def xero_disconnect(
     tenant_id = current_user.tenant_id
 
     integration = await db.integration.find_first(
-        where={"tenant_id": tenant_id, "type": "xero", "status": "connected"}
+        where={"tenant_id": tenant_id, "type": "xero", "status": {"not": "disconnected"}}
     )
     if not integration:
         raise HTTPException(

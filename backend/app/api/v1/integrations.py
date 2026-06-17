@@ -379,7 +379,7 @@ async def xero_disconnect(
 ):
     """Revokes Xero connection and marks integration as disconnected."""
     integration = await db.integration.find_first(
-        where={"tenant_id": current_user.tenant_id, "type": "xero", "status": "connected"}
+        where={"tenant_id": current_user.tenant_id, "type": "xero", "status": {"not": "disconnected"}}
     )
     if not integration:
         raise HTTPException(
@@ -445,7 +445,7 @@ async def quickbooks_disconnect(
 ):
     """Revokes QuickBooks tokens and marks integration as disconnected."""
     integration = await db.integration.find_first(
-        where={"tenant_id": current_user.tenant_id, "type": "quickbooks", "status": "connected"}
+        where={"tenant_id": current_user.tenant_id, "type": "quickbooks", "status": {"not": "disconnected"}}
     )
     if not integration:
         raise HTTPException(

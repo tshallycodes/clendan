@@ -219,7 +219,7 @@ async def outlook_disconnect(
     and marks the integration as disconnected.
     """
     integration = await db.integration.find_first(
-        where={"tenant_id": current_user.tenant_id, "type": "outlook", "status": "connected"}
+        where={"tenant_id": current_user.tenant_id, "type": "outlook", "status": {"not": "disconnected"}}
     )
     if not integration:
         raise HTTPException(

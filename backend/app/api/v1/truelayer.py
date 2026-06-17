@@ -57,6 +57,21 @@ async def truelayer_callback(
 
     encrypted_credentials = token_data["encrypted_credentials"]
 
+    # Fetch institution name immediately using the fresh access token
+    access_token = token_data.get("access_token", "")
+    institution_name = None
+    if access_token:
+        try:
+            provider_info = await tl.get_provider_info(access_token)
+            provider = provider_info.get("provider") or {}
+            institution_name = (
+                provider.get("display_name")
+                or provider.get("provider_id")
+                or provider_info.get("provider_id")
+            )
+        except Exception:
+            pass
+
     # Always create a new integration — dedup happens after sync based on account IDs
     integration = await db.integration.create(
         data={
@@ -64,6 +79,7 @@ async def truelayer_callback(
             "type": "truelayer",
             "encrypted_credentials": encrypted_credentials,
             "status": "syncing",
+            "institution_name": institution_name,
             "connected_at": datetime.now(UTC),
         }
     )

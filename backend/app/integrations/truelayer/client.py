@@ -73,7 +73,7 @@ async def exchange_code(code: str, tenant_id: str) -> dict:
         "token_expiry_at": token_expiry_at,
     }
     encrypted = encrypt_credentials(plaintext_creds, tenant_id)
-    return {"encrypted_credentials": encrypted, "token_expiry_at": token_expiry_at}
+    return {"encrypted_credentials": encrypted, "token_expiry_at": token_expiry_at, "access_token": data["access_token"]}
 
 
 async def refresh_truelayer_token(refresh_token: str) -> dict:
