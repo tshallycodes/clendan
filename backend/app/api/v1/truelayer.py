@@ -209,6 +209,40 @@ async def list_truelayer_transactions(
     )
 
 
+@router.post("/integrations/truelayer/force-resync")
+async def force_resync_truelayer(
+    current_user: RequireOrgAuth,
+    db: Annotated[Prisma, Depends(get_db_dep)],
+):
+    """
+    Clears all TrueLayer transaction data for the tenant and triggers a full re-sync
+    on every active connection. Keeps integrations and accounts intact.
+    """
+    tenant_id = current_user.tenant_id
+
+    integrations = await db.integration.find_many(
+        where={"tenant_id": tenant_id, "type": ConnectorType.TRUELAYER, "status": {"not": IntegrationStatus.DISCONNECTED}},
+        include={"bank_accounts": True},
+    )
+    if not integrations:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No active TrueLayer integration found")
+
+    total_cleared = 0
+    for intg in integrations:
+        account_ids = [a.id for a in (intg.bank_accounts or [])]
+        if account_ids:
+            result = await db.banktransaction.delete_many(where={"account_id": {"in": account_ids}})
+            total_cleared += result.count
+        await db.integration.update(where={"id": intg.id}, data={"status": IntegrationStatus.SYNCING})
+        await enqueue_truelayer_sync(intg.id, tenant_id)
+
+    return standard_response(data={
+        "status": "resync_enqueued",
+        "connections": len(integrations),
+        "transactions_cleared": total_cleared,
+    })
+
+
 @router.post("/integrations/truelayer/sync")
 async def trigger_truelayer_sync(
     current_user: RequireOrgAuth,
@@ -227,6 +261,42 @@ async def trigger_truelayer_sync(
     await db.integration.update(where={"id": integration.id}, data={"status": IntegrationStatus.SYNCING})
     await enqueue_truelayer_sync(integration.id, tenant_id)
     return standard_response(data={"status": "sync_enqueued", "integration_id": integration.id})
+
+
+@router.post("/integrations/truelayer/connections/{integration_id}/force-resync")
+async def force_resync_truelayer_connection(
+    integration_id: str,
+    current_user: RequireOrgAuth,
+    db: Annotated[Prisma, Depends(get_db_dep)],
+):
+    """
+    Clears all cached transactions for a TrueLayer connection then triggers a full re-sync.
+    Keeps the integration and accounts intact — no OAuth reconnect needed.
+    Use after sign convention fixes or data corruption.
+    """
+    tenant_id = current_user.tenant_id
+    intg = await db.integration.find_first(
+        where={"id": integration_id, "tenant_id": tenant_id, "type": ConnectorType.TRUELAYER}
+    )
+    if not intg:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="TrueLayer connection not found")
+    if intg.status == IntegrationStatus.DISCONNECTED:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Connection is disconnected — reconnect first")
+
+    accounts = await db.bankaccount.find_many(where={"integration_id": integration_id})
+    account_ids = [a.id for a in accounts]
+    txns_deleted = 0
+    if account_ids:
+        result = await db.banktransaction.delete_many(where={"account_id": {"in": account_ids}})
+        txns_deleted = result.count
+
+    await db.integration.update(where={"id": integration_id}, data={"status": IntegrationStatus.SYNCING})
+    await enqueue_truelayer_sync(integration_id, tenant_id)
+    return standard_response(data={
+        "status": "resync_enqueued",
+        "transactions_cleared": txns_deleted,
+        "integration_id": integration_id,
+    })
 
 
 @router.delete("/integrations/truelayer/disconnect")
