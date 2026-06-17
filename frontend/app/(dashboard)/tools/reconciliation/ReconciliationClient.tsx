@@ -2,7 +2,11 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { useAuth } from '@clerk/nextjs'
+import { useCanConfigure } from '@/lib/auth-client'
+import { ConfigDrawer } from '@/components/dashboard/tools/ConfigDrawer'
+import type { Tool } from '@/components/dashboard/tools/ToolCard'
 import { ReconciliationRun, ReconciliationItem } from './types'
 import { RunControls } from './RunControls'
 import { RunHistory } from './RunHistory'
@@ -89,8 +93,16 @@ function OverviewTab({
   )
 }
 
+const AUTONOMY_BADGE: Record<string, { label: string; className: string }> = {
+  auto:    { label: 'Auto',    className: 'bg-[rgba(0,200,83,0.08)] text-[#00C853] border border-[rgba(0,200,83,0.2)]' },
+  approve: { label: 'Approve', className: 'bg-[rgba(0,168,204,0.08)] text-[#00a8cc] border border-[rgba(0,168,204,0.2)]' },
+  suggest: { label: 'Suggest', className: 'bg-brand-surface text-brand-muted border border-brand-border' },
+}
+
 export function ReconciliationClient() {
+  const router = useRouter()
   const { getToken } = useAuth()
+  const canConfigure = useCanConfigure()
   const [activeTab, setActiveTab] = useState<Tab>('overview')
   const [runs, setRuns] = useState<ReconciliationRun[]>([])
   const [runsLoading, setRunsLoading] = useState(true)
@@ -99,8 +111,11 @@ export function ReconciliationClient() {
   const [itemsLoading, setItemsLoading] = useState(false)
   const [periodStart, setPeriodStart] = useState(defaultPeriodStart)
   const [periodEnd, setPeriodEnd] = useState(defaultPeriodEnd)
-  const [toolId, setToolId] = useState<string | null>(null)
+  const [deployed, setDeployed] = useState<Tool | null>(null)
   const [running, setRunning] = useState(false)
+  const [showConfig, setShowConfig] = useState(false)
+  const [toggling, setToggling] = useState(false)
+  const [deploying, setDeploying] = useState(false)
 
   const fetchRuns = useCallback(async () => {
     const token = await getToken()
@@ -137,8 +152,8 @@ export function ReconciliationClient() {
       if (toolsRes.ok) {
         const toolsJson = await toolsRes.json()
         const tools: { id: string; type: string }[] = toolsJson.data?.tools ?? toolsJson.data ?? []
-        const rec = tools.find((w) => w.type === 'reconciliation')
-        if (rec) setToolId(rec.id)
+        const rec = tools.find((w: Tool) => w.type === 'reconciliation')
+        if (rec) setDeployed(rec)
       }
       setRunsLoading(true)
       const list = await fetchRuns()
@@ -148,15 +163,53 @@ export function ReconciliationClient() {
     init()
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
+  async function handleToggle() {
+    if (!deployed) return
+    setToggling(true)
+    try {
+      const token = await getToken()
+      await fetch(`${API}/v1/tools/${deployed.id}/pause`, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      })
+      router.refresh()
+    } finally {
+      setToggling(false)
+    }
+  }
+
+  async function handleDeploy() {
+    setDeploying(true)
+    try {
+      const token = await getToken()
+      if (deployed) {
+        await fetch(`${API}/v1/tools/${deployed.id}/pause`, {
+          method: 'PATCH',
+          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        })
+      } else {
+        const { getDefaultConfig } = await import('@/components/dashboard/tools/ToolConfigFields')
+        await fetch(`${API}/v1/tools`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type: 'reconciliation', autonomy_level: 'approve', config: getDefaultConfig('reconciliation') }),
+        })
+      }
+      router.refresh()
+    } finally {
+      setDeploying(false)
+    }
+  }
+
   async function handleRun() {
-    if (!toolId || running) return
+    if (!deployed?.id || running) return
     setRunning(true)
     try {
       const token = await getToken()
       const res = await fetch(`${API}/v1/reconciliation/run`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ period_start: periodStart, period_end: periodEnd, tool_id: toolId }),
+        body: JSON.stringify({ period_start: periodStart, period_end: periodEnd, tool_id: deployed.id }),
       })
       if (!res.ok) return
       const json = await res.json()
@@ -183,17 +236,60 @@ export function ReconciliationClient() {
     URL.revokeObjectURL(url)
   }
 
+  const isActive = deployed?.status === 'active'
+  const badge = deployed ? (AUTONOMY_BADGE[deployed.autonomy_level] ?? AUTONOMY_BADGE.suggest) : null
+  const actionLoading = toggling || deploying
+
   return (
     <div className="p-6 space-y-5">
       <Link href="/tools" className="text-[11px] font-mono text-brand-muted hover:text-brand-secondary transition-colors">
         ← Tools
       </Link>
 
-      <div>
-        <h1 className="font-heading font-bold text-2xl text-brand-text">Reconciliation</h1>
-        <p className="text-[10px] font-mono text-brand-muted mt-1 uppercase tracking-widest">
-          Match bank transactions against invoices
-        </p>
+      <div className="flex items-start justify-between gap-4 flex-wrap">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2 flex-wrap">
+            <h1 className="font-heading font-bold text-2xl text-brand-text">Reconciliation</h1>
+            {badge && <span className={`text-[10px] font-mono px-2 py-0.5 rounded-sm ${badge.className}`}>{badge.label}</span>}
+            {deployed && <span className="text-[10px] font-mono text-brand-muted">v{deployed.version}</span>}
+          </div>
+          <p className="text-[10px] font-mono text-brand-muted uppercase tracking-widest">
+            Match bank transactions against invoices
+          </p>
+        </div>
+        {canConfigure && (
+          <div className="flex items-center gap-2">
+            <button type="button" onClick={() => setShowConfig(true)}
+              className="text-xs font-mono border border-brand-border text-brand-text hover:bg-brand-elevated rounded-sm px-3 py-1.5 transition-colors">
+              Configure
+            </button>
+            <button type="button" onClick={isActive ? handleToggle : handleDeploy} disabled={actionLoading}
+              className={`text-xs font-mono rounded-sm px-3 py-1.5 transition-all disabled:opacity-50 ${
+                isActive
+                  ? 'border border-brand-border text-brand-text hover:bg-brand-elevated'
+                  : 'bg-[#00C853] text-black hover:bg-[#00a844] active:scale-[0.97]'
+              }`}>
+              {toggling ? 'Pausing…' : deploying ? 'Deploying…' : isActive ? 'Pause' : 'Deploy'}
+            </button>
+          </div>
+        )}
+      </div>
+
+      <div className="flex items-center gap-2">
+        {isActive ? (
+          <>
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#00C853] opacity-60" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-[#00C853]" />
+            </span>
+            <span className="text-xs font-mono text-[#00C853]">Active</span>
+          </>
+        ) : (
+          <>
+            <span className="h-2 w-2 rounded-full bg-brand-muted" />
+            <span className="text-xs font-mono text-brand-muted">{deployed ? 'Paused' : 'Not deployed'}</span>
+          </>
+        )}
       </div>
 
       <div className="flex gap-1 border-b border-brand-border">
@@ -211,7 +307,7 @@ export function ReconciliationClient() {
 
       {activeTab === 'overview' && (
         <OverviewTab
-          periodStart={periodStart} periodEnd={periodEnd} toolId={toolId} running={running}
+          periodStart={periodStart} periodEnd={periodEnd} toolId={deployed?.id ?? null} running={running}
           runs={runs} runsLoading={runsLoading} selectedRun={selectedRun}
           items={items} itemsLoading={itemsLoading}
           onPeriodStartChange={setPeriodStart} onPeriodEndChange={setPeriodEnd}
@@ -219,9 +315,18 @@ export function ReconciliationClient() {
           onExport={handleExport}
         />
       )}
-      {activeTab === 'executions' && toolId && <ToolExecutionsTab toolId={toolId} />}
-      {activeTab === 'approvals' && toolId && <ToolApprovalsTab toolId={toolId} />}
-      {activeTab === 'audit' && toolId && <ToolAuditTab toolId={toolId} />}
+      {activeTab === 'executions' && deployed && <ToolExecutionsTab toolId={deployed.id} />}
+      {activeTab === 'approvals' && deployed && <ToolApprovalsTab toolId={deployed.id} />}
+      {activeTab === 'audit' && deployed && <ToolAuditTab toolId={deployed.id} />}
+
+      {showConfig && (
+        <ConfigDrawer
+          tool={deployed}
+          toolType="reconciliation"
+          onClose={() => setShowConfig(false)}
+          onSaved={() => { setShowConfig(false); router.refresh() }}
+        />
+      )}
     </div>
   )
 }
