@@ -2,11 +2,11 @@
 
 /* ─── Light mode (default) ─────────────────────────────────────────────── */
 :root {
-  --brand-bg:             #e9ecef;
+  --brand-bg:             #f5f7fb;
   --brand-surface:        #ffffff;
-  --brand-elevated:       #f3f4f6;
-  --brand-border:         #ced4da;
-  --brand-border-subtle:  #dee2e6;
+  --brand-elevated:       #edf0f7;
+  --brand-border:         #d1d8e4;
+  --brand-border-subtle:  #e2e7f0;
   --brand-text:           #0d1117;
   --brand-secondary:      #3d4754;
   --brand-muted:          #6e7a8a;
