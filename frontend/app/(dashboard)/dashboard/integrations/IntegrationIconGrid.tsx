@@ -40,8 +40,8 @@ function IntegrationIcon({ slug, name }: { slug: string; name: string }) {
       .join('')
       .slice(0, 2)
     return (
-      <div className="w-full h-full flex items-center justify-center bg-white">
-        <span className="text-sm font-mono font-bold text-[#111111]">{initials}</span>
+      <div className="w-full h-full flex items-center justify-center bg-brand-elevated">
+        <span className="text-sm font-mono font-bold text-brand-text">{initials}</span>
       </div>
     )
   }
@@ -84,7 +84,7 @@ export function IntegrationIconGrid({ integrations, statuses, onViewDetail }: Pr
           >
             <div className="relative w-16 h-16">
               <div className={[
-                'w-full h-full rounded-sm flex items-center justify-center overflow-hidden bg-white transition-all',
+                'w-full h-full rounded-sm flex items-center justify-center overflow-hidden bg-white dark:bg-transparent transition-all',
                 !intg.comingSoon && 'group-hover:ring-1 group-hover:ring-[#00C853]/40',
               ].filter(Boolean).join(' ')}>
                 <IntegrationIcon slug={intg.slug} name={intg.name} />

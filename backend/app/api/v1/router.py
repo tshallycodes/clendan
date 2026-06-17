@@ -46,6 +46,7 @@ from app.api.v1.wise import router as wise_router
 from app.api.v1.mono import router as mono_router
 from app.api.v1.webhooks.mono import router as mono_webhook_router
 from app.clen.router import router as clen_router
+from app.api.v1.budgets import router as budgets_router
 
 v1_router = APIRouter()
 v1_router.include_router(onboarding.router)
@@ -98,4 +99,5 @@ v1_router.include_router(wise_router)
 v1_router.include_router(mono_router)
 v1_router.include_router(mono_webhook_router)
 v1_router.include_router(transactions_router)
+v1_router.include_router(budgets_router)
 v1_router.include_router(generic_router)  # must be last — uses {slug} path params

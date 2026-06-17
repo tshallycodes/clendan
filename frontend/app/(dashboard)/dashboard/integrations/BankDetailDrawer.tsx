@@ -255,8 +255,8 @@ export function BankDetailDrawer({ bank, onClose, onConnect, onDisconnect, onRes
             <div className="flex items-center justify-between px-6 py-4 border-b border-brand-border">
               <div className="flex items-center gap-3">
                 <div
-                  className="w-8 h-8 rounded-sm overflow-hidden flex items-center justify-center shrink-0"
-                  style={{ backgroundColor: logoError || !bank.domain ? bank.color : 'white' }}
+                  className={`w-8 h-8 rounded-sm overflow-hidden flex items-center justify-center shrink-0 ${logoError || !bank.domain ? '' : 'bg-white dark:bg-transparent'}`}
+                  style={{ backgroundColor: logoError || !bank.domain ? bank.color : undefined }}
                 >
                   {logoError || !bank.domain ? (
                     <span className="text-[10px] font-mono font-bold text-white leading-none">
@@ -309,8 +309,8 @@ export function BankDetailDrawer({ bank, onClose, onConnect, onDisconnect, onRes
               ) : (
                 <div className="flex flex-col items-center justify-center py-16 gap-5 text-center">
                   <div
-                    className="w-14 h-14 rounded-sm overflow-hidden flex items-center justify-center border border-brand-border"
-                    style={{ backgroundColor: !bank.domain ? bank.color : 'white' }}
+                    className={`w-14 h-14 rounded-sm overflow-hidden flex items-center justify-center border border-brand-border ${!bank.domain ? '' : 'bg-white dark:bg-transparent'}`}
+                    style={{ backgroundColor: !bank.domain ? bank.color : undefined }}
                   >
                     {!bank.domain ? (
                       <span className="text-lg font-mono font-bold text-white">{bank.abbr.slice(0, 2)}</span>

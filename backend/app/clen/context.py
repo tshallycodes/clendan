@@ -1,9 +1,11 @@
 ﻿"""
 Builds the system prompt for Clen AI assistant.
 Docs content is pre-loaded at module import from backend/docs/*.md.
+Built prompts are cached in-process for 15 minutes to avoid redundant DB queries.
 """
 import os
 import glob
+import time
 from typing import Optional
 
 from prisma import Prisma
@@ -88,6 +90,10 @@ def _load_docs_content() -> str:
 # Pre-load at module import — not per request
 _DOCS_CONTENT: str = _load_docs_content()
 
+# In-process prompt cache: key -> (prompt_str, expiry_timestamp)
+_PROMPT_CACHE: dict[str, tuple[str, float]] = {}
+_PROMPT_CACHE_TTL = 15 * 60  # 15 minutes
+
 
 def _build_docs_prompt() -> str:
     return _DOCS_TEMPLATE.format(docs=_DOCS_CONTENT)
@@ -103,10 +109,17 @@ async def build_system_prompt(
     mode='docs'    — no account data, no DB queries.
     mode='account' — queries DB for org context and appends account extension.
     Falls back to docs mode if tenant_id or db is missing.
+    Prompts are cached in-process for 15 minutes to avoid redundant DB queries.
     """
+    cache_key = f"{mode}:{tenant_id or 'anon'}"
+    cached = _PROMPT_CACHE.get(cache_key)
+    if cached and time.monotonic() < cached[1]:
+        return cached[0]
+
     base = _build_docs_prompt()
 
     if mode != "account" or not tenant_id or not db:
+        _PROMPT_CACHE[cache_key] = (base, time.monotonic() + _PROMPT_CACHE_TTL)
         return base
 
     try:
@@ -144,4 +157,6 @@ async def build_system_prompt(
         tool_list=tool_list,
         integration_list=integration_list,
     )
-    return base + extension
+    result = base + extension
+    _PROMPT_CACHE[cache_key] = (result, time.monotonic() + _PROMPT_CACHE_TTL)
+    return result

@@ -162,6 +162,51 @@ export const TOOLS: ToolDef[] = [
       'Multi-source aggregation: FreshBooks, Xero, QuickBooks',
     ],
   },
+  {
+    slug: 'financial-reporting',
+    type: 'financial_reporting',
+    name: 'Financial Reporting',
+    desc: 'Auto-generate P&L, balance sheet, and cash flow statements from live accounting data.',
+    capabilities: [
+      'Profit & loss statement with gross margin and net profit analysis',
+      'Balance sheet summary — assets, liabilities, and net asset position',
+      'Cash flow statement from live bank and payment data',
+      'AI-generated CFO-level narrative and anomaly detection',
+      'Approval routing when anomalies or at-risk health indicators are detected',
+      'Configurable lookback period (30, 60, or 90 days)',
+      'Multi-source aggregation: Xero, QuickBooks, FreshBooks, bank connections',
+    ],
+  },
+  {
+    slug: 'payment-runs',
+    type: 'payment_run',
+    name: 'Payment Runs',
+    desc: 'Automatically schedule approved supplier payments on a weekly cadence.',
+    capabilities: [
+      'Weekly automated payment run across all outstanding approved bills',
+      'Auto-pay bills within configurable spend limit without manual intervention',
+      'Approval routing for bills above the auto-pay threshold',
+      'Duplicate and risk detection across the payment batch before scheduling',
+      'Immutable PaymentRun record created per batch for full audit trail',
+      'Configurable due-date window — only pays bills due within N days',
+      'Blocked bills excluded automatically — no manual filtering required',
+    ],
+  },
+  {
+    slug: 'budgeting',
+    type: 'budgeting',
+    name: 'Budgeting',
+    desc: 'Track department spend against budget targets and flag variance in real time.',
+    capabilities: [
+      'Budget creation with department-level line items and categories',
+      'Weekly automated variance analysis — actual vs budget per line',
+      'Configurable alert threshold for over-budget lines',
+      'Critical overspend flagging with automatic approval routing',
+      'AI-generated variance summary and cost reduction recommendations',
+      'Multi-period budget support — create budgets per quarter or year',
+      'Actual spend pulled from live expense and bill data',
+    ],
+  },
 ]
 
 export function slugToTool(slug: string): ToolDef | undefined {

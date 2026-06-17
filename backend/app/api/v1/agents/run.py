@@ -20,6 +20,9 @@ TOOL_TYPE_TO_EVENT: dict[str, str] = {
     "compliance_check":    "compliance_check_requested",
     "receipt_processing":  "receipt_received",
     "treasury":            "treasury_run",
+    "financial_reporting": "financial_report_run",
+    "payment_run":         "payment_run_requested",
+    "budgeting":           "budget_check_run",
 }
 
 _logger = get_logger(__name__)

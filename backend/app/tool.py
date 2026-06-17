@@ -327,6 +327,42 @@ async def run_orchestrator_job(
             )
             decision, confidence, reasoning = "routed", 1.0, "Routed to Credit Underwriting"
 
+        elif event_type == "financial_report_run":
+            pool = await get_queue_pool()
+            await pool.enqueue_job(
+                "run_financial_reporting_job",
+                execution_id=execution_id,
+                tenant_id=tenant_id,
+                tool_id=tool_id,
+                payload=payload,
+                policy_config=payload.get("policy_config", {}),
+            )
+            decision, confidence, reasoning = "routed", 1.0, "Routed to Financial Reporting"
+
+        elif event_type == "payment_run_requested":
+            pool = await get_queue_pool()
+            await pool.enqueue_job(
+                "run_payment_run_job",
+                execution_id=execution_id,
+                tenant_id=tenant_id,
+                tool_id=tool_id,
+                payload=payload,
+                policy_config=payload.get("policy_config", {}),
+            )
+            decision, confidence, reasoning = "routed", 1.0, "Routed to Payment Run"
+
+        elif event_type == "budget_check_run":
+            pool = await get_queue_pool()
+            await pool.enqueue_job(
+                "run_budgeting_job",
+                execution_id=execution_id,
+                tenant_id=tenant_id,
+                tool_id=tool_id,
+                payload=payload,
+                policy_config=payload.get("policy_config", {}),
+            )
+            decision, confidence, reasoning = "routed", 1.0, "Routed to Budgeting"
+
         else:
             decision = "queued"
             confidence = 1.0
@@ -624,6 +660,63 @@ async def run_revenue_recognition_monthly(ctx: dict) -> None:
             )
 
 
+async def run_financial_reporting_monthly(ctx: dict) -> None:
+    """Monthly cron: fires financial_report_run for all tenants with active tools."""
+    db = get_db()
+    from app.orchestrator.events import enqueue_orchestrator_event
+    tools = await db.tool.find_many(where={"type": "financial_reporting", "status": "active"})
+    month_key = datetime.now(UTC).strftime("%Y-%m")
+    for tool in tools:
+        try:
+            await enqueue_orchestrator_event(
+                tenant_id=tool.tenant_id,
+                event_type="financial_report_run",
+                payload={},
+                idempotency_key=f"financial_reporting:monthly:{tool.tenant_id}:{month_key}",
+                db=db,
+            )
+        except Exception as exc:
+            logger.error("financial_reporting_cron_failed tenant=%s: %s", tool.tenant_id, type(exc).__name__)
+
+
+async def run_payment_run_weekly(ctx: dict) -> None:
+    """Weekly cron: fires payment_run_requested for all tenants with active tools."""
+    db = get_db()
+    from app.orchestrator.events import enqueue_orchestrator_event
+    tools = await db.tool.find_many(where={"type": "payment_run", "status": "active"})
+    week_key = datetime.now(UTC).strftime("%Y-W%W")
+    for tool in tools:
+        try:
+            await enqueue_orchestrator_event(
+                tenant_id=tool.tenant_id,
+                event_type="payment_run_requested",
+                payload={},
+                idempotency_key=f"payment_run:weekly:{tool.tenant_id}:{week_key}",
+                db=db,
+            )
+        except Exception as exc:
+            logger.error("payment_run_cron_failed tenant=%s: %s", tool.tenant_id, type(exc).__name__)
+
+
+async def run_budget_check_weekly(ctx: dict) -> None:
+    """Weekly cron: fires budget_check_run for all tenants with active tools."""
+    db = get_db()
+    from app.orchestrator.events import enqueue_orchestrator_event
+    tools = await db.tool.find_many(where={"type": "budgeting", "status": "active"})
+    week_key = datetime.now(UTC).strftime("%Y-W%W")
+    for tool in tools:
+        try:
+            await enqueue_orchestrator_event(
+                tenant_id=tool.tenant_id,
+                event_type="budget_check_run",
+                payload={},
+                idempotency_key=f"budgeting:weekly:{tool.tenant_id}:{week_key}",
+                db=db,
+            )
+        except Exception as exc:
+            logger.error("budget_check_cron_failed tenant=%s: %s", tool.tenant_id, type(exc).__name__)
+
+
 async def startup(ctx: dict) -> None:
     await connect_db()
     logger.info("arq tool started")
@@ -658,6 +751,12 @@ class ToolSettings:
         run_accounts_payable_job,
         run_cash_flow_forecast_job,
         run_tax_compliance_job,
+        run_financial_reporting_job,
+        run_payment_run_job,
+        run_budgeting_job,
+        run_financial_reporting_monthly,
+        run_payment_run_weekly,
+        run_budget_check_weekly,
         sync_xero_connection,
         sync_freshbooks_connection,
         sync_stripe_connection,
@@ -680,6 +779,9 @@ class ToolSettings:
     ]
     cron_jobs = [
         cron(run_revenue_recognition_monthly, day=1, hour=0, minute=0),
+        cron(run_financial_reporting_monthly, day=1, hour=1, minute=0),
+        cron(run_payment_run_weekly, weekday=0, hour=7, minute=0),
+        cron(run_budget_check_weekly, weekday=0, hour=7, minute=30),
     ]
     on_startup = startup
     on_shutdown = shutdown
