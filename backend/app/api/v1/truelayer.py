@@ -87,7 +87,8 @@ async def truelayer_callback(
     )
 
     background_tasks.add_task(sync_truelayer_connection, {}, integration.id, tenant_id)
-    return connected_page("TrueLayer", f"{frontend_integrations}?connected=truelayer")
+    display_name = institution_name or "TrueLayer"
+    return connected_page(display_name, f"{frontend_integrations}?connected=truelayer")
 
 
 @router.get("/integrations/truelayer/status")
@@ -239,13 +240,14 @@ async def list_truelayer_connections(
 
     integrations = await db.integration.find_many(
         where=where,
-        include={"bank_accounts": True},
         order={"connected_at": "desc"},
     )
 
     connections = []
     for intg in integrations:
-        accounts = intg.bank_accounts or []
+        accounts = await db.bankaccount.find_many(
+            where={"integration_id": intg.id},
+        )
         account_ids = [a.id for a in accounts]
         recent_txns = []
         if account_ids:

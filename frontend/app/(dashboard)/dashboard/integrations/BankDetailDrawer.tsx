@@ -214,8 +214,12 @@ export function BankDetailDrawer({ bank, onClose, onConnect, onDisconnect, onRes
       if (res.ok) {
         const json = await res.json()
         setConnections(json.data?.connections ?? [])
+      } else {
+        console.error('[BankDetailDrawer] connections fetch failed', res.status, await res.text().catch(() => ''))
       }
-    } catch { /* silent */ } finally { setLoading(false) }
+    } catch (err) {
+      console.error('[BankDetailDrawer] connections fetch error', err)
+    } finally { setLoading(false) }
   }, [getToken]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
