@@ -120,6 +120,19 @@ async def sync_truelayer_connection(_ctx: dict, integration_id: str, tenant_id: 
         accounts = await tl.get_accounts(access_token)
         accounts_synced = len(accounts)
 
+        # Extract institution name from first account's provider field if not already stored
+        if accounts and not integration.institution_name:
+            first_account_provider = accounts[0].get("provider") or {}
+            name_from_account = (
+                first_account_provider.get("display_name")
+                or first_account_provider.get("provider_id")
+            )
+            if name_from_account:
+                await db.integration.update(
+                    where={"id": integration_id},
+                    data={"institution_name": name_from_account},
+                )
+
         from_date = (datetime.now(UTC) - timedelta(days=TRANSACTION_LOOKBACK_DAYS)).strftime("%Y-%m-%d")
         to_date = datetime.now(UTC).strftime("%Y-%m-%d")
 
