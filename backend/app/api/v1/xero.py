@@ -6,17 +6,19 @@ import secrets
 from datetime import datetime, UTC
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, status
+from fastapi.responses import RedirectResponse
 from pydantic import BaseModel
 from prisma import Prisma
 
+from app.core.config import get_settings
 from app.core.db import get_db_dep
 from app.core.logging import get_logger
 from app.core.responses import standard_response
 from app.core.security import RequireOrgAuth
 from app.integrations.encryption import encrypt_credentials, decrypt_credentials
 from app.integrations.xero import client as xero
-from app.integrations.xero.sync import enqueue_xero_sync
+from app.integrations.xero.sync import sync_xero_connection
 
 logger = get_logger(__name__)
 router = APIRouter(tags=["xero"])
@@ -44,66 +46,55 @@ async def xero_connect(
 
 @router.get("/integrations/xero/callback")
 async def xero_callback(
+    background_tasks: BackgroundTasks,
     code: str = Query(...),
     state: str = Query(...),
     db: Prisma = Depends(get_db_dep),
 ):
     """
-    OAuth callback from Xero.
-    1. Validates state, extracts tenant_id.
-    2. Exchanges code + PKCE verifier for tokens.
-    3. Retrieves connected org list from Xero.
-    4. Single org → store credentials, status=syncing, enqueue sync.
-       Multi-org → store pending_orgs, status=connecting, return needs_org_selection=True.
-    All steps are required — partial completion is a failure.
+    OAuth callback from Xero. Browser redirect — returns RedirectResponse to frontend.
+    Single org → status=syncing, background sync, redirect ?connected=xero.
+    Multi-org → status=connecting, redirect ?xero_select={id} for org picker.
     """
+    settings = get_settings()
+    frontend_integrations = f"{settings.frontend_url}/dashboard/integrations"
+
     parts = state.split(":", 1)
     if len(parts) != 2:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid OAuth state")
+        return RedirectResponse(url=f"{frontend_integrations}?error=invalid_state")
 
     tenant_id = parts[0]
 
     tenant = await db.tenant.find_unique(where={"id": tenant_id})
     if not tenant:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Tenant not found")
+        return RedirectResponse(url=f"{frontend_integrations}?error=tenant_not_found")
 
-    # Exchange code for tokens (PKCE verifier retrieved internally by exchange_code)
     try:
         encrypted_creds_str = await xero.exchange_code(code=code, state=state, tenant_id=tenant_id)
-    except ValueError as exc:
-        logger.error("xero_callback_pkce_error: %s", type(exc).__name__)
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="PKCE validation failed")
     except Exception as exc:
         logger.error("xero_token_exchange_failed: %s", type(exc).__name__)
-        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail="Xero token exchange failed")
+        return RedirectResponse(url=f"{frontend_integrations}?error=xero_auth_failed")
 
-    # Decrypt to read access_token for connections call, then re-encrypt for storage
     try:
         creds = decrypt_credentials(encrypted_creds_str, tenant_id)
     except ValueError as exc:
         logger.error("xero_callback_decrypt_failed: %s", type(exc).__name__)
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Credential handling error")
+        return RedirectResponse(url=f"{frontend_integrations}?error=xero_auth_failed")
 
-    # Fetch connected orgs from Xero
     try:
         connections = await xero.get_connections(creds["access_token"])
     except Exception as exc:
         logger.error("xero_get_connections_failed: %s", type(exc).__name__)
-        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail="Failed to retrieve Xero organisations")
+        return RedirectResponse(url=f"{frontend_integrations}?error=xero_auth_failed")
 
     if not connections:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="No Xero organisations found — ensure you have connected at least one organisation",
-        )
+        return RedirectResponse(url=f"{frontend_integrations}?error=no_xero_orgs")
 
-    # Upsert integration record
     existing = await db.integration.find_first(
         where={"tenant_id": tenant_id, "type": "xero"}
     )
 
     if len(connections) == 1:
-        # Single org — store xero_tenant_id, begin sync immediately
         org = connections[0]
         final_creds = {
             **creds,
@@ -133,22 +124,10 @@ async def xero_callback(
                 }
             )
 
-        try:
-            await enqueue_xero_sync(integration_id=integration.id, tenant_id=tenant_id)
-        except Exception as exc:
-            logger.warning("xero_enqueue_sync_failed: %s", type(exc).__name__)
-
-        return standard_response(
-            data={
-                "status": "syncing",
-                "integration_id": integration.id,
-                "xero_tenant_id": org["tenantId"],
-                "xero_tenant_name": org.get("tenantName", ""),
-            }
-        )
+        background_tasks.add_task(sync_xero_connection, {}, integration.id, tenant_id)
+        return RedirectResponse(url=f"{frontend_integrations}?connected=xero")
 
     else:
-        # Multiple orgs — store pending_orgs, let user select
         pending_creds = {
             **creds,
             "pending_orgs": [
@@ -181,29 +160,48 @@ async def xero_callback(
                 }
             )
 
-        orgs_public = [
-            {"tenantId": c["tenantId"], "tenantName": c.get("tenantName", ""), "tenantType": c.get("tenantType", "")}
-            for c in connections
-        ]
+        return RedirectResponse(url=f"{frontend_integrations}?xero_select={integration.id}")
 
-        return standard_response(
-            data={
-                "needs_org_selection": True,
-                "orgs": orgs_public,
-                "pending_integration_id": integration.id,
-            }
-        )
+
+@router.get("/integrations/xero/pending-orgs/{integration_id}")
+async def xero_pending_orgs(
+    integration_id: str,
+    current_user: RequireOrgAuth,
+    db: Annotated[Prisma, Depends(get_db_dep)],
+):
+    """Returns pending orgs for a multi-org Xero connection awaiting org selection."""
+    tenant_id = current_user.tenant_id
+
+    integration = await db.integration.find_first(
+        where={"id": integration_id, "tenant_id": tenant_id, "type": "xero", "status": "connecting"}
+    )
+    if not integration:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No pending Xero connection found")
+
+    try:
+        creds = decrypt_credentials(integration.encrypted_credentials, tenant_id)
+    except ValueError:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Credential error")
+
+    pending_orgs = creds.get("pending_orgs", [])
+    return standard_response(data={
+        "orgs": [
+            {"xero_tenant_id": org["tenantId"], "tenantName": org.get("tenantName", "")}
+            for org in pending_orgs
+        ]
+    })
 
 
 @router.post("/integrations/xero/select-tenant")
 async def xero_select_tenant(
     body: SelectTenantRequest,
+    background_tasks: BackgroundTasks,
     current_user: RequireOrgAuth,
     db: Annotated[Prisma, Depends(get_db_dep)],
 ):
     """
     After multi-org callback, user selects which Xero org to connect.
-    Validates integration belongs to this tenant, updates with selected org, enqueues sync.
+    Validates integration belongs to this tenant, updates with selected org, starts background sync.
     """
     tenant_id = current_user.tenant_id
 
@@ -251,10 +249,7 @@ async def xero_select_tenant(
         },
     )
 
-    try:
-        await enqueue_xero_sync(integration_id=integration.id, tenant_id=tenant_id)
-    except Exception as exc:
-        logger.warning("xero_select_tenant_enqueue_failed: %s", type(exc).__name__)
+    background_tasks.add_task(sync_xero_connection, {}, integration.id, tenant_id)
 
     return standard_response(
         data={

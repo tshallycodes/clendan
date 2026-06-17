@@ -2,6 +2,7 @@
 
 import { motion } from 'framer-motion'
 import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 import type { Components } from 'react-markdown'
 import type { ClenMessage as ClenMessageType } from './useClen'
 
@@ -158,7 +159,7 @@ export function ClenMessage({ message }: Props) {
         )}
         {message.content && (
           <div className="min-w-0">
-            <ReactMarkdown components={mdComponents}>
+            <ReactMarkdown components={mdComponents} remarkPlugins={[remarkGfm]}>
               {message.content}
             </ReactMarkdown>
           </div>
