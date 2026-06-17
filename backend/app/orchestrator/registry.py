@@ -127,6 +127,9 @@ WORKER_REGISTRY: dict[ToolType, type[BaseTool]] = {
     ToolType.RISK_COMPLIANCE: RiskComplianceToolStub,
     ToolType.TREASURY_CASH: TreasuryCashToolStub,
     ToolType.TAX_COMPLIANCE: TaxComplianceTool,
+    ToolType.FINANCIAL_REPORTING: FinancialReportingTool,
+    ToolType.PAYMENT_RUN: PaymentRunTool,
+    ToolType.BUDGETING: BudgetingTool,
 }
 
 

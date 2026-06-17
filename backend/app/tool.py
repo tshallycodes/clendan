@@ -52,6 +52,9 @@ from app.tools.accounts_receivable import run_accounts_receivable_job
 from app.tools.accounts_payable import run_accounts_payable_job
 from app.tools.cash_flow_forecast import run_cash_flow_forecast_job
 from app.tools.tax_compliance import run_tax_compliance_job
+from app.tools.financial_reporting import run_financial_reporting_job
+from app.tools.payment_run import run_payment_run_job
+from app.tools.budgeting import run_budgeting_job
 
 logger = get_logger(__name__)
 

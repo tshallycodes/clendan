@@ -113,12 +113,16 @@ async def _generate(
     client = anthropic.AsyncAnthropic(api_key=settings.anthropic_api_key)
 
     try:
-        system = await build_system_prompt(mode, tenant_id, db)
+        system_text = await build_system_prompt(mode, tenant_id, db)
     except Exception as exc:
         logger.error("clen_system_prompt_failed error=%s", type(exc).__name__)
         yield f"data: {json.dumps({'type': 'error', 'content': 'Clen failed to initialise — please try again'})}\n\n"
         yield "data: [DONE]\n\n"
         return
+
+    # Prompt caching: mark the system prompt for server-side caching.
+    # Claude won't re-process these tokens on follow-up messages in the same session.
+    system = [{"type": "text", "text": system_text, "cache_control": {"type": "ephemeral"}}]
 
     tools = ACCOUNT_TOOLS if mode == "account" else []
 
