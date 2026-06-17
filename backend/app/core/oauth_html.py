@@ -79,12 +79,6 @@ def connected_page(integration_name: str, redirect_url: str) -> HTMLResponse:
       letter-spacing: 0.02em;
     }}
     .btn:hover {{ background: #00a844; }}
-    .timer {{
-      font-size: 11px;
-      color: #444444;
-      margin-top: 14px;
-      text-align: center;
-    }}
     .wordmark {{
       font-size: 10px;
       color: #2c2c2c;
@@ -107,16 +101,8 @@ def connected_page(integration_name: str, redirect_url: str) -> HTMLResponse:
       Data sync is running in the background.
     </p>
     <a class="btn" href="{redirect_url}">Go to Integrations</a>
-    <p class="timer">Redirecting in <span id="n">3</span>s&hellip;</p>
     <p class="wordmark">Clendan</p>
   </div>
-  <script>
-    var c = 3, el = document.getElementById('n');
-    var t = setInterval(function () {{
-      el.textContent = --c;
-      if (c <= 0) {{ clearInterval(t); location.href = '{redirect_url}'; }}
-    }}, 1000);
-  </script>
 </body>
 </html>"""
     return HTMLResponse(content=html)
