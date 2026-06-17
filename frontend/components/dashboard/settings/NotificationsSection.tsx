@@ -14,13 +14,32 @@ const ROWS: ToggleRow[] = [
   { id: 'weekly_summary', label: 'Weekly execution summary', defaultOn: true },
 ]
 
+const STORAGE_KEY = 'clendan:notifications'
+
+function loadFromStorage(): Record<string, boolean> {
+  const defaults = Object.fromEntries(ROWS.map((r) => [r.id, r.defaultOn]))
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY)
+    if (raw) return { ...defaults, ...JSON.parse(raw) }
+  } catch {
+    // SSR or malformed JSON — fall through to defaults
+  }
+  return defaults
+}
+
 export function NotificationsSection() {
-  const [values, setValues] = useState<Record<string, boolean>>(
-    Object.fromEntries(ROWS.map((r) => [r.id, r.defaultOn]))
-  )
+  const [values, setValues] = useState<Record<string, boolean>>(loadFromStorage)
 
   function toggle(id: string) {
-    setValues((prev) => ({ ...prev, [id]: !prev[id] }))
+    setValues((prev) => {
+      const next = { ...prev, [id]: !prev[id] }
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(next))
+      } catch {
+        // storage unavailable — state still updated in memory
+      }
+      return next
+    })
   }
 
   return (
@@ -48,6 +67,7 @@ export function NotificationsSection() {
           </button>
         </div>
       ))}
+      <p className="text-[10px] font-mono text-brand-muted pt-2">Preferences saved in this browser.</p>
     </div>
   )
 }

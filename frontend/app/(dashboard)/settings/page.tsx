@@ -6,6 +6,10 @@ import { DangerZone } from '@/components/dashboard/settings/DangerZone'
 import { IntegrationsSection } from '@/components/dashboard/settings/IntegrationsSection'
 import { TeamSection } from '@/components/dashboard/settings/TeamSection'
 import { InviteLinksSection } from '@/components/dashboard/settings/team/InviteLinksSection'
+import { PolicySection } from '@/components/dashboard/settings/PolicySection'
+import { ApiKeysSection } from '@/components/dashboard/settings/ApiKeysSection'
+import { WebhooksSection } from '@/components/dashboard/settings/WebhooksSection'
+import { BillingSection } from '@/components/dashboard/settings/BillingSection'
 import { AnimatedPage, AnimatedSection } from '@/components/dashboard/AnimatedPage'
 
 interface TenantData {
@@ -117,11 +121,52 @@ export default async function SettingsPage() {
         </section>
       </AnimatedSection>
 
+      {/* Policy & Approvals */}
+      <AnimatedSection>
+        <section className="space-y-4">
+          <div className="border-b border-brand-border pb-2 flex items-baseline justify-between">
+            <h2 className="text-[10px] font-mono uppercase tracking-widest text-brand-muted">Policy &amp; Approvals</h2>
+            <p className="text-[10px] font-mono text-brand-muted">Autonomy level and thresholds per tool</p>
+          </div>
+          <PolicySection />
+        </section>
+      </AnimatedSection>
+
+      {/* API Keys */}
+      <AnimatedSection>
+        <section className="space-y-4">
+          <div className="border-b border-brand-border pb-2 flex items-baseline justify-between">
+            <h2 className="text-[10px] font-mono uppercase tracking-widest text-brand-muted">API Keys</h2>
+            <p className="text-[10px] font-mono text-brand-muted">For external systems connecting to Clendan</p>
+          </div>
+          <ApiKeysSection />
+        </section>
+      </AnimatedSection>
+
+      {/* Webhooks */}
+      <AnimatedSection>
+        <section className="space-y-4">
+          <div className="border-b border-brand-border pb-2 flex items-baseline justify-between">
+            <h2 className="text-[10px] font-mono uppercase tracking-widest text-brand-muted">Webhooks</h2>
+            <p className="text-[10px] font-mono text-brand-muted">Receive real-time events from your tools</p>
+          </div>
+          <WebhooksSection />
+        </section>
+      </AnimatedSection>
+
       {/* Notifications */}
       <AnimatedSection>
         <section className="space-y-4">
           <h2 className="text-[10px] font-mono uppercase tracking-widest text-brand-muted border-b border-brand-border pb-2">Notifications</h2>
           <NotificationsSection />
+        </section>
+      </AnimatedSection>
+
+      {/* Billing */}
+      <AnimatedSection>
+        <section className="space-y-4">
+          <h2 className="text-[10px] font-mono uppercase tracking-widest text-brand-muted border-b border-brand-border pb-2">Billing</h2>
+          <BillingSection />
         </section>
       </AnimatedSection>
 
