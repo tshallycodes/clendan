@@ -206,8 +206,8 @@ async def sync_truelayer_connection(_ctx: dict, integration_id: str, tenant_id: 
                         continue
 
                     txn_currency = txn.get("currency", balance_currency)
-                    # TrueLayer: negative = debit (money out), positive = credit (money in)
-                    amount_minor = round(abs(float(raw_amount)) * 100)
+                    # Negate: TrueLayer positive = credit; storage convention is positive = expense
+                    amount_minor = round(-float(raw_amount) * 100)
 
                     try:
                         date_parsed = datetime.fromisoformat(txn_date.replace("Z", "+00:00"))

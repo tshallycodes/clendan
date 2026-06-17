@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from prisma import Prisma
 from pydantic import BaseModel
 
-from app.core.categories import ALLOWED_CATEGORIES
+from app.core.categories import ALLOWED_CATEGORIES, INCOME_CATEGORIES, EXPENSE_CATEGORIES
 from app.core.db import get_db_dep
 from app.core.logging import get_logger
 from app.core.responses import standard_response

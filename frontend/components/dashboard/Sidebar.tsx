@@ -25,7 +25,7 @@ export function Sidebar() {
   const { signOut } = useClerk()
 
   return (
-    <aside className="hidden lg:flex w-56 shrink-0 bg-brand-surface border-r border-brand-border flex-col h-screen sticky top-0">
+    <aside className="hidden lg:flex w-56 shrink-0 bg-brand-surface border border-brand-border rounded-2xl shadow-lg flex-col sticky top-3 h-[calc(100vh-24px)] m-3 overflow-hidden">
       <div className="px-4 py-4 border-b border-brand-border">
         <Logo size="sm" />
       </div>
