@@ -160,18 +160,22 @@ async def list_mono_accounts(
 async def list_mono_transactions(
     current_user: RequireOrgAuth,
     db: Annotated[Prisma, Depends(get_db_dep)],
+    status_filter: str | None = Query(None, alias="status"),
     limit: int = Query(50, le=200),
     offset: int = Query(0, ge=0),
 ):
     """Lists Mono-sourced transactions for the tenant."""
     tenant_id = current_user.tenant_id
-    where = {"tenant_id": tenant_id, "source": "mono"}
+    where: dict = {"tenant_id": tenant_id, "source": "mono"}
+    if status_filter:
+        where["status"] = status_filter
 
     transactions = await db.banktransaction.find_many(
         where=where,
         order={"date": "desc"},
         take=limit,
         skip=offset,
+        include={"account": True},
     )
     total = await db.banktransaction.count(where=where)
 
@@ -180,13 +184,19 @@ async def list_mono_transactions(
             "transactions": [
                 {
                     "id": t.id,
+                    "source": t.source,
                     "amount_minor": t.amount_minor,
                     "currency": t.currency,
+                    "merchant_name": t.merchant_name,
                     "description": t.description,
                     "date": t.date.isoformat(),
-                    "category": t.category,
                     "ai_category": t.ai_category,
+                    "plaid_category": t.category,
                     "status": t.status,
+                    "matched_invoice_id": t.matched_invoice_id,
+                    "account_id": t.account_id,
+                    "account_name": t.account.name if t.account else None,
+                    "account_subtype": t.account.subtype if t.account else None,
                 }
                 for t in transactions
             ],
@@ -272,6 +282,7 @@ async def list_mono_connections(
             )
         connections.append({
             "integration_id": intg.id,
+            "institution_id": intg.institution_id,
             "institution_name": intg.institution_name,
             "status": intg.status,
             "connected_at": intg.connected_at.isoformat() if intg.connected_at else None,
@@ -290,6 +301,7 @@ async def list_mono_connections(
             "recent_transactions": [
                 {
                     "id": t.id,
+                    "merchant_name": t.merchant_name,
                     "description": t.description,
                     "amount_minor": t.amount_minor,
                     "currency": t.currency,

@@ -162,18 +162,22 @@ async def list_truelayer_accounts(
 async def list_truelayer_transactions(
     current_user: RequireOrgAuth,
     db: Annotated[Prisma, Depends(get_db_dep)],
+    status_filter: str | None = Query(None, alias="status"),
     limit: int = Query(50, le=200),
     offset: int = Query(0, ge=0),
 ):
     """Lists TrueLayer-sourced transactions for the tenant."""
     tenant_id = current_user.tenant_id
-    where = {"tenant_id": tenant_id, "source": "truelayer"}
+    where: dict = {"tenant_id": tenant_id, "source": "truelayer"}
+    if status_filter:
+        where["status"] = status_filter
 
     transactions = await db.banktransaction.find_many(
         where=where,
         order={"date": "desc"},
         take=limit,
         skip=offset,
+        include={"account": True},
     )
     total = await db.banktransaction.count(where=where)
 
@@ -182,14 +186,19 @@ async def list_truelayer_transactions(
             "transactions": [
                 {
                     "id": t.id,
+                    "source": t.source,
                     "amount_minor": t.amount_minor,
                     "currency": t.currency,
                     "merchant_name": t.merchant_name,
                     "description": t.description,
                     "date": t.date.isoformat(),
                     "ai_category": t.ai_category,
-                    "category": t.category,
+                    "plaid_category": t.category,
                     "status": t.status,
+                    "matched_invoice_id": t.matched_invoice_id,
+                    "account_id": t.account_id,
+                    "account_name": t.account.name if t.account else None,
+                    "account_subtype": t.account.subtype if t.account else None,
                 }
                 for t in transactions
             ],
@@ -269,14 +278,13 @@ async def list_truelayer_connections(
 
     integrations = await db.integration.find_many(
         where=where,
+        include={"bank_accounts": True},
         order={"connected_at": "desc"},
     )
 
     connections = []
     for intg in integrations:
-        accounts = await db.bankaccount.find_many(
-            where={"integration_id": intg.id},
-        )
+        accounts = intg.bank_accounts or []
         account_ids = [a.id for a in accounts]
         recent_txns = []
         if account_ids:

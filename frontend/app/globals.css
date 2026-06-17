@@ -2,14 +2,14 @@
 
 /* ─── Light mode (default) ─────────────────────────────────────────────── */
 :root {
-  --brand-bg:             #f5f5f5;
+  --brand-bg:             #e9ecef;
   --brand-surface:        #ffffff;
-  --brand-elevated:       #f0f0f0;
-  --brand-border:         #e0e0e0;
-  --brand-border-subtle:  #ebebeb;
-  --brand-text:           #111111;
-  --brand-secondary:      #444444;
-  --brand-muted:          #888888;
+  --brand-elevated:       #f3f4f6;
+  --brand-border:         #ced4da;
+  --brand-border-subtle:  #dee2e6;
+  --brand-text:           #0d1117;
+  --brand-secondary:      #3d4754;
+  --brand-muted:          #6e7a8a;
 }
 
 /* ─── Dark mode ─────────────────────────────────────────────────────────── */
