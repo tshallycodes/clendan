@@ -11,6 +11,9 @@ from app.tools.fraud_detection import FraudDetectionTool
 from app.tools.reconciliation import ReconciliationTool
 from app.tools.revenue_recognition import RevenueRecognitionTool
 from app.tools.tax_compliance import TaxComplianceTool
+from app.tools.financial_reporting import FinancialReportingTool
+from app.tools.payment_run import PaymentRunTool
+from app.tools.budgeting import BudgetingTool
 from app.tools.treasury import TreasuryTool
 
 _QUEUED = ToolOutput(

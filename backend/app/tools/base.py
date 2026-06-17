@@ -29,6 +29,9 @@ class ToolType(str, Enum):
     RISK_COMPLIANCE = "risk_compliance"
     TREASURY_CASH = "treasury_cash"
     TAX_COMPLIANCE = "tax_compliance"
+    FINANCIAL_REPORTING = "financial_reporting"
+    PAYMENT_RUN = "payment_run"
+    BUDGETING = "budgeting"
 
 
 class ToolOutput(BaseModel):

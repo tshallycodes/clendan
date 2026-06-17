@@ -43,6 +43,8 @@ model Tenant {
   accounting_accounts     AccountingAccount[]
   accounting_credit_notes AccountingCreditNote[]
   accounting_tax_rates    AccountingTaxRate[]
+  payment_runs            PaymentRun[]
+  budgets                 Budget[]
 }
 
 model User {
@@ -573,4 +575,58 @@ model ReconciliationRun {
 
   @@index([tenant_id])
   @@index([tenant_id, created_at])
+}
+
+model PaymentRun {
+  id                 String    @id @default(cuid())
+  tenant_id          String
+  execution_id       String?
+  status             String    @default("scheduled")
+  scheduled_for      DateTime
+  processed_at       DateTime?
+  bill_count         Int       @default(0)
+  total_amount_cents Int       @default(0)
+  currency           String    @default("GBP")
+  bill_ids           Json
+  result_json        Json?
+  created_at         DateTime  @default(now())
+
+  tenant Tenant @relation(fields: [tenant_id], references: [id])
+
+  @@index([tenant_id])
+  @@index([tenant_id, scheduled_for])
+  @@index([tenant_id, status])
+}
+
+model Budget {
+  id           String       @id @default(cuid())
+  tenant_id    String
+  name         String
+  period_start DateTime
+  period_end   DateTime
+  status       String       @default("active")
+  created_at   DateTime     @default(now())
+  updated_at   DateTime     @updatedAt
+
+  tenant Tenant     @relation(fields: [tenant_id], references: [id])
+  lines  BudgetLine[]
+
+  @@index([tenant_id])
+  @@index([tenant_id, period_start])
+  @@index([tenant_id, status])
+}
+
+model BudgetLine {
+  id           String   @id @default(cuid())
+  budget_id    String
+  department   String?
+  category     String
+  amount_cents Int
+  currency     String   @default("GBP")
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+
+  budget Budget @relation(fields: [budget_id], references: [id], onDelete: Cascade)
+
+  @@index([budget_id])
 }

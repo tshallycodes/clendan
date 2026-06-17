@@ -59,8 +59,8 @@ function BankCard({ bank, onViewDetail }: { bank: BankDef; onViewDetail: (b: Ban
               unoptimized
               src={`https://www.google.com/s2/favicons?sz=128&domain=${bank.domain}`}
               alt={bank.name}
-              width={40}
-              height={40}
+              width={56}
+              height={56}
               className="object-contain"
               onError={() => setError(true)}
             />

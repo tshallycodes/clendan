@@ -266,7 +266,7 @@ export function BankDetailDrawer({ bank, onClose, onConnect, onDisconnect, onRes
                     <Image
                       unoptimized
                       src={`https://www.google.com/s2/favicons?sz=64&domain=${bank.domain}`}
-                      alt={bank.name} width={24} height={24} className="object-contain"
+                      alt={bank.name} width={30} height={30} className="object-contain"
                       onError={() => setLogoError(true)}
                     />
                   )}
