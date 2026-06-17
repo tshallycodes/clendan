@@ -96,9 +96,10 @@ async def sync_truelayer_connection(_ctx: dict, integration_id: str, tenant_id: 
     # Fetch provider info and store institution_name if not already set
     try:
         provider_info = await tl.get_provider_info(access_token)
+        provider = provider_info.get("provider") or {}
         institution_name = (
-            provider_info.get("full_name")
-            or provider_info.get("display_name")
+            provider.get("display_name")
+            or provider.get("provider_id")
             or provider_info.get("provider_id")
         )
         if institution_name:
