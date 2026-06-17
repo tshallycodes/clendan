@@ -122,7 +122,7 @@ function ExecutionDrawer({ execution, onClose, onAction, loadingState }: DrawerP
   return (
     <>
       <div
-        className="fixed inset-0 bg-black/50 z-40"
+        className="fixed inset-0 z-40"
         onClick={onClose}
       />
       <div className="fixed right-0 top-0 h-screen w-96 bg-brand-surface border-l border-brand-border p-6 z-50 overflow-y-auto">

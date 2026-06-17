@@ -62,7 +62,7 @@ export function ConfigDrawer({ tool, toolType, onClose, onSaved }: Props) {
 
   return (
     <div className="fixed inset-0 z-40">
-      <div className="absolute inset-0 bg-[rgba(0,0,0,0.5)]" onClick={onClose} />
+      <div className="absolute inset-0" onClick={onClose} />
       <div className="absolute right-0 top-0 h-screen w-96 bg-brand-surface border-l border-brand-border p-6 overflow-y-auto">
         <div className="flex items-center justify-between mb-6">
           <div>

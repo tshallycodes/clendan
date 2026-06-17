@@ -80,7 +80,7 @@ export function RunDrawer({ tool, onClose, onQueued }: RunDrawerProps) {
   return (
     <AnimatePresence>
       <motion.div
-        className="fixed inset-0 bg-[rgba(0,0,0,0.7)] z-40 flex items-end sm:items-center justify-center p-4"
+        className="fixed inset-0 z-40 flex items-end sm:items-center justify-center p-4"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
