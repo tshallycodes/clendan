@@ -151,8 +151,8 @@ export function ReconciliationClient() {
       const toolsRes = await fetch(`${API}/v1/tools`, { headers: { Authorization: `Bearer ${token}` } })
       if (toolsRes.ok) {
         const toolsJson = await toolsRes.json()
-        const tools: { id: string; type: string }[] = toolsJson.data?.tools ?? toolsJson.data ?? []
-        const rec = tools.find((w: Tool) => w.type === 'reconciliation')
+        const tools: Tool[] = toolsJson.data?.tools ?? toolsJson.data ?? []
+        const rec = tools.find((w) => w.type === 'reconciliation')
         if (rec) setDeployed(rec)
       }
       setRunsLoading(true)
