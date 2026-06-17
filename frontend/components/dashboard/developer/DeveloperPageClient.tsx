@@ -9,11 +9,6 @@ import { motion } from 'framer-motion'
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 const BASE_URL = 'https://api.clendan.com/v1'
 const DOCS_URL = 'https://clendan.mintlify.app'
-const QUICK_START = `curl -X POST https://api.clendan.com/v1/execute \\
-  -H "Authorization: Bearer ck_live_..." \\
-  -H "Idempotency-Key: $(uuidgen)" \\
-  -H "Content-Type: application/json" \\
-  -d '{"tool": "invoice_processing", "payload": {}}'`
 
 const RESPONSE_SHAPE = `{
   "data": { ... },
@@ -21,6 +16,49 @@ const RESPONSE_SHAPE = `{
   "trace_id": "trc_01j...",
   "timestamp": "2026-01-15T10:30:00Z"
 }`
+
+type Lang = 'python' | 'javascript' | 'curl'
+
+const SNIPPETS: Record<Lang, string> = {
+  python: `import requests
+
+response = requests.post(
+    "https://api.clendan.com/v1/execute",
+    headers={
+        "Authorization": "ck_live_...",
+        "Idempotency-Key": "unique-key-here",
+    },
+    json={
+        "tool": "invoice_processing",
+        "payload": {}
+    }
+)
+print(response.json())`,
+
+  javascript: `const response = await fetch(
+  "https://api.clendan.com/v1/execute",
+  {
+    method: "POST",
+    headers: {
+      "Authorization": "ck_live_...",
+      "Idempotency-Key": crypto.randomUUID(),
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      tool: "invoice_processing",
+      payload: {},
+    }),
+  }
+);
+
+const data = await response.json();`,
+
+  curl: `curl -X POST https://api.clendan.com/v1/execute \\
+  -H "Authorization: ck_live_..." \\
+  -H "Idempotency-Key: $(uuidgen)" \\
+  -H "Content-Type: application/json" \\
+  -d '{"tool": "invoice_processing", "payload": {}}'`,
+}
 
 interface ApiKey {
   id: string; name: string; key_prefix: string; status: string
@@ -150,6 +188,7 @@ export function DeveloperPageClient() {
   const [newName, setNewName] = useState('')
   const [creating, setCreating] = useState(false)
   const [revealedKey, setRevealedKey] = useState<string | null>(null)
+  const [lang, setLang] = useState<Lang>('python')
 
   async function fetchKeys() {
     try {
@@ -213,7 +252,10 @@ export function DeveloperPageClient() {
         </div>
         <div className="bg-brand-surface border border-brand-border rounded-sm p-4 space-y-1">
           <p className="text-[10px] font-mono uppercase tracking-widest text-brand-muted">Authentication</p>
-          <code className="text-xs font-mono text-brand-text">Bearer ck_live_...</code>
+          <div className="flex items-center gap-1.5">
+            <code className="text-[10px] font-mono text-brand-muted">Authorization:</code>
+            <code className="text-xs font-mono text-brand-text">ck_live_...</code>
+          </div>
         </div>
         <div className="bg-brand-surface border border-brand-border rounded-sm p-4 space-y-1">
           <p className="text-[10px] font-mono uppercase tracking-widest text-brand-muted">Rate Limit</p>
@@ -259,9 +301,19 @@ export function DeveloperPageClient() {
           {/* Quick Start */}
           <motion.div variants={fadeUp} className="space-y-3">
             <p className="text-[10px] font-mono uppercase tracking-widest text-brand-muted">Quick Start</p>
-            <div className="flex items-start gap-3 bg-brand-bg border border-brand-border rounded-sm px-4 py-3">
-              <pre className="flex-1 font-mono text-xs text-brand-text whitespace-pre-wrap break-all leading-relaxed">{QUICK_START}</pre>
-              <CopyButton text={QUICK_START} />
+            <div className="bg-brand-bg border border-brand-border rounded-sm overflow-hidden">
+              <div className="flex items-center justify-between border-b border-brand-border px-3 py-1.5">
+                <div className="flex gap-1">
+                  {(['python', 'javascript', 'curl'] as Lang[]).map((l) => (
+                    <button key={l} type="button" onClick={() => setLang(l)}
+                      className={`px-2.5 py-1 text-[10px] font-mono rounded-sm transition-colors ${lang === l ? 'bg-brand-elevated text-brand-text' : 'text-brand-muted hover:text-brand-secondary'}`}>
+                      {l}
+                    </button>
+                  ))}
+                </div>
+                <CopyButton text={SNIPPETS[lang]} />
+              </div>
+              <pre className="px-4 py-3 font-mono text-xs text-brand-text whitespace-pre leading-relaxed overflow-x-auto">{SNIPPETS[lang]}</pre>
             </div>
           </motion.div>
 
