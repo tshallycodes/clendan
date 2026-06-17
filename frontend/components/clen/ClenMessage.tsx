@@ -1,90 +1,11 @@
 'use client'
 
-import { useState } from 'react'
 import { motion } from 'framer-motion'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import type { Components } from 'react-markdown'
-import { Light as SyntaxHighlighter } from 'react-syntax-highlighter'
-import python from 'react-syntax-highlighter/dist/esm/languages/hljs/python'
-import javascript from 'react-syntax-highlighter/dist/esm/languages/hljs/javascript'
-import typescript from 'react-syntax-highlighter/dist/esm/languages/hljs/typescript'
-import bash from 'react-syntax-highlighter/dist/esm/languages/hljs/bash'
-import json from 'react-syntax-highlighter/dist/esm/languages/hljs/json'
-import sql from 'react-syntax-highlighter/dist/esm/languages/hljs/sql'
-import { Copy, Check } from 'lucide-react'
+import { CodeBlock } from '@/components/dashboard/api/CodeBlock'
 import type { ClenMessage as ClenMessageType } from './useClen'
-
-SyntaxHighlighter.registerLanguage('python', python)
-SyntaxHighlighter.registerLanguage('javascript', javascript)
-SyntaxHighlighter.registerLanguage('typescript', typescript)
-SyntaxHighlighter.registerLanguage('bash', bash)
-SyntaxHighlighter.registerLanguage('sh', bash)
-SyntaxHighlighter.registerLanguage('curl', bash)
-SyntaxHighlighter.registerLanguage('json', json)
-SyntaxHighlighter.registerLanguage('sql', sql)
-
-const HIGHLIGHT_STYLE: Record<string, React.CSSProperties> = {
-  'hljs':             { background: 'transparent', color: 'var(--brand-secondary)' },
-  'hljs-keyword':     { color: '#f5a623' },
-  'hljs-built_in':    { color: '#f5a623' },
-  'hljs-type':        { color: '#f5a623' },
-  'hljs-string':      { color: '#00C853' },
-  'hljs-comment':     { color: 'var(--brand-muted)', fontStyle: 'italic' },
-  'hljs-number':      { color: '#00a8cc' },
-  'hljs-literal':     { color: '#00a8cc' },
-  'hljs-title':       { color: '#00a8cc' },
-  'hljs-function':    { color: '#00a8cc' },
-  'hljs-attr':        { color: '#f5a623' },
-  'hljs-attribute':   { color: '#f5a623' },
-  'hljs-variable':    { color: 'var(--brand-text)' },
-  'hljs-params':      { color: 'var(--brand-secondary)' },
-  'hljs-punctuation': { color: 'var(--brand-muted)' },
-  'hljs-operator':    { color: 'var(--brand-muted)' },
-}
-
-function CodeBlock({ lang, children }: { lang: string; children: string }) {
-  const [copied, setCopied] = useState(false)
-
-  const handleCopy = () => {
-    navigator.clipboard.writeText(children)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
-  }
-
-  return (
-    <div className="my-2 first:mt-0 last:mb-0">
-      <div className="flex items-center justify-between bg-brand-elevated border border-brand-border border-b-0 rounded-t-sm px-3 py-1.5">
-        <span className="text-[10px] font-mono text-brand-muted uppercase tracking-wider">
-          {lang || 'code'}
-        </span>
-        <button
-          onClick={handleCopy}
-          className="text-brand-muted hover:text-brand-text transition-colors"
-          title="Copy"
-        >
-          {copied ? <Check size={11} className="text-brand-green" /> : <Copy size={11} />}
-        </button>
-      </div>
-      <SyntaxHighlighter
-        language={lang || 'text'}
-        style={HIGHLIGHT_STYLE}
-        customStyle={{
-          background: 'var(--brand-bg)',
-          border: '1px solid var(--brand-border)',
-          borderRadius: '0 0 8px 8px',
-          padding: '10px 12px',
-          fontSize: '11px',
-          margin: 0,
-          fontFamily: 'var(--font-ibm-plex-mono), "IBM Plex Mono", monospace',
-          lineHeight: '1.6',
-        }}
-      >
-        {children}
-      </SyntaxHighlighter>
-    </div>
-  )
-}
 
 interface Props {
   message: ClenMessageType
@@ -129,7 +50,11 @@ const mdComponents: Components = {
   code: ({ children, className }) => {
     const lang = className?.replace('language-', '') ?? ''
     if (className?.startsWith('language-')) {
-      return <CodeBlock lang={lang}>{String(children).replace(/\n$/, '')}</CodeBlock>
+      return (
+        <div className="my-2 first:mt-0 last:mb-0">
+          <CodeBlock lang={lang} code={String(children).replace(/\n$/, '')} />
+        </div>
+      )
     }
     return (
       <code className="bg-brand-elevated border border-brand-border-subtle rounded-sm px-1 py-0.5 text-[11px] font-mono text-[#00a8cc]">

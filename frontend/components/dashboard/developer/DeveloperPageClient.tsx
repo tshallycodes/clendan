@@ -5,6 +5,7 @@ import { useAuth } from '@clerk/nextjs'
 import { Copy, Check, ExternalLink, Plus, X, Zap, GitBranch, ShieldCheck } from 'lucide-react'
 import { useToast } from '@/components/Providers'
 import { motion } from 'framer-motion'
+import { CodeBlock } from '@/components/dashboard/api/CodeBlock'
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 const BASE_URL = 'https://api.clendan.com/v1'
@@ -301,20 +302,15 @@ export function DeveloperPageClient() {
           {/* Quick Start */}
           <motion.div variants={fadeUp} className="space-y-3">
             <p className="text-[10px] font-mono uppercase tracking-widest text-brand-muted">Quick Start</p>
-            <div className="bg-brand-bg border border-brand-border rounded-sm overflow-hidden">
-              <div className="flex items-center justify-between border-b border-brand-border px-3 py-1.5">
-                <div className="flex gap-1">
-                  {(['python', 'javascript', 'curl'] as Lang[]).map((l) => (
-                    <button key={l} type="button" onClick={() => setLang(l)}
-                      className={`px-2.5 py-1 text-[10px] font-mono rounded-sm transition-colors ${lang === l ? 'bg-brand-elevated text-brand-text' : 'text-brand-muted hover:text-brand-secondary'}`}>
-                      {l}
-                    </button>
-                  ))}
-                </div>
-                <CopyButton text={SNIPPETS[lang]} />
-              </div>
-              <pre className="px-4 py-3 font-mono text-xs text-brand-text whitespace-pre leading-relaxed overflow-x-auto">{SNIPPETS[lang]}</pre>
+            <div className="flex gap-1">
+              {(['python', 'javascript', 'curl'] as Lang[]).map((l) => (
+                <button key={l} type="button" onClick={() => setLang(l)}
+                  className={`px-2.5 py-1 text-[10px] font-mono rounded-sm transition-colors ${lang === l ? 'bg-brand-elevated border border-brand-border text-brand-text' : 'text-brand-muted hover:text-brand-secondary'}`}>
+                  {l}
+                </button>
+              ))}
             </div>
+            <CodeBlock code={SNIPPETS[lang]} lang={lang} />
           </motion.div>
 
         </div>
@@ -352,10 +348,7 @@ export function DeveloperPageClient() {
           {/* Response shape */}
           <motion.div variants={fadeUp} className="space-y-3">
             <p className="text-[10px] font-mono uppercase tracking-widest text-brand-muted">Standard Response Shape</p>
-            <div className="flex items-start gap-3 bg-brand-bg border border-brand-border rounded-sm px-4 py-3">
-              <pre className="flex-1 font-mono text-xs text-brand-text whitespace-pre leading-relaxed">{RESPONSE_SHAPE}</pre>
-              <CopyButton text={RESPONSE_SHAPE} />
-            </div>
+            <CodeBlock code={RESPONSE_SHAPE} lang="json" />
           </motion.div>
 
         </div>
