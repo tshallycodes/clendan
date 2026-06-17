@@ -96,7 +96,10 @@ _PROMPT_CACHE_TTL = 15 * 60  # 15 minutes
 
 
 def _build_docs_prompt() -> str:
-    return _DOCS_TEMPLATE.format(docs=_DOCS_CONTENT)
+    # Split on the literal placeholder to avoid .format() misinterpreting curly
+    # braces inside the docs content (JSON examples, bash snippets, etc.)
+    parts = _DOCS_TEMPLATE.split('{docs}')
+    return parts[0] + _DOCS_CONTENT + parts[1]
 
 
 async def build_system_prompt(
