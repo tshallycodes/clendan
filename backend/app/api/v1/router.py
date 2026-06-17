@@ -1,5 +1,6 @@
 ﻿from fastapi import APIRouter
 from app.api.v1 import dashboard, integrations, onboarding, plaid, tenants
+from app.api.v1.transactions import router as transactions_router
 from app.api.v1.events import router as events_router
 from app.api.v1.parse.invoice import router as invoice_parse_router
 from app.api.v1.parse.receipt import router as receipt_parse_router
@@ -96,4 +97,5 @@ v1_router.include_router(adyen_router)
 v1_router.include_router(wise_router)
 v1_router.include_router(mono_router)
 v1_router.include_router(mono_webhook_router)
+v1_router.include_router(transactions_router)
 v1_router.include_router(generic_router)  # must be last — uses {slug} path params

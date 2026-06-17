@@ -13,7 +13,7 @@ export default async function TransactionsPage() {
   try {
     const token = await getBackendToken()
     if (token) {
-      const data = await apiGet<TransactionsData>('/v1/integrations/plaid/transactions?limit=50', token)
+      const data = await apiGet<TransactionsData>('/v1/transactions?limit=50', token)
       transactions = data.transactions ?? []
       total = data.total ?? transactions.length
     }

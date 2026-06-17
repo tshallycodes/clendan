@@ -8,6 +8,7 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
 export interface Transaction {
   id: string
+  source: string
   amount_minor: number
   currency: string
   merchant_name: string | null
@@ -82,7 +83,7 @@ export function TransactionRow({ transaction: t, onCategoryUpdate }: Props) {
     try {
       const token = await getToken()
       if (!token) return
-      const res = await fetch(`${API_BASE}/v1/integrations/plaid/transactions/${t.id}/category`, {
+      const res = await fetch(`${API_BASE}/v1/transactions/${t.id}/category`, {
         method: 'PATCH',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ category }),
@@ -109,11 +110,9 @@ export function TransactionRow({ transaction: t, onCategoryUpdate }: Props) {
         <span className="text-xs font-mono text-brand-secondary block truncate">
           {t.account_name ?? '—'}
         </span>
-        {t.account_subtype && (
-          <span className="text-[10px] font-mono text-brand-muted uppercase tracking-wider">
-            {t.account_subtype}
-          </span>
-        )}
+        <span className="text-[9px] font-mono text-brand-muted uppercase tracking-wider">
+          {t.account_subtype ? `${t.account_subtype} · ` : ''}{t.source}
+        </span>
       </td>
 
       {/* Merchant */}

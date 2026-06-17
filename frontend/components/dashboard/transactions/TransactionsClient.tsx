@@ -100,7 +100,7 @@ export function TransactionsClient({ initialTransactions, total }: Props) {
       const token = await getToken()
       if (!token) return
       const res = await fetch(
-        `${API_BASE}/v1/integrations/plaid/transactions?limit=${PAGE_SIZE}&offset=${offset}`,
+        `${API_BASE}/v1/transactions?limit=${PAGE_SIZE}&offset=${offset}`,
         { headers: { Authorization: `Bearer ${token}` } },
       )
       if (!res.ok) return

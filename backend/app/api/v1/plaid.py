@@ -10,21 +10,12 @@ from app.core.db import get_db_dep
 from app.core.logging import get_logger
 from app.core.responses import standard_response
 from app.core.security import RequireOrgAuth
+from app.core.categories import ALLOWED_CATEGORIES
 from app.integrations.plaid import client as plaid
 from app.integrations.plaid.sync import sync_plaid_transactions
 
 logger = get_logger(__name__)
 router = APIRouter(tags=["plaid"])
-
-
-ALLOWED_CATEGORIES = frozenset({
-    # Income
-    "sales", "customer_payment", "refund_received", "other_income",
-    # Expenses
-    "advertising", "bank_fees", "consulting", "equipment", "insurance",
-    "legal", "meals", "office_supplies", "payroll", "rent", "software",
-    "tax", "travel", "utilities", "other",
-})
 
 
 class ExchangeTokenRequest(BaseModel):
