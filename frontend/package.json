@@ -21,6 +21,7 @@
     "react-dom": "19.2.4",
     "react-markdown": "^10.1.0",
     "react-plaid-link": "^4.1.1",
+    "react-syntax-highlighter": "^16.1.1",
     "remark-gfm": "^4.0.1",
     "simple-icons": "^16.23.0",
     "tailwind-merge": "^3.6.0"
@@ -32,6 +33,7 @@
     "@types/node": "20.19.41",
     "@types/react": "19.2.16",
     "@types/react-dom": "^19",
+    "@types/react-syntax-highlighter": "^15.5.13",
     "@vitejs/plugin-react": "^6.0.2",
     "eslint": "^9",
     "eslint-config-next": "16.2.7",
