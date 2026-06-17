@@ -1,12 +1,13 @@
 """
-One-off script: clear all TrueLayer transactions and trigger a full re-sync.
+One-off script: clear all TrueLayer transactions so the next sync re-fetches them
+with the correct sign convention (income negative, expense positive).
 
-Run on Railway console:
+Run from the backend directory:
+    cd backend
     python scripts/reset_truelayer_transactions.py
 
-This fixes the sign bug where abs() stored all amounts as positive (everything
-appeared as an expense). The sync code now negates TrueLayer amounts correctly,
-but existing rows need to be cleared so the dedup check doesn't skip them.
+After this script completes, go to the Integrations page and click Sync on your
+TrueLayer connection to re-fetch transactions with correct signs.
 """
 import asyncio
 from pathlib import Path
@@ -17,7 +18,6 @@ load_dotenv(Path(__file__).parent.parent / ".env")
 
 async def main():
     from prisma import Prisma
-    from app.integrations.truelayer.sync import enqueue_truelayer_sync
 
     db = Prisma()
     await db.connect()
@@ -32,27 +32,26 @@ async def main():
         await db.disconnect()
         return
 
+    total_cleared = 0
     for intg in integrations:
         account_ids = [a.id for a in (intg.bank_accounts or [])]
         txns_deleted = 0
         if account_ids:
-            result = await db.banktransaction.delete_many(
+            txns_deleted = await db.banktransaction.delete_many(
                 where={"account_id": {"in": account_ids}}
             )
-            txns_deleted = result.count
+            total_cleared += txns_deleted
 
+        # Reset to connected so the Sync button is available in the UI
         await db.integration.update(
             where={"id": intg.id},
-            data={"status": "syncing"},
+            data={"status": "connected"},
         )
-        await enqueue_truelayer_sync(intg.id, intg.tenant_id)
-        print(
-            f"Integration {intg.id} (tenant={intg.tenant_id}): "
-            f"cleared {txns_deleted} transactions, re-sync enqueued."
-        )
+        print(f"Integration {intg.id}: cleared {txns_deleted} transactions.")
 
     await db.disconnect()
-    print("Done. Check the transactions page in ~10 seconds after the worker finishes.")
+    print(f"\nDone. {total_cleared} transactions cleared.")
+    print("Now go to Integrations and click Sync on your TrueLayer connection.")
 
 
 asyncio.run(main())
