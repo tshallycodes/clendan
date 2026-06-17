@@ -133,14 +133,14 @@ export function IntegrationsClient() {
         nextStatuses[r.value.slug] = r.value.status
         nextSynced[r.value.slug] = r.value.last_synced_at
         if (r.value.slug === 'plaid') {
-          setConnectedBankId(r.value.institution_id)
-          setConnectedBankName(r.value.institution_name)
+          setConnectedBankId(r.value.institution_id ?? null)
+          setConnectedBankName(r.value.institution_name ?? null)
         }
         if (r.value.slug === 'truelayer') {
-          setConnectedTruelayerName(r.value.institution_name)
+          setConnectedTruelayerName(r.value.institution_name ?? null)
         }
         if (r.value.slug === 'mono') {
-          setConnectedMonoName(r.value.institution_name)
+          setConnectedMonoName(r.value.institution_name ?? null)
         }
       }
     }
