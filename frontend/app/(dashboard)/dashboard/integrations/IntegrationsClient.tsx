@@ -523,13 +523,6 @@ export function IntegrationsClient() {
                   handleConnectBank({ id: 'other', name: 'Other Bank', abbr: '+', color: '#1a1a1a', domain: '', provider: 'plaid', region: 'us' })
                 }
               }}
-              onDisconnectAll={async (region) => {
-                const slug = region === 'eu' ? 'truelayer' : region === 'africa' ? 'mono' : 'plaid'
-                await handleDisconnectDirect(slug)
-                if (slug === 'plaid') { setConnectedBankId(null); setConnectedBankName(null) }
-                if (slug === 'truelayer') setConnectedTruelayerName(null)
-                if (slug === 'mono') setConnectedMonoName(null)
-              }}
             />
           </section>
 

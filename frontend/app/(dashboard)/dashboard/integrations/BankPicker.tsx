@@ -17,7 +17,6 @@ interface BankPickerProps {
   connecting: boolean
   onViewDetail: (bank: BankDef) => void
   onConnect: (region: Region) => void
-  onDisconnectAll: (region: Region) => void
 }
 
 type Region = 'us' | 'eu' | 'africa'
@@ -80,10 +79,9 @@ export function BankPicker({
   plaidStatus, connectedInstitutionId, connectedBankName,
   truelayerStatus, connectedTruelayerName,
   monoStatus, connectedMonoName,
-  connecting, onViewDetail, onConnect, onDisconnectAll,
+  connecting, onViewDetail, onConnect,
 }: BankPickerProps) {
   const [region, setRegion] = useState<Region>('us')
-  const [disconnecting, setDisconnecting] = useState(false)
 
   const plaidConnected = plaidStatus === 'connected' || plaidStatus === 'syncing'
   const truelayerConnected = truelayerStatus === 'connected' || truelayerStatus === 'syncing'
@@ -132,10 +130,13 @@ export function BankPicker({
   const provider: BankDef['provider'] =
     region === 'eu' ? 'truelayer' : region === 'africa' ? 'mono' : 'plaid'
 
+  const fallbackAbbr =
+    region === 'eu' ? 'TL' : region === 'africa' ? 'MN' : 'US'
+
   const fallbackCard: BankDef = {
     id: `${provider}-generic`,
     name: fallbackName,
-    abbr: fallbackName.slice(0, 4).toUpperCase(),
+    abbr: fallbackAbbr,
     color: '#888888',
     domain: '',
     provider,
@@ -185,19 +186,6 @@ export function BankPicker({
             </button>
           </div>
 
-          {/* Stale generic connection — show a direct disconnect option */}
-          {connectedCards.length === 0 && (
-            <button
-              disabled={disconnecting}
-              onClick={async () => {
-                setDisconnecting(true)
-                try { await onDisconnectAll(region) } finally { setDisconnecting(false) }
-              }}
-              className="text-[10px] font-mono text-[#ff4d6d] hover:underline disabled:opacity-40"
-            >
-              {disconnecting ? 'Disconnecting...' : 'Disconnect stale connection'}
-            </button>
-          )}
         </div>
       ) : (
         /* Not connected — single connect button */
