@@ -7,8 +7,6 @@ import { IntegrationsSection } from '@/components/dashboard/settings/Integration
 import { TeamSection } from '@/components/dashboard/settings/TeamSection'
 import { InviteLinksSection } from '@/components/dashboard/settings/team/InviteLinksSection'
 import { PolicySection } from '@/components/dashboard/settings/PolicySection'
-import { ApiKeysSection } from '@/components/dashboard/settings/ApiKeysSection'
-import { WebhooksSection } from '@/components/dashboard/settings/WebhooksSection'
 import { BillingSection } from '@/components/dashboard/settings/BillingSection'
 import { AnimatedPage, AnimatedSection } from '@/components/dashboard/AnimatedPage'
 
@@ -162,28 +160,6 @@ export default async function SettingsPage() {
                 <p className="text-[10px] font-mono text-brand-muted">Autonomy per tool</p>
               </div>
               <PolicySection />
-            </section>
-          </AnimatedSection>
-
-          {/* API Keys */}
-          <AnimatedSection>
-            <section className="space-y-4">
-              <div className="border-b border-brand-border pb-2 flex items-baseline justify-between">
-                <h2 className="text-[10px] font-mono uppercase tracking-widest text-brand-muted">API Keys</h2>
-                <p className="text-[10px] font-mono text-brand-muted">External system access</p>
-              </div>
-              <ApiKeysSection />
-            </section>
-          </AnimatedSection>
-
-          {/* Webhooks */}
-          <AnimatedSection>
-            <section className="space-y-4">
-              <div className="border-b border-brand-border pb-2 flex items-baseline justify-between">
-                <h2 className="text-[10px] font-mono uppercase tracking-widest text-brand-muted">Webhooks</h2>
-                <p className="text-[10px] font-mono text-brand-muted">Real-time tool events</p>
-              </div>
-              <WebhooksSection />
             </section>
           </AnimatedSection>
 
