@@ -22,11 +22,14 @@ export interface Transaction {
   account_subtype: string | null
 }
 
-const CATEGORIES = [
+const INCOME_CATEGORIES = ['sales', 'customer_payment', 'refund_received', 'other_income']
+
+const EXPENSE_CATEGORIES = [
   'advertising', 'bank_fees', 'consulting', 'equipment', 'insurance',
   'legal', 'meals', 'office_supplies', 'payroll', 'rent', 'software',
   'tax', 'travel', 'utilities', 'other',
 ]
+
 
 const STATUS_STYLES: Record<string, string> = {
   matched:     'bg-[rgba(0,200,83,0.08)] text-[#00C853] border-[rgba(0,200,83,0.2)]',
@@ -157,8 +160,28 @@ export function TransactionRow({ transaction: t, onCategoryUpdate }: Props) {
         </div>
 
         {open && (
-          <div className="absolute left-4 top-full mt-1 z-30 w-48 bg-brand-elevated border border-brand-border rounded-sm shadow-lg overflow-hidden">
-            {CATEGORIES.map(cat => (
+          <div className="absolute left-4 top-full mt-1 z-30 w-52 bg-brand-elevated border border-brand-border rounded-sm shadow-lg overflow-hidden max-h-72 overflow-y-auto">
+            <p className="px-3 py-1.5 text-[9px] font-mono text-brand-muted uppercase tracking-widest border-b border-brand-border">
+              Income
+            </p>
+            {INCOME_CATEGORIES.map(cat => (
+              <button
+                key={cat}
+                onClick={() => selectCategory(cat)}
+                className={cn(
+                  'w-full text-left text-[10px] font-mono px-3 py-2 transition-colors',
+                  cat === activeCategory
+                    ? 'text-[#00C853] bg-brand-surface'
+                    : 'text-brand-secondary hover:text-brand-text hover:bg-brand-surface',
+                )}
+              >
+                {formatCategory(cat)}
+              </button>
+            ))}
+            <p className="px-3 py-1.5 text-[9px] font-mono text-brand-muted uppercase tracking-widest border-y border-brand-border">
+              Expenses
+            </p>
+            {EXPENSE_CATEGORIES.map(cat => (
               <button
                 key={cat}
                 onClick={() => selectCategory(cat)}
