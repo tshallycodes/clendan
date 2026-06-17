@@ -5,6 +5,8 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import RedirectResponse
+
+from app.core.oauth_html import connected_page
 from prisma import Prisma
 from pydantic import BaseModel
 
@@ -123,7 +125,7 @@ async def quickbooks_callback(
     except Exception as exc:
         logger.warning("quickbooks_initial_sync_enqueue_failed integration=%s error=%s", integration.id, type(exc).__name__)
 
-    return RedirectResponse(f"{_frontend_url}/dashboard/integrations?connected=quickbooks")
+    return connected_page("QuickBooks", f"{_frontend_url}/dashboard/integrations?connected=quickbooks")
 
 
 @router.get("/integrations/quickbooks/status")
@@ -294,7 +296,7 @@ async def xero_callback(
     except Exception as exc:
         logger.warning("xero_initial_sync_enqueue_failed integration=%s error=%s", integration.id, type(exc).__name__)
 
-    return RedirectResponse(f"{_frontend_url}/dashboard/integrations?connected=xero")
+    return connected_page("Xero", f"{_frontend_url}/dashboard/integrations?connected=xero")
 
 
 @router.get("/integrations/xero/status")

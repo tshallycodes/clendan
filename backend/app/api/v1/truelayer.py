@@ -4,6 +4,8 @@ from typing import Annotated
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, status
 from fastapi.responses import RedirectResponse
+
+from app.core.oauth_html import connected_page
 from prisma import Prisma
 
 from app.core.config import get_settings
@@ -85,7 +87,7 @@ async def truelayer_callback(
     )
 
     background_tasks.add_task(sync_truelayer_connection, {}, integration.id, tenant_id)
-    return RedirectResponse(url=f"{frontend_integrations}?connected=truelayer")
+    return connected_page("TrueLayer", f"{frontend_integrations}?connected=truelayer")
 
 
 @router.get("/integrations/truelayer/status")

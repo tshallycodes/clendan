@@ -8,7 +8,7 @@ from datetime import datetime, UTC
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from fastapi.responses import RedirectResponse
+from app.core.oauth_html import connected_page
 from prisma import Prisma
 
 from app.core.config import get_settings
@@ -117,10 +117,7 @@ async def freshbooks_callback(
         logger.warning("freshbooks_enqueue_sync_failed: %s", type(exc).__name__)
 
     frontend_url = get_settings().frontend_url.rstrip("/")
-    return RedirectResponse(
-        url=f"{frontend_url}/dashboard/integrations?connected=freshbooks",
-        status_code=status.HTTP_302_FOUND,
-    )
+    return connected_page("FreshBooks", f"{frontend_url}/dashboard/integrations?connected=freshbooks")
 
 
 @router.get("/integrations/freshbooks/status")

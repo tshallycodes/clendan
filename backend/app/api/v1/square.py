@@ -4,7 +4,7 @@ from datetime import datetime, UTC
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from fastapi.responses import RedirectResponse
+from app.core.oauth_html import connected_page
 from prisma import Prisma
 
 from app.core.config import get_settings
@@ -99,11 +99,8 @@ async def square_callback(
             type(exc).__name__,
         )
 
-    frontend_url = get_settings().frontend_url
-    return RedirectResponse(
-        url=f"{frontend_url}/dashboard/integrations?connected=square",
-        status_code=status.HTTP_302_FOUND,
-    )
+    frontend_url = get_settings().frontend_url.rstrip("/")
+    return connected_page("Square", f"{frontend_url}/dashboard/integrations?connected=square")
 
 
 @router.get("/integrations/square/status")
