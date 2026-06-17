@@ -177,13 +177,13 @@ async def trigger_truelayer_sync(
     tenant_id = current_user.tenant_id
 
     integration = await db.integration.find_first(
-        where={"tenant_id": tenant_id, "type": "truelayer"}
+        where={"tenant_id": tenant_id, "type": "truelayer", "status": {"not": "disconnected"}},
+        order={"connected_at": "desc"},
     )
     if not integration:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No TrueLayer integration found")
-    if integration.status == "disconnected":
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="TrueLayer integration is disconnected — reconnect first")
 
+    await db.integration.update(where={"id": integration.id}, data={"status": "syncing"})
     background_tasks.add_task(sync_truelayer_connection, {}, integration.id, tenant_id)
     return standard_response(data={"status": "sync_enqueued", "integration_id": integration.id})
 
@@ -294,6 +294,7 @@ async def sync_truelayer_connection_endpoint(
     if intg.status == "disconnected":
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Connection is disconnected — reconnect first")
 
+    await db.integration.update(where={"id": integration_id}, data={"status": "syncing"})
     background_tasks.add_task(sync_truelayer_connection, {}, integration_id, tenant_id)
     return standard_response(data={"status": "sync_enqueued", "integration_id": integration_id})
 
