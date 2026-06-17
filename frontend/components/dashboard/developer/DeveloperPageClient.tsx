@@ -15,6 +15,13 @@ const QUICK_START = `curl -X POST https://api.clendan.com/v1/execute \\
   -H "Content-Type: application/json" \\
   -d '{"tool": "invoice_processing", "payload": {}}'`
 
+const RESPONSE_SHAPE = `{
+  "data": { ... },
+  "error": null,
+  "trace_id": "trc_01j...",
+  "timestamp": "2026-01-15T10:30:00Z"
+}`
+
 interface ApiKey {
   id: string; name: string; key_prefix: string; status: string
   created_at: string; expires_at: string | null
@@ -22,7 +29,39 @@ interface ApiKey {
 
 const EASE = [0.25, 0.46, 0.45, 0.94] as const
 const pageVariants = { hidden: {}, show: { transition: { staggerChildren: 0.07 } } }
-const section = { hidden: { opacity: 0, y: 14 }, show: { opacity: 1, y: 0, transition: { duration: 0.35, ease: EASE } } }
+const fadeUp = { hidden: { opacity: 0, y: 14 }, show: { opacity: 1, y: 0, transition: { duration: 0.35, ease: EASE } } }
+
+const CAPABILITIES = [
+  { icon: Zap, title: 'Execute Tools', desc: 'Trigger any deployed AI tool via a single POST endpoint.' },
+  { icon: GitBranch, title: 'Webhooks', desc: 'Real-time events when agents complete tasks or require approval.' },
+  { icon: ShieldCheck, title: 'Audit Trail', desc: 'Query the full immutable log of every agent action.' },
+]
+
+const ENDPOINTS = [
+  { method: 'POST', path: '/execute', desc: 'Run any deployed tool' },
+  { method: 'GET',  path: '/tools',   desc: 'List all deployed tools' },
+  { method: 'GET',  path: '/approvals', desc: 'List pending approvals' },
+  { method: 'POST', path: '/approvals/{id}/approve', desc: 'Approve an agent action' },
+  { method: 'POST', path: '/approvals/{id}/reject',  desc: 'Reject an agent action' },
+  { method: 'GET',  path: '/audit',   desc: 'Query immutable audit log' },
+  { method: 'GET',  path: '/transactions', desc: 'List synced transactions' },
+  { method: 'POST', path: '/webhooks', desc: 'Register a webhook endpoint' },
+]
+
+const WEBHOOK_EVENTS = [
+  { event: 'tool.executed',          desc: 'Tool completed execution' },
+  { event: 'tool.approval_required', desc: 'Human approval needed' },
+  { event: 'tool.policy_blocked',    desc: 'Policy engine blocked action' },
+  { event: 'reconciliation.complete', desc: 'Reconciliation run finished' },
+  { event: 'invoice.processed',      desc: 'Invoice classified and routed' },
+  { event: 'transaction.synced',     desc: 'New transactions ingested' },
+  { event: 'audit.written',          desc: 'Audit log entry created' },
+]
+
+const METHOD_COLORS: Record<string, string> = {
+  GET:  'text-[#00a8cc] border-[rgba(0,168,204,0.3)] bg-[rgba(0,168,204,0.08)]',
+  POST: 'text-[#00C853] border-[rgba(0,200,83,0.3)] bg-[rgba(0,200,83,0.08)]',
+}
 
 function CopyButton({ text }: { text: string }) {
   const [copied, setCopied] = useState(false)
@@ -33,12 +72,6 @@ function CopyButton({ text }: { text: string }) {
     </button>
   )
 }
-
-const CAPABILITIES = [
-  { icon: Zap, title: 'Execute Tools', desc: 'Trigger any deployed AI tool — invoice processing, reconciliation, fraud detection — via a single POST endpoint.' },
-  { icon: GitBranch, title: 'Webhooks', desc: 'Receive real-time events when agents complete tasks, approvals are required, or policy violations are detected.' },
-  { icon: ShieldCheck, title: 'Audit Trail', desc: 'Query the full immutable audit log for every agent action, decision, and approval event in your organisation.' },
-]
 
 function ApiKeysSection({ keys, loading, showForm, setShowForm, newName, setNewName, creating, handleCreate, handleRevoke, revealedKey, setRevealedKey }: {
   keys: ApiKey[]; loading: boolean; showForm: boolean; setShowForm: (v: boolean) => void
@@ -77,7 +110,7 @@ function ApiKeysSection({ keys, loading, showForm, setShowForm, newName, setNewN
       {loading ? (
         <p className="text-xs font-mono text-brand-muted py-4">Loading…</p>
       ) : keys.length === 0 && !showForm ? (
-        <p className="text-xs font-mono text-brand-muted py-2">No API keys — generate your first key to connect external systems.</p>
+        <p className="text-xs font-mono text-brand-muted py-2">No API keys yet — generate one to start.</p>
       ) : (
         <div className="divide-y divide-brand-border border border-brand-border rounded-sm overflow-hidden">
           {keys.map((k) => (
@@ -153,14 +186,14 @@ export function DeveloperPageClient() {
   }
 
   return (
-    <motion.div variants={pageVariants} initial="hidden" animate="show" className="p-6 max-w-3xl space-y-10">
+    <motion.div variants={pageVariants} initial="hidden" animate="show" className="p-6 space-y-8">
 
       {/* Header */}
-      <motion.div variants={section} className="flex items-start justify-between gap-4">
+      <motion.div variants={fadeUp} className="flex items-start justify-between gap-4">
         <div>
           <h1 className="font-heading font-bold text-2xl text-brand-text">Developer</h1>
           <p className="text-xs font-mono text-brand-muted mt-1">
-            Connect external systems to Clendan via API — execute tools, receive webhooks, query audit logs.
+            Connect external systems to Clendan — execute tools, receive webhooks, query audit logs.
           </p>
         </div>
         <a href={DOCS_URL} target="_blank" rel="noopener noreferrer"
@@ -170,7 +203,7 @@ export function DeveloperPageClient() {
       </motion.div>
 
       {/* Info strip */}
-      <motion.div variants={section} className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      <motion.div variants={fadeUp} className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <div className="bg-brand-surface border border-brand-border rounded-sm p-4 space-y-1">
           <p className="text-[10px] font-mono uppercase tracking-widest text-brand-muted">Base URL</p>
           <div className="flex items-center gap-2">
@@ -183,44 +216,98 @@ export function DeveloperPageClient() {
           <code className="text-xs font-mono text-brand-text">Bearer ck_live_...</code>
         </div>
         <div className="bg-brand-surface border border-brand-border rounded-sm p-4 space-y-1">
+          <p className="text-[10px] font-mono uppercase tracking-widest text-brand-muted">Rate Limit</p>
+          <code className="text-xs font-mono text-brand-text">120 req / min</code>
+        </div>
+        <div className="bg-brand-surface border border-brand-border rounded-sm p-4 space-y-1">
           <p className="text-[10px] font-mono uppercase tracking-widest text-brand-muted">Idempotency</p>
-          <code className="text-xs font-mono text-brand-text">Idempotency-Key: &lt;uuid&gt;</code>
+          <code className="text-xs font-mono text-brand-text">Required on writes</code>
         </div>
       </motion.div>
 
-      {/* What you can build */}
-      <motion.div variants={section} className="space-y-3">
-        <p className="text-[10px] font-mono uppercase tracking-widest text-brand-muted">What you can build</p>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          {CAPABILITIES.map(({ icon: Icon, title, desc }) => (
-            <div key={title} className="bg-brand-surface border border-brand-border rounded-sm p-4 space-y-2">
-              <div className="flex items-center gap-2">
-                <Icon className="w-4 h-4 text-[#00C853] shrink-0" />
-                <p className="text-xs font-mono font-medium text-brand-text">{title}</p>
-              </div>
-              <p className="text-[11px] font-mono text-brand-muted leading-relaxed">{desc}</p>
+      {/* Main grid */}
+      <div className="grid grid-cols-1 xl:grid-cols-[1fr_1fr] gap-6">
+
+        {/* Left column */}
+        <div className="space-y-8">
+
+          {/* Capabilities */}
+          <motion.div variants={fadeUp} className="space-y-3">
+            <p className="text-[10px] font-mono uppercase tracking-widest text-brand-muted">What you can build</p>
+            <div className="space-y-2">
+              {CAPABILITIES.map(({ icon: Icon, title, desc }) => (
+                <div key={title} className="bg-brand-surface border border-brand-border rounded-sm p-4 flex items-start gap-3">
+                  <Icon className="w-4 h-4 text-[#00C853] shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-xs font-mono font-medium text-brand-text">{title}</p>
+                    <p className="text-[11px] font-mono text-brand-muted mt-0.5 leading-relaxed">{desc}</p>
+                  </div>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
-      </motion.div>
+          </motion.div>
 
-      {/* API Keys */}
-      <motion.div variants={section} className="space-y-3">
-        <p className="text-[10px] font-mono uppercase tracking-widest text-brand-muted">API Keys</p>
-        <ApiKeysSection keys={keys} loading={loading} showForm={showForm} setShowForm={setShowForm}
-          newName={newName} setNewName={setNewName} creating={creating}
-          handleCreate={handleCreate} handleRevoke={handleRevoke}
-          revealedKey={revealedKey} setRevealedKey={setRevealedKey} />
-      </motion.div>
+          {/* API Keys */}
+          <motion.div variants={fadeUp} className="space-y-3">
+            <p className="text-[10px] font-mono uppercase tracking-widest text-brand-muted">API Keys</p>
+            <ApiKeysSection keys={keys} loading={loading} showForm={showForm} setShowForm={setShowForm}
+              newName={newName} setNewName={setNewName} creating={creating}
+              handleCreate={handleCreate} handleRevoke={handleRevoke}
+              revealedKey={revealedKey} setRevealedKey={setRevealedKey} />
+          </motion.div>
 
-      {/* Quick Start */}
-      <motion.div variants={section} className="space-y-3">
-        <p className="text-[10px] font-mono uppercase tracking-widest text-brand-muted">Quick Start</p>
-        <div className="flex items-start gap-3 bg-brand-bg border border-brand-border rounded-sm px-4 py-3">
-          <pre className="flex-1 font-mono text-xs text-brand-text whitespace-pre-wrap break-all leading-relaxed">{QUICK_START}</pre>
-          <CopyButton text={QUICK_START} />
+          {/* Quick Start */}
+          <motion.div variants={fadeUp} className="space-y-3">
+            <p className="text-[10px] font-mono uppercase tracking-widest text-brand-muted">Quick Start</p>
+            <div className="flex items-start gap-3 bg-brand-bg border border-brand-border rounded-sm px-4 py-3">
+              <pre className="flex-1 font-mono text-xs text-brand-text whitespace-pre-wrap break-all leading-relaxed">{QUICK_START}</pre>
+              <CopyButton text={QUICK_START} />
+            </div>
+          </motion.div>
+
         </div>
-      </motion.div>
+
+        {/* Right column */}
+        <div className="space-y-8">
+
+          {/* Endpoints */}
+          <motion.div variants={fadeUp} className="space-y-3">
+            <p className="text-[10px] font-mono uppercase tracking-widest text-brand-muted">REST Endpoints</p>
+            <div className="divide-y divide-brand-border border border-brand-border rounded-sm overflow-hidden">
+              {ENDPOINTS.map(({ method, path, desc }) => (
+                <div key={path} className="bg-brand-surface px-4 py-2.5 flex items-center gap-3">
+                  <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded-sm border shrink-0 ${METHOD_COLORS[method] ?? 'text-brand-muted border-brand-border'}`}>{method}</span>
+                  <code className="text-xs font-mono text-brand-text flex-1 truncate">{path}</code>
+                  <span className="text-[11px] font-mono text-brand-muted hidden sm:block shrink-0">{desc}</span>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+
+          {/* Webhook events */}
+          <motion.div variants={fadeUp} className="space-y-3">
+            <p className="text-[10px] font-mono uppercase tracking-widest text-brand-muted">Webhook Events</p>
+            <div className="divide-y divide-brand-border border border-brand-border rounded-sm overflow-hidden">
+              {WEBHOOK_EVENTS.map(({ event, desc }) => (
+                <div key={event} className="bg-brand-surface px-4 py-2.5 flex items-center gap-4">
+                  <code className="text-xs font-mono text-[#00a8cc] flex-1">{event}</code>
+                  <span className="text-[11px] font-mono text-brand-muted shrink-0 hidden sm:block">{desc}</span>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+
+          {/* Response shape */}
+          <motion.div variants={fadeUp} className="space-y-3">
+            <p className="text-[10px] font-mono uppercase tracking-widest text-brand-muted">Standard Response Shape</p>
+            <div className="flex items-start gap-3 bg-brand-bg border border-brand-border rounded-sm px-4 py-3">
+              <pre className="flex-1 font-mono text-xs text-brand-text whitespace-pre leading-relaxed">{RESPONSE_SHAPE}</pre>
+              <CopyButton text={RESPONSE_SHAPE} />
+            </div>
+          </motion.div>
+
+        </div>
+      </div>
 
     </motion.div>
   )
