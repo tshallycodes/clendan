@@ -12,14 +12,12 @@ async def cleanup_integration_data(db, integration_id: str) -> dict:
     accounts_deleted = 0
 
     if account_ids:
-        txn_result = await db.banktransaction.delete_many(
+        txns_deleted = await db.banktransaction.delete_many(
             where={"account_id": {"in": account_ids}}
         )
-        txns_deleted = txn_result.count
 
-        acct_result = await db.bankaccount.delete_many(
+        accounts_deleted = await db.bankaccount.delete_many(
             where={"id": {"in": account_ids}}
         )
-        accounts_deleted = acct_result.count
 
     return {"transactions_deleted": txns_deleted, "accounts_deleted": accounts_deleted}

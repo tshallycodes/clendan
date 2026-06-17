@@ -231,8 +231,7 @@ async def force_resync_truelayer(
     for intg in integrations:
         account_ids = [a.id for a in (intg.bank_accounts or [])]
         if account_ids:
-            result = await db.banktransaction.delete_many(where={"account_id": {"in": account_ids}})
-            total_cleared += result.count
+            total_cleared += await db.banktransaction.delete_many(where={"account_id": {"in": account_ids}})
         await db.integration.update(where={"id": intg.id}, data={"status": IntegrationStatus.SYNCING})
         await enqueue_truelayer_sync(intg.id, tenant_id)
 
@@ -287,8 +286,7 @@ async def force_resync_truelayer_connection(
     account_ids = [a.id for a in accounts]
     txns_deleted = 0
     if account_ids:
-        result = await db.banktransaction.delete_many(where={"account_id": {"in": account_ids}})
-        txns_deleted = result.count
+        txns_deleted = await db.banktransaction.delete_many(where={"account_id": {"in": account_ids}})
 
     await db.integration.update(where={"id": integration_id}, data={"status": IntegrationStatus.SYNCING})
     await enqueue_truelayer_sync(integration_id, tenant_id)
