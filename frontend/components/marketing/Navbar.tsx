@@ -84,9 +84,7 @@ export function Navbar() {
       }}
     >
       <div className="relative max-w-6xl mx-auto px-6 md:px-8 h-14 flex items-center justify-between">
-        <Link href="/" aria-label="Clendan home">
-          <Logo size="md" />
-        </Link>
+        <Logo size="md" />
 
         <nav className="hidden md:flex items-center gap-7">
           {NAV_LINKS.map((link) => (
