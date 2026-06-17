@@ -226,7 +226,7 @@ async def hubspot_disconnect(
 ):
     """Wipes HubSpot credentials and marks integration as disconnected."""
     integration = await db.integration.find_first(
-        where={"tenant_id": current_user.tenant_id, "type": "hubspot"}
+        where={"tenant_id": current_user.tenant_id, "type": "hubspot", "status": {"not": "disconnected"}}
     )
     if not integration:
         raise HTTPException(

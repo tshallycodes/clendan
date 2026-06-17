@@ -146,6 +146,8 @@ async def square_sync(
             detail="No Square integration found",
         )
 
+    await db.integration.update(where={"id": integration.id}, data={"status": "syncing"})
+
     try:
         await enqueue_square_sync(
             integration_id=integration.id,
@@ -170,7 +172,7 @@ async def square_disconnect(
     tenant_id = current_user.tenant_id
 
     integration = await db.integration.find_first(
-        where={"tenant_id": tenant_id, "type": "square"}
+        where={"tenant_id": tenant_id, "type": "square", "status": {"not": "disconnected"}}
     )
     if not integration:
         raise HTTPException(

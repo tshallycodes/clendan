@@ -210,6 +210,7 @@ async def trigger_mono_sync(
     if not integration:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No Mono integration found")
 
+    await db.integration.update(where={"id": integration.id}, data={"status": "syncing"})
     background_tasks.add_task(sync_mono_transactions, {}, integration.id, tenant_id)
     return standard_response(data={"status": "sync_enqueued", "integration_id": integration.id})
 
@@ -315,6 +316,7 @@ async def sync_mono_connection(
     if intg.status == "disconnected":
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Connection is disconnected — reconnect first")
 
+    await db.integration.update(where={"id": integration_id}, data={"status": "syncing"})
     background_tasks.add_task(sync_mono_transactions, {}, integration_id, tenant_id)
     return standard_response(data={"status": "sync_enqueued", "integration_id": integration_id})
 

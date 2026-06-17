@@ -153,6 +153,8 @@ async def stripe_sync(
             detail="No Stripe integration found",
         )
 
+    await db.integration.update(where={"id": integration.id}, data={"status": "syncing"})
+
     try:
         await enqueue_stripe_sync(
             integration_id=integration.id,
@@ -177,7 +179,7 @@ async def stripe_disconnect(
     tenant_id = current_user.tenant_id
 
     integration = await db.integration.find_first(
-        where={"tenant_id": tenant_id, "type": "stripe"}
+        where={"tenant_id": tenant_id, "type": "stripe", "status": {"not": "disconnected"}}
     )
     if not integration:
         raise HTTPException(

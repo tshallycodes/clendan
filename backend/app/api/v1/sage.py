@@ -160,7 +160,7 @@ async def sage_disconnect(
     tenant_id = current_user.tenant_id
 
     integration = await db.integration.find_first(
-        where={"tenant_id": tenant_id, "type": "sage"}
+        where={"tenant_id": tenant_id, "type": "sage", "status": {"not": "disconnected"}}
     )
     if not integration:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No Sage connection found")

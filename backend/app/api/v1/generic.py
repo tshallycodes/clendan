@@ -291,7 +291,7 @@ async def generic_disconnect(
 ):
     _require_slug(slug, ALL_GENERIC_SLUGS)
     integration = await db.integration.find_first(
-        where={"tenant_id": current_user.tenant_id, "type": slug}
+        where={"tenant_id": current_user.tenant_id, "type": slug, "status": {"not": "disconnected"}}
     )
     if not integration:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"No {slug} connection found")

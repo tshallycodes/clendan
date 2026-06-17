@@ -142,6 +142,8 @@ async def paypal_sync(
             detail="No PayPal integration found",
         )
 
+    await db.integration.update(where={"id": integration.id}, data={"status": "syncing"})
+
     try:
         await enqueue_paypal_sync(
             integration_id=integration.id,
@@ -166,7 +168,7 @@ async def paypal_disconnect(
     tenant_id = current_user.tenant_id
 
     integration = await db.integration.find_first(
-        where={"tenant_id": tenant_id, "type": "paypal"}
+        where={"tenant_id": tenant_id, "type": "paypal", "status": {"not": "disconnected"}}
     )
     if not integration:
         raise HTTPException(

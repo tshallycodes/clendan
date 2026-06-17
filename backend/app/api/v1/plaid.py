@@ -91,7 +91,7 @@ async def exchange_token(
             "institution_id": body.institution_id,
             "institution_name": body.institution_name,
             "encrypted_credentials": credentials_json,
-            "status": "connected",
+            "status": "syncing",
             "connected_at": datetime.now(UTC),
         }
     )
@@ -99,7 +99,7 @@ async def exchange_token(
     background_tasks.add_task(sync_plaid_transactions, {}, integration.id, tenant_id)
 
     return standard_response(
-        data={"status": "connected", "integration_id": integration.id}
+        data={"status": "syncing", "integration_id": integration.id}
     )
 
 
@@ -359,6 +359,7 @@ async def sync_plaid_connection(
     if intg.status == "disconnected":
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Connection is disconnected — reconnect first")
 
+    await db.integration.update(where={"id": integration_id}, data={"status": "syncing"})
     background_tasks.add_task(sync_plaid_transactions, {}, integration_id, tenant_id)
     return standard_response(data={"status": "sync_enqueued", "integration_id": integration_id})
 

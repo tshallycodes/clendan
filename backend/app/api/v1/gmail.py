@@ -192,7 +192,7 @@ async def gmail_disconnect(
     tenant_id = current_user.tenant_id
 
     integration = await db.integration.find_first(
-        where={"tenant_id": tenant_id, "type": INTEGRATION_TYPE}
+        where={"tenant_id": tenant_id, "type": INTEGRATION_TYPE, "status": {"not": "disconnected"}}
     )
     if not integration:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No Gmail integration found")
