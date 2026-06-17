@@ -25,7 +25,12 @@ async def lifespan(app: FastAPI):
             traces_sample_rate=0.1,
         )
     await connect_db()
-    logger.info("Startup complete")
+    logger.info(
+        "Startup complete env=%s frontend_url=%s backend_base_url=%s",
+        settings.environment,
+        settings.frontend_url,
+        settings.backend_base_url,
+    )
     yield
     await disconnect_db()
     logger.info("Shutdown complete")
@@ -75,7 +80,13 @@ def create_app() -> FastAPI:
 
     @app.get("/health", tags=["health"])
     async def health():
-        return standard_response(data={"status": "ok"})
+        s = get_settings()
+        return standard_response(data={
+            "status": "ok",
+            "environment": s.environment,
+            "frontend_url": s.frontend_url,
+            "backend_base_url": s.backend_base_url,
+        })
 
     @app.get("/ready", tags=["health"])
     async def ready():
