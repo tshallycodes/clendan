@@ -1,3 +1,4 @@
+import os
 from functools import lru_cache
 from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -140,4 +141,12 @@ class Settings(BaseSettings):
 
 @lru_cache()
 def get_settings() -> Settings:
-    return Settings()
+    overrides: dict = {}
+    for env_var, field in [
+        ("FRONTEND_URL", "frontend_url"),
+        ("BACKEND_BASE_URL", "backend_base_url"),
+    ]:
+        val = os.environ.get(env_var, "").strip()
+        if val:
+            overrides[field] = val
+    return Settings(**overrides)
