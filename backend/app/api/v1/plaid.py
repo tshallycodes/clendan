@@ -10,6 +10,7 @@ from app.core.db import get_db_dep
 from app.core.logging import get_logger
 from app.core.responses import standard_response
 from app.core.security import RequireOrgAuth
+from app.core.bank_cleanup import cleanup_integration_data
 from app.core.categories import ALLOWED_CATEGORIES
 from app.integrations.plaid import client as plaid
 from app.integrations.plaid.sync import sync_plaid_transactions
@@ -267,12 +268,13 @@ async def disconnect_plaid(
     if not integration:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No active Plaid connection")
 
+    cleaned = await cleanup_integration_data(db, integration.id)
     await db.integration.update(
         where={"id": integration.id},
         data={"status": "disconnected", "encrypted_credentials": "{}"},
     )
 
-    return standard_response(data={"status": "disconnected"})
+    return standard_response(data={"status": "disconnected", **cleaned})
 
 
 @router.get("/integrations/plaid/connections")
@@ -378,11 +380,12 @@ async def disconnect_plaid_connection(
     if intg.status == "disconnected":
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Already disconnected")
 
+    cleaned = await cleanup_integration_data(db, integration_id)
     await db.integration.update(
         where={"id": integration_id},
         data={"status": "disconnected", "encrypted_credentials": "{}"},
     )
-    return standard_response(data={"status": "disconnected"})
+    return standard_response(data={"status": "disconnected", **cleaned})
 
 
 @router.get("/integrations/plaid/connections/{integration_id}/sync-log")

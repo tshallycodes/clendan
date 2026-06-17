@@ -8,6 +8,7 @@ from fastapi.responses import RedirectResponse
 from app.core.oauth_html import connected_page
 from prisma import Prisma
 
+from app.core.bank_cleanup import cleanup_integration_data
 from app.core.config import get_settings
 from app.core.db import get_db_dep
 from app.core.logging import get_logger
@@ -215,14 +216,29 @@ async def disconnect_truelayer(
     """Marks all non-disconnected TrueLayer integrations for the tenant as disconnected."""
     tenant_id = current_user.tenant_id
 
-    result = await db.integration.update_many(
-        where={"tenant_id": tenant_id, "type": "truelayer", "status": {"not": "disconnected"}},
-        data={"status": "disconnected", "encrypted_credentials": "{}"},
+    integrations = await db.integration.find_many(
+        where={"tenant_id": tenant_id, "type": "truelayer", "status": {"not": "disconnected"}}
     )
-    if result.count == 0:
+    if not integrations:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No active TrueLayer integration found")
 
-    return standard_response(data={"status": "disconnected", "count": result.count})
+    total_txns = 0
+    total_accounts = 0
+    for intg in integrations:
+        cleaned = await cleanup_integration_data(db, intg.id)
+        total_txns += cleaned["transactions_deleted"]
+        total_accounts += cleaned["accounts_deleted"]
+        await db.integration.update(
+            where={"id": intg.id},
+            data={"status": "disconnected", "encrypted_credentials": "{}"},
+        )
+
+    return standard_response(data={
+        "status": "disconnected",
+        "count": len(integrations),
+        "transactions_deleted": total_txns,
+        "accounts_deleted": total_accounts,
+    })
 
 
 @router.get("/integrations/truelayer/connections")
@@ -329,11 +345,12 @@ async def disconnect_truelayer_connection(
     if intg.status == "disconnected":
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Already disconnected")
 
+    cleaned = await cleanup_integration_data(db, integration_id)
     await db.integration.update(
         where={"id": integration_id},
         data={"status": "disconnected", "encrypted_credentials": "{}"},
     )
-    return standard_response(data={"status": "disconnected"})
+    return standard_response(data={"status": "disconnected", **cleaned})
 
 
 @router.get("/integrations/truelayer/connections/{integration_id}/sync-log")
