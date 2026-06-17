@@ -87,7 +87,12 @@ export function BankPicker({
   const truelayerConnected = truelayerStatus === 'connected' || truelayerStatus === 'syncing'
   const monoConnected = monoStatus === 'connected' || monoStatus === 'syncing'
 
-  // Only show cards for banks we can actually identify — no generic fallback cards
+  const isConnected =
+    (region === 'us' && plaidConnected) ||
+    (region === 'eu' && truelayerConnected) ||
+    (region === 'africa' && monoConnected)
+
+  // Try to find a specific bank card by name match
   const connectedCards: BankDef[] = (() => {
     if (region === 'us' && plaidConnected) {
       return BANKS.filter(
@@ -116,7 +121,26 @@ export function BankPicker({
     return []
   })()
 
-  const isConnected = connectedCards.length > 0
+  // When connected but no specific card matched, derive a display name
+  const fallbackName =
+    region === 'eu' ? (connectedTruelayerName ?? 'Bank')
+    : region === 'africa' ? (connectedMonoName ?? 'Bank')
+    : (connectedBankName ?? 'Bank')
+
+  const provider: BankDef['provider'] =
+    region === 'eu' ? 'truelayer' : region === 'africa' ? 'mono' : 'plaid'
+
+  const fallbackCard: BankDef = {
+    id: `${provider}-generic`,
+    name: fallbackName,
+    abbr: fallbackName.slice(0, 4).toUpperCase(),
+    color: '#888888',
+    domain: '',
+    provider,
+    region: region === 'us' ? 'us' : region === 'eu' ? 'eu' : 'africa',
+  }
+
+  const displayCards = connectedCards.length > 0 ? connectedCards : (isConnected ? [fallbackCard] : [])
 
   return (
     <div className="space-y-4">
@@ -141,7 +165,7 @@ export function BankPicker({
       {isConnected ? (
         /* Connected state — show only connected banks + add button */
         <div className="flex items-start gap-4 flex-wrap">
-          {connectedCards.map((bank) => (
+          {displayCards.map((bank) => (
             <BankCard key={bank.id} bank={bank} onViewDetail={onViewDetail} />
           ))}
 
