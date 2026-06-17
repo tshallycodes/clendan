@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useAuth } from '@clerk/nextjs'
 import { motion } from 'framer-motion'
 import { cn } from '@/lib/utils'
@@ -54,6 +54,26 @@ export function TransactionsClient({ initialTransactions, total }: Props) {
   const [search, setSearch] = useState('')
   const [loadingMore, setLoadingMore] = useState(false)
   const [offset, setOffset] = useState(initialTransactions.length)
+  const [categories, setCategories] = useState<{ income: string[]; expenses: string[] }>({
+    income: [], expenses: [],
+  })
+
+  useEffect(() => {
+    let active = true
+    async function fetchCategories() {
+      const token = await getToken()
+      if (!token || !active) return
+      try {
+        const res = await fetch(`${API_BASE}/v1/transactions/categories`, {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+        const json = await res.json()
+        if (active && json.data) setCategories(json.data)
+      } catch {}
+    }
+    fetchCategories()
+    return () => { active = false }
+  }, [getToken])
 
   const counts = useMemo<Record<StatusFilter, number>>(() => {
     const c = { all: transactions.length, pending: 0, categorised: 0, matched: 0 }
@@ -218,7 +238,7 @@ export function TransactionsClient({ initialTransactions, total }: Props) {
               </thead>
               <motion.tbody initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.4, delay: 0.2 }}>
                 {filtered.map(t => (
-                  <TransactionRow key={t.id} transaction={t} onCategoryUpdate={handleCategoryUpdate} />
+                  <TransactionRow key={t.id} transaction={t} onCategoryUpdate={handleCategoryUpdate} categories={categories} />
                 ))}
               </motion.tbody>
             </table>

@@ -18,6 +18,15 @@ class CategoryUpdateRequest(BaseModel):
     category: str
 
 
+@router.get("/transactions/categories")
+async def list_transaction_categories(_: RequireOrgAuth):
+    """Returns grouped income and expense category lists."""
+    return standard_response(data={
+        "income": sorted(INCOME_CATEGORIES),
+        "expenses": sorted(EXPENSE_CATEGORIES),
+    })
+
+
 @router.get("/transactions")
 async def list_all_transactions(
     current_user: RequireOrgAuth,

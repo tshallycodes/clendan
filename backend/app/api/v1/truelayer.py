@@ -2,7 +2,7 @@ import secrets
 from datetime import datetime, UTC
 from typing import Annotated
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import RedirectResponse
 
 from app.core.oauth_html import connected_page
@@ -10,12 +10,13 @@ from prisma import Prisma
 
 from app.core.bank_cleanup import cleanup_integration_data
 from app.core.config import get_settings
+from app.core.constants import ConnectorType, IntegrationStatus, Pagination
 from app.core.db import get_db_dep
 from app.core.logging import get_logger
 from app.core.responses import standard_response
 from app.core.security import RequireOrgAuth
 from app.integrations.truelayer import client as tl
-from app.integrations.truelayer.sync import sync_truelayer_connection
+from app.integrations.truelayer.sync import enqueue_truelayer_sync
 
 logger = get_logger(__name__)
 router = APIRouter(tags=["truelayer"])
@@ -33,7 +34,6 @@ async def truelayer_connect(current_user: RequireOrgAuth):
 
 @router.get("/integrations/truelayer/callback")
 async def truelayer_callback(
-    background_tasks: BackgroundTasks,
     code: str = Query(...),
     state: str = Query(...),
     db: Annotated[Prisma, Depends(get_db_dep)] = None,
@@ -92,15 +92,15 @@ async def truelayer_callback(
     integration = await db.integration.create(
         data={
             "tenant_id": tenant_id,
-            "type": "truelayer",
+            "type": ConnectorType.TRUELAYER,
             "encrypted_credentials": encrypted_credentials,
-            "status": "syncing",
+            "status": IntegrationStatus.SYNCING,
             "institution_name": institution_name,
             "connected_at": datetime.now(UTC),
         }
     )
 
-    background_tasks.add_task(sync_truelayer_connection, {}, integration.id, tenant_id)
+    await enqueue_truelayer_sync(integration.id, tenant_id)
     display_name = institution_name or "TrueLayer"
     return connected_page(display_name, f"{frontend_integrations}?connected=truelayer")
 
@@ -114,14 +114,14 @@ async def truelayer_status(
     tenant_id = current_user.tenant_id
 
     integration = await db.integration.find_first(
-        where={"tenant_id": tenant_id, "type": "truelayer", "status": {"not": "disconnected"}},
+        where={"tenant_id": tenant_id, "type": ConnectorType.TRUELAYER, "status": {"not": IntegrationStatus.DISCONNECTED}},
         order={"connected_at": "desc"},
     )
     if not integration:
-        return standard_response(data={"status": "not_connected"})
+        return standard_response(data={"status": IntegrationStatus.NOT_CONNECTED})
 
-    account_count = await db.bankaccount.count(where={"tenant_id": tenant_id, "source": "truelayer"})
-    txn_count = await db.banktransaction.count(where={"tenant_id": tenant_id, "source": "truelayer"})
+    account_count = await db.bankaccount.count(where={"tenant_id": tenant_id, "source": ConnectorType.TRUELAYER})
+    txn_count = await db.banktransaction.count(where={"tenant_id": tenant_id, "source": ConnectorType.TRUELAYER})
 
     return standard_response(
         data={
@@ -142,7 +142,7 @@ async def list_truelayer_accounts(
 ):
     """Lists TrueLayer-sourced bank accounts for the tenant."""
     accounts = await db.bankaccount.find_many(
-        where={"tenant_id": current_user.tenant_id, "source": "truelayer"},
+        where={"tenant_id": current_user.tenant_id, "source": ConnectorType.TRUELAYER},
         order={"created_at": "asc"},
     )
     return standard_response(data=[
@@ -163,12 +163,12 @@ async def list_truelayer_transactions(
     current_user: RequireOrgAuth,
     db: Annotated[Prisma, Depends(get_db_dep)],
     status_filter: str | None = Query(None, alias="status"),
-    limit: int = Query(50, le=200),
+    limit: int = Query(Pagination.DEFAULT_LIMIT, le=Pagination.MAX_LIMIT),
     offset: int = Query(0, ge=0),
 ):
     """Lists TrueLayer-sourced transactions for the tenant."""
     tenant_id = current_user.tenant_id
-    where: dict = {"tenant_id": tenant_id, "source": "truelayer"}
+    where: dict = {"tenant_id": tenant_id, "source": ConnectorType.TRUELAYER}
     if status_filter:
         where["status"] = status_filter
 
@@ -211,22 +211,21 @@ async def list_truelayer_transactions(
 
 @router.post("/integrations/truelayer/sync")
 async def trigger_truelayer_sync(
-    background_tasks: BackgroundTasks,
     current_user: RequireOrgAuth,
     db: Annotated[Prisma, Depends(get_db_dep)],
 ):
-    """Triggers a TrueLayer sync as a background task."""
+    """Enqueues a TrueLayer sync via arq worker."""
     tenant_id = current_user.tenant_id
 
     integration = await db.integration.find_first(
-        where={"tenant_id": tenant_id, "type": "truelayer", "status": {"not": "disconnected"}},
+        where={"tenant_id": tenant_id, "type": ConnectorType.TRUELAYER, "status": {"not": IntegrationStatus.DISCONNECTED}},
         order={"connected_at": "desc"},
     )
     if not integration:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No TrueLayer integration found")
 
-    await db.integration.update(where={"id": integration.id}, data={"status": "syncing"})
-    background_tasks.add_task(sync_truelayer_connection, {}, integration.id, tenant_id)
+    await db.integration.update(where={"id": integration.id}, data={"status": IntegrationStatus.SYNCING})
+    await enqueue_truelayer_sync(integration.id, tenant_id)
     return standard_response(data={"status": "sync_enqueued", "integration_id": integration.id})
 
 
@@ -239,7 +238,7 @@ async def disconnect_truelayer(
     tenant_id = current_user.tenant_id
 
     integrations = await db.integration.find_many(
-        where={"tenant_id": tenant_id, "type": "truelayer", "status": {"not": "disconnected"}}
+        where={"tenant_id": tenant_id, "type": ConnectorType.TRUELAYER, "status": {"not": IntegrationStatus.DISCONNECTED}}
     )
     if not integrations:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No active TrueLayer integration found")
@@ -252,11 +251,11 @@ async def disconnect_truelayer(
         total_accounts += cleaned["accounts_deleted"]
         await db.integration.update(
             where={"id": intg.id},
-            data={"status": "disconnected", "encrypted_credentials": "{}"},
+            data={"status": IntegrationStatus.DISCONNECTED, "encrypted_credentials": "{}"},
         )
 
     return standard_response(data={
-        "status": "disconnected",
+        "status": IntegrationStatus.DISCONNECTED,
         "count": len(integrations),
         "transactions_deleted": total_txns,
         "accounts_deleted": total_accounts,
@@ -272,7 +271,11 @@ async def list_truelayer_connections(
     """Lists all TrueLayer connections for the tenant, optionally filtered by institution name."""
     tenant_id = current_user.tenant_id
 
-    where: dict = {"tenant_id": tenant_id, "type": "truelayer", "status": {"not": "disconnected"}}
+    where: dict = {
+        "tenant_id": tenant_id,
+        "type": ConnectorType.TRUELAYER,
+        "status": {"not": IntegrationStatus.DISCONNECTED},
+    }
     if institution_name:
         where["institution_name"] = {"contains": institution_name, "mode": "insensitive"}
 
@@ -331,22 +334,21 @@ async def list_truelayer_connections(
 @router.post("/integrations/truelayer/connections/{integration_id}/sync")
 async def sync_truelayer_connection_endpoint(
     integration_id: str,
-    background_tasks: BackgroundTasks,
     current_user: RequireOrgAuth,
     db: Annotated[Prisma, Depends(get_db_dep)],
 ):
     """Triggers a sync for a specific TrueLayer connection."""
     tenant_id = current_user.tenant_id
     intg = await db.integration.find_first(
-        where={"id": integration_id, "tenant_id": tenant_id, "type": "truelayer"}
+        where={"id": integration_id, "tenant_id": tenant_id, "type": ConnectorType.TRUELAYER}
     )
     if not intg:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="TrueLayer connection not found")
-    if intg.status == "disconnected":
+    if intg.status == IntegrationStatus.DISCONNECTED:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Connection is disconnected — reconnect first")
 
-    await db.integration.update(where={"id": integration_id}, data={"status": "syncing"})
-    background_tasks.add_task(sync_truelayer_connection, {}, integration_id, tenant_id)
+    await db.integration.update(where={"id": integration_id}, data={"status": IntegrationStatus.SYNCING})
+    await enqueue_truelayer_sync(integration_id, tenant_id)
     return standard_response(data={"status": "sync_enqueued", "integration_id": integration_id})
 
 
@@ -359,19 +361,19 @@ async def disconnect_truelayer_connection(
     """Disconnects a specific TrueLayer connection. Credentials wiped."""
     tenant_id = current_user.tenant_id
     intg = await db.integration.find_first(
-        where={"id": integration_id, "tenant_id": tenant_id, "type": "truelayer"}
+        where={"id": integration_id, "tenant_id": tenant_id, "type": ConnectorType.TRUELAYER}
     )
     if not intg:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="TrueLayer connection not found")
-    if intg.status == "disconnected":
+    if intg.status == IntegrationStatus.DISCONNECTED:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Already disconnected")
 
     cleaned = await cleanup_integration_data(db, integration_id)
     await db.integration.update(
         where={"id": integration_id},
-        data={"status": "disconnected", "encrypted_credentials": "{}"},
+        data={"status": IntegrationStatus.DISCONNECTED, "encrypted_credentials": "{}"},
     )
-    return standard_response(data={"status": "disconnected", **cleaned})
+    return standard_response(data={"status": IntegrationStatus.DISCONNECTED, **cleaned})
 
 
 @router.get("/integrations/truelayer/connections/{integration_id}/sync-log")
@@ -379,12 +381,12 @@ async def truelayer_connection_sync_log(
     integration_id: str,
     current_user: RequireOrgAuth,
     db: Annotated[Prisma, Depends(get_db_dep)],
-    limit: int = Query(20, le=100),
+    limit: int = Query(Pagination.MAX_SYNC_LOG_LIMIT, le=100),
 ):
     """Returns sync log entries for a specific TrueLayer connection."""
     tenant_id = current_user.tenant_id
     intg = await db.integration.find_first(
-        where={"id": integration_id, "tenant_id": tenant_id, "type": "truelayer"}
+        where={"id": integration_id, "tenant_id": tenant_id, "type": ConnectorType.TRUELAYER}
     )
     if not intg:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="TrueLayer connection not found")

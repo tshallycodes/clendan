@@ -2,10 +2,11 @@ import json
 from datetime import datetime, UTC
 from typing import Annotated
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel
 from prisma import Prisma
 
+from app.core.constants import ConnectorType, IntegrationStatus, Pagination, TransactionStatus
 from app.core.db import get_db_dep
 from app.core.logging import get_logger
 from app.core.responses import standard_response
@@ -13,7 +14,7 @@ from app.core.security import RequireOrgAuth
 from app.core.bank_cleanup import cleanup_integration_data
 from app.core.categories import ALLOWED_CATEGORIES
 from app.integrations.plaid import client as plaid
-from app.integrations.plaid.sync import sync_plaid_transactions
+from app.integrations.plaid.sync import enqueue_plaid_sync
 
 logger = get_logger(__name__)
 router = APIRouter(tags=["plaid"])
@@ -55,13 +56,12 @@ async def create_link_token(
 @router.post("/integrations/plaid/exchange-token")
 async def exchange_token(
     body: ExchangeTokenRequest,
-    background_tasks: BackgroundTasks,
     current_user: RequireOrgAuth,
     db: Annotated[Prisma, Depends(get_db_dep)],
 ):
     """
     Exchanges Plaid public_token for access_token. Stores encrypted credentials.
-    Triggers initial transaction sync via background job.
+    Enqueues initial transaction sync via arq worker.
     All steps required — partial completion is a failure.
     """
     tenant_id = current_user.tenant_id
@@ -82,19 +82,19 @@ async def exchange_token(
     integration = await db.integration.create(
         data={
             "tenant_id": tenant_id,
-            "type": "plaid",
+            "type": ConnectorType.PLAID,
             "institution_id": body.institution_id,
             "institution_name": body.institution_name,
             "encrypted_credentials": credentials_json,
-            "status": "syncing",
+            "status": IntegrationStatus.SYNCING,
             "connected_at": datetime.now(UTC),
         }
     )
 
-    background_tasks.add_task(sync_plaid_transactions, {}, integration.id, tenant_id)
+    await enqueue_plaid_sync(integration.id, tenant_id)
 
     return standard_response(
-        data={"status": "syncing", "integration_id": integration.id}
+        data={"status": IntegrationStatus.SYNCING, "integration_id": integration.id}
     )
 
 
@@ -107,10 +107,10 @@ async def plaid_status(
     tenant_id = current_user.tenant_id
 
     integration = await db.integration.find_first(
-        where={"tenant_id": tenant_id, "type": "plaid"}
+        where={"tenant_id": tenant_id, "type": ConnectorType.PLAID}
     )
     if not integration:
-        return standard_response(data={"status": "not_connected"})
+        return standard_response(data={"status": IntegrationStatus.NOT_CONNECTED})
 
     txn_count = await db.banktransaction.count(where={"tenant_id": tenant_id})
     account_count = await db.bankaccount.count(where={"tenant_id": tenant_id})
@@ -160,7 +160,7 @@ async def list_transactions(
     current_user: RequireOrgAuth,
     db: Annotated[Prisma, Depends(get_db_dep)],
     status_filter: str | None = Query(None, alias="status"),
-    limit: int = Query(50, le=200),
+    limit: int = Query(Pagination.DEFAULT_LIMIT, le=Pagination.MAX_LIMIT),
     offset: int = Query(0, ge=0),
 ):
     """Lists bank transactions for the tenant. Scoped to tenant — never leaks cross-tenant data."""
@@ -228,7 +228,7 @@ async def update_transaction_category(
 
     updated = await db.banktransaction.update(
         where={"id": transaction_id},
-        data={"ai_category": body.category, "status": "categorised"},
+        data={"ai_category": body.category, "status": TransactionStatus.CATEGORISED},
     )
     return standard_response(data={"id": updated.id, "ai_category": updated.ai_category, "status": updated.status})
 
@@ -238,20 +238,19 @@ async def plaid_sync(
     current_user: RequireOrgAuth,
     db: Annotated[Prisma, Depends(get_db_dep)],
 ):
-    """Triggers an inline Plaid transaction sync. Used by the Resync button."""
+    """Enqueues a Plaid transaction sync via arq worker."""
     integration = await db.integration.find_first(
-        where={"tenant_id": current_user.tenant_id, "type": "plaid", "status": "connected"}
+        where={
+            "tenant_id": current_user.tenant_id,
+            "type": ConnectorType.PLAID,
+            "status": IntegrationStatus.CONNECTED,
+        }
     )
     if not integration:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No connected Plaid integration found")
 
-    from app.integrations.plaid.sync import sync_plaid_transactions
-    result = await sync_plaid_transactions(
-        ctx={},
-        integration_id=integration.id,
-        tenant_id=current_user.tenant_id,
-    )
-    return standard_response(data={"result": result, "integration_id": integration.id})
+    await enqueue_plaid_sync(integration.id, current_user.tenant_id)
+    return standard_response(data={"status": "sync_enqueued", "integration_id": integration.id})
 
 
 @router.delete("/integrations/plaid/disconnect")
@@ -263,7 +262,7 @@ async def disconnect_plaid(
     tenant_id = current_user.tenant_id
 
     integration = await db.integration.find_first(
-        where={"tenant_id": tenant_id, "type": "plaid", "status": {"not": "disconnected"}}
+        where={"tenant_id": tenant_id, "type": ConnectorType.PLAID, "status": {"not": IntegrationStatus.DISCONNECTED}}
     )
     if not integration:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No active Plaid connection")
@@ -271,10 +270,10 @@ async def disconnect_plaid(
     cleaned = await cleanup_integration_data(db, integration.id)
     await db.integration.update(
         where={"id": integration.id},
-        data={"status": "disconnected", "encrypted_credentials": "{}"},
+        data={"status": IntegrationStatus.DISCONNECTED, "encrypted_credentials": "{}"},
     )
 
-    return standard_response(data={"status": "disconnected", **cleaned})
+    return standard_response(data={"status": IntegrationStatus.DISCONNECTED, **cleaned})
 
 
 @router.get("/integrations/plaid/connections")
@@ -286,7 +285,11 @@ async def list_plaid_connections(
     """Lists all Plaid connections for the tenant, optionally filtered by institution name (substring)."""
     tenant_id = current_user.tenant_id
 
-    where: dict = {"tenant_id": tenant_id, "type": "plaid", "status": {"not": "disconnected"}}
+    where: dict = {
+        "tenant_id": tenant_id,
+        "type": ConnectorType.PLAID,
+        "status": {"not": IntegrationStatus.DISCONNECTED},
+    }
     if institution_name:
         where["institution_name"] = {"contains": institution_name, "mode": "insensitive"}
 
@@ -345,22 +348,21 @@ async def list_plaid_connections(
 @router.post("/integrations/plaid/connections/{integration_id}/sync")
 async def sync_plaid_connection(
     integration_id: str,
-    background_tasks: BackgroundTasks,
     current_user: RequireOrgAuth,
     db: Annotated[Prisma, Depends(get_db_dep)],
 ):
     """Triggers a sync for a specific Plaid connection."""
     tenant_id = current_user.tenant_id
     intg = await db.integration.find_first(
-        where={"id": integration_id, "tenant_id": tenant_id, "type": "plaid"}
+        where={"id": integration_id, "tenant_id": tenant_id, "type": ConnectorType.PLAID}
     )
     if not intg:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Plaid connection not found")
-    if intg.status == "disconnected":
+    if intg.status == IntegrationStatus.DISCONNECTED:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Connection is disconnected — reconnect first")
 
-    await db.integration.update(where={"id": integration_id}, data={"status": "syncing"})
-    background_tasks.add_task(sync_plaid_transactions, {}, integration_id, tenant_id)
+    await db.integration.update(where={"id": integration_id}, data={"status": IntegrationStatus.SYNCING})
+    await enqueue_plaid_sync(integration_id, tenant_id)
     return standard_response(data={"status": "sync_enqueued", "integration_id": integration_id})
 
 
@@ -373,19 +375,19 @@ async def disconnect_plaid_connection(
     """Disconnects a specific Plaid connection. Credentials wiped."""
     tenant_id = current_user.tenant_id
     intg = await db.integration.find_first(
-        where={"id": integration_id, "tenant_id": tenant_id, "type": "plaid"}
+        where={"id": integration_id, "tenant_id": tenant_id, "type": ConnectorType.PLAID}
     )
     if not intg:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Plaid connection not found")
-    if intg.status == "disconnected":
+    if intg.status == IntegrationStatus.DISCONNECTED:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Already disconnected")
 
     cleaned = await cleanup_integration_data(db, integration_id)
     await db.integration.update(
         where={"id": integration_id},
-        data={"status": "disconnected", "encrypted_credentials": "{}"},
+        data={"status": IntegrationStatus.DISCONNECTED, "encrypted_credentials": "{}"},
     )
-    return standard_response(data={"status": "disconnected", **cleaned})
+    return standard_response(data={"status": IntegrationStatus.DISCONNECTED, **cleaned})
 
 
 @router.get("/integrations/plaid/connections/{integration_id}/sync-log")
@@ -393,12 +395,12 @@ async def plaid_connection_sync_log(
     integration_id: str,
     current_user: RequireOrgAuth,
     db: Annotated[Prisma, Depends(get_db_dep)],
-    limit: int = Query(20, le=100),
+    limit: int = Query(Pagination.MAX_SYNC_LOG_LIMIT, le=100),
 ):
     """Returns sync log entries for a specific Plaid connection."""
     tenant_id = current_user.tenant_id
     intg = await db.integration.find_first(
-        where={"id": integration_id, "tenant_id": tenant_id, "type": "plaid"}
+        where={"id": integration_id, "tenant_id": tenant_id, "type": ConnectorType.PLAID}
     )
     if not intg:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Plaid connection not found")

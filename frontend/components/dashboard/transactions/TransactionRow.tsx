@@ -23,14 +23,6 @@ export interface Transaction {
   account_subtype: string | null
 }
 
-const INCOME_CATEGORIES = ['sales', 'customer_payment', 'refund_received', 'other_income']
-
-const EXPENSE_CATEGORIES = [
-  'advertising', 'bank_fees', 'consulting', 'equipment', 'insurance',
-  'legal', 'meals', 'office_supplies', 'payroll', 'rent', 'software',
-  'tax', 'travel', 'utilities', 'other',
-]
-
 
 const STATUS_STYLES: Record<string, string> = {
   matched:     'bg-[rgba(0,200,83,0.08)] text-[#00C853] border-[rgba(0,200,83,0.2)]',
@@ -60,9 +52,10 @@ function formatCategory(raw: string): string {
 interface Props {
   transaction: Transaction
   onCategoryUpdate: (id: string, category: string) => void
+  categories: { income: string[]; expenses: string[] }
 }
 
-export function TransactionRow({ transaction: t, onCategoryUpdate }: Props) {
+export function TransactionRow({ transaction: t, onCategoryUpdate, categories }: Props) {
   const { getToken } = useAuth()
   const [open, setOpen] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -163,7 +156,7 @@ export function TransactionRow({ transaction: t, onCategoryUpdate }: Props) {
             <p className="px-3 py-1.5 text-[9px] font-mono text-brand-muted uppercase tracking-widest border-b border-brand-border">
               Income
             </p>
-            {INCOME_CATEGORIES.map(cat => (
+            {categories.income.map(cat => (
               <button
                 key={cat}
                 onClick={() => selectCategory(cat)}
@@ -180,7 +173,7 @@ export function TransactionRow({ transaction: t, onCategoryUpdate }: Props) {
             <p className="px-3 py-1.5 text-[9px] font-mono text-brand-muted uppercase tracking-widest border-y border-brand-border">
               Expenses
             </p>
-            {EXPENSE_CATEGORIES.map(cat => (
+            {categories.expenses.map(cat => (
               <button
                 key={cat}
                 onClick={() => selectCategory(cat)}
