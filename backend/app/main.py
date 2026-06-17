@@ -1,5 +1,6 @@
 ﻿from contextlib import asynccontextmanager
 from datetime import datetime, UTC
+import os
 import uuid
 
 import sentry_sdk
@@ -26,10 +27,11 @@ async def lifespan(app: FastAPI):
         )
     await connect_db()
     logger.info(
-        "Startup complete env=%s frontend_url=%s backend_base_url=%s",
+        "Startup complete env=%s frontend_url=%s backend_base_url=%s raw_FRONTEND_URL=%s",
         settings.environment,
         settings.frontend_url,
         settings.backend_base_url,
+        os.environ.get("FRONTEND_URL", "<not set>"),
     )
     yield
     await disconnect_db()
