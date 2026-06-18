@@ -1,3 +1,4 @@
+import asyncio
 import json
 from typing import Optional
 
@@ -15,13 +16,18 @@ _pool: Optional[ArqRedis] = None
 
 
 def _redis_settings() -> RedisSettings:
-    return RedisSettings.from_dsn(get_settings().redis_public_url)
+    settings = get_settings()
+    rs = RedisSettings.from_dsn(settings.redis_public_url)
+    # Short socket timeout so failures surface fast rather than blocking requests
+    rs.conn_timeout = 3
+    rs.conn_retries = 1
+    return rs
 
 
 async def get_queue_pool() -> ArqRedis:
     global _pool
     if _pool is None:
-        _pool = await create_pool(_redis_settings())
+        _pool = await asyncio.wait_for(create_pool(_redis_settings()), timeout=5.0)
     return _pool
 
 

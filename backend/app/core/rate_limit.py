@@ -13,8 +13,11 @@ from app.core.logging import get_logger, get_trace_id
 
 _logger = get_logger(__name__)
 
-# Paths exempt from rate limiting
+# Exact paths exempt from rate limiting
 _EXEMPT = {"/health", "/ready"}
+
+# Path prefixes also exempt
+_EXEMPT_PREFIXES = ("/v1/integrations", "/v1/webhooks")
 
 # (requests, window_seconds) per path prefix
 _LIMITS: list[tuple[str, int, int]] = [
@@ -41,7 +44,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
         path = request.url.path
 
-        if path in _EXEMPT:
+        if path in _EXEMPT or path.startswith(_EXEMPT_PREFIXES):
             return await call_next(request)
 
         identifier = (
@@ -54,19 +57,31 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         redis_key = f"rate:{identifier}:{bucket}"
 
         try:
-            from app.queue.pool import get_queue_pool
-            pool = await get_queue_pool()
+            import asyncio
+            import redis.asyncio as aioredis
+            from app.core.config import get_settings
+
+            redis_url = get_settings().redis_public_url
+            client = aioredis.from_url(
+                redis_url,
+                socket_connect_timeout=2,
+                socket_timeout=2,
+                retry_on_timeout=False,
+            )
 
             now = int(time.time())
             window_start = now - window
 
-            pipe = pool.pipeline()
-            pipe.zremrangebyscore(redis_key, 0, window_start)
-            pipe.zadd(redis_key, {str(now): now})
-            pipe.zcard(redis_key)
-            pipe.expire(redis_key, window)
-            results = await pipe.execute()
+            async def _check():
+                async with client:
+                    pipe = client.pipeline()
+                    pipe.zremrangebyscore(redis_key, 0, window_start)
+                    pipe.zadd(redis_key, {str(now): now})
+                    pipe.zcard(redis_key)
+                    pipe.expire(redis_key, window)
+                    return await pipe.execute()
 
+            results = await asyncio.wait_for(_check(), timeout=3.0)
             count = results[2]
 
             if count > limit:
