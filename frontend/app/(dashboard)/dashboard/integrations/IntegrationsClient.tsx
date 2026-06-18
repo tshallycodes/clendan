@@ -431,6 +431,7 @@ export function IntegrationsClient() {
         throw new Error(json.detail ?? json.error ?? `Sync failed (${res.status})`)
       }
       setStatus(provider, 'syncing')
+      toast('Resync started', 'info')
     } catch (err) {
       toast(err instanceof Error ? err.message : 'Resync failed', 'error')
     }
