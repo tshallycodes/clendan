@@ -3,7 +3,7 @@ import secrets
 from datetime import datetime, UTC
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, status
 from fastapi.responses import RedirectResponse
 
 from app.core.oauth_html import connected_page
@@ -200,6 +200,7 @@ async def xero_connect(
 
 @router.get("/integrations/xero/callback")
 async def xero_callback(
+    background_tasks: BackgroundTasks,
     db: Prisma = Depends(get_db_dep),
     code: str | None = Query(default=None),
     state: str | None = Query(default=None),
@@ -290,11 +291,12 @@ async def xero_callback(
 
     logger.info("xero_connected tenant=%s org=%s", tenant_id, creds.get("org_name"))
 
-    from app.integrations.xero.sync import enqueue_xero_sync
+    from app.integrations.xero.sync import enqueue_xero_sync, sync_xero_connection
     try:
         await enqueue_xero_sync(integration_id=integration.id, tenant_id=tenant_id)
     except Exception as exc:
-        logger.warning("xero_initial_sync_enqueue_failed integration=%s error=%s", integration.id, type(exc).__name__)
+        logger.warning("xero_initial_sync_enqueue_failed integration=%s error=%s — falling back to background task", integration.id, type(exc).__name__)
+        background_tasks.add_task(sync_xero_connection, {}, integration.id, tenant_id)
 
     return connected_page("Xero", f"{_frontend_url}/dashboard/integrations?connected=xero")
 
@@ -324,26 +326,28 @@ async def xero_status(
 
 @router.post("/integrations/xero/sync")
 async def xero_sync(
+    background_tasks: BackgroundTasks,
     current_user: RequireOrgAuth,
     db: Annotated[Prisma, Depends(get_db_dep)],
 ):
-    """Enqueues a Xero sync job via arq."""
+    """Enqueues a Xero sync job via arq, falling back to a background task if arq is unavailable."""
     integration = await db.integration.find_first(
-        where={"tenant_id": current_user.tenant_id, "type": "xero", "status": "connected"}
+        where={"tenant_id": current_user.tenant_id, "type": "xero", "status": {"not": "disconnected"}}
     )
     if not integration:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="No connected Xero integration found",
+            detail="No active Xero integration found",
         )
 
-    from app.integrations.xero.sync import enqueue_xero_sync
+    from app.integrations.xero.sync import enqueue_xero_sync, sync_xero_connection
     try:
         await enqueue_xero_sync(integration_id=integration.id, tenant_id=current_user.tenant_id)
+        return standard_response(data={"status": "sync_enqueued", "integration_id": integration.id})
     except Exception as exc:
-        logger.error("xero_manual_sync_enqueue_failed integration=%s error=%s", integration.id, type(exc).__name__)
-        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Failed to enqueue sync job")
-    return standard_response(data={"status": "sync_enqueued", "integration_id": integration.id})
+        logger.warning("xero_manual_sync_enqueue_failed integration=%s error=%s — falling back to background task", integration.id, type(exc).__name__)
+        background_tasks.add_task(sync_xero_connection, {}, integration.id, current_user.tenant_id)
+        return standard_response(data={"status": "sync_queued", "integration_id": integration.id})
 
 
 @router.post("/integrations/xero/select-tenant")
