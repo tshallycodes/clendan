@@ -134,26 +134,6 @@ async def _do_sync_truelayer_connection(integration_id: str, tenant_id: str) -> 
 
     logger.info("tl_sync_token_ok integration_id=%s prefix=%s", integration_id, access_token[:8])
 
-    # Fetch provider info and store institution_name if not already set
-    try:
-        logger.info("tl_sync_fetching_provider integration_id=%s", integration_id)
-        provider_info = await tl.get_provider_info(access_token)
-        logger.info("tl_sync_provider_info_raw integration_id=%s raw=%s", integration_id, provider_info)
-        provider = provider_info.get("provider") or {}
-        institution_name = (
-            provider.get("display_name")
-            or provider.get("provider_id")
-            or provider_info.get("provider_id")
-        )
-        logger.info("tl_sync_provider_resolved integration_id=%s institution_name=%s", integration_id, institution_name)
-        if institution_name:
-            await db.integration.update(
-                where={"id": integration_id},
-                data={"institution_name": institution_name},
-            )
-    except Exception as exc:
-        logger.warning("tl_sync_provider_info_failed integration_id=%s: %s — %s", integration_id, type(exc).__name__, exc)
-
     accounts_synced = 0
     total_transactions = 0
 
@@ -165,33 +145,17 @@ async def _do_sync_truelayer_connection(integration_id: str, tenant_id: str) -> 
         accounts = await tl.get_accounts(access_token)
         accounts_synced = len(accounts)
         logger.info("tl_sync_accounts_fetched integration_id=%s count=%d", integration_id, accounts_synced)
-        if accounts:
-            first = accounts[0]
-            logger.info(
-                "tl_sync_first_account_raw integration_id=%s keys=%s provider=%s display_name=%s account_type=%s",
-                integration_id,
-                list(first.keys()),
-                first.get("provider"),
-                first.get("display_name"),
-                first.get("account_type"),
-            )
 
-        # Extract institution name from first account's provider field if not already stored
+        # TrueLayer /info returns user identity, not bank info — institution name comes from accounts[0].provider
         if accounts and not integration.institution_name:
-            first_account_provider = accounts[0].get("provider") or {}
-            name_from_account = (
-                first_account_provider.get("display_name")
-                or first_account_provider.get("provider_id")
-            )
-            logger.info(
-                "tl_sync_institution_name_resolve integration_id=%s provider_field=%s resolved=%s",
-                integration_id, first_account_provider, name_from_account,
-            )
+            first_provider = accounts[0].get("provider") or {}
+            name_from_account = first_provider.get("display_name") or first_provider.get("provider_id")
             if name_from_account:
                 await db.integration.update(
                     where={"id": integration_id},
                     data={"institution_name": name_from_account},
                 )
+                logger.info("tl_sync_institution_name_set integration_id=%s name=%s", integration_id, name_from_account)
 
         from_date = (datetime.now(UTC) - timedelta(days=TRANSACTION_LOOKBACK_DAYS)).strftime("%Y-%m-%d")
         to_date = datetime.now(UTC).strftime("%Y-%m-%d")

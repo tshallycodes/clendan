@@ -122,7 +122,6 @@ async def get_provider_info(access_token: str) -> dict:
 
     try:
         raw = await _circuit.call(_retry, _call)
-        logger.info("tl_client_provider_info_raw keys=%s results_count=%d", list(raw.keys()), len(raw.get("results", [])))
         results = raw.get("results", [])
         return results[0] if results else {}
     except Exception as exc:
