@@ -411,12 +411,18 @@ export function IntegrationsClient() {
   async function handleResyncConnection(provider: string, integrationId: string) {
     try {
       const token = await getToken()
-      await fetch(`${API}/v1/integrations/${provider}/connections/${integrationId}/sync`, {
+      const res = await fetch(`${API}/v1/integrations/${provider}/connections/${integrationId}/sync`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
       })
+      if (!res.ok) {
+        const json = await res.json().catch(() => ({}))
+        throw new Error(json.detail ?? json.error ?? `Sync failed (${res.status})`)
+      }
       setStatus(provider, 'syncing')
-    } catch { /* silent — status poll will correct */ }
+    } catch (err) {
+      toast(err instanceof Error ? err.message : 'Resync failed', 'error')
+    }
   }
 
   async function handleCredentialsSubmit(slug: string, credentials: Record<string, string>) {
@@ -459,15 +465,19 @@ export function IntegrationsClient() {
   }
 
   async function handleResync(slug: string) {
-    setStatus(slug, 'syncing')
     try {
       const token = await getToken()
-      await fetch(`${API}/v1/integrations/${slug}/sync`, {
+      const res = await fetch(`${API}/v1/integrations/${slug}/sync`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
       })
-    } catch {
-      // silent fail — status poll will correct
+      if (!res.ok) {
+        const json = await res.json().catch(() => ({}))
+        throw new Error(json.detail ?? json.error ?? `Sync failed (${res.status})`)
+      }
+      setStatus(slug, 'syncing')
+    } catch (err) {
+      toast(err instanceof Error ? err.message : 'Resync failed', 'error')
     }
   }
 
