@@ -5,6 +5,7 @@ Fetches all financial entities and persists them to the database.
 import time
 from datetime import datetime, UTC
 
+from prisma import Json
 from app.core.config import get_settings
 from app.core.db import get_db
 from app.core.logging import get_logger
@@ -203,7 +204,7 @@ async def _sync_quickbooks_connection(integration_id: str, tenant_id: str) -> di
             data={
                 "status": "connected",
                 "last_synced_at": datetime.now(UTC),
-                "sync_metadata": sync_metadata,
+                "sync_metadata": Json(sync_metadata),
             },
         )
         logger.info(

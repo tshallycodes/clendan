@@ -6,6 +6,7 @@ Writes IntegrationSyncLog entries per entity. Updates integration status.
 import time
 from datetime import datetime, UTC
 
+from prisma import Json
 from app.core.config import get_settings
 from app.core.db import get_db
 from app.core.logging import get_logger
@@ -216,7 +217,7 @@ async def _sync_xero_connection(integration_id: str, tenant_id: str) -> dict:
                 "status": "connected",
                 "connected_at": datetime.now(UTC),
                 "last_synced_at": datetime.now(UTC),
-                "sync_metadata": sync_metadata,
+                "sync_metadata": Json(sync_metadata),
             },
         )
         logger.info(
