@@ -122,9 +122,11 @@ async def get_provider_info(access_token: str) -> dict:
 
     try:
         raw = await _circuit.call(_retry, _call)
+        logger.info("tl_client_provider_info_raw keys=%s results_count=%d", list(raw.keys()), len(raw.get("results", [])))
         results = raw.get("results", [])
         return results[0] if results else {}
-    except Exception:
+    except Exception as exc:
+        logger.warning("tl_client_provider_info_failed: %s — %s", type(exc).__name__, exc)
         return {}
 
 
@@ -196,7 +198,7 @@ async def get_transactions(
 
 async def _retry(fn, *args, **kwargs):
     """Exponential backoff with jitter. Raises last exception after MAX_ATTEMPTS."""
-    last_exc = None
+    last_exc: Exception = RuntimeError("_retry called with zero attempts")
     for attempt in range(MAX_ATTEMPTS):
         try:
             return await fn(*args, **kwargs)

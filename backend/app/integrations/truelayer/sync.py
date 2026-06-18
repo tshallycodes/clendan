@@ -24,7 +24,9 @@ async def _dedup_truelayer_connections(db, integration_id: str, tenant_id: str) 
         where={"integration_id": integration_id, "tenant_id": tenant_id}
     )
     new_ids = {a.truelayer_account_id for a in new_accounts if a.truelayer_account_id}
+    logger.info("tl_dedup_start integration_id=%s new_account_ids=%s", integration_id, new_ids)
     if not new_ids:
+        logger.info("tl_dedup_skipped integration_id=%s reason=no_accounts_on_new_integration", integration_id)
         return
 
     other_integrations = await db.integration.find_many(
@@ -35,12 +37,17 @@ async def _dedup_truelayer_connections(db, integration_id: str, tenant_id: str) 
             "status": {"not": "disconnected"},
         }
     )
+    logger.info("tl_dedup_candidates integration_id=%s count=%d", integration_id, len(other_integrations))
 
     for old_intg in other_integrations:
         old_accounts = await db.bankaccount.find_many(
             where={"integration_id": old_intg.id, "tenant_id": tenant_id}
         )
         old_ids = {a.truelayer_account_id for a in old_accounts if a.truelayer_account_id}
+        logger.info(
+            "tl_dedup_check old_integration_id=%s status=%s old_account_ids=%s subset=%s",
+            old_intg.id, old_intg.status, old_ids, old_ids.issubset(new_ids),
+        )
         if old_ids.issubset(new_ids):  # empty set is subset of any set — cleans up orphaned failed attempts
             await db.integrationsynclog.delete_many(where={"integration_id": old_intg.id})
             await db.bankaccount.update_many(
@@ -49,13 +56,30 @@ async def _dedup_truelayer_connections(db, integration_id: str, tenant_id: str) 
             )
             await db.integration.delete(where={"id": old_intg.id})
             logger.info(
-                "TrueLayer dedup: removed duplicate integration %s (accounts reassigned to %s)",
+                "tl_dedup_removed old_integration_id=%s accounts_reassigned_to=%s",
                 old_intg.id, integration_id,
             )
 
 
+_active_syncs: set[str] = set()
+
+
 async def sync_truelayer_connection(_ctx: dict, integration_id: str, tenant_id: str) -> dict:
-    logger.info("tl_sync_started integration_id=%s tenant_id=%s", integration_id, tenant_id)
+    logger.info("tl_sync_started integration_id=%s tenant_id=%s active_syncs=%s", integration_id, tenant_id, _active_syncs)
+
+    if integration_id in _active_syncs:
+        logger.warning("tl_sync_concurrent_skip integration_id=%s — already running, ignoring duplicate", integration_id)
+        return {"status": "skipped", "reason": "concurrent_sync"}
+
+    _active_syncs.add(integration_id)
+    try:
+        return await _do_sync_truelayer_connection(integration_id, tenant_id)
+    finally:
+        _active_syncs.discard(integration_id)
+        logger.info("tl_sync_lock_released integration_id=%s", integration_id)
+
+
+async def _do_sync_truelayer_connection(integration_id: str, tenant_id: str) -> dict:
     db = get_db()
 
     integration = await db.integration.find_unique(where={"id": integration_id})
@@ -114,13 +138,14 @@ async def sync_truelayer_connection(_ctx: dict, integration_id: str, tenant_id: 
     try:
         logger.info("tl_sync_fetching_provider integration_id=%s", integration_id)
         provider_info = await tl.get_provider_info(access_token)
+        logger.info("tl_sync_provider_info_raw integration_id=%s raw=%s", integration_id, provider_info)
         provider = provider_info.get("provider") or {}
         institution_name = (
             provider.get("display_name")
             or provider.get("provider_id")
             or provider_info.get("provider_id")
         )
-        logger.info("tl_sync_provider_info integration_id=%s institution_name=%s", integration_id, institution_name)
+        logger.info("tl_sync_provider_resolved integration_id=%s institution_name=%s", integration_id, institution_name)
         if institution_name:
             await db.integration.update(
                 where={"id": integration_id},
