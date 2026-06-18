@@ -86,6 +86,10 @@ async def _call_refresh(integration_type: str, creds: dict) -> dict:
         from app.integrations.outlook.client import refresh_outlook_token
         return await refresh_outlook_token(refresh_token)
 
+    if integration_type == "salesforce":
+        from app.integrations.salesforce.client import refresh_sf_token
+        return await refresh_sf_token(refresh_token)
+
     if integration_type == "stripe":
         # Stripe Connect tokens don't expire — no refresh needed
         raise ValueError("Stripe Connect tokens do not expire")

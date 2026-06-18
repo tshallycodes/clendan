@@ -45,6 +45,24 @@ from app.api.v1.adyen import router as adyen_router
 from app.api.v1.wise import router as wise_router
 from app.api.v1.mono import router as mono_router
 from app.api.v1.webhooks.mono import router as mono_webhook_router
+from app.api.v1.sap import router as sap_router
+from app.api.v1.webhooks.sap import router as sap_webhook_router
+from app.api.v1.salesforce import router as salesforce_router
+from app.api.v1.webhooks.salesforce import router as salesforce_webhook_router
+from app.api.v1.netsuite import router as netsuite_router
+from app.api.v1.webhooks.netsuite import router as netsuite_webhook_router
+from app.api.v1.dynamics import router as dynamics_router
+from app.api.v1.webhooks.dynamics import router as dynamics_webhook_router
+from app.api.v1.dropbox import router as dropbox_router
+from app.api.v1.webhooks.dropbox import router as dropbox_webhook_router
+from app.api.v1.onedrive import router as onedrive_router
+from app.api.v1.webhooks.onedrive import router as onedrive_webhook_router
+from app.api.v1.webhooks.freshbooks import router as freshbooks_webhook_router
+from app.api.v1.webhooks.sage import router as sage_webhook_router
+from app.api.v1.webhooks.hubspot import router as hubspot_webhook_router
+from app.api.v1.webhooks.wise import router as wise_webhook_router
+from app.api.v1.webhooks.truelayer import router as truelayer_webhook_router
+from app.api.v1.webhooks.adyen import router as adyen_webhook_router
 from app.clen.router import router as clen_router
 from app.api.v1.budgets import router as budgets_router
 
@@ -100,4 +118,22 @@ v1_router.include_router(mono_router)
 v1_router.include_router(mono_webhook_router)
 v1_router.include_router(transactions_router)
 v1_router.include_router(budgets_router)
+v1_router.include_router(sap_router)
+v1_router.include_router(sap_webhook_router)
+v1_router.include_router(salesforce_router)
+v1_router.include_router(salesforce_webhook_router)
+v1_router.include_router(netsuite_router)
+v1_router.include_router(netsuite_webhook_router)
+v1_router.include_router(dynamics_router)
+v1_router.include_router(dynamics_webhook_router)
+v1_router.include_router(dropbox_router)
+v1_router.include_router(dropbox_webhook_router)
+v1_router.include_router(onedrive_router)
+v1_router.include_router(onedrive_webhook_router)
+v1_router.include_router(freshbooks_webhook_router)
+v1_router.include_router(sage_webhook_router)
+v1_router.include_router(hubspot_webhook_router)
+v1_router.include_router(wise_webhook_router)
+v1_router.include_router(truelayer_webhook_router)
+v1_router.include_router(adyen_webhook_router)
 v1_router.include_router(generic_router)  # must be last — uses {slug} path params

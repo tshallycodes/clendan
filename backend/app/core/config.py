@@ -113,9 +113,31 @@ class Settings(BaseSettings):
 
     salesforce_client_id: str = ""
     salesforce_client_secret: str = ""
+    salesforce_redirect_uri: str = ""
 
     dropbox_client_id: str = ""
     dropbox_client_secret: str = ""
+    dropbox_redirect_uri: str = ""
+
+    onedrive_redirect_uri: str = ""
+
+    netsuite_client_id: str = ""
+    netsuite_client_secret: str = ""
+    netsuite_redirect_uri: str = ""
+    netsuite_account_id: str = ""
+
+    dynamics_redirect_uri: str = ""
+
+    sap_client_id: str = ""
+    sap_client_secret: str = ""
+    sap_token_url: str = ""
+    sap_api_base_url: str = ""
+
+    freshbooks_webhook_secret: str = ""
+    adyen_webhook_hmac_key: str = ""
+    wise_webhook_secret: str = ""
+    sage_webhook_secret: str = ""
+    truelayer_webhook_secret: str = ""
 
     @model_validator(mode="after")
     def _compute_redirect_uris(self) -> "Settings":
@@ -132,6 +154,11 @@ class Settings(BaseSettings):
             "paypal_redirect_uri": f"{base}/v1/integrations/paypal/callback",
             "freshbooks_redirect_uri": f"{base}/v1/integrations/freshbooks/callback",
             "sage_redirect_uri": f"{base}/v1/integrations/sage/callback",
+            "salesforce_redirect_uri": f"{base}/v1/integrations/salesforce/callback",
+            "dropbox_redirect_uri": f"{base}/v1/integrations/dropbox/callback",
+            "onedrive_redirect_uri": f"{base}/v1/integrations/onedrive/callback",
+            "netsuite_redirect_uri": f"{base}/v1/integrations/netsuite/callback",
+            "dynamics_redirect_uri": f"{base}/v1/integrations/dynamics/callback",
         }
         for field, value in defaults.items():
             if not getattr(self, field):
