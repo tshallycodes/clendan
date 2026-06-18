@@ -50,7 +50,7 @@ def _cents(value: object) -> int:
         return 0
 
 
-async def sync_freshbooks_connection(ctx: dict, integration_id: str, tenant_id: str) -> dict:
+async def sync_freshbooks_connection(_ctx: dict, integration_id: str, tenant_id: str) -> dict:
     """
     arq job: fetch FreshBooks invoices, clients, payments, expenses and persist to DB.
     Refreshes token if expired. Writes sync log entries. Updates integration status.
@@ -139,8 +139,8 @@ async def sync_freshbooks_connection(ctx: dict, integration_id: str, tenant_id: 
             await _upsert_entities(db, entity, records, integration_id, tenant_id)
         except Exception as exc:
             logger.error(
-                "freshbooks_sync_%s_failed integration_id=%s: %s",
-                entity, integration_id, type(exc).__name__,
+                "freshbooks_sync_%s_failed integration_id=%s: %s — %s",
+                entity, integration_id, type(exc).__name__, exc,
             )
             entity_status = "error"
 
