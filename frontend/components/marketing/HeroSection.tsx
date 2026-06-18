@@ -40,8 +40,9 @@ export function HeroSection() {
         }}
       />
 
+      {/* Text content — staggered entrance */}
       <motion.div
-        className="relative z-10 flex flex-col items-center max-w-4xl mx-auto"
+        className="relative z-10 flex flex-col items-center max-w-4xl mx-auto w-full"
         variants={container}
         initial="hidden"
         animate="show"
@@ -86,10 +87,16 @@ export function HeroSection() {
             See How It Works
           </Link>
         </motion.div>
+      </motion.div>
 
-        <motion.div variants={item} className="w-full">
-          <HeroTerminal />
-        </motion.div>
+      {/* Terminal — completely outside variants so the float CSS animation runs unimpeded */}
+      <motion.div
+        className="relative z-10 w-full max-w-4xl mx-auto"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.9, duration: 0.55, ease: EASE }}
+      >
+        <HeroTerminal />
       </motion.div>
     </section>
   )

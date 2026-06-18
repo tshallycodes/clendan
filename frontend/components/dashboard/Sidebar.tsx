@@ -33,7 +33,7 @@ export function Sidebar() {
       style={{ boxShadow: 'var(--nav-shadow-raised)' }}
     >
       <div className="px-5 py-5 border-b border-brand-border">
-        <Logo size="md" />
+        <Logo size="lg" />
       </div>
 
       <nav className="flex-1 py-4">
