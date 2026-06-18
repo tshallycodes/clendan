@@ -95,17 +95,17 @@ async def _compute_financial_summary(db, integration_id: str, results: dict) -> 
         return {
             "total_invoices": len(inv_all),
             "outstanding_invoices": len(inv_outstanding),
-            "outstanding_amount_cents": sum(i.outstanding_cents for i in inv_outstanding),
+            "outstanding_amount_cents": sum(i.outstanding_cents or 0 for i in inv_outstanding),
             "overdue_invoices": len(inv_overdue),
-            "overdue_amount_cents": sum(i.outstanding_cents for i in inv_overdue),
+            "overdue_amount_cents": sum(i.outstanding_cents or 0 for i in inv_overdue),
             "total_clients": contacts_count,
             "total_payments": len(payments),
-            "total_payments_amount_cents": sum(p.amount_cents for p in payments),
+            "total_payments_amount_cents": sum(p.amount_cents or 0 for p in payments),
             "total_expenses": len(expenses),
-            "total_expenses_amount_cents": sum(e.amount_cents for e in expenses),
+            "total_expenses_amount_cents": sum(e.amount_cents or 0 for e in expenses),
         }
     except Exception as exc:
-        logger.warning("xero_financial_summary_failed integration_id=%s: %s", integration_id, type(exc).__name__)
+        logger.warning("xero_financial_summary_failed integration_id=%s: %s — %s", integration_id, type(exc).__name__, exc)
         return {entity: v["count"] for entity, v in results.items()}
 
 
