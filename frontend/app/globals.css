@@ -75,6 +75,10 @@ body {
   50%       { transform: translateY(-14px); }
 }
 
+.hero-float {
+  animation: float 3.6s ease-in-out infinite;
+}
+
 @keyframes terminalFadeIn {
   from {
     opacity: 0;
