@@ -147,6 +147,26 @@ async def list_api_keys(
     )
 
 
+@router.delete("/{key_id}/permanent")
+async def delete_api_key(
+    key_id: str,
+    current_user: RequireOrgAuth,
+    db: Annotated[Prisma, Depends(get_db_dep)],
+):
+    """Permanently delete an API key row."""
+    tenant_id = current_user.tenant_id
+
+    api_key = await db.apikey.find_first(where={"id": key_id, "tenant_id": tenant_id})
+    if not api_key:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="API key not found")
+
+    await db.apikey.delete(where={"id": key_id})
+
+    logger.info("api_key_deleted", extra={"api_key_id": key_id, "tenant_id": tenant_id})
+
+    return standard_response(data={"id": key_id, "status": "deleted"})
+
+
 @router.delete("/{key_id}")
 async def revoke_api_key(
     key_id: str,

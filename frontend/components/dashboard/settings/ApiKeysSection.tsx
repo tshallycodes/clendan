@@ -66,6 +66,12 @@ export function ApiKeysSection() {
     await fetchKeys()
   }
 
+  async function handleDelete(id: string) {
+    const token = await getToken()
+    await fetch(`${API}/v1/api-keys/${id}/permanent`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } })
+    await fetchKeys()
+  }
+
   async function copyKey() {
     if (!revealedKey) return
     await navigator.clipboard.writeText(revealedKey)
@@ -126,11 +132,18 @@ export function ApiKeysSection() {
               <span className="text-[10px] font-mono text-brand-muted hidden sm:block">
                 {new Date(k.created_at).toLocaleDateString()}
               </span>
-              {k.status === 'active' && canConfigure && (
-                <button type="button" onClick={() => handleRevoke(k.id)}
-                  className="text-[10px] font-mono text-brand-danger border border-brand-danger/30 bg-brand-danger/08 hover:bg-brand-danger/15 rounded-sm px-2 py-0.5 transition-colors">
-                  Revoke
-                </button>
+              {canConfigure && (
+                k.status === 'active' ? (
+                  <button type="button" onClick={() => handleRevoke(k.id)}
+                    className="text-[10px] font-mono text-brand-danger border border-brand-danger/30 bg-brand-danger/08 hover:bg-brand-danger/15 rounded-sm px-2 py-0.5 transition-colors">
+                    Revoke
+                  </button>
+                ) : (
+                  <button type="button" onClick={() => handleDelete(k.id)}
+                    className="text-[10px] font-mono text-brand-danger border border-brand-danger/30 bg-brand-danger/08 hover:bg-brand-danger/15 rounded-sm px-2 py-0.5 transition-colors">
+                    Delete
+                  </button>
+                )
               )}
             </div>
           ))}
