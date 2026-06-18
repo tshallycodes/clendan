@@ -55,29 +55,40 @@ async def _dedup_truelayer_connections(db, integration_id: str, tenant_id: str) 
 
 
 async def sync_truelayer_connection(_ctx: dict, integration_id: str, tenant_id: str) -> dict:
+    logger.info("tl_sync_started integration_id=%s tenant_id=%s", integration_id, tenant_id)
     db = get_db()
 
     integration = await db.integration.find_unique(where={"id": integration_id})
     if not integration or integration.status not in ("syncing", "connected"):
-        logger.warning("TrueLayer sync skipped — integration %s not in expected state", integration_id)
+        logger.warning(
+            "tl_sync_skipped integration_id=%s status=%s",
+            integration_id, integration.status if integration else "NOT_FOUND",
+        )
         return {"status": "skipped", "reason": "not_syncing"}
 
     if integration.tenant_id != tenant_id:
-        logger.error("Tenant mismatch on TrueLayer sync job — blocked (integration=%s)", integration_id)
+        logger.error("tl_sync_tenant_mismatch integration_id=%s", integration_id)
         return {"status": "error", "reason": "tenant_mismatch"}
+
+    logger.info("tl_sync_status_ok integration_id=%s status=%s", integration_id, integration.status)
 
     try:
         creds = decrypt_credentials(integration.encrypted_credentials, tenant_id)
-    except ValueError:
-        logger.error("TrueLayer credential decryption failed for integration %s", integration_id)
+        logger.info("tl_sync_creds_ok integration_id=%s cred_keys=%s", integration_id, list(creds.keys()))
+    except ValueError as exc:
+        logger.error("tl_sync_decrypt_failed integration_id=%s: %s", integration_id, exc)
         await db.integration.update(where={"id": integration_id}, data={"status": "error"})
         return {"status": "error", "reason": "decryption_failed"}
 
     # Refresh token if expired
     token_expiry_at = creds.get("token_expiry_at", "")
+    logger.info("tl_sync_token_expiry integration_id=%s expiry=%s", integration_id, token_expiry_at)
     if token_expiry_at:
         expiry = datetime.fromisoformat(token_expiry_at)
-        if datetime.now(UTC) >= expiry:
+        now = datetime.now(UTC)
+        expired = now >= expiry
+        logger.info("tl_sync_token_expired=%s integration_id=%s now=%s expiry=%s", expired, integration_id, now.isoformat(), expiry.isoformat())
+        if expired:
             try:
                 new_tokens = await tl.refresh_truelayer_token(creds["refresh_token"])
                 creds.update(new_tokens)
@@ -85,19 +96,23 @@ async def sync_truelayer_connection(_ctx: dict, integration_id: str, tenant_id: 
                     where={"id": integration_id},
                     data={"encrypted_credentials": encrypt_credentials(creds, tenant_id)},
                 )
+                logger.info("tl_sync_token_refreshed integration_id=%s", integration_id)
             except Exception as exc:
-                logger.error("TrueLayer token refresh failed for integration %s: %s", integration_id, type(exc).__name__)
+                logger.error("tl_sync_token_refresh_failed integration_id=%s: %s — %s", integration_id, type(exc).__name__, exc)
                 await db.integration.update(where={"id": integration_id}, data={"status": "error"})
                 return {"status": "error", "reason": "token_refresh_failed"}
 
     access_token = creds.get("access_token", "")
     if not access_token:
-        logger.error("TrueLayer missing access_token after decrypt for integration %s", integration_id)
+        logger.error("tl_sync_missing_access_token integration_id=%s", integration_id)
         await db.integration.update(where={"id": integration_id}, data={"status": "error"})
         return {"status": "error", "reason": "missing_access_token"}
 
+    logger.info("tl_sync_token_ok integration_id=%s prefix=%s", integration_id, access_token[:8])
+
     # Fetch provider info and store institution_name if not already set
     try:
+        logger.info("tl_sync_fetching_provider integration_id=%s", integration_id)
         provider_info = await tl.get_provider_info(access_token)
         provider = provider_info.get("provider") or {}
         institution_name = (
@@ -105,13 +120,14 @@ async def sync_truelayer_connection(_ctx: dict, integration_id: str, tenant_id: 
             or provider.get("provider_id")
             or provider_info.get("provider_id")
         )
+        logger.info("tl_sync_provider_info integration_id=%s institution_name=%s", integration_id, institution_name)
         if institution_name:
             await db.integration.update(
                 where={"id": integration_id},
                 data={"institution_name": institution_name},
             )
-    except Exception:
-        pass  # non-critical
+    except Exception as exc:
+        logger.warning("tl_sync_provider_info_failed integration_id=%s: %s — %s", integration_id, type(exc).__name__, exc)
 
     accounts_synced = 0
     total_transactions = 0
@@ -120,8 +136,10 @@ async def sync_truelayer_connection(_ctx: dict, integration_id: str, tenant_id: 
         sync_start = datetime.now(UTC)
 
         # --- Accounts + balances ---
+        logger.info("tl_sync_fetching_accounts integration_id=%s", integration_id)
         accounts = await tl.get_accounts(access_token)
         accounts_synced = len(accounts)
+        logger.info("tl_sync_accounts_fetched integration_id=%s count=%d", integration_id, accounts_synced)
 
         # Extract institution name from first account's provider field if not already stored
         if accounts and not integration.institution_name:
@@ -142,15 +160,19 @@ async def sync_truelayer_connection(_ctx: dict, integration_id: str, tenant_id: 
         for account in accounts:
             tl_account_id = account.get("account_id", "")
             if not tl_account_id:
+                logger.warning("tl_sync_account_missing_id integration_id=%s account=%s", integration_id, account)
                 continue
+
+            logger.info("tl_sync_account_start integration_id=%s tl_account_id=%s", integration_id, tl_account_id)
 
             # Fetch balance — required to upsert BankAccount
             try:
                 balance_data = await tl.get_account_balance(access_token, tl_account_id)
                 current_balance = balance_data.get("current", 0.0)
                 balance_currency = balance_data.get("currency", "GBP")
+                logger.info("tl_sync_balance_fetched tl_account_id=%s balance=%s currency=%s", tl_account_id, current_balance, balance_currency)
             except Exception as exc:
-                logger.warning("TrueLayer balance fetch failed for account %s: %s", tl_account_id, type(exc).__name__)
+                logger.warning("tl_sync_balance_failed tl_account_id=%s: %s — %s", tl_account_id, type(exc).__name__, exc)
                 current_balance = 0.0
                 balance_currency = "GBP"
 
@@ -168,6 +190,7 @@ async def sync_truelayer_connection(_ctx: dict, integration_id: str, tenant_id: 
                     },
                 )
                 db_account_id = existing_account.id
+                logger.info("tl_sync_account_updated db_account_id=%s tl_account_id=%s", db_account_id, tl_account_id)
             else:
                 created = await db.bankaccount.create(data={
                     "tenant_id": tenant_id,
@@ -181,6 +204,7 @@ async def sync_truelayer_connection(_ctx: dict, integration_id: str, tenant_id: 
                     "currency": balance_currency,
                 })
                 db_account_id = created.id
+                logger.info("tl_sync_account_created db_account_id=%s tl_account_id=%s", db_account_id, tl_account_id)
 
             await db.integrationsynclog.create(data={
                 "tenant_id": tenant_id,
@@ -194,7 +218,9 @@ async def sync_truelayer_connection(_ctx: dict, integration_id: str, tenant_id: 
             # --- Transactions ---
             try:
                 txn_start = datetime.now(UTC)
+                logger.info("tl_sync_fetching_transactions tl_account_id=%s from=%s to=%s", tl_account_id, from_date, to_date)
                 transactions = await tl.get_transactions(access_token, tl_account_id, from_date, to_date)
+                logger.info("tl_sync_transactions_fetched tl_account_id=%s count=%d", tl_account_id, len(transactions))
                 txn_count = 0
 
                 for txn in transactions:
@@ -237,6 +263,7 @@ async def sync_truelayer_connection(_ctx: dict, integration_id: str, tenant_id: 
                         txn_count += 1
 
                 total_transactions += txn_count
+                logger.info("tl_sync_transactions_written tl_account_id=%s new=%d", tl_account_id, txn_count)
                 txn_elapsed_ms = int((datetime.now(UTC) - txn_start).total_seconds() * 1000)
                 await db.integrationsynclog.create(data={
                     "tenant_id": tenant_id,
@@ -248,7 +275,7 @@ async def sync_truelayer_connection(_ctx: dict, integration_id: str, tenant_id: 
                 })
 
             except Exception as exc:
-                logger.warning("TrueLayer transactions fetch failed for account %s: %s", tl_account_id, type(exc).__name__)
+                logger.warning("tl_sync_transactions_failed tl_account_id=%s: %s — %s", tl_account_id, type(exc).__name__, exc)
                 await db.integrationsynclog.create(data={
                     "tenant_id": tenant_id,
                     "integration_id": integration_id,
@@ -318,13 +345,13 @@ async def sync_truelayer_connection(_ctx: dict, integration_id: str, tenant_id: 
         await _dedup_truelayer_connections(db, integration_id, tenant_id)
 
         logger.info(
-            "TrueLayer sync done: tenant=%s accounts=%d transactions=%d",
-            tenant_id, accounts_synced, total_transactions,
+            "tl_sync_ok integration_id=%s tenant=%s accounts=%d transactions=%d",
+            integration_id, tenant_id, accounts_synced, total_transactions,
         )
         return {"status": "ok", "accounts_synced": accounts_synced, "transactions_synced": total_transactions}
 
     except Exception as exc:
-        logger.error("TrueLayer sync failed for integration %s: %s", integration_id, type(exc).__name__)
+        logger.error("tl_sync_failed integration_id=%s: %s — %s", integration_id, type(exc).__name__, exc)
         await db.integration.update(where={"id": integration_id}, data={"status": "error"})
         return {"status": "error", "reason": type(exc).__name__}
 

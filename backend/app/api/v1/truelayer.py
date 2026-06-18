@@ -2,7 +2,7 @@ import secrets
 from datetime import datetime, UTC
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, status
 from fastapi.responses import RedirectResponse
 
 from app.core.oauth_html import connected_page
@@ -16,7 +16,7 @@ from app.core.logging import get_logger
 from app.core.responses import standard_response
 from app.core.security import RequireOrgAuth
 from app.integrations.truelayer import client as tl
-from app.integrations.truelayer.sync import enqueue_truelayer_sync
+from app.integrations.truelayer.sync import sync_truelayer_connection
 
 logger = get_logger(__name__)
 router = APIRouter(tags=["truelayer"])
@@ -34,6 +34,7 @@ async def truelayer_connect(current_user: RequireOrgAuth):
 
 @router.get("/integrations/truelayer/callback")
 async def truelayer_callback(
+    background_tasks: BackgroundTasks,
     code: str = Query(...),
     state: str = Query(...),
     db: Annotated[Prisma, Depends(get_db_dep)] = None,
@@ -100,7 +101,7 @@ async def truelayer_callback(
         }
     )
 
-    await enqueue_truelayer_sync(integration.id, tenant_id)
+    background_tasks.add_task(sync_truelayer_connection, {}, integration.id, tenant_id)
     display_name = institution_name or "TrueLayer"
     return connected_page(display_name, f"{frontend_integrations}?connected=truelayer")
 
@@ -211,6 +212,7 @@ async def list_truelayer_transactions(
 
 @router.post("/integrations/truelayer/force-resync")
 async def force_resync_truelayer(
+    background_tasks: BackgroundTasks,
     current_user: RequireOrgAuth,
     db: Annotated[Prisma, Depends(get_db_dep)],
 ):
@@ -233,7 +235,7 @@ async def force_resync_truelayer(
         if account_ids:
             total_cleared += await db.banktransaction.delete_many(where={"account_id": {"in": account_ids}})
         await db.integration.update(where={"id": intg.id}, data={"status": IntegrationStatus.SYNCING})
-        await enqueue_truelayer_sync(intg.id, tenant_id)
+        background_tasks.add_task(sync_truelayer_connection, {}, intg.id, tenant_id)
 
     return standard_response(data={
         "status": "resync_enqueued",
@@ -244,10 +246,11 @@ async def force_resync_truelayer(
 
 @router.post("/integrations/truelayer/sync")
 async def trigger_truelayer_sync(
+    background_tasks: BackgroundTasks,
     current_user: RequireOrgAuth,
     db: Annotated[Prisma, Depends(get_db_dep)],
 ):
-    """Enqueues a TrueLayer sync via arq worker."""
+    """Triggers a background TrueLayer sync for the authenticated tenant."""
     tenant_id = current_user.tenant_id
 
     integration = await db.integration.find_first(
@@ -258,13 +261,14 @@ async def trigger_truelayer_sync(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No TrueLayer integration found")
 
     await db.integration.update(where={"id": integration.id}, data={"status": IntegrationStatus.SYNCING})
-    await enqueue_truelayer_sync(integration.id, tenant_id)
+    background_tasks.add_task(sync_truelayer_connection, {}, integration.id, tenant_id)
     return standard_response(data={"status": "sync_enqueued", "integration_id": integration.id})
 
 
 @router.post("/integrations/truelayer/connections/{integration_id}/force-resync")
 async def force_resync_truelayer_connection(
     integration_id: str,
+    background_tasks: BackgroundTasks,
     current_user: RequireOrgAuth,
     db: Annotated[Prisma, Depends(get_db_dep)],
 ):
@@ -289,7 +293,7 @@ async def force_resync_truelayer_connection(
         txns_deleted = await db.banktransaction.delete_many(where={"account_id": {"in": account_ids}})
 
     await db.integration.update(where={"id": integration_id}, data={"status": IntegrationStatus.SYNCING})
-    await enqueue_truelayer_sync(integration_id, tenant_id)
+    background_tasks.add_task(sync_truelayer_connection, {}, integration_id, tenant_id)
     return standard_response(data={
         "status": "resync_enqueued",
         "transactions_cleared": txns_deleted,
@@ -402,6 +406,7 @@ async def list_truelayer_connections(
 @router.post("/integrations/truelayer/connections/{integration_id}/sync")
 async def sync_truelayer_connection_endpoint(
     integration_id: str,
+    background_tasks: BackgroundTasks,
     current_user: RequireOrgAuth,
     db: Annotated[Prisma, Depends(get_db_dep)],
 ):
@@ -416,7 +421,7 @@ async def sync_truelayer_connection_endpoint(
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Connection is disconnected — reconnect first")
 
     await db.integration.update(where={"id": integration_id}, data={"status": IntegrationStatus.SYNCING})
-    await enqueue_truelayer_sync(integration_id, tenant_id)
+    background_tasks.add_task(sync_truelayer_connection, {}, integration_id, tenant_id)
     return standard_response(data={"status": "sync_enqueued", "integration_id": integration_id})
 
 
