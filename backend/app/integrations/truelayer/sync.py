@@ -70,6 +70,7 @@ async def sync_truelayer_connection(_ctx: dict, integration_id: str, tenant_id: 
         creds = decrypt_credentials(integration.encrypted_credentials, tenant_id)
     except ValueError:
         logger.error("TrueLayer credential decryption failed for integration %s", integration_id)
+        await db.integration.update(where={"id": integration_id}, data={"status": "error"})
         return {"status": "error", "reason": "decryption_failed"}
 
     # Refresh token if expired
@@ -91,6 +92,8 @@ async def sync_truelayer_connection(_ctx: dict, integration_id: str, tenant_id: 
 
     access_token = creds.get("access_token", "")
     if not access_token:
+        logger.error("TrueLayer missing access_token after decrypt for integration %s", integration_id)
+        await db.integration.update(where={"id": integration_id}, data={"status": "error"})
         return {"status": "error", "reason": "missing_access_token"}
 
     # Fetch provider info and store institution_name if not already set
@@ -154,7 +157,7 @@ async def sync_truelayer_connection(_ctx: dict, integration_id: str, tenant_id: 
             # Upsert BankAccount
             balance_minor = round(abs(current_balance) * 100)
             existing_account = await db.bankaccount.find_first(
-                where={"truelayer_account_id": tl_account_id}
+                where={"truelayer_account_id": tl_account_id, "tenant_id": tenant_id}
             )
             if existing_account:
                 await db.bankaccount.update(
