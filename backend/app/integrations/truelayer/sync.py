@@ -165,6 +165,16 @@ async def _do_sync_truelayer_connection(integration_id: str, tenant_id: str) -> 
         accounts = await tl.get_accounts(access_token)
         accounts_synced = len(accounts)
         logger.info("tl_sync_accounts_fetched integration_id=%s count=%d", integration_id, accounts_synced)
+        if accounts:
+            first = accounts[0]
+            logger.info(
+                "tl_sync_first_account_raw integration_id=%s keys=%s provider=%s display_name=%s account_type=%s",
+                integration_id,
+                list(first.keys()),
+                first.get("provider"),
+                first.get("display_name"),
+                first.get("account_type"),
+            )
 
         # Extract institution name from first account's provider field if not already stored
         if accounts and not integration.institution_name:
@@ -172,6 +182,10 @@ async def _do_sync_truelayer_connection(integration_id: str, tenant_id: str) -> 
             name_from_account = (
                 first_account_provider.get("display_name")
                 or first_account_provider.get("provider_id")
+            )
+            logger.info(
+                "tl_sync_institution_name_resolve integration_id=%s provider_field=%s resolved=%s",
+                integration_id, first_account_provider, name_from_account,
             )
             if name_from_account:
                 await db.integration.update(
