@@ -7,7 +7,7 @@ import urllib.parse
 from datetime import datetime, UTC
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, status
 from app.core.oauth_html import connected_page
 from prisma import Prisma
 
@@ -18,7 +18,7 @@ from app.core.responses import standard_response
 from app.core.security import RequireOrgAuth
 from app.integrations.encryption import decrypt_credentials, encrypt_credentials
 from app.integrations.freshbooks import client as fb
-from app.integrations.freshbooks.sync import enqueue_freshbooks_sync
+from app.integrations.freshbooks.sync import sync_freshbooks_connection
 
 logger = get_logger(__name__)
 router = APIRouter(tags=["freshbooks"])
@@ -54,6 +54,7 @@ async def freshbooks_connect(current_user: RequireOrgAuth):
 
 @router.get("/integrations/freshbooks/callback")
 async def freshbooks_callback(
+    background_tasks: BackgroundTasks,
     code: str = Query(...),
     state: str = Query(...),
     db: Prisma = Depends(get_db_dep),
@@ -111,10 +112,7 @@ async def freshbooks_callback(
             }
         )
 
-    try:
-        await enqueue_freshbooks_sync(integration_id=integration.id, tenant_id=tenant_id)
-    except Exception as exc:
-        logger.warning("freshbooks_enqueue_sync_failed: %s", type(exc).__name__)
+    background_tasks.add_task(sync_freshbooks_connection, {}, integration.id, tenant_id)
 
     frontend_url = get_settings().frontend_url.rstrip("/")
     return connected_page("FreshBooks", f"{frontend_url}/dashboard/integrations?connected=freshbooks")
@@ -143,24 +141,20 @@ async def freshbooks_status(
 
 @router.post("/integrations/freshbooks/sync")
 async def freshbooks_sync(
+    background_tasks: BackgroundTasks,
     current_user: RequireOrgAuth,
     db: Annotated[Prisma, Depends(get_db_dep)],
 ):
-    """Enqueues a FreshBooks sync job for the authenticated tenant."""
+    """Triggers a background FreshBooks sync for the authenticated tenant."""
     tenant_id = current_user.tenant_id
 
     integration = await db.integration.find_first(
-        where={"tenant_id": tenant_id, "type": "freshbooks", "status": "connected"}
+        where={"tenant_id": tenant_id, "type": "freshbooks", "status": {"not": "disconnected"}}
     )
     if not integration:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No active FreshBooks connection found")
 
-    try:
-        await enqueue_freshbooks_sync(integration_id=integration.id, tenant_id=tenant_id)
-    except Exception as exc:
-        logger.error("freshbooks_manual_sync_enqueue_failed: %s", type(exc).__name__)
-        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Failed to enqueue sync job")
-
+    background_tasks.add_task(sync_freshbooks_connection, {}, integration.id, tenant_id)
     return standard_response(data={"status": "sync_queued", "integration_id": integration.id})
 
 

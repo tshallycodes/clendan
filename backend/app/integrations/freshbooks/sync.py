@@ -209,10 +209,10 @@ async def _upsert_invoice(db, inv: dict, integration_id: str, tenant_id: str) ->
     raw_status = inv.get("payment_status") or inv.get("v3_status", "")
     status = _INVOICE_STATUS_MAP.get(raw_status, "draft")
 
-    total_cents = _cents(inv.get("amount", {}).get("amount"))
-    tax_cents = _cents(inv.get("tax_amount", {}).get("amount"))
+    total_cents = _cents((inv.get("amount") or {}).get("amount"))
+    tax_cents = _cents((inv.get("tax_amount") or {}).get("amount"))
     subtotal_cents = total_cents - tax_cents
-    outstanding_cents = _cents(inv.get("outstanding", {}).get("amount"))
+    outstanding_cents = _cents((inv.get("outstanding") or {}).get("amount"))
     due_date = _parse_date(inv.get("due_date") or inv.get("duedate"))
     issue_date = _parse_date(inv.get("create_date"))
 
@@ -263,7 +263,7 @@ async def _upsert_contact(db, client: dict, integration_id: str, tenant_id: str)
 async def _upsert_payment(db, pmt: dict, integration_id: str, tenant_id: str) -> None:
     ext_id = str(pmt["id"])
     shared = {
-        "amount_cents": _cents(pmt.get("amount", {}).get("amount")),
+        "amount_cents": _cents((pmt.get("amount") or {}).get("amount")),
         "currency": pmt.get("currency_code", "GBP"),
         "paid_at": _parse_date(pmt.get("date")),
         "payment_type": "received",
@@ -282,8 +282,8 @@ async def _upsert_expense(db, exp: dict, integration_id: str, tenant_id: str) ->
     category_raw = exp.get("category")
     category = category_raw.get("name") if isinstance(category_raw, dict) else None
     shared = {
-        "amount_cents": _cents(exp.get("amount", {}).get("amount")),
-        "tax_cents": _cents(exp.get("tax_amount", {}).get("amount")),
+        "amount_cents": _cents((exp.get("amount") or {}).get("amount")),
+        "tax_cents": _cents((exp.get("tax_amount") or {}).get("amount")),
         "category": category,
         "description": exp.get("notes"),
         "contact_name": exp.get("vendor"),
@@ -317,7 +317,7 @@ def _build_freshbooks_metadata(fetched: dict) -> dict:
 
     for inv in invoices:
         status = inv.get("payment_status") or inv.get("v3_status", "")
-        amount_cents = _cents(inv.get("outstanding", {}).get("amount"))
+        amount_cents = _cents((inv.get("outstanding") or {}).get("amount"))
 
         if status in unpaid_statuses:
             outstanding_cents += amount_cents
@@ -333,10 +333,10 @@ def _build_freshbooks_metadata(fetched: dict) -> dict:
                 pass
 
     total_payments_cents = sum(
-        _cents(pmt.get("amount", {}).get("amount")) for pmt in payments
+        _cents((pmt.get("amount") or {}).get("amount")) for pmt in payments
     )
     total_expenses_cents = sum(
-        _cents(exp.get("amount", {}).get("amount")) for exp in expenses
+        _cents((exp.get("amount") or {}).get("amount")) for exp in expenses
     )
 
     return {
