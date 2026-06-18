@@ -118,12 +118,8 @@ async def quickbooks_callback(
             "QB company info fetch failed after connect: %s", type(exc).__name__
         )
 
-    from app.integrations.quickbooks.sync import enqueue_quickbooks_sync, sync_quickbooks_connection
-    try:
-        await enqueue_quickbooks_sync(integration_id=integration.id, tenant_id=tenant_id)
-    except Exception as exc:
-        logger.warning("quickbooks_initial_sync_enqueue_failed integration=%s error=%s — falling back to background task", integration.id, type(exc).__name__)
-        background_tasks.add_task(sync_quickbooks_connection, {}, integration.id, tenant_id)
+    from app.integrations.quickbooks.sync import sync_quickbooks_connection
+    background_tasks.add_task(sync_quickbooks_connection, {}, integration.id, tenant_id)
 
     return connected_page("QuickBooks", f"{_frontend_url}/dashboard/integrations?connected=quickbooks")
 
@@ -167,14 +163,9 @@ async def quickbooks_sync(
             detail="No active QuickBooks integration found",
         )
 
-    from app.integrations.quickbooks.sync import enqueue_quickbooks_sync, sync_quickbooks_connection
-    try:
-        await enqueue_quickbooks_sync(integration_id=integration.id, tenant_id=current_user.tenant_id)
-        return standard_response(data={"status": "sync_enqueued", "integration_id": integration.id})
-    except Exception as exc:
-        logger.warning("quickbooks_manual_sync_enqueue_failed integration=%s error=%s — falling back to background task", integration.id, type(exc).__name__)
-        background_tasks.add_task(sync_quickbooks_connection, {}, integration.id, current_user.tenant_id)
-        return standard_response(data={"status": "sync_queued", "integration_id": integration.id})
+    from app.integrations.quickbooks.sync import sync_quickbooks_connection
+    background_tasks.add_task(sync_quickbooks_connection, {}, integration.id, current_user.tenant_id)
+    return standard_response(data={"status": "sync_queued", "integration_id": integration.id})
 
 
 class XeroSelectTenantRequest(BaseModel):
@@ -293,12 +284,8 @@ async def xero_callback(
 
     logger.info("xero_connected tenant=%s org=%s", tenant_id, creds.get("org_name"))
 
-    from app.integrations.xero.sync import enqueue_xero_sync, sync_xero_connection
-    try:
-        await enqueue_xero_sync(integration_id=integration.id, tenant_id=tenant_id)
-    except Exception as exc:
-        logger.warning("xero_initial_sync_enqueue_failed integration=%s error=%s — falling back to background task", integration.id, type(exc).__name__)
-        background_tasks.add_task(sync_xero_connection, {}, integration.id, tenant_id)
+    from app.integrations.xero.sync import sync_xero_connection
+    background_tasks.add_task(sync_xero_connection, {}, integration.id, tenant_id)
 
     return connected_page("Xero", f"{_frontend_url}/dashboard/integrations?connected=xero")
 
@@ -342,14 +329,9 @@ async def xero_sync(
             detail="No active Xero integration found",
         )
 
-    from app.integrations.xero.sync import enqueue_xero_sync, sync_xero_connection
-    try:
-        await enqueue_xero_sync(integration_id=integration.id, tenant_id=current_user.tenant_id)
-        return standard_response(data={"status": "sync_enqueued", "integration_id": integration.id})
-    except Exception as exc:
-        logger.warning("xero_manual_sync_enqueue_failed integration=%s error=%s — falling back to background task", integration.id, type(exc).__name__)
-        background_tasks.add_task(sync_xero_connection, {}, integration.id, current_user.tenant_id)
-        return standard_response(data={"status": "sync_queued", "integration_id": integration.id})
+    from app.integrations.xero.sync import sync_xero_connection
+    background_tasks.add_task(sync_xero_connection, {}, integration.id, current_user.tenant_id)
+    return standard_response(data={"status": "sync_queued", "integration_id": integration.id})
 
 
 @router.post("/integrations/xero/select-tenant")
