@@ -1,7 +1,8 @@
-﻿'use client'
+'use client'
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { motion } from 'framer-motion'
 import { useAuth } from '@clerk/nextjs'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { Logo } from '@/components/Logo'
@@ -13,14 +14,10 @@ const NAV_LINKS = [
   { label: 'Pricing', href: '/pricing' },
 ]
 
-
 function MobileMenu({ open, isSignedIn }: { open: boolean; isSignedIn: boolean | null | undefined }) {
   if (!open) return null
   return (
-    <div
-      className="md:hidden absolute top-full left-0 right-0 border-b border-brand-border"
-      style={{ background: 'var(--brand-bg)' }}
-    >
+    <div className="md:hidden border-t border-brand-border">
       <nav className="flex flex-col px-6 py-4 gap-1">
         {NAV_LINKS.map((link) => (
           <Link
@@ -75,69 +72,79 @@ export function Navbar() {
   }, [])
 
   return (
-    <header
-      className="sticky top-0 z-50 transition-all duration-200"
-      style={{
-        background: scrolled ? 'var(--brand-surface)' : 'transparent',
-        borderBottom: scrolled ? '1px solid var(--brand-border)' : '1px solid transparent',
-        backdropFilter: scrolled ? 'blur(8px)' : 'none',
-      }}
-    >
-      <div className="relative max-w-6xl mx-auto px-6 md:px-8 h-14 flex items-center justify-between">
-        <Logo size="md" />
+    <div className="fixed top-4 left-0 right-0 z-50 flex justify-center pointer-events-none">
+      <motion.header
+        initial={{ y: -24, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ type: 'spring', stiffness: 320, damping: 22, mass: 0.8 }}
+        className="pointer-events-auto w-[95%] overflow-hidden"
+        style={{
+          background: scrolled ? 'var(--brand-surface)' : 'var(--brand-surface)',
+          border: '1px solid var(--brand-border)',
+          borderRadius: '10px',
+          backdropFilter: 'blur(12px)',
+          boxShadow: scrolled
+            ? '0 8px 32px rgba(0,0,0,0.14), 0 2px 8px rgba(0,0,0,0.08)'
+            : '0 4px 16px rgba(0,0,0,0.08), 0 1px 4px rgba(0,0,0,0.04)',
+          transition: 'box-shadow 0.2s ease',
+        }}
+      >
+        <div className="relative px-6 md:px-8 h-14 flex items-center justify-between">
+          <Logo size="md" />
 
-        <nav className="hidden md:flex items-center gap-7">
-          {NAV_LINKS.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className="text-sm font-mono text-brand-muted hover:text-brand-text transition-colors"
-            >
-              {link.label}
-            </Link>
-          ))}
-        </nav>
-
-        <div className="hidden md:flex items-center gap-2">
-          <ThemeToggle />
-          {isSignedIn ? (
-            <Link
-              href="/dashboard"
-              className="rounded-sm px-5 py-2.5 text-sm font-mono font-medium transition-colors"
-              style={{ background: '#00C853', color: '#000' }}
-            >
-              Dashboard →
-            </Link>
-          ) : (
-            <>
+          <nav className="hidden md:flex items-center gap-7">
+            {NAV_LINKS.map((link) => (
               <Link
-                href="/sign-in"
-                className="text-sm font-mono text-brand-muted hover:text-brand-text transition-colors px-3 py-2.5"
+                key={link.href}
+                href={link.href}
+                className="text-sm font-mono text-brand-muted hover:text-brand-text transition-colors"
               >
-                Sign in
+                {link.label}
               </Link>
+            ))}
+          </nav>
+
+          <div className="hidden md:flex items-center gap-2">
+            <ThemeToggle />
+            {isSignedIn ? (
               <Link
-                href="/sign-up"
+                href="/dashboard"
                 className="rounded-sm px-5 py-2.5 text-sm font-mono font-medium transition-colors"
                 style={{ background: '#00C853', color: '#000' }}
               >
-                Get started
+                Dashboard →
               </Link>
-            </>
-          )}
+            ) : (
+              <>
+                <Link
+                  href="/sign-in"
+                  className="text-sm font-mono text-brand-muted hover:text-brand-text transition-colors px-3 py-2.5"
+                >
+                  Sign in
+                </Link>
+                <Link
+                  href="/sign-up"
+                  className="rounded-sm px-5 py-2.5 text-sm font-mono font-medium transition-colors"
+                  style={{ background: '#00C853', color: '#000' }}
+                >
+                  Get started
+                </Link>
+              </>
+            )}
+          </div>
+
+          <button
+            className="md:hidden text-brand-muted hover:text-brand-text transition-colors p-1"
+            onClick={() => setMobileOpen((v) => !v)}
+            aria-label="Toggle menu"
+            aria-expanded={mobileOpen}
+          >
+            {mobileOpen ? '✕' : '☰'}
+          </button>
         </div>
 
-        <button
-          className="md:hidden text-brand-muted hover:text-brand-text transition-colors p-1"
-          onClick={() => setMobileOpen((v) => !v)}
-          aria-label="Toggle menu"
-          aria-expanded={mobileOpen}
-        >
-          {mobileOpen ? '✕' : '☰'}
-        </button>
-      </div>
-
-      <MobileMenu open={mobileOpen} isSignedIn={isSignedIn} />
-    </header>
+        <MobileMenu open={mobileOpen} isSignedIn={isSignedIn} />
+      </motion.header>
+    </div>
   )
 }
