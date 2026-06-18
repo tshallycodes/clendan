@@ -66,6 +66,12 @@ class CircuitBreaker:
             self._opened_at = datetime.now(UTC)
             logger.warning("Circuit %s → OPEN (failures=%d)", self.name, self._failure_count)
 
+    def reset(self):
+        self._failure_count = 0
+        self._state = CircuitState.CLOSED
+        self._opened_at = None
+        logger.info("Circuit %s → RESET", self.name)
+
 
 class CircuitOpenError(Exception):
     pass

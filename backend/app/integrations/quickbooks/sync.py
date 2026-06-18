@@ -72,7 +72,7 @@ async def _compute_financial_summary(db, integration_id: str, results: dict) -> 
         return {entity: v["count"] for entity, v in results.items()}
 
 
-async def sync_quickbooks_connection(ctx: dict, integration_id: str, tenant_id: str) -> dict:
+async def sync_quickbooks_connection(_ctx: dict, integration_id: str, tenant_id: str) -> dict:
     """
     arq job: fetch all QB entities and persist to DB.
     Refreshes token if expired. Writes per-entity sync logs. Updates integration status.
@@ -91,6 +91,9 @@ async def sync_quickbooks_connection(ctx: dict, integration_id: str, tenant_id: 
 
 
 async def _sync_quickbooks_connection(integration_id: str, tenant_id: str) -> dict:
+    from app.integrations.quickbooks.client import _circuit
+    _circuit.reset()
+
     db = get_db()
     settings = get_settings()
 
