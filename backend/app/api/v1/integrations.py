@@ -74,7 +74,7 @@ async def quickbooks_callback(
         return RedirectResponse(f"{_frontend_url}/dashboard/integrations?error=token_exchange_failed")
 
     # Store encrypted credentials
-    credentials = json.dumps({**tokens, "realm_id": realm_id})
+    credentials = encrypt_credentials({**tokens, "realm_id": realm_id}, tenant_id)
 
     existing = await db.integration.find_first(
         where={"tenant_id": tenant_id, "type": "quickbooks"}
@@ -457,7 +457,7 @@ async def quickbooks_disconnect(
 
     # Revoke tokens at QuickBooks
     try:
-        creds = json.loads(integration.encrypted_credentials)
+        creds = decrypt_credentials(integration.encrypted_credentials, current_user.tenant_id)
         await qb.revoke_token(creds["refresh_token"])
     except Exception as exc:
         logger.warning(

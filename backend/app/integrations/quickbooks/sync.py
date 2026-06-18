@@ -8,6 +8,7 @@ from datetime import datetime, UTC
 from app.core.config import get_settings
 from app.core.db import get_db
 from app.core.logging import get_logger
+from app.core.encryption import decrypt as decrypt_field
 from app.integrations.encryption import decrypt_credentials, encrypt_credentials
 from app.integrations.quickbooks import client as qb
 from app.integrations.quickbooks.persist import (
@@ -119,7 +120,7 @@ async def sync_quickbooks_connection(ctx: dict, integration_id: str, tenant_id: 
                 integration_id, type(exc).__name__,
             )
 
-    access_token = creds.get("access_token", "")
+    access_token = decrypt_field(creds.get("access_token", ""))
     realm_id = creds.get("realm_id", "")
     sandbox = settings.quickbooks_sandbox
 
