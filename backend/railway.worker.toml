@@ -3,6 +3,6 @@ builder = "dockerfile"
 dockerfilePath = "Dockerfile"
 
 [deploy]
-startCommand = "python -m arq app.worker.WorkerSettings"
+startCommand = "python -m arq app.tool.ToolSettings"
 restartPolicyType = "on_failure"
 restartPolicyMaxRetries = 10
