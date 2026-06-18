@@ -1,4 +1,3 @@
-import json
 import secrets
 from datetime import datetime, UTC
 from typing import Annotated
@@ -42,6 +41,7 @@ async def quickbooks_connect(
 
 @router.get("/integrations/quickbooks/callback")
 async def quickbooks_callback(
+    background_tasks: BackgroundTasks,
     code: str = Query(...),
     state: str = Query(...),
     realm_id: str = Query(..., alias="realmId"),
@@ -102,7 +102,7 @@ async def quickbooks_callback(
     # Verify connection by fetching company info (zero trust — confirm data present)
     try:
         settings = _get_settings()
-        creds = json.loads(credentials)
+        creds = decrypt_credentials(credentials, tenant_id)
         company = await qb.get_company_info(
             encrypted_access=creds["access_token"],
             realm_id=realm_id,
@@ -117,13 +117,13 @@ async def quickbooks_callback(
         logger.warning(
             "QB company info fetch failed after connect: %s", type(exc).__name__
         )
-        # Don't fail — tokens are stored, sync will retry
 
-    from app.integrations.quickbooks.sync import enqueue_quickbooks_sync
+    from app.integrations.quickbooks.sync import enqueue_quickbooks_sync, sync_quickbooks_connection
     try:
         await enqueue_quickbooks_sync(integration_id=integration.id, tenant_id=tenant_id)
     except Exception as exc:
-        logger.warning("quickbooks_initial_sync_enqueue_failed integration=%s error=%s", integration.id, type(exc).__name__)
+        logger.warning("quickbooks_initial_sync_enqueue_failed integration=%s error=%s — falling back to background task", integration.id, type(exc).__name__)
+        background_tasks.add_task(sync_quickbooks_connection, {}, integration.id, tenant_id)
 
     return connected_page("QuickBooks", f"{_frontend_url}/dashboard/integrations?connected=quickbooks")
 
@@ -153,26 +153,28 @@ async def quickbooks_status(
 
 @router.post("/integrations/quickbooks/sync")
 async def quickbooks_sync(
+    background_tasks: BackgroundTasks,
     current_user: RequireOrgAuth,
     db: Annotated[Prisma, Depends(get_db_dep)],
 ):
-    """Enqueues a QuickBooks sync job via arq."""
+    """Enqueues a QuickBooks sync job via arq, falling back to a background task if arq is unavailable."""
     integration = await db.integration.find_first(
-        where={"tenant_id": current_user.tenant_id, "type": "quickbooks", "status": "connected"}
+        where={"tenant_id": current_user.tenant_id, "type": "quickbooks", "status": {"not": "disconnected"}}
     )
     if not integration:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="No connected QuickBooks integration found",
+            detail="No active QuickBooks integration found",
         )
 
-    from app.integrations.quickbooks.sync import enqueue_quickbooks_sync
+    from app.integrations.quickbooks.sync import enqueue_quickbooks_sync, sync_quickbooks_connection
     try:
         await enqueue_quickbooks_sync(integration_id=integration.id, tenant_id=current_user.tenant_id)
+        return standard_response(data={"status": "sync_enqueued", "integration_id": integration.id})
     except Exception as exc:
-        logger.error("quickbooks_manual_sync_enqueue_failed integration=%s error=%s", integration.id, type(exc).__name__)
-        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Failed to enqueue sync job")
-    return standard_response(data={"status": "sync_enqueued", "integration_id": integration.id})
+        logger.warning("quickbooks_manual_sync_enqueue_failed integration=%s error=%s — falling back to background task", integration.id, type(exc).__name__)
+        background_tasks.add_task(sync_quickbooks_connection, {}, integration.id, current_user.tenant_id)
+        return standard_response(data={"status": "sync_queued", "integration_id": integration.id})
 
 
 class XeroSelectTenantRequest(BaseModel):

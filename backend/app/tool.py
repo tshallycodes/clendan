@@ -2,7 +2,6 @@
 arq tool process — runs background jobs via Redis.
 Start with: python -m arq app.tool.ToolSettings
 """
-import json
 import time
 from datetime import UTC, datetime, timedelta
 
@@ -479,8 +478,9 @@ async def _orchestrate_invoice_received(
 
     try:
         from app.integrations.quickbooks import client as qb
+        from app.integrations.encryption import decrypt_credentials as _dc
         settings = get_settings()
-        creds = json.loads(integration.encrypted_credentials)
+        creds = _dc(integration.encrypted_credentials, tenant_id)
 
         if qb_entity == "Invoice":
             entity_data = await qb.get_invoice(
