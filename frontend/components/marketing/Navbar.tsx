@@ -79,13 +79,11 @@ export function Navbar() {
         transition={{ type: 'spring', stiffness: 320, damping: 22, mass: 0.8 }}
         className="pointer-events-auto w-[95%] overflow-hidden"
         style={{
-          background: scrolled ? 'var(--brand-surface)' : 'var(--brand-surface)',
+          background: 'var(--brand-surface)',
           border: '1px solid var(--brand-border)',
           borderRadius: '10px',
           backdropFilter: 'blur(12px)',
-          boxShadow: scrolled
-            ? '0 8px 32px rgba(0,0,0,0.14), 0 2px 8px rgba(0,0,0,0.08)'
-            : '0 4px 16px rgba(0,0,0,0.08), 0 1px 4px rgba(0,0,0,0.04)',
+          boxShadow: scrolled ? 'var(--nav-shadow-raised)' : 'var(--nav-shadow)',
           transition: 'box-shadow 0.2s ease',
         }}
       >
