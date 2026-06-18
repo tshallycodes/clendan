@@ -88,7 +88,7 @@ export function Navbar() {
         }}
       >
         <div className="relative px-6 md:px-8 h-14 flex items-center justify-between">
-          <Logo size="md" />
+          <Logo size="lg" />
 
           <nav className="hidden md:flex items-center gap-7">
             {NAV_LINKS.map((link) => (
