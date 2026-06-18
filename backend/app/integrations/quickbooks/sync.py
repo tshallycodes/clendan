@@ -115,13 +115,15 @@ async def _sync_quickbooks_connection(integration_id: str, tenant_id: str) -> di
 
     try:
         creds = decrypt_credentials(integration.encrypted_credentials, tenant_id)
-    except ValueError:
-        logger.error("qb_sync_decrypt_failed integration_id=%s", integration_id)
+        logger.info("qb_sync_creds_ok integration_id=%s cred_keys=%s", integration_id, list(creds.keys()))
+    except Exception as exc:
+        logger.error("qb_sync_decrypt_failed integration_id=%s: %s — %s", integration_id, type(exc).__name__, exc)
         await db.integration.update(where={"id": integration_id}, data={"status": "error"})
         return {"status": "error", "reason": "decrypt_failed"}
 
     # Refresh token if expired
     token_expiry_at = creds.get("token_expiry_at")
+    logger.info("qb_sync_token_expiry integration_id=%s token_expiry_at=%s", integration_id, token_expiry_at)
     if token_expiry_at:
         try:
             if datetime.fromisoformat(token_expiry_at) <= datetime.now(UTC):
@@ -132,15 +134,24 @@ async def _sync_quickbooks_connection(integration_id: str, tenant_id: str) -> di
                     where={"id": integration_id},
                     data={"encrypted_credentials": encrypt_credentials(creds, tenant_id)},
                 )
+                logger.info("qb_token_refreshed_ok integration_id=%s", integration_id)
         except Exception as exc:
             logger.error(
-                "qb_token_refresh_failed integration_id=%s: %s",
-                integration_id, type(exc).__name__,
+                "qb_token_refresh_failed integration_id=%s: %s — %s",
+                integration_id, type(exc).__name__, exc,
             )
 
-    access_token = decrypt_field(creds.get("access_token", ""))
+    try:
+        access_token = decrypt_field(creds.get("access_token", ""))
+        logger.info("qb_sync_token_decrypt_ok integration_id=%s token_prefix=%s", integration_id, access_token[:8] if access_token else "EMPTY")
+    except Exception as exc:
+        logger.error("qb_sync_token_decrypt_failed integration_id=%s: %s — %s", integration_id, type(exc).__name__, exc)
+        await db.integration.update(where={"id": integration_id}, data={"status": "error"})
+        return {"status": "error", "reason": "token_decrypt_failed"}
+
     realm_id = creds.get("realm_id", "")
     sandbox = settings.quickbooks_sandbox
+    logger.info("qb_sync_config integration_id=%s realm_id=%s sandbox=%s", integration_id, realm_id, sandbox)
 
     # Entity definitions: (name, fetch_fn, upsert_fn)
     entity_plan = [
@@ -163,8 +174,10 @@ async def _sync_quickbooks_connection(integration_id: str, tenant_id: str) -> di
         records: list = []
         error_message: str | None = None
 
+        logger.info("qb_sync_entity_start entity=%s integration_id=%s", entity, integration_id)
         try:
             records = await fetch_fn()
+            logger.info("qb_sync_entity_fetched entity=%s count=%d integration_id=%s", entity, len(records), integration_id)
             for item in records:
                 try:
                     await persist_fn(integration_id, tenant_id, item)
