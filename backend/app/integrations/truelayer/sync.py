@@ -41,7 +41,7 @@ async def _dedup_truelayer_connections(db, integration_id: str, tenant_id: str) 
             where={"integration_id": old_intg.id, "tenant_id": tenant_id}
         )
         old_ids = {a.truelayer_account_id for a in old_accounts if a.truelayer_account_id}
-        if old_ids and old_ids.issubset(new_ids):
+        if old_ids.issubset(new_ids):  # empty set is subset of any set — cleans up orphaned failed attempts
             await db.integrationsynclog.delete_many(where={"integration_id": old_intg.id})
             await db.bankaccount.update_many(
                 where={"integration_id": old_intg.id},
