@@ -79,10 +79,7 @@ async def upsert_invoices(db, integration_id: str, tenant_id: str, records: list
         external_id = str(inv.get("InvoiceID", ""))
         if not external_id:
             continue
-        payload = {
-            "integration_id": integration_id,
-            "tenant_id": tenant_id,
-            "external_id": external_id,
+        shared = {
             "number": inv.get("InvoiceNumber") or "",
             "status": _map_invoice_status(inv.get("Status", "")),
             "contact_name": (inv.get("Contact") or {}).get("Name") or "",
@@ -101,8 +98,10 @@ async def upsert_invoices(db, integration_id: str, tenant_id: str, records: list
                     "integration_id": integration_id,
                     "external_id": external_id,
                 }},
-                data={"create": payload, "update": {k: v for k, v in payload.items()
-                                                     if k not in ("integration_id", "tenant_id", "external_id")}},
+                data={
+                    "create": {**shared, "integration_id": integration_id, "tenant_id": tenant_id, "external_id": external_id, "source": "xero"},
+                    "update": shared,
+                },
             )
             count += 1
         except Exception as exc:
@@ -117,10 +116,7 @@ async def upsert_bills(db, integration_id: str, tenant_id: str, records: list) -
         external_id = str(bill.get("InvoiceID", ""))
         if not external_id:
             continue
-        payload = {
-            "integration_id": integration_id,
-            "tenant_id": tenant_id,
-            "external_id": external_id,
+        shared = {
             "number": bill.get("InvoiceNumber") or "",
             "status": _map_invoice_status(bill.get("Status", "")),
             "contact_name": (bill.get("Contact") or {}).get("Name") or "",
@@ -139,8 +135,10 @@ async def upsert_bills(db, integration_id: str, tenant_id: str, records: list) -
                     "integration_id": integration_id,
                     "external_id": external_id,
                 }},
-                data={"create": payload, "update": {k: v for k, v in payload.items()
-                                                     if k not in ("integration_id", "tenant_id", "external_id")}},
+                data={
+                    "create": {**shared, "integration_id": integration_id, "tenant_id": tenant_id, "external_id": external_id, "source": "xero"},
+                    "update": shared,
+                },
             )
             count += 1
         except Exception as exc:
@@ -163,10 +161,7 @@ async def upsert_contacts(db, integration_id: str, tenant_id: str, records: list
             contact_type = "customer"
         else:
             contact_type = "supplier"
-        payload = {
-            "integration_id": integration_id,
-            "tenant_id": tenant_id,
-            "external_id": external_id,
+        shared = {
             "name": contact.get("Name") or "",
             "email": contact.get("EmailAddress") or "",
             "contact_type": contact_type,
@@ -177,8 +172,10 @@ async def upsert_contacts(db, integration_id: str, tenant_id: str, records: list
                     "integration_id": integration_id,
                     "external_id": external_id,
                 }},
-                data={"create": payload, "update": {k: v for k, v in payload.items()
-                                                     if k not in ("integration_id", "tenant_id", "external_id")}},
+                data={
+                    "create": {**shared, "integration_id": integration_id, "tenant_id": tenant_id, "external_id": external_id, "source": "xero"},
+                    "update": shared,
+                },
             )
             count += 1
         except Exception as exc:
@@ -193,10 +190,7 @@ async def upsert_payments(db, integration_id: str, tenant_id: str, records: list
         external_id = str(pmt.get("PaymentID", ""))
         if not external_id:
             continue
-        payload = {
-            "integration_id": integration_id,
-            "tenant_id": tenant_id,
-            "external_id": external_id,
+        shared = {
             "amount_cents": _cents(pmt.get("Amount", 0)),
             "currency": pmt.get("CurrencyCode") or "",
             "reference": pmt.get("Reference") or "",
@@ -209,8 +203,10 @@ async def upsert_payments(db, integration_id: str, tenant_id: str, records: list
                     "integration_id": integration_id,
                     "external_id": external_id,
                 }},
-                data={"create": payload, "update": {k: v for k, v in payload.items()
-                                                     if k not in ("integration_id", "tenant_id", "external_id")}},
+                data={
+                    "create": {**shared, "integration_id": integration_id, "tenant_id": tenant_id, "external_id": external_id, "source": "xero"},
+                    "update": shared,
+                },
             )
             count += 1
         except Exception as exc:
@@ -225,10 +221,7 @@ async def upsert_expenses(db, integration_id: str, tenant_id: str, records: list
         external_id = str(txn.get("BankTransactionID", ""))
         if not external_id:
             continue
-        payload = {
-            "integration_id": integration_id,
-            "tenant_id": tenant_id,
-            "external_id": external_id,
+        shared = {
             "amount_cents": _cents(txn.get("Total", 0)),
             "description": txn.get("Reference") or "",
             "contact_name": (txn.get("Contact") or {}).get("Name") or "",
@@ -241,8 +234,10 @@ async def upsert_expenses(db, integration_id: str, tenant_id: str, records: list
                     "integration_id": integration_id,
                     "external_id": external_id,
                 }},
-                data={"create": payload, "update": {k: v for k, v in payload.items()
-                                                     if k not in ("integration_id", "tenant_id", "external_id")}},
+                data={
+                    "create": {**shared, "integration_id": integration_id, "tenant_id": tenant_id, "external_id": external_id, "source": "xero"},
+                    "update": shared,
+                },
             )
             count += 1
         except Exception as exc:
@@ -257,10 +252,7 @@ async def upsert_accounts(db, integration_id: str, tenant_id: str, records: list
         external_id = str(acct.get("AccountID", ""))
         if not external_id:
             continue
-        payload = {
-            "integration_id": integration_id,
-            "tenant_id": tenant_id,
-            "external_id": external_id,
+        shared = {
             "code": acct.get("Code") or "",
             "name": acct.get("Name") or "",
             "account_type": acct.get("Type") or "",
@@ -272,8 +264,10 @@ async def upsert_accounts(db, integration_id: str, tenant_id: str, records: list
                     "integration_id": integration_id,
                     "external_id": external_id,
                 }},
-                data={"create": payload, "update": {k: v for k, v in payload.items()
-                                                     if k not in ("integration_id", "tenant_id", "external_id")}},
+                data={
+                    "create": {**shared, "integration_id": integration_id, "tenant_id": tenant_id, "external_id": external_id, "source": "xero"},
+                    "update": shared,
+                },
             )
             count += 1
         except Exception as exc:
@@ -288,10 +282,7 @@ async def upsert_credit_notes(db, integration_id: str, tenant_id: str, records: 
         external_id = str(cn.get("CreditNoteID", ""))
         if not external_id:
             continue
-        payload = {
-            "integration_id": integration_id,
-            "tenant_id": tenant_id,
-            "external_id": external_id,
+        shared = {
             "number": cn.get("CreditNoteNumber") or "",
             "status": _map_invoice_status(cn.get("Status", "")),
             "contact_name": (cn.get("Contact") or {}).get("Name") or "",
@@ -305,8 +296,10 @@ async def upsert_credit_notes(db, integration_id: str, tenant_id: str, records: 
                     "integration_id": integration_id,
                     "external_id": external_id,
                 }},
-                data={"create": payload, "update": {k: v for k, v in payload.items()
-                                                     if k not in ("integration_id", "tenant_id", "external_id")}},
+                data={
+                    "create": {**shared, "integration_id": integration_id, "tenant_id": tenant_id, "external_id": external_id, "source": "xero"},
+                    "update": shared,
+                },
             )
             count += 1
         except Exception as exc:
@@ -321,10 +314,7 @@ async def upsert_tax_rates(db, integration_id: str, tenant_id: str, records: lis
         external_id = str(tr.get("TaxType", ""))
         if not external_id:
             continue
-        payload = {
-            "integration_id": integration_id,
-            "tenant_id": tenant_id,
-            "external_id": external_id,
+        shared = {
             "name": tr.get("Name") or "",
             "rate_pct": float(tr.get("EffectiveRate", 0) or 0),
             "tax_type": tr.get("TaxType") or "",
@@ -335,8 +325,10 @@ async def upsert_tax_rates(db, integration_id: str, tenant_id: str, records: lis
                     "integration_id": integration_id,
                     "external_id": external_id,
                 }},
-                data={"create": payload, "update": {k: v for k, v in payload.items()
-                                                     if k not in ("integration_id", "tenant_id", "external_id")}},
+                data={
+                    "create": {**shared, "integration_id": integration_id, "tenant_id": tenant_id, "external_id": external_id, "source": "xero"},
+                    "update": shared,
+                },
             )
             count += 1
         except Exception as exc:
