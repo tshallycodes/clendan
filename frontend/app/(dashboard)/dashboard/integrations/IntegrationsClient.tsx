@@ -56,6 +56,7 @@ export function IntegrationsClient() {
   const { toast } = useToast()
   const [statuses, setStatuses] = useState<Record<string, IntegrationStatus>>({})
   const [lastSyncedAt, setLastSyncedAt] = useState<Record<string, string | null>>({})
+  const prevStatusesRef = useRef<Record<string, IntegrationStatus>>({})
   const [loading, setLoading] = useState(true)
   const [connecting, setConnecting] = useState<string | null>(null)
   const [connectedBankId, setConnectedBankId] = useState<string | null>(null)
@@ -144,6 +145,16 @@ export function IntegrationsClient() {
         }
       }
     }
+    // Fire error toast when a sync transitions from syncing → error
+    const prev = prevStatusesRef.current
+    for (const slug of Object.keys(nextStatuses)) {
+      if ((prev[slug] === 'syncing' || prev[slug] === 'connecting') && nextStatuses[slug] === 'error') {
+        const name = INTEGRATIONS.find((i) => i.slug === slug)?.name ?? slug
+        toast(`${name} sync failed — check your connection`, 'error')
+      }
+    }
+    prevStatusesRef.current = nextStatuses
+
     setStatuses(nextStatuses)
     setLastSyncedAt(nextSynced)
   }
@@ -476,6 +487,7 @@ export function IntegrationsClient() {
         throw new Error(json.detail ?? json.error ?? `Sync failed (${res.status})`)
       }
       setStatus(slug, 'syncing')
+      toast('Resync started', 'info')
     } catch (err) {
       toast(err instanceof Error ? err.message : 'Resync failed', 'error')
     }
