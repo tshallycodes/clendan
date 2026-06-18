@@ -88,12 +88,7 @@ export function HeroSection() {
         </motion.div>
 
         <motion.div variants={item} className="w-full">
-          <motion.div
-            animate={{ y: [0, -12, 0] }}
-            transition={{ duration: 3.6, repeat: Infinity, ease: 'easeInOut', delay: 1.2 }}
-          >
-            <HeroTerminal />
-          </motion.div>
+          <HeroTerminal />
         </motion.div>
       </motion.div>
     </section>

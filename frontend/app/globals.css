@@ -70,6 +70,11 @@ body {
   font-family: var(--font-ibm-plex-mono), "IBM Plex Mono", monospace;
 }
 
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-14px); }
+}
+
 @keyframes terminalFadeIn {
   from {
     opacity: 0;

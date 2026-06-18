@@ -26,7 +26,12 @@ export function HeroTerminal() {
     <div
       key={cycle}
       className="w-full max-w-2xl mx-auto mt-10 rounded-sm overflow-hidden"
-      style={{ background: '#0a0a0a', border: '1px solid #1a2a1a' }}
+      style={{
+        background: '#0a0a0a',
+        border: '1px solid #1a2a1a',
+        animation: 'float 3.6s ease-in-out infinite',
+        animationDelay: '1.2s',
+      }}
     >
       <div
         className="flex items-center gap-1.5 px-4 py-2.5 border-b border-brand-border"
