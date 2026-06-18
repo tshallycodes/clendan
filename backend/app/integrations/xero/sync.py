@@ -115,6 +115,20 @@ async def sync_xero_connection(_ctx: dict, integration_id: str, tenant_id: str) 
     expenses, accounts, credit notes, and tax rates.
     Writes sync log entries. Updates integration status and sync_metadata.
     """
+    logger.info("xero_sync_started integration_id=%s tenant_id=%s", integration_id, tenant_id)
+    try:
+        return await _sync_xero_connection(integration_id, tenant_id)
+    except Exception as exc:
+        logger.error("xero_sync_unhandled_error integration_id=%s: %s — %s", integration_id, type(exc).__name__, exc)
+        try:
+            db = get_db()
+            await db.integration.update(where={"id": integration_id}, data={"status": "error"})
+        except Exception:
+            pass
+        return {"status": "error", "reason": "unhandled_exception"}
+
+
+async def _sync_xero_connection(integration_id: str, tenant_id: str) -> dict:
     db = get_db()
 
     integration = await db.integration.find_unique(where={"id": integration_id})

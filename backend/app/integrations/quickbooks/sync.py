@@ -76,6 +76,20 @@ async def sync_quickbooks_connection(ctx: dict, integration_id: str, tenant_id: 
     arq job: fetch all QB entities and persist to DB.
     Refreshes token if expired. Writes per-entity sync logs. Updates integration status.
     """
+    logger.info("qb_sync_started integration_id=%s tenant_id=%s", integration_id, tenant_id)
+    try:
+        return await _sync_quickbooks_connection(integration_id, tenant_id)
+    except Exception as exc:
+        logger.error("qb_sync_unhandled_error integration_id=%s: %s — %s", integration_id, type(exc).__name__, exc)
+        try:
+            db = get_db()
+            await db.integration.update(where={"id": integration_id}, data={"status": "error"})
+        except Exception:
+            pass
+        return {"status": "error", "reason": "unhandled_exception"}
+
+
+async def _sync_quickbooks_connection(integration_id: str, tenant_id: str) -> dict:
     db = get_db()
     settings = get_settings()
 
