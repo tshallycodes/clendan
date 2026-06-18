@@ -25,7 +25,13 @@ export function Sidebar() {
   const { signOut } = useClerk()
 
   return (
-    <aside className="hidden lg:flex w-64 shrink-0 bg-brand-surface border border-brand-border rounded-2xl shadow-lg flex-col sticky top-[5vh] h-[90vh] m-3 overflow-hidden">
+    <motion.aside
+      initial={{ y: -48, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      transition={{ type: 'spring', stiffness: 400, damping: 12, mass: 0.8 }}
+      className="hidden lg:flex w-64 shrink-0 bg-brand-surface border border-brand-border rounded-2xl flex-col sticky top-[5vh] h-[90vh] m-3 overflow-hidden"
+      style={{ boxShadow: 'var(--nav-shadow-raised)' }}
+    >
       <div className="px-5 py-5 border-b border-brand-border">
         <Logo size="md" />
       </div>
@@ -74,6 +80,6 @@ export function Sidebar() {
           Sign out
         </button>
       </div>
-    </aside>
+    </motion.aside>
   )
 }
