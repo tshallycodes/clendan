@@ -5,7 +5,7 @@ tenant_id, and the raw list returned by client_api.
 All amounts stored as integer cents (float * 100, rounded to int).
 """
 import re
-from datetime import datetime, timezone, UTC
+from datetime import datetime, timezone
 from typing import Optional
 
 from app.core.logging import get_logger
@@ -105,7 +105,7 @@ async def upsert_invoices(db, integration_id: str, tenant_id: str, records: list
             )
             count += 1
         except Exception as exc:
-            logger.error("xero_upsert_invoice_failed external_id=%s: %s", external_id, type(exc).__name__)
+            logger.error("xero_upsert_invoice_failed external_id=%s: %s — %s", external_id, type(exc).__name__, exc)
     return count
 
 
@@ -142,7 +142,7 @@ async def upsert_bills(db, integration_id: str, tenant_id: str, records: list) -
             )
             count += 1
         except Exception as exc:
-            logger.error("xero_upsert_bill_failed external_id=%s: %s", external_id, type(exc).__name__)
+            logger.error("xero_upsert_bill_failed external_id=%s: %s — %s", external_id, type(exc).__name__, exc)
     return count
 
 
@@ -179,7 +179,7 @@ async def upsert_contacts(db, integration_id: str, tenant_id: str, records: list
             )
             count += 1
         except Exception as exc:
-            logger.error("xero_upsert_contact_failed external_id=%s: %s", external_id, type(exc).__name__)
+            logger.error("xero_upsert_contact_failed external_id=%s: %s — %s", external_id, type(exc).__name__, exc)
     return count
 
 
@@ -210,7 +210,7 @@ async def upsert_payments(db, integration_id: str, tenant_id: str, records: list
             )
             count += 1
         except Exception as exc:
-            logger.error("xero_upsert_payment_failed external_id=%s: %s", external_id, type(exc).__name__)
+            logger.error("xero_upsert_payment_failed external_id=%s: %s — %s", external_id, type(exc).__name__, exc)
     return count
 
 
@@ -241,7 +241,7 @@ async def upsert_expenses(db, integration_id: str, tenant_id: str, records: list
             )
             count += 1
         except Exception as exc:
-            logger.error("xero_upsert_expense_failed external_id=%s: %s", external_id, type(exc).__name__)
+            logger.error("xero_upsert_expense_failed external_id=%s: %s — %s", external_id, type(exc).__name__, exc)
     return count
 
 
@@ -271,7 +271,7 @@ async def upsert_accounts(db, integration_id: str, tenant_id: str, records: list
             )
             count += 1
         except Exception as exc:
-            logger.error("xero_upsert_account_failed external_id=%s: %s", external_id, type(exc).__name__)
+            logger.error("xero_upsert_account_failed external_id=%s: %s — %s", external_id, type(exc).__name__, exc)
     return count
 
 
@@ -303,7 +303,7 @@ async def upsert_credit_notes(db, integration_id: str, tenant_id: str, records: 
             )
             count += 1
         except Exception as exc:
-            logger.error("xero_upsert_credit_note_failed external_id=%s: %s", external_id, type(exc).__name__)
+            logger.error("xero_upsert_credit_note_failed external_id=%s: %s — %s", external_id, type(exc).__name__, exc)
     return count
 
 
@@ -332,5 +332,5 @@ async def upsert_tax_rates(db, integration_id: str, tenant_id: str, records: lis
             )
             count += 1
         except Exception as exc:
-            logger.error("xero_upsert_tax_rate_failed external_id=%s: %s", external_id, type(exc).__name__)
+            logger.error("xero_upsert_tax_rate_failed external_id=%s: %s — %s", external_id, type(exc).__name__, exc)
     return count
