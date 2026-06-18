@@ -9,7 +9,6 @@ from prisma import Json
 from app.core.config import get_settings
 from app.core.db import get_db
 from app.core.logging import get_logger
-from app.core.encryption import decrypt as decrypt_field
 from app.integrations.encryption import decrypt_credentials, encrypt_credentials
 from app.integrations.quickbooks import client as qb
 from app.integrations.quickbooks.persist import (
@@ -141,13 +140,8 @@ async def _sync_quickbooks_connection(integration_id: str, tenant_id: str) -> di
                 integration_id, type(exc).__name__, exc,
             )
 
-    try:
-        access_token = decrypt_field(creds.get("access_token", ""))
-        logger.info("qb_sync_token_decrypt_ok integration_id=%s token_prefix=%s", integration_id, access_token[:8] if access_token else "EMPTY")
-    except Exception as exc:
-        logger.error("qb_sync_token_decrypt_failed integration_id=%s: %s — %s", integration_id, type(exc).__name__, exc)
-        await db.integration.update(where={"id": integration_id}, data={"status": "error"})
-        return {"status": "error", "reason": "token_decrypt_failed"}
+    access_token = creds.get("access_token", "")
+    logger.info("qb_sync_token_ok integration_id=%s token_prefix=%s", integration_id, access_token[:8] if access_token else "EMPTY")
 
     realm_id = creds.get("realm_id", "")
     sandbox = settings.quickbooks_sandbox

@@ -5,7 +5,6 @@ from urllib.parse import urlencode
 import httpx
 
 from app.core.config import get_settings
-from app.core.encryption import decrypt, encrypt
 from app.core.logging import get_logger
 from app.integrations.quickbooks.circuit_breaker import CircuitBreaker
 
@@ -62,8 +61,8 @@ async def exchange_code(code: str, realm_id: str) -> dict:
 
     data = await _retry(_call)
     return {
-        "access_token": encrypt(data["access_token"]),
-        "refresh_token": encrypt(data["refresh_token"]),
+        "access_token": data["access_token"],
+        "refresh_token": data["refresh_token"],
         "realm_id": realm_id,
         "expires_in": data.get("expires_in", 3600),
         "x_refresh_token_expires_in": data.get("x_refresh_token_expires_in", 8726400),
@@ -71,10 +70,10 @@ async def exchange_code(code: str, realm_id: str) -> dict:
     }
 
 
-async def refresh_token(encrypted_refresh: str) -> dict:
+async def refresh_token(refresh_token_raw: str) -> dict:
     """Refreshes access token using the stored refresh token."""
     settings = get_settings()
-    refresh = decrypt(encrypted_refresh)
+    refresh = refresh_token_raw
 
     async def _call():
         async with httpx.AsyncClient() as client:
@@ -89,15 +88,15 @@ async def refresh_token(encrypted_refresh: str) -> dict:
 
     data = await _retry(_call)
     return {
-        "access_token": encrypt(data["access_token"]),
-        "refresh_token": encrypt(data.get("refresh_token", encrypted_refresh)),
+        "access_token": data["access_token"],
+        "refresh_token": data.get("refresh_token", refresh_token_raw),
         "expires_in": data.get("expires_in", 3600),
     }
 
 
 async def get_company_info(encrypted_access: str, realm_id: str, sandbox: bool = True) -> dict:
     """Fetches QuickBooks company info. Validates response before returning."""
-    access_token = decrypt(encrypted_access)
+    access_token = encrypted_access
 
     async def _call():
         url = f"{get_api_base(sandbox)}/{realm_id}/companyinfo/{realm_id}"
@@ -127,7 +126,7 @@ async def get_company_info(encrypted_access: str, realm_id: str, sandbox: bool =
 
 async def get_invoice(encrypted_access: str, realm_id: str, invoice_id: str, sandbox: bool = True) -> dict:
     """Fetches a single QB Invoice. Returns normalised dict with minor-unit amounts."""
-    access_token = decrypt(encrypted_access)
+    access_token = encrypted_access
 
     async def _call():
         url = f"{get_api_base(sandbox)}/{realm_id}/invoice/{invoice_id}"
@@ -158,7 +157,7 @@ async def get_invoice(encrypted_access: str, realm_id: str, invoice_id: str, san
 
 async def get_bill(encrypted_access: str, realm_id: str, bill_id: str, sandbox: bool = True) -> dict:
     """Fetches a single QB Bill (supplier invoice). Returns normalised dict."""
-    access_token = decrypt(encrypted_access)
+    access_token = encrypted_access
 
     async def _call():
         url = f"{get_api_base(sandbox)}/{realm_id}/bill/{bill_id}"
@@ -189,7 +188,7 @@ async def get_bill(encrypted_access: str, realm_id: str, bill_id: str, sandbox: 
 
 async def find_or_create_vendor(encrypted_access: str, realm_id: str, vendor_name: str, sandbox: bool = True) -> str:
     """Returns QB Vendor entity ID, creating the vendor if not found."""
-    access_token = decrypt(encrypted_access)
+    access_token = encrypted_access
 
     async def _call():
         async with httpx.AsyncClient() as client:
@@ -227,7 +226,7 @@ async def get_expense_account_id(encrypted_access: str, realm_id: str, sandbox: 
     if settings.quickbooks_default_account_id:
         return settings.quickbooks_default_account_id
 
-    access_token = decrypt(encrypted_access)
+    access_token = encrypted_access
 
     async def _call():
         async with httpx.AsyncClient() as client:
@@ -263,7 +262,7 @@ async def create_bill(
     Idempotent — returns existing bill if DocNumber + VendorRef already exists.
     Amounts are passed in minor units (pence/cents) and converted to decimal here.
     """
-    access_token = decrypt(encrypted_access)
+    access_token = encrypted_access
     api_base = get_api_base(sandbox)
 
     async def _check_existing():
@@ -418,7 +417,7 @@ async def get_credit_memos(access_token: str, realm_id: str, sandbox: bool = Tru
 async def revoke_token(encrypted_token: str) -> None:
     """Revokes a QuickBooks token."""
     settings = get_settings()
-    token = decrypt(encrypted_token)
+    token = encrypted_token
 
     async def _call():
         async with httpx.AsyncClient() as client:
