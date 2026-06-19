@@ -20,17 +20,18 @@ def _base_url() -> str:
 
 
 def _headers() -> dict:
+    return {"Content-Type": "application/json"}
+
+
+def _auth() -> dict:
     s = get_settings()
-    return {
-        "Content-Type": "application/json",
-        "PLAID-CLIENT-ID": s.plaid_client_id,
-        "PLAID-SECRET": s.plaid_secret,
-    }
+    return {"client_id": s.plaid_client_id, "secret": s.plaid_secret}
 
 
 async def create_link_token(user_id: str, tenant_id: str, institution_id: str | None = None) -> str:
     """Creates a Plaid Link token. Returns the link_token string."""
     payload: dict = {
+        **_auth(),
         "user": {"client_user_id": f"{tenant_id}:{user_id}"},
         "client_name": "Clendan",
         "products": ["transactions"],
@@ -60,7 +61,7 @@ async def exchange_public_token(public_token: str) -> dict:
         async with httpx.AsyncClient() as c:
             r = await c.post(
                 f"{_base_url()}/item/public_token/exchange",
-                json={"public_token": public_token},
+                json={**_auth(), "public_token": public_token},
                 headers=_headers(),
                 timeout=15.0,
             )
@@ -86,7 +87,7 @@ async def get_accounts(encrypted_access: str) -> list[dict]:
         async with httpx.AsyncClient() as c:
             r = await c.post(
                 f"{_base_url()}/accounts/get",
-                json={"access_token": access_token},
+                json={**_auth(), "access_token": access_token},
                 headers=_headers(),
                 timeout=15.0,
             )
@@ -106,7 +107,7 @@ async def sync_transactions(encrypted_access: str, cursor: str | None = None) ->
     Returns {"added": [...], "modified": [...], "removed": [...], "next_cursor": str, "has_more": bool}
     """
     access_token = decrypt(encrypted_access)
-    body: dict = {"access_token": access_token}
+    body: dict = {**_auth(), "access_token": access_token}
     if cursor:
         body["cursor"] = cursor
 
@@ -126,7 +127,7 @@ async def sync_transactions(encrypted_access: str, cursor: str | None = None) ->
     }
 
 
-def plaid_amount_to_minor(amount: float, currency: str = "USD") -> int:
+def plaid_amount_to_minor(amount: float) -> int:
     """
     Converts Plaid float amount to integer minor units (cents/pence).
     Plaid positive = debit (money out), negative = credit (money in).
@@ -135,7 +136,7 @@ def plaid_amount_to_minor(amount: float, currency: str = "USD") -> int:
 
 
 async def _retry(fn, *args, **kwargs):
-    last_exc = None
+    last_exc: Exception | None = None
     for attempt in range(MAX_ATTEMPTS):
         try:
             return await fn(*args, **kwargs)
@@ -165,4 +166,4 @@ async def _retry(fn, *args, **kwargs):
                     http_status,
                     body,
                 )
-    raise last_exc
+    raise last_exc or RuntimeError("Plaid: max retries exceeded")
