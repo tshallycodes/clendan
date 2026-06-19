@@ -22,6 +22,7 @@ export const BANKS: BankDef[] = [
   { id: 'amex', name: 'Amex', abbr: 'AMEX', color: '#2E77BC', domain: 'americanexpress.com', provider: 'plaid', institution_id: 'ins_10', region: 'us' },
   { id: 'usaa', name: 'USAA', abbr: 'USAA', color: '#003087', domain: 'usaa.com', provider: 'plaid', institution_id: 'ins_11', region: 'us' },
   { id: 'ally', name: 'Ally Bank', abbr: 'ALLY', color: '#6A3290', domain: 'ally.com', provider: 'plaid', region: 'us' },
+  { id: 'revolut-us', name: 'Revolut', abbr: 'REV', color: '#3D3D3D', domain: 'revolut.com', provider: 'plaid', region: 'us' },
   // EU & UK Banks (via TrueLayer Open Banking)
   { id: 'barclays', name: 'Barclays', abbr: 'BARC', color: '#00AEEF', domain: 'barclays.co.uk', provider: 'truelayer', region: 'eu' },
   { id: 'hsbc', name: 'HSBC', abbr: 'HSBC', color: '#DB0011', domain: 'hsbc.com', provider: 'truelayer', region: 'eu' },
