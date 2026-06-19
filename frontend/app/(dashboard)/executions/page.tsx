@@ -1,6 +1,9 @@
+import type { Metadata } from 'next'
 import { getBackendToken } from '@/lib/auth'
 import { apiGet } from '@/lib/api'
 import { ExecutionsClient, type Execution } from '@/components/dashboard/executions/ExecutionsClient'
+
+export const metadata: Metadata = { title: 'Executions' }
 
 interface ExecutionsData {
   executions: Execution[]

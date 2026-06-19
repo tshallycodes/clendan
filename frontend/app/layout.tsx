@@ -2,6 +2,7 @@
 import { Syne, IBM_Plex_Mono } from 'next/font/google'
 import { ClerkProvider } from '@clerk/nextjs'
 import { Providers } from '@/components/Providers'
+import { WarningBanner } from '@/components/WarningBanner'
 import './globals.css'
 
 const syne = Syne({
@@ -17,7 +18,10 @@ const ibmPlexMono = IBM_Plex_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'Clendan — AI Financial Agent OS',
+  title: {
+    template: 'Clendan - %s',
+    default: 'Clendan — AI Financial Agent OS',
+  },
   description: 'Autonomous AI tools for financial operations',
 }
 
@@ -35,9 +39,7 @@ export default function RootLayout({
           />
         </head>
         <body className="min-h-full bg-brand-bg text-brand-text">
-          <div className="w-full bg-[#f5a623] text-black text-[11px] font-mono font-medium text-center py-1.5 px-4 tracking-wide z-[9999] relative">
-            This platform is under active development — not intended for public use.
-          </div>
+          <WarningBanner />
           <Providers>{children}</Providers>
         </body>
       </html>

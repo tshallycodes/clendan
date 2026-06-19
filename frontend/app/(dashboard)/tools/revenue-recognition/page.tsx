@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import { getBackendToken } from '@/lib/auth'
 import { apiGet } from '@/lib/api'
 import { slugToTool } from '../tools-data'
@@ -5,6 +6,8 @@ import { GenericToolClient } from '../[slug]/GenericToolClient'
 import type { Tool } from '@/components/dashboard/tools/ToolCard'
 
 const SLUG = 'revenue-recognition'
+
+export const metadata: Metadata = { title: 'Revenue Recognition' }
 
 export default async function RevenueRecognitionPage() {
   const tool = slugToTool(SLUG)!

@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { getBackendToken } from '@/lib/auth'
 import { apiGet } from '@/lib/api'
@@ -7,6 +8,12 @@ import type { Tool } from '@/components/dashboard/tools/ToolCard'
 
 interface PageProps {
   params: Promise<{ slug: string }>
+}
+
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const { slug } = await params
+  const tool = slugToTool(slug)
+  return { title: tool?.name ?? 'Tool' }
 }
 
 export default async function ToolSlugPage({ params }: PageProps) {

@@ -1,5 +1,8 @@
-﻿import { CodeBlock } from '@/components/dashboard/api/CodeBlock'
+﻿import type { Metadata } from 'next'
+import { CodeBlock } from '@/components/dashboard/api/CodeBlock'
 import { EndpointCard } from '@/components/dashboard/api/EndpointCard'
+
+export const metadata: Metadata = { title: 'API Docs' }
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'
 

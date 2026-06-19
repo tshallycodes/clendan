@@ -1,6 +1,9 @@
+import type { Metadata } from 'next'
 import { getBackendToken } from '@/lib/auth'
 import { apiGet } from '@/lib/api'
 import { TransactionsClient, type Transaction } from '@/components/dashboard/transactions/TransactionsClient'
+
+export const metadata: Metadata = { title: 'Transactions' }
 
 interface TransactionsData {
   transactions: Transaction[]

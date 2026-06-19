@@ -1,8 +1,11 @@
+import type { Metadata } from 'next'
 import { getBackendToken } from '@/lib/auth'
 import { apiGet } from '@/lib/api'
 import { AuditClient } from '@/components/dashboard/audit/AuditClient'
 import type { AuditEntry } from '@/components/dashboard/audit/AuditTable'
 import { AnimatedPage, AnimatedSection } from '@/components/dashboard/AnimatedPage'
+
+export const metadata: Metadata = { title: 'Audit Trail' }
 
 interface AuditData { entries: AuditEntry[] }
 

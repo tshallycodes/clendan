@@ -1,6 +1,9 @@
+import type { Metadata } from 'next'
 import { getBackendToken } from '@/lib/auth'
 import { apiGet } from '@/lib/api'
 import { ApprovalsClient, type Approval } from '@/components/dashboard/approvals/ApprovalsClient'
+
+export const metadata: Metadata = { title: 'Approvals' }
 
 interface ApprovalsData { approvals: Approval[] }
 

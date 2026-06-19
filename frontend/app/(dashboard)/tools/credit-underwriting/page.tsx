@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import { getBackendToken } from '@/lib/auth'
 import { apiGet } from '@/lib/api'
 import { slugToTool } from '../tools-data'
@@ -5,6 +6,8 @@ import { GenericToolClient } from '../[slug]/GenericToolClient'
 import type { Tool } from '@/components/dashboard/tools/ToolCard'
 
 const SLUG = 'credit-underwriting'
+
+export const metadata: Metadata = { title: 'Credit Underwriting' }
 
 export default async function CreditUnderwritingPage() {
   const tool = slugToTool(SLUG)!

@@ -1,4 +1,5 @@
-﻿import { getBackendToken } from '@/lib/auth'
+﻿import type { Metadata } from 'next'
+import { getBackendToken } from '@/lib/auth'
 import { apiGet } from '@/lib/api'
 import { OrgNameForm } from '@/components/dashboard/settings/OrgNameForm'
 import { NotificationsSection } from '@/components/dashboard/settings/NotificationsSection'
@@ -10,6 +11,8 @@ import { PolicySection } from '@/components/dashboard/settings/PolicySection'
 import { BillingSection } from '@/components/dashboard/settings/BillingSection'
 import { CurrencySelector } from '@/components/dashboard/settings/CurrencySelector'
 import { AnimatedPage, AnimatedSection } from '@/components/dashboard/AnimatedPage'
+
+export const metadata: Metadata = { title: 'Settings' }
 
 interface TenantData {
   tenant: { id: string; name: string; created_at: string }

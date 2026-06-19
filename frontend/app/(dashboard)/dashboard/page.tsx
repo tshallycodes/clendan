@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import { getBackendToken } from '@/lib/auth'
 import { apiGet } from '@/lib/api'
 import { StatCard } from '@/components/dashboard/StatCard'
@@ -9,6 +10,8 @@ import { IntegrationsHealth } from '@/components/dashboard/IntegrationsHealth'
 import { QuickActions } from '@/components/dashboard/QuickActions'
 import { AnimatedPage, AnimatedSection } from '@/components/dashboard/AnimatedPage'
 import { AutomationRing } from '@/components/dashboard/AutomationRing'
+
+export const metadata: Metadata = { title: 'Dashboard' }
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
