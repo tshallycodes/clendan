@@ -74,7 +74,7 @@ export function Sidebar() {
         <button
           type="button"
           onClick={() => signOut({ redirectUrl: '/sign-in' })}
-          className="w-full text-xs font-mono text-brand-muted hover:text-[#ff4d6d] transition-colors flex items-center justify-center gap-2 border border-brand-border px-3 py-2 rounded-sm"
+          className="w-full text-xs font-mono text-brand-muted hover:text-[#c5123b] transition-colors flex items-center justify-center gap-2 border border-brand-border px-3 py-2 rounded-sm"
         >
           <LogOut className="w-3 h-3" />
           Sign out

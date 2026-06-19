@@ -206,7 +206,7 @@ export function TransactionsClient({ initialTransactions, total, totalOutMinor, 
             )}
           >
             {FILTER_LABELS[key]}
-            <span className={cn('ml-1.5', filter === key ? 'text-brand-green/60' : 'text-brand-muted/50')}>
+            <span className={cn('ml-1.5', filter === key ? 'text-brand-secondary' : 'text-brand-muted')}>
               {counts[key]}
             </span>
           </button>
@@ -258,7 +258,7 @@ export function TransactionsClient({ initialTransactions, total, totalOutMinor, 
           <button
             onClick={loadMore}
             disabled={loadingMore}
-            className="text-[10px] font-mono px-4 py-2 border border-brand-border text-brand-muted hover:text-brand-text transition-colors rounded-sm disabled:opacity-40"
+            className="text-[10px] font-mono px-4 py-2 border border-brand-border text-brand-muted hover:text-brand-text transition-colors rounded-sm disabled:opacity-60"
           >
             {loadingMore ? 'Loading…' : `Load more (${total - transactions.length} remaining)`}
           </button>

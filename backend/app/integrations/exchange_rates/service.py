@@ -35,67 +35,76 @@ async def fetch_and_upsert_rates() -> dict:
         return {"status": "skipped", "reason": "no_api_key"}
 
     db = get_db()
+    managed_connection = not db.is_connected()
+    if managed_connection:
+        await db.connect()
+
     last_exc: Exception | None = None
 
-    for attempt in range(_MAX_ATTEMPTS):
-        try:
-            async with httpx.AsyncClient(timeout=30.0) as client:
-                url = f"{_API_BASE}/{settings.exchange_rates_api_key}/latest/USD"
-                response = await client.get(url)
-                response.raise_for_status()
-                data = response.json()
+    try:
+        for attempt in range(_MAX_ATTEMPTS):
+            try:
+                async with httpx.AsyncClient(timeout=30.0) as client:
+                    url = f"{_API_BASE}/{settings.exchange_rates_api_key}/latest/USD"
+                    response = await client.get(url)
+                    response.raise_for_status()
+                    data = response.json()
 
-            if data.get("result") != "success":
-                raise ValueError(f"API result={data.get('result')} error={data.get('error-type', 'unknown')}")
+                if data.get("result") != "success":
+                    raise ValueError(f"API result={data.get('result')} error={data.get('error-type', 'unknown')}")
 
-            conversion_rates: dict = data.get("conversion_rates", {})
-            if not conversion_rates:
-                raise ValueError("Empty conversion_rates in API response")
+                conversion_rates: dict = data.get("conversion_rates", {})
+                if not conversion_rates:
+                    raise ValueError("Empty conversion_rates in API response")
 
-            upserted = 0
-            missing: list[str] = []
+                upserted = 0
+                missing: list[str] = []
 
-            for code in SUPPORTED_CURRENCIES:
-                rate = conversion_rates.get(code)
-                if rate is None:
-                    missing.append(code)
-                    continue
+                for code in SUPPORTED_CURRENCIES:
+                    rate = conversion_rates.get(code)
+                    if rate is None:
+                        missing.append(code)
+                        continue
 
-                existing = await db.exchangerate.find_first(
-                    where={"base_currency": "USD", "target_currency": code}
+                    existing = await db.exchangerate.find_first(
+                        where={"base_currency": "USD", "target_currency": code}
+                    )
+                    if existing:
+                        await db.exchangerate.update(
+                            where={"id": existing.id},
+                            data={"rate": str(rate)},
+                        )
+                    else:
+                        await db.exchangerate.create(
+                            data={"base_currency": "USD", "target_currency": code, "rate": str(rate)},
+                        )
+                    upserted += 1
+
+                if missing:
+                    logger.warning("exchange_rates_missing_currencies", extra={"codes": missing})
+
+                logger.info("exchange_rates_fetched", extra={"upserted": upserted, "missing": len(missing)})
+                return {"status": "ok", "upserted": upserted, "missing": missing}
+
+            except Exception as exc:
+                last_exc = exc
+                logger.warning(
+                    "exchange_rates_fetch_attempt_failed",
+                    extra={"attempt": attempt + 1, "error": str(exc)},
                 )
-                if existing:
-                    await db.exchangerate.update(
-                        where={"id": existing.id},
-                        data={"rate": str(rate)},
-                    )
-                else:
-                    await db.exchangerate.create(
-                        data={"base_currency": "USD", "target_currency": code, "rate": str(rate)},
-                    )
-                upserted += 1
+                if attempt < _MAX_ATTEMPTS - 1:
+                    await asyncio.sleep(_BACKOFF_SECONDS * (attempt + 1))
 
-            if missing:
-                logger.warning("exchange_rates_missing_currencies", extra={"codes": missing})
+        # All attempts failed — keep existing stale rates, return error without raising
+        logger.error(
+            "exchange_rates_fetch_failed_all_attempts",
+            extra={"attempts": _MAX_ATTEMPTS, "error": str(last_exc)},
+        )
+        return {"status": "failed", "error": str(last_exc), "attempts": _MAX_ATTEMPTS}
 
-            logger.info("exchange_rates_fetched", extra={"upserted": upserted, "missing": len(missing)})
-            return {"status": "ok", "upserted": upserted, "missing": missing}
-
-        except Exception as exc:
-            last_exc = exc
-            logger.warning(
-                "exchange_rates_fetch_attempt_failed",
-                extra={"attempt": attempt + 1, "error": str(exc)},
-            )
-            if attempt < _MAX_ATTEMPTS - 1:
-                await asyncio.sleep(_BACKOFF_SECONDS * (attempt + 1))
-
-    # All attempts failed — keep existing stale rates, return error without raising
-    logger.error(
-        "exchange_rates_fetch_failed_all_attempts",
-        extra={"attempts": _MAX_ATTEMPTS, "error": str(last_exc)},
-    )
-    return {"status": "failed", "error": str(last_exc), "attempts": _MAX_ATTEMPTS}
+    finally:
+        if managed_connection:
+            await db.disconnect()
 
 
 async def fetch_exchange_rates_daily(ctx: dict) -> dict:
