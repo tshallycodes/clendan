@@ -239,7 +239,10 @@ export function BankDetailDrawer({ bank, onClose, onConnect, onDisconnect, onRes
     setConnections([])
     stopPolling()
     if (!bank) return
-    fetchConnections(bank)
+    const b = bank
+    fetchConnections(b).then((conns) => {
+      if (conns?.some((c) => c.status === 'syncing')) startPolling(b)
+    })
     return () => stopPolling()
   }, [bank?.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
