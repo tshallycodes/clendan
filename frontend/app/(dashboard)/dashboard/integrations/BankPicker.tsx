@@ -33,9 +33,9 @@ function abbrSize(abbr: string): string {
   return 'text-xs'
 }
 
-function BankCard({ bank, onViewDetail }: { bank: BankDef; onViewDetail: (b: BankDef) => void }) {
-  const [error, setError] = useState(false)
-  const useFallback = error || !bank.domain
+function BankCard({ bank, syncError, onViewDetail }: { bank: BankDef; syncError?: boolean; onViewDetail: (b: BankDef) => void }) {
+  const [imgError, setImgError] = useState(false)
+  const useFallback = imgError || !bank.domain
 
   return (
     <button
@@ -62,11 +62,14 @@ function BankCard({ bank, onViewDetail }: { bank: BankDef; onViewDetail: (b: Ban
               width={56}
               height={56}
               className="object-contain"
-              onError={() => setError(true)}
+              onError={() => setImgError(true)}
             />
           )}
         </div>
-        <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-[#00C853] border-2 border-brand-bg" />
+        <span
+          className="absolute -top-1 -right-1 w-3 h-3 rounded-full border-2 border-brand-bg"
+          style={{ background: syncError ? '#ff4d6d' : '#00C853' }}
+        />
       </div>
       <span className="text-[10px] font-mono text-brand-muted text-center leading-tight max-w-[64px] truncate">
         {bank.name}
@@ -83,9 +86,9 @@ export function BankPicker({
 }: BankPickerProps) {
   const [region, setRegion] = useState<Region>('us')
 
-  const plaidConnected = plaidStatus === 'connected' || plaidStatus === 'syncing'
-  const truelayerConnected = truelayerStatus === 'connected' || truelayerStatus === 'syncing'
-  const monoConnected = monoStatus === 'connected' || monoStatus === 'syncing'
+  const plaidConnected = plaidStatus === 'connected' || plaidStatus === 'syncing' || plaidStatus === 'error'
+  const truelayerConnected = truelayerStatus === 'connected' || truelayerStatus === 'syncing' || truelayerStatus === 'error'
+  const monoConnected = monoStatus === 'connected' || monoStatus === 'syncing' || monoStatus === 'error'
 
   const isConnected =
     (region === 'us' && plaidConnected) ||
@@ -152,6 +155,12 @@ export function BankPicker({
 
   const displayCards = connectedCards.length > 0 ? connectedCards : (isConnected ? [fallbackCard] : [])
 
+  const regionStatus =
+    region === 'eu' ? truelayerStatus
+    : region === 'africa' ? monoStatus
+    : plaidStatus
+  const isSyncError = regionStatus === 'error'
+
   return (
     <div className="space-y-4">
       {/* Region tabs */}
@@ -177,7 +186,7 @@ export function BankPicker({
         <div className="space-y-3">
           <div className="flex items-start gap-4 flex-wrap">
             {displayCards.map((bank) => (
-              <BankCard key={bank.id} bank={bank} onViewDetail={onViewDetail} />
+              <BankCard key={bank.id} bank={bank} syncError={isSyncError} onViewDetail={onViewDetail} />
             ))}
 
             {/* Add another bank */}
