@@ -127,7 +127,7 @@ async def sync_transactions(encrypted_access: str, cursor: str | None = None) ->
     }
 
 
-def plaid_amount_to_minor(amount: float) -> int:
+def plaid_amount_to_minor(amount: float, _currency: str = "USD") -> int:
     """
     Converts Plaid float amount to integer minor units (cents/pence).
     Plaid positive = debit (money out), negative = credit (money in).
