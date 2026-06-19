@@ -122,8 +122,6 @@ export function convertToDisplay(
 
 /**
  * Format a converted display amount with the correct symbol and decimal places.
- * Falls back to source currency when rates are not yet loaded to avoid showing
- * the target symbol against an unconverted source amount.
  */
 export function formatCurrency(
   amountMinor: number,
@@ -131,13 +129,6 @@ export function formatCurrency(
   targetCurrency: string,
   rates: Record<string, number>,
 ): string {
-  const hasRates = Object.keys(rates).length > 0
-
-  if (!hasRates && sourceCurrency !== targetCurrency) {
-    const src = CURRENCY_MAP[sourceCurrency]
-    return `${src?.symbol ?? sourceCurrency}${(amountMinor / 100).toFixed(src?.decimals ?? 2)}`
-  }
-
   const converted = convertToDisplay(amountMinor, sourceCurrency, targetCurrency, rates)
   const target = CURRENCY_MAP[targetCurrency]
   const decimals = target?.decimals ?? 2

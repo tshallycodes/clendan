@@ -38,10 +38,9 @@ interface Props {
   total: number
   totalOutMinor: number
   totalInMinor: number
-  fromDate?: string
 }
 
-export function TransactionsClient({ initialTransactions, total, totalOutMinor, totalInMinor, fromDate }: Props) {
+export function TransactionsClient({ initialTransactions, total, totalOutMinor, totalInMinor }: Props) {
   const { getToken } = useAuth()
   const { convert } = useCurrency()
   const [transactions, setTransactions] = useState(initialTransactions)
@@ -123,9 +122,8 @@ export function TransactionsClient({ initialTransactions, total, totalOutMinor, 
     try {
       const token = await getToken()
       if (!token) return
-      const dateParam = fromDate ? `&from_date=${fromDate}` : ''
       const res = await fetch(
-        `${API_BASE}/v1/transactions?limit=${PAGE_SIZE}&offset=${offset}${dateParam}`,
+        `${API_BASE}/v1/transactions?limit=${PAGE_SIZE}&offset=${offset}`,
         { headers: { Authorization: `Bearer ${token}` } },
       )
       if (!res.ok) return
@@ -162,7 +160,7 @@ export function TransactionsClient({ initialTransactions, total, totalOutMinor, 
       {transactions.length > 0 && (
         <motion.div variants={sectionVariants} className="grid grid-cols-3 gap-3">
           <div className="bg-brand-surface border border-brand-border rounded-sm p-4">
-            <p className="text-[10px] font-mono text-brand-muted uppercase tracking-wider">Total Out {fromDate ? `(${fromDate.slice(0, 4)})` : ''}</p>
+            <p className="text-[10px] font-mono text-brand-muted uppercase tracking-wider">Total Out</p>
             <p className="text-xl font-mono font-semibold text-[#ff4d6d] mt-1">
               {convert(summary.totalOut, summary.currency)}
             </p>
@@ -171,7 +169,7 @@ export function TransactionsClient({ initialTransactions, total, totalOutMinor, 
             </p>
           </div>
           <div className="bg-brand-surface border border-brand-border rounded-sm p-4">
-            <p className="text-[10px] font-mono text-brand-muted uppercase tracking-wider">Total In {fromDate ? `(${fromDate.slice(0, 4)})` : ''}</p>
+            <p className="text-[10px] font-mono text-brand-muted uppercase tracking-wider">Total In</p>
             <p className="text-xl font-mono font-semibold text-[#00C853] mt-1">
               {convert(summary.totalIn, summary.currency)}
             </p>
@@ -180,7 +178,7 @@ export function TransactionsClient({ initialTransactions, total, totalOutMinor, 
             </p>
           </div>
           <div className="bg-brand-surface border border-brand-border rounded-sm p-4">
-            <p className="text-[10px] font-mono text-brand-muted uppercase tracking-wider">Net Flow {fromDate ? `(${fromDate.slice(0, 4)})` : ''}</p>
+            <p className="text-[10px] font-mono text-brand-muted uppercase tracking-wider">Net Flow</p>
             <p className={cn(
               'text-xl font-mono font-semibold mt-1',
               summary.net >= 0 ? 'text-[#00C853]' : 'text-[#ff4d6d]',
