@@ -13,19 +13,12 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 const PAGE_SIZE = 50
 
 type StatusFilter = 'all' | 'pending' | 'categorised' | 'matched'
-type SourceFilter = 'all' | 'plaid' | 'truelayer' | 'mono'
-
 const FILTER_KEYS: StatusFilter[] = ['all', 'pending', 'categorised', 'matched']
 const FILTER_LABELS: Record<StatusFilter, string> = {
   all:          'All',
   pending:      'Pending',
   categorised:  'Categorised',
   matched:      'Matched',
-}
-const SOURCE_FILTER_LABELS: Record<string, string> = {
-  plaid: 'Plaid',
-  truelayer: 'TrueLayer',
-  mono: 'Mono',
 }
 
 const TABLE_COLS = ['Date', 'Account', 'Merchant', 'Amount', 'Category', 'Invoice', 'Status']
@@ -51,7 +44,7 @@ export function TransactionsClient({ initialTransactions, total, totalOutMinor, 
   const { convert } = useCurrency()
   const [transactions, setTransactions] = useState(initialTransactions)
   const [filter, setFilter] = useState<StatusFilter>('all')
-  const [sourceFilter, setSourceFilter] = useState<SourceFilter>('all')
+  const [bankFilter, setBankFilter] = useState<string>('all')
   const [search, setSearch] = useState('')
   const [loadingMore, setLoadingMore] = useState(false)
   const [offset, setOffset] = useState(initialTransactions.length)
@@ -106,14 +99,18 @@ export function TransactionsClient({ initialTransactions, total, totalOutMinor, 
     }
   }, [totalOutMinor, totalInMinor, counts2, transactions])
 
-  const availableSources = useMemo(() => {
-    const seen = new Set(transactions.map(t => t.source))
-    return Array.from(seen).filter(s => s in SOURCE_FILTER_LABELS)
+  const availableBanks = useMemo(() => {
+    const seen = new Map<string, string>()
+    for (const t of transactions) {
+      const key = t.institution_name ?? t.source
+      if (!seen.has(key)) seen.set(key, key)
+    }
+    return Array.from(seen.keys())
   }, [transactions])
 
   const filtered = useMemo(() => {
     let result = filter === 'all' ? transactions : transactions.filter(t => t.status === filter)
-    if (sourceFilter !== 'all') result = result.filter(t => t.source === sourceFilter)
+    if (bankFilter !== 'all') result = result.filter(t => (t.institution_name ?? t.source) === bankFilter)
     if (search.trim()) {
       const q = search.toLowerCase()
       result = result.filter(t =>
@@ -122,7 +119,7 @@ export function TransactionsClient({ initialTransactions, total, totalOutMinor, 
       )
     }
     return result
-  }, [transactions, filter, sourceFilter, search])
+  }, [transactions, filter, bankFilter, search])
 
   function handleCategoryUpdate(id: string, category: string) {
     setTransactions(prev =>
@@ -135,9 +132,8 @@ export function TransactionsClient({ initialTransactions, total, totalOutMinor, 
     try {
       const token = await getToken()
       if (!token) return
-      const sourceParam = sourceFilter !== 'all' ? `&source=${sourceFilter}` : ''
       const res = await fetch(
-        `${API_BASE}/v1/transactions?limit=${PAGE_SIZE}&offset=${offset}${sourceParam}`,
+        `${API_BASE}/v1/transactions?limit=${PAGE_SIZE}&offset=${offset}`,
         { headers: { Authorization: `Bearer ${token}` } },
       )
       if (!res.ok) return
@@ -227,31 +223,31 @@ export function TransactionsClient({ initialTransactions, total, totalOutMinor, 
             </button>
           ))}
         </div>
-        {availableSources.length > 1 && (
+        {availableBanks.length > 1 && (
           <div className="flex gap-1 ml-2 border-l border-brand-border pl-2">
             <button
-              onClick={() => setSourceFilter('all')}
+              onClick={() => setBankFilter('all')}
               className={cn(
                 'text-[10px] font-mono px-3 py-1.5 rounded-sm border transition-colors tracking-wider uppercase',
-                sourceFilter === 'all'
+                bankFilter === 'all'
                   ? 'border-brand-border bg-brand-elevated text-brand-text'
                   : 'border-brand-border bg-transparent text-brand-muted hover:text-brand-text',
               )}
             >
-              All Sources
+              All Banks
             </button>
-            {availableSources.map(src => (
+            {availableBanks.map(bank => (
               <button
-                key={src}
-                onClick={() => setSourceFilter(src as SourceFilter)}
+                key={bank}
+                onClick={() => setBankFilter(bank)}
                 className={cn(
                   'text-[10px] font-mono px-3 py-1.5 rounded-sm border transition-colors tracking-wider uppercase',
-                  sourceFilter === src
+                  bankFilter === bank
                     ? 'border-brand-border bg-brand-elevated text-brand-text'
                     : 'border-brand-border bg-transparent text-brand-muted hover:text-brand-text',
                 )}
               >
-                {SOURCE_FILTER_LABELS[src] ?? src}
+                {bank}
               </button>
             ))}
           </div>
