@@ -8,6 +8,7 @@ import { TeamSection } from '@/components/dashboard/settings/TeamSection'
 import { InviteLinksSection } from '@/components/dashboard/settings/team/InviteLinksSection'
 import { PolicySection } from '@/components/dashboard/settings/PolicySection'
 import { BillingSection } from '@/components/dashboard/settings/BillingSection'
+import { CurrencySelector } from '@/components/dashboard/settings/CurrencySelector'
 import { AnimatedPage, AnimatedSection } from '@/components/dashboard/AnimatedPage'
 
 interface TenantData {
@@ -92,6 +93,20 @@ export default async function SettingsPage() {
                     </span>
                   ) : <p className="text-xs font-mono text-brand-muted">—</p>}
                 </div>
+              </div>
+            </section>
+          </AnimatedSection>
+
+          {/* Display Currency */}
+          <AnimatedSection>
+            <section className="space-y-4">
+              <h2 className="text-[10px] font-mono uppercase tracking-widest text-brand-muted border-b border-brand-border pb-2">Display Currency</h2>
+              <div className="space-y-2">
+                <p className="text-[10px] font-mono text-brand-muted uppercase tracking-wide">Preferred currency</p>
+                <CurrencySelector />
+                <p className="text-[10px] font-mono text-brand-muted leading-relaxed">
+                  All monetary values across the dashboard are displayed in this currency. Amounts are converted from their native currency at read time — stored values are never modified.
+                </p>
               </div>
             </section>
           </AnimatedSection>

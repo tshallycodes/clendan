@@ -1,7 +1,8 @@
 generator client {
-  provider             = "prisma-client-py"
-  interface            = "asyncio"
-  recursive_type_depth = 5
+  provider                    = "prisma-client-py"
+  interface                   = "asyncio"
+  recursive_type_depth        = 5
+  enable_experimental_decimal = true
 }
 
 datasource db {
@@ -48,11 +49,12 @@ model Tenant {
 }
 
 model User {
-  id            String @id @default(cuid())
-  tenant_id     String
-  clerk_user_id String @unique
-  email         String
-  role          String @default("member")
+  id                 String @id @default(cuid())
+  tenant_id          String
+  clerk_user_id      String @unique
+  email              String
+  role               String @default("member")
+  preferred_currency String @default("USD")
 
   tenant    Tenant     @relation(fields: [tenant_id], references: [id])
   approvals Approval[]
@@ -629,4 +631,16 @@ model BudgetLine {
   budget Budget @relation(fields: [budget_id], references: [id], onDelete: Cascade)
 
   @@index([budget_id])
+}
+
+model ExchangeRate {
+  id              String   @id @default(cuid())
+  base_currency   String   @default("USD")
+  target_currency String
+  rate            Decimal  @db.Decimal(18, 8)
+  updated_at      DateTime @updatedAt
+
+  @@unique([base_currency, target_currency])
+  @@index([target_currency])
+  @@index([updated_at])
 }

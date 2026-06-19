@@ -2,6 +2,8 @@
 
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
+import { useAuth } from '@clerk/nextjs'
+import { formatCurrency } from '@/lib/currency'
 
 // ---------------------------------------------------------------------------
 // Theme
@@ -81,6 +83,36 @@ function ToastItem({ item, onDismiss }: { item: ToastItem; onDismiss: (id: strin
 }
 
 // ---------------------------------------------------------------------------
+// Currency
+// ---------------------------------------------------------------------------
+
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+
+interface CurrencyCtx {
+  currency: string
+  setCurrency: (code: string) => Promise<void>
+  rates: Record<string, number>
+  ratesUpdatedAt: string | null
+  isStale: boolean
+  /** Format amountMinor (stored units) from sourceCurrency into the user's preferred currency. */
+  convert: (amountMinor: number, sourceCurrency: string) => string
+}
+
+const CurrencyContext = createContext<CurrencyCtx>({
+  currency: 'USD',
+  setCurrency: async () => {},
+  rates: {},
+  ratesUpdatedAt: null,
+  isStale: false,
+  convert: (amountMinor, sourceCurrency) =>
+    formatCurrency(amountMinor, sourceCurrency, 'USD', {}),
+})
+
+export function useCurrency() {
+  return useContext(CurrencyContext)
+}
+
+// ---------------------------------------------------------------------------
 // Providers
 // ---------------------------------------------------------------------------
 
@@ -88,16 +120,78 @@ export function Providers({ children }: { children: React.ReactNode }) {
   const [theme, setThemeState] = useState('dark')
   const [toasts, setToasts] = useState<ToastItem[]>([])
 
+  // Currency state
+  const { getToken } = useAuth()
+  const [currency, setCurrencyState] = useState('USD')
+  const [rates, setRates] = useState<Record<string, number>>({})
+  const [ratesUpdatedAt, setRatesUpdatedAt] = useState<string | null>(null)
+  const [isStale, setIsStale] = useState(false)
+
   useEffect(() => {
     const saved = localStorage.getItem('theme') ?? 'dark'
     setThemeState(saved)
   }, [])
+
+  // Fetch rates + user preference once the auth token is available
+  useEffect(() => {
+    let cancelled = false
+    async function load() {
+      const token = await getToken().catch(() => null)
+      if (!token || cancelled) return
+      try {
+        const [ratesRes, prefRes] = await Promise.all([
+          fetch(`${API_BASE}/v1/currency/rates`, { headers: { Authorization: `Bearer ${token}` } }),
+          fetch(`${API_BASE}/v1/currency/preferences`, { headers: { Authorization: `Bearer ${token}` } }),
+        ])
+        if (ratesRes.ok) {
+          const ratesJson = await ratesRes.json()
+          if (!cancelled) {
+            setRates(ratesJson.data?.rates ?? {})
+            setRatesUpdatedAt(ratesJson.data?.updated_at ?? null)
+            setIsStale(ratesJson.data?.is_stale ?? false)
+          }
+        }
+        if (prefRes.ok) {
+          const prefJson = await prefRes.json()
+          const saved = prefJson.data?.preferred_currency
+          if (!cancelled && saved) {
+            setCurrencyState(saved)
+            localStorage.setItem('preferredCurrency', saved)
+          }
+        }
+      } catch {
+        // Network error — use localStorage fallback
+        const local = localStorage.getItem('preferredCurrency')
+        if (!cancelled && local) setCurrencyState(local)
+      }
+    }
+    load()
+    return () => { cancelled = true }
+  }, [getToken])
 
   function setTheme(t: string) {
     setThemeState(t)
     localStorage.setItem('theme', t)
     document.documentElement.classList.toggle('dark', t === 'dark')
   }
+
+  const setCurrency = useCallback(async (code: string) => {
+    setCurrencyState(code)
+    localStorage.setItem('preferredCurrency', code)
+    const token = await getToken().catch(() => null)
+    if (!token) return
+    await fetch(`${API_BASE}/v1/currency/preferences`, {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ currency: code }),
+    }).catch(() => {})
+  }, [getToken])
+
+  const convert = useCallback(
+    (amountMinor: number, sourceCurrency: string) =>
+      formatCurrency(amountMinor, sourceCurrency, currency, rates),
+    [currency, rates]
+  )
 
   const dismiss = useCallback((id: string) => {
     setToasts((prev) => prev.filter((t) => t.id !== id))
@@ -111,16 +205,18 @@ export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <ThemeContext.Provider value={{ theme, setTheme }}>
       <ToastContext.Provider value={{ toast }}>
-        {children}
-        <div className="fixed bottom-6 right-6 z-[9999] flex flex-col gap-2 items-end pointer-events-none">
-          <AnimatePresence mode="popLayout">
-            {toasts.map((item) => (
-              <div key={item.id} className="pointer-events-auto">
-                <ToastItem item={item} onDismiss={dismiss} />
-              </div>
-            ))}
-          </AnimatePresence>
-        </div>
+        <CurrencyContext.Provider value={{ currency, setCurrency, rates, ratesUpdatedAt, isStale, convert }}>
+          {children}
+          <div className="fixed bottom-6 right-6 z-[9999] flex flex-col gap-2 items-end pointer-events-none">
+            <AnimatePresence mode="popLayout">
+              {toasts.map((item) => (
+                <div key={item.id} className="pointer-events-auto">
+                  <ToastItem item={item} onDismiss={dismiss} />
+                </div>
+              ))}
+            </AnimatePresence>
+          </div>
+        </CurrencyContext.Provider>
       </ToastContext.Provider>
     </ThemeContext.Provider>
   )

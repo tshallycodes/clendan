@@ -32,6 +32,7 @@ from app.integrations.outlook.sync import renew_outlook_subscriptions
 from app.integrations.sage.sync import sync_sage_connection
 from app.integrations.adyen.sync import sync_adyen_connection
 from app.integrations.wise.sync import sync_wise_connection
+from app.integrations.exchange_rates.service import fetch_exchange_rates_daily
 from app.policy.engine import Decision, evaluate_policy
 from app.queue.pool import get_queue_pool, push_to_dlq
 from app.tools.ai_accountant import run_ai_accountant
@@ -776,12 +777,14 @@ class ToolSettings:
         sync_sage_connection,
         sync_adyen_connection,
         sync_wise_connection,
+        fetch_exchange_rates_daily,
     ]
     cron_jobs = [
         cron(run_revenue_recognition_monthly, day=1, hour=0, minute=0),
         cron(run_financial_reporting_monthly, day=1, hour=1, minute=0),
         cron(run_payment_run_weekly, weekday=0, hour=7, minute=0),
         cron(run_budget_check_weekly, weekday=0, hour=7, minute=30),
+        cron(fetch_exchange_rates_daily, hour=0, minute=5),  # daily at 00:05 UTC
     ]
     on_startup = startup
     on_shutdown = shutdown

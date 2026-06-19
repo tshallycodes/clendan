@@ -65,6 +65,7 @@ from app.api.v1.webhooks.truelayer import router as truelayer_webhook_router
 from app.api.v1.webhooks.adyen import router as adyen_webhook_router
 from app.clen.router import router as clen_router
 from app.api.v1.budgets import router as budgets_router
+from app.api.v1.currency import router as currency_router
 
 v1_router = APIRouter()
 v1_router.include_router(onboarding.router)
@@ -118,6 +119,7 @@ v1_router.include_router(mono_router)
 v1_router.include_router(mono_webhook_router)
 v1_router.include_router(transactions_router)
 v1_router.include_router(budgets_router)
+v1_router.include_router(currency_router)
 v1_router.include_router(sap_router)
 v1_router.include_router(sap_webhook_router)
 v1_router.include_router(salesforce_router)

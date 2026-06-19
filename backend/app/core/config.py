@@ -139,6 +139,8 @@ class Settings(BaseSettings):
     sage_webhook_secret: str = ""
     truelayer_webhook_secret: str = ""
 
+    exchange_rates_api_key: str = ""  # exchangerate-api.com v6 key — free tier (1,500 req/month)
+
     @model_validator(mode="after")
     def _compute_redirect_uris(self) -> "Settings":
         base = self.backend_base_url.rstrip("/")
