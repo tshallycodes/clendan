@@ -23,8 +23,7 @@ async def _dedup_plaid_connections(db, integration_id: str, tenant_id: str) -> N
         where={"integration_id": integration_id, "tenant_id": tenant_id}
     )
     new_ids = {a.plaid_account_id for a in new_accounts if a.plaid_account_id}
-    if not new_ids:
-        return
+    logger.info("plaid_dedup_start integration_id=%s new_account_ids=%s", integration_id, new_ids)
 
     other_integrations = await db.integration.find_many(
         where={
@@ -34,12 +33,15 @@ async def _dedup_plaid_connections(db, integration_id: str, tenant_id: str) -> N
             "status": {"not": "disconnected"},
         }
     )
+    logger.info("plaid_dedup_candidates integration_id=%s count=%d", integration_id, len(other_integrations))
 
     for old_intg in other_integrations:
         old_accounts = await db.bankaccount.find_many(
             where={"integration_id": old_intg.id, "tenant_id": tenant_id}
         )
         old_ids = {a.plaid_account_id for a in old_accounts if a.plaid_account_id}
+        logger.info("plaid_dedup_check old_id=%s old_status=%s old_account_ids=%s is_subset=%s",
+            old_intg.id, old_intg.status, old_ids, old_ids.issubset(new_ids))
         if old_ids.issubset(new_ids):  # empty set is subset of any set — cleans up orphaned failed attempts
             # Old integration's accounts are fully covered — clean it up
             await db.integrationsynclog.delete_many(where={"integration_id": old_intg.id})
@@ -48,10 +50,7 @@ async def _dedup_plaid_connections(db, integration_id: str, tenant_id: str) -> N
                 data={"integration_id": integration_id},
             )
             await db.integration.delete(where={"id": old_intg.id})
-            logger.info(
-                "Plaid dedup: removed duplicate integration %s (accounts reassigned to %s)",
-                old_intg.id, integration_id,
-            )
+            logger.info("plaid_dedup_removed old_id=%s accounts_reassigned_to=%s", old_intg.id, integration_id)
 
 
 async def sync_plaid_transactions(ctx: dict, integration_id: str, tenant_id: str) -> dict:
@@ -89,14 +88,18 @@ async def sync_plaid_transactions(ctx: dict, integration_id: str, tenant_id: str
         # Sync accounts first
         logger.info("plaid_sync_fetching_accounts integration_id=%s", integration_id)
         accounts_data = await plaid.get_accounts(encrypted_access)
+        logger.info("plaid_sync_accounts_received integration_id=%s count=%d", integration_id, len(accounts_data))
         accounts_synced = 0
         for acct in accounts_data:
             plaid_account_id = acct.get("account_id", "")
             if not plaid_account_id:
+                logger.warning("plaid_sync_account_no_id integration_id=%s acct=%s", integration_id, acct)
                 continue
             balance = acct.get("balances", {})
             current = balance.get("current") or 0.0
             currency = balance.get("iso_currency_code") or "USD"
+            logger.info("plaid_sync_account integration_id=%s plaid_account_id=%s name=%s type=%s balance=%s currency=%s",
+                integration_id, plaid_account_id, acct.get("name"), acct.get("type"), current, currency)
 
             existing = await db.bankaccount.find_unique(where={"plaid_account_id": plaid_account_id})
             if existing:
@@ -107,8 +110,9 @@ async def sync_plaid_transactions(ctx: dict, integration_id: str, tenant_id: str
                         "integration_id": integration_id,
                     },
                 )
+                logger.info("plaid_sync_account_updated db_id=%s plaid_account_id=%s", existing.id, plaid_account_id)
             else:
-                await db.bankaccount.create(data={
+                created = await db.bankaccount.create(data={
                     "tenant_id": tenant_id,
                     "integration_id": integration_id,
                     "plaid_account_id": plaid_account_id,
@@ -119,6 +123,7 @@ async def sync_plaid_transactions(ctx: dict, integration_id: str, tenant_id: str
                     "current_balance_minor": plaid.plaid_amount_to_minor(current, currency),
                     "currency": currency,
                 })
+                logger.info("plaid_sync_account_created db_id=%s plaid_account_id=%s", created.id, plaid_account_id)
             accounts_synced += 1
 
         logger.info("plaid_sync_accounts_done integration_id=%s accounts_synced=%d", integration_id, accounts_synced)
@@ -249,7 +254,7 @@ async def sync_plaid_transactions(ctx: dict, integration_id: str, tenant_id: str
 
     except Exception as exc:
         elapsed_ms = int((time.monotonic() - _start) * 1000)
-        logger.error("plaid_sync_failed integration_id=%s exc=%s elapsed_ms=%d", integration_id, type(exc).__name__, elapsed_ms, exc_info=True)
+        logger.error("plaid_sync_failed integration_id=%s exc=%s msg=%s elapsed_ms=%d", integration_id, type(exc).__name__, str(exc)[:200], elapsed_ms, exc_info=True)
         await db.integration.update(where={"id": integration_id}, data={"status": "error"})
         await db.integrationsynclog.create(data={
             "tenant_id": tenant_id,

@@ -117,6 +117,13 @@ async def plaid_status(
         where={"tenant_id": tenant_id, "type": ConnectorType.PLAID, "status": {"not": IntegrationStatus.DISCONNECTED}},
         order={"connected_at": "desc"},
     )
+    logger.info("plaid_status_query tenant_id=%s found=%s id=%s status=%s institution_name=%s institution_id=%s",
+        tenant_id, integration is not None,
+        integration.id if integration else None,
+        integration.status if integration else None,
+        integration.institution_name if integration else None,
+        integration.institution_id if integration else None,
+    )
     if not integration:
         return standard_response(data={"status": IntegrationStatus.NOT_CONNECTED})
 
