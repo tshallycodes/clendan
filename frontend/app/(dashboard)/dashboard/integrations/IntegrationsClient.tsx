@@ -87,14 +87,18 @@ export function IntegrationsClient() {
       setConnecting(null)
       try {
         const authToken = await getToken()
-        await fetch(`${API}/v1/integrations/plaid/exchange-token`, {
+        const res = await fetch(`${API}/v1/integrations/plaid/exchange-token`, {
           method: 'POST',
           headers: { Authorization: `Bearer ${authToken}`, 'Content-Type': 'application/json' },
           body: JSON.stringify({ public_token, institution_id, institution_name }),
         })
+        if (!res.ok) {
+          const json = await res.json().catch(() => ({}))
+          throw new Error(json.detail ?? json.error ?? `Exchange failed (${res.status})`)
+        }
         if (institution_id) setConnectedBankId(institution_id)
         if (institution_name) setConnectedBankName(institution_name)
-        toast('Bank connected — syncing transactions', 'success')
+        toast(`${institution_name ?? 'Bank'} connected — syncing transactions`, 'success')
       } catch (err) {
         setStatus('plaid', 'error')
         setConnecting(null)

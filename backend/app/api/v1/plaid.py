@@ -107,7 +107,8 @@ async def plaid_status(
     tenant_id = current_user.tenant_id
 
     integration = await db.integration.find_first(
-        where={"tenant_id": tenant_id, "type": ConnectorType.PLAID}
+        where={"tenant_id": tenant_id, "type": ConnectorType.PLAID, "status": {"not": IntegrationStatus.DISCONNECTED}},
+        order={"connected_at": "desc"},
     )
     if not integration:
         return standard_response(data={"status": IntegrationStatus.NOT_CONNECTED})
@@ -115,17 +116,13 @@ async def plaid_status(
     txn_count = await db.banktransaction.count(where={"tenant_id": tenant_id})
     account_count = await db.bankaccount.count(where={"tenant_id": tenant_id})
 
-    creds = json.loads(integration.encrypted_credentials or '{}')
-    institution_id = creds.get('institution_id')
-    institution_name = creds.get('institution_name')
-
     return standard_response(
         data={
             "status": integration.status,
             "connected_at": integration.connected_at.isoformat() if integration.connected_at else None,
             "last_synced_at": integration.last_synced_at.isoformat() if integration.last_synced_at else None,
-            "institution_id": institution_id,
-            "institution_name": institution_name,
+            "institution_id": integration.institution_id,
+            "institution_name": integration.institution_name,
             "accounts": account_count,
             "transactions": txn_count,
         }

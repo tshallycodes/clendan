@@ -130,8 +130,15 @@ export function BankPicker({
   const provider: BankDef['provider'] =
     region === 'eu' ? 'truelayer' : region === 'africa' ? 'mono' : 'plaid'
 
+  function nameToAbbr(name: string | null, fallback: string): string {
+    if (!name) return fallback
+    return name.split(/\s+/).map((w) => w[0] ?? '').join('').toUpperCase().slice(0, 3) || fallback
+  }
+
   const fallbackAbbr =
-    region === 'eu' ? 'TL' : region === 'africa' ? 'MN' : 'US'
+    region === 'eu' ? nameToAbbr(connectedTruelayerName, 'TL')
+    : region === 'africa' ? nameToAbbr(connectedMonoName, 'MN')
+    : nameToAbbr(connectedBankName, 'PL')
 
   const fallbackCard: BankDef = {
     id: `${provider}-generic`,
