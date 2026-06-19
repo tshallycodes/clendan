@@ -150,10 +150,11 @@ async def sync_gocardless_connection(ctx: dict, integration_id: str, tenant_id: 
         logger.info("GoCardless sync aborted — integration %s was disconnected during run", integration_id)
         return {"status": "skipped", "reason": "disconnected_during_sync"}
 
-    # Update integration status to connected after first sync
+    import json
+    sync_metadata = {k: v for k, v in results.items() if isinstance(v, int)}
     await db.integration.update(
         where={"id": integration_id},
-        data={"status": "connected"},
+        data={"status": "connected", "sync_metadata": json.dumps(sync_metadata)},
     )
 
     return {"status": overall_status, **results}

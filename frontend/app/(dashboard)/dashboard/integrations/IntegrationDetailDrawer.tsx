@@ -38,6 +38,10 @@ interface AccountSummary {
   accounts?: number
   credit_notes?: number
   tax_rates?: number
+  // Payment provider counts
+  charges?: number
+  mandates?: number
+  payouts?: number
   [key: string]: number | string | undefined
 }
 
@@ -216,6 +220,15 @@ export function IntegrationDetailDrawer({ slug, intg, status, lastSyncedAt, onCl
                         )}
                         {summary.total_invoices === undefined && summary.tax_rates !== undefined && (
                           <SummaryCard label="Tax Rates" value={String(summary.tax_rates)} />
+                        )}
+                        {summary.total_invoices === undefined && summary.charges !== undefined && (
+                          <SummaryCard label="Charges" value={String(summary.charges)} accent="ok" />
+                        )}
+                        {summary.total_invoices === undefined && summary.mandates !== undefined && (
+                          <SummaryCard label="Mandates" value={String(summary.mandates)} />
+                        )}
+                        {summary.total_invoices === undefined && summary.payouts !== undefined && (
+                          <SummaryCard label="Payouts" value={String(summary.payouts)} accent="ok" />
                         )}
                       </div>
                     </section>

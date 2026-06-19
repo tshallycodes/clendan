@@ -82,10 +82,11 @@ async def sync_stripe_connection(ctx: dict, integration_id: str, tenant_id: str)
             logger.info("Stripe sync aborted — integration %s was disconnected during run", integration_id)
             return {"status": "skipped", "reason": "disconnected_during_sync"}
 
-        # Mark integration as connected now that sync is confirmed
+        import json
+        sync_metadata = {"charges": len(charges), "invoices": len(invoices)}
         await db.integration.update(
             where={"id": integration_id},
-            data={"status": "connected"},
+            data={"status": "connected", "sync_metadata": json.dumps(sync_metadata)},
         )
 
         logger.info(

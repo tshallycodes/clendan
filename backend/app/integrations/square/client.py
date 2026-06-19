@@ -203,14 +203,34 @@ async def fetch_square_payments(access_token: str, limit: int = 100) -> list:
     ]
 
 
-async def fetch_square_invoices(access_token: str, limit: int = 100) -> list:
-    """Fetches recent Square invoices for initial sync. Returns normalised list."""
+async def fetch_square_locations(access_token: str) -> list[dict]:
+    """Returns the merchant's active Square locations. Square requires a location_id for invoices."""
+
+    async def _call() -> dict:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                f"{SQUARE_API_BASE}/locations",
+                headers={
+                    "Authorization": f"Bearer {access_token}",
+                    "Square-Version": "2024-01-17",
+                },
+                timeout=15.0,
+            )
+            response.raise_for_status()
+            return response.json()
+
+    raw = await _circuit.call(_retry, _call)
+    return [loc for loc in raw.get("locations", []) if loc.get("status") == "ACTIVE"]
+
+
+async def fetch_square_invoices(access_token: str, location_id: str, limit: int = 100) -> list:
+    """Fetches recent Square invoices for a location. location_id is required by Square's API."""
 
     async def _call() -> dict:
         async with httpx.AsyncClient() as client:
             response = await client.get(
                 f"{SQUARE_API_BASE}/invoices",
-                params={"limit": limit},
+                params={"location_id": location_id, "limit": limit},
                 headers={
                     "Authorization": f"Bearer {access_token}",
                     "Square-Version": "2024-01-17",
@@ -257,4 +277,4 @@ async def _retry(fn, *args, **kwargs):
                     wait,
                 )
                 await asyncio.sleep(wait)
-    raise last_exc
+    raise last_exc or RuntimeError("Square: max retries exceeded")

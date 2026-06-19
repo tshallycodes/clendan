@@ -46,6 +46,7 @@ class Settings(BaseSettings):
     stripe_webhook_secret: str = ""
     stripe_client_id: str = ""
     stripe_secret_key: str = ""
+    stripe_redirect_uri: str = ""
 
     xero_client_id: str = ""
     xero_client_secret: str = ""
@@ -161,6 +162,7 @@ class Settings(BaseSettings):
             "onedrive_redirect_uri": f"{base}/v1/integrations/onedrive/callback",
             "netsuite_redirect_uri": f"{base}/v1/integrations/netsuite/callback",
             "dynamics_redirect_uri": f"{base}/v1/integrations/dynamics/callback",
+            "stripe_redirect_uri": f"{base}/v1/integrations/stripe/callback",
         }
         for field, value in defaults.items():
             if not getattr(self, field):

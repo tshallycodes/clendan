@@ -112,10 +112,21 @@ async def sync_square_connection(ctx: dict, integration_id: str, tenant_id: str)
         results["payments_error"] = type(exc).__name__
         logger.error("Square payments sync failed: %s", type(exc).__name__)
 
+    # Resolve primary location — Square's invoices endpoint requires location_id
+    primary_location_id: str | None = None
+    try:
+        locations = await square.fetch_square_locations(access_token)
+        if locations:
+            primary_location_id = locations[0].get("id")
+    except Exception as exc:
+        logger.warning("Square locations fetch failed, invoices sync will be skipped: %s", type(exc).__name__)
+
     # Sync invoices
     invoices_start = time.monotonic()
     try:
-        invoices = await square.fetch_square_invoices(access_token)
+        if not primary_location_id:
+            raise ValueError("No active Square location found — cannot fetch invoices")
+        invoices = await square.fetch_square_invoices(access_token, primary_location_id)
         invoices_ms = int((time.monotonic() - invoices_start) * 1000)
         await db.integrationsynclog.create(data={
             "tenant_id": tenant_id,
@@ -151,10 +162,11 @@ async def sync_square_connection(ctx: dict, integration_id: str, tenant_id: str)
         logger.info("Square sync aborted — integration %s was disconnected during run", integration_id)
         return {"status": "skipped", "reason": "disconnected_during_sync"}
 
-    # Mark integration as connected after first sync
+    import json
+    sync_metadata = {k: v for k, v in results.items() if isinstance(v, int)}
     await db.integration.update(
         where={"id": integration_id},
-        data={"status": "connected"},
+        data={"status": "connected", "sync_metadata": json.dumps(sync_metadata)},
     )
 
     return {"status": overall_status, **results}

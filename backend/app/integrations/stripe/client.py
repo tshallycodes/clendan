@@ -84,6 +84,7 @@ def build_stripe_auth_url(state: str) -> str:
         "client_id": settings.stripe_client_id,
         "scope": "read_write",
         "state": state,
+        "redirect_uri": settings.stripe_redirect_uri,
     }
     return f"{STRIPE_CONNECT_AUTH_URL}?{urlencode(params)}"
 
