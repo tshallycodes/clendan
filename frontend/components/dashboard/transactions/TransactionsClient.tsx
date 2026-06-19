@@ -45,9 +45,11 @@ function formatSumCurrency(minor: number, currency: string): string {
 interface Props {
   initialTransactions: Transaction[]
   total: number
+  totalOutMinor: number
+  totalInMinor: number
 }
 
-export function TransactionsClient({ initialTransactions, total }: Props) {
+export function TransactionsClient({ initialTransactions, total, totalOutMinor, totalInMinor }: Props) {
   const { getToken } = useAuth()
   const [transactions, setTransactions] = useState(initialTransactions)
   const [filter, setFilter] = useState<StatusFilter>('all')
@@ -83,18 +85,27 @@ export function TransactionsClient({ initialTransactions, total }: Props) {
     return c
   }, [transactions])
 
-  const summary = useMemo(() => {
-    const currency = transactions[0]?.currency ?? 'GBP'
-    let totalOut = 0
-    let totalIn = 0
+  const counts2 = useMemo(() => {
     let debitCount = 0
     let creditCount = 0
     for (const t of transactions) {
-      if (t.amount_minor > 0) { totalOut += t.amount_minor; debitCount++ }
-      else { totalIn += Math.abs(t.amount_minor); creditCount++ }
+      if (t.amount_minor > 0) debitCount++
+      else creditCount++
     }
-    return { totalOut, totalIn, net: totalIn - totalOut, currency, debitCount, creditCount }
+    return { debitCount, creditCount }
   }, [transactions])
+
+  const summary = useMemo(() => {
+    const currency = transactions[0]?.currency ?? 'GBP'
+    return {
+      totalOut: totalOutMinor,
+      totalIn: totalInMinor,
+      net: totalInMinor - totalOutMinor,
+      currency,
+      debitCount: counts2.debitCount,
+      creditCount: counts2.creditCount,
+    }
+  }, [totalOutMinor, totalInMinor, counts2, transactions])
 
   const filtered = useMemo(() => {
     let result = filter === 'all' ? transactions : transactions.filter(t => t.status === filter)
@@ -177,7 +188,7 @@ export function TransactionsClient({ initialTransactions, total }: Props) {
             </p>
           </div>
           <div className="bg-brand-surface border border-brand-border rounded-sm p-4">
-            <p className="text-[10px] font-mono text-brand-muted uppercase tracking-wider">Net</p>
+            <p className="text-[10px] font-mono text-brand-muted uppercase tracking-wider">Net Flow</p>
             <p className={cn(
               'text-xl font-mono font-semibold mt-1',
               summary.net >= 0 ? 'text-[#00C853]' : 'text-[#ff4d6d]',

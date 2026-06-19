@@ -24,6 +24,12 @@ export interface Transaction {
 }
 
 
+const SOURCE_LABELS: Record<string, string> = {
+  truelayer: 'TrueLayer',
+  plaid: 'Plaid',
+  mono: 'Mono',
+}
+
 const STATUS_STYLES: Record<string, string> = {
   matched:     'bg-[rgba(0,200,83,0.08)] text-[#00C853] border-[rgba(0,200,83,0.2)]',
   categorised: 'bg-[rgba(0,168,204,0.08)] text-[#00a8cc] border-[rgba(0,168,204,0.2)]',
@@ -104,7 +110,7 @@ export function TransactionRow({ transaction: t, onCategoryUpdate, categories }:
           {t.account_name ?? '—'}
         </span>
         <span className="text-[9px] font-mono text-brand-muted uppercase tracking-wider">
-          {t.account_subtype ? `${t.account_subtype} · ` : ''}{t.source}
+          {t.account_subtype ? `${t.account_subtype} · ` : ''}{SOURCE_LABELS[t.source] ?? t.source.toUpperCase()}
         </span>
       </td>
 

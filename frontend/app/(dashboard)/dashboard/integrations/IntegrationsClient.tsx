@@ -178,7 +178,8 @@ export function IntegrationsClient() {
 
         if (connected) {
           setStatus(connected, 'syncing')
-          toast(`${connected} connected — syncing data`, 'success')
+          const connectedName = params.get('name') || connected
+          toast(`${connectedName} connected — syncing data`, 'success')
         }
         if (oauthError) {
           toast(`Connection failed: ${oauthError.replace(/_/g, ' ')}`, 'error')

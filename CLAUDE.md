@@ -26,6 +26,7 @@ All other tools are sub-agents called as tools. Tools never call each other dire
 - When fixing bugs: read only the specific lines needed, not full files
 - ALWAYS run database migrations after schema changes
 - If an error persists after two attempts, stop and discuss options
+- If a bug or issue takes more than one attempt to diagnose, add structured debug logs at every key decision point before trying another fix — logs first, then fix
 - Do not hardcode API keys, secrets, or any credentials, or design styles
 - Always pull before pushing your changes to github with
 

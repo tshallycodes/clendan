@@ -1,4 +1,5 @@
 import secrets
+import urllib.parse
 from datetime import datetime, UTC
 from typing import Annotated
 
@@ -103,7 +104,8 @@ async def truelayer_callback(
 
     background_tasks.add_task(sync_truelayer_connection, {}, integration.id, tenant_id)
     display_name = institution_name or "TrueLayer"
-    return connected_page(display_name, f"{frontend_integrations}?connected=truelayer")
+    name_param = urllib.parse.quote(display_name)
+    return connected_page(display_name, f"{frontend_integrations}?connected=truelayer&name={name_param}")
 
 
 @router.get("/integrations/truelayer/status")
