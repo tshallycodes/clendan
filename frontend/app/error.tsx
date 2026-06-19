@@ -10,7 +10,7 @@ export default function Error({
   reset: () => void
 }) {
   useEffect(() => {
-    console.error('[Clendan Error Boundary]', error)
+    console.error('[Clendan]', error)
   }, [error])
 
   return (
@@ -34,22 +34,6 @@ export default function Error({
         Try again
       </button>
 
-      {(error.message || error.digest) && (
-        <div className="mb-6 max-w-xl w-full text-left bg-brand-elevated border border-brand-border rounded-sm p-4">
-          {error.message && (
-            <p className="font-mono text-xs text-[#ff4d6d] break-all">{error.message}</p>
-          )}
-          {error.stack && (
-            <pre className="font-mono text-[10px] text-brand-muted mt-2 overflow-auto max-h-48 whitespace-pre-wrap break-all">
-              {error.stack}
-            </pre>
-          )}
-          {error.digest && (
-            <p className="font-mono text-[10px] text-brand-muted mt-2">Digest: {error.digest}</p>
-          )}
-        </div>
-      )}
-
       <p className="font-mono text-xs text-brand-muted">
         If this keeps happening, contact{' '}
         <a
@@ -59,6 +43,12 @@ export default function Error({
           support@clendan.com
         </a>
       </p>
+
+      {error.digest && (
+        <p className="font-mono text-[10px] text-brand-muted mt-4">
+          Digest: {error.digest}
+        </p>
+      )}
     </div>
   )
 }
