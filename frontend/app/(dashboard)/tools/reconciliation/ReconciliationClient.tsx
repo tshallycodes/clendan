@@ -316,25 +316,27 @@ export function ReconciliationClient() {
         ))}
       </div>
 
-      {activeTab === 'overview' && !deployed && (
-        <ul className="bg-brand-surface border border-brand-border rounded-sm divide-y divide-brand-border">
-          {RECONCILIATION_CAPABILITIES.map(cap => (
-            <li key={cap} className="flex items-start gap-3 px-4 py-3">
-              <span className="text-brand-muted font-mono text-[10px] mt-0.5 shrink-0">→</span>
-              <span className="text-xs font-mono text-brand-secondary">{cap}</span>
-            </li>
-          ))}
-        </ul>
-      )}
-      {activeTab === 'overview' && deployed && (
-        <OverviewTab
-          periodStart={periodStart} periodEnd={periodEnd} toolId={deployed.id} running={running}
-          runs={runs} runsLoading={runsLoading} selectedRun={selectedRun}
-          items={items} itemsLoading={itemsLoading}
-          onPeriodStartChange={setPeriodStart} onPeriodEndChange={setPeriodEnd}
-          onRun={handleRun} onSelectRun={(r) => { setSelectedRun(r); fetchItems(r.id) }}
-          onExport={handleExport}
-        />
+      {activeTab === 'overview' && (
+        <>
+          {!deployed && (
+            <ul className="bg-brand-surface border border-brand-border rounded-sm divide-y divide-brand-border">
+              {RECONCILIATION_CAPABILITIES.map(cap => (
+                <li key={cap} className="flex items-start gap-3 px-4 py-3">
+                  <span className="text-brand-muted font-mono text-[10px] mt-0.5 shrink-0">→</span>
+                  <span className="text-xs font-mono text-brand-secondary">{cap}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+          <OverviewTab
+            periodStart={periodStart} periodEnd={periodEnd} toolId={deployed?.id ?? null} running={running}
+            runs={runs} runsLoading={runsLoading} selectedRun={selectedRun}
+            items={items} itemsLoading={itemsLoading}
+            onPeriodStartChange={setPeriodStart} onPeriodEndChange={setPeriodEnd}
+            onRun={handleRun} onSelectRun={(r) => { setSelectedRun(r); fetchItems(r.id) }}
+            onExport={handleExport}
+          />
+        </>
       )}
       {activeTab === 'executions' && (deployed
         ? <ToolExecutionsTab toolId={deployed.id} />
