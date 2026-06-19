@@ -40,7 +40,7 @@ async def _dedup_plaid_connections(db, integration_id: str, tenant_id: str) -> N
             where={"integration_id": old_intg.id, "tenant_id": tenant_id}
         )
         old_ids = {a.plaid_account_id for a in old_accounts if a.plaid_account_id}
-        if old_ids and old_ids.issubset(new_ids):
+        if old_ids.issubset(new_ids):  # empty set is subset of any set — cleans up orphaned failed attempts
             # Old integration's accounts are fully covered — clean it up
             await db.integrationsynclog.delete_many(where={"integration_id": old_intg.id})
             await db.bankaccount.update_many(
@@ -63,7 +63,7 @@ async def sync_plaid_transactions(ctx: dict, integration_id: str, tenant_id: str
     db = get_db()
 
     integration = await db.integration.find_unique(where={"id": integration_id})
-    if not integration or integration.status != "connected":
+    if not integration or integration.status not in ("syncing", "connected"):
         return {"status": "skipped", "reason": "not_connected"}
 
     if integration.tenant_id != tenant_id:
@@ -166,7 +166,7 @@ async def sync_plaid_transactions(ctx: dict, integration_id: str, tenant_id: str
         creds["sync_cursor"] = cursor
         await db.integration.update(
             where={"id": integration_id},
-            data={"encrypted_credentials": json.dumps(creds)},
+            data={"encrypted_credentials": json.dumps(creds), "status": "connected", "last_synced_at": datetime.now(UTC)},
         )
 
         # Emit orchestrator events for newly synced transactions
@@ -224,11 +224,6 @@ async def sync_plaid_transactions(ctx: dict, integration_id: str, tenant_id: str
             "records_synced": total_added,
             "duration_ms": elapsed_ms // 2,
         })
-        await db.integration.update(
-            where={"id": integration_id},
-            data={"last_synced_at": datetime.now(UTC)},
-        )
-
         # Dedup: if an older integration has accounts that are all present in this one, delete it
         await _dedup_plaid_connections(db, integration_id, tenant_id)
 
