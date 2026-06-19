@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { Download } from 'lucide-react'
 import { ReconciliationItem } from './types'
+import { useCurrency } from '@/components/Providers'
 
 interface ReconciliationTableProps {
   items: ReconciliationItem[]
@@ -37,11 +38,8 @@ function statusBadge(status: string) {
   )
 }
 
-function formatAmount(amount_minor: number, currency: string) {
-  return new Intl.NumberFormat('en-GB', { style: 'currency', currency }).format(amount_minor / 100)
-}
-
 export function ReconciliationTable({ items, loading, runId, onExport }: ReconciliationTableProps) {
+  const { convert } = useCurrency()
   const [activeAccount, setActiveAccount] = useState<string>('all')
 
   const accounts = Array.from(new Set(items.map((i) => i.account_name ?? i.account_id)))
@@ -121,7 +119,7 @@ export function ReconciliationTable({ items, loading, runId, onExport }: Reconci
                     {item.merchant_name ?? item.description}
                   </td>
                   <td className="px-3 py-2 text-brand-text whitespace-nowrap">
-                    {formatAmount(item.amount_minor, item.currency)}
+                    {convert(item.amount_minor, item.currency)}
                   </td>
                   <td className="px-3 py-2">{statusBadge(item.status)}</td>
                   <td className="px-3 py-2 text-brand-secondary">{item.matched_invoice_number ?? '—'}</td>

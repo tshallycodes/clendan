@@ -6,6 +6,7 @@ import { useAuth } from '@clerk/nextjs'
 import { IntegrationLogo } from './IntegrationLogo'
 import { StatusDot, StatusLabel } from './CardStatusIndicator'
 import { IntegrationDef, IntegrationStatus } from './types'
+import { useCurrency } from '@/components/Providers'
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
@@ -58,10 +59,6 @@ function statusColor(s: string): string {
   return 'text-[#00a8cc]'
 }
 
-function formatCents(cents: number): string {
-  return new Intl.NumberFormat('en-GB', { style: 'currency', currency: 'GBP', maximumFractionDigits: 0 }).format(cents / 100)
-}
-
 const ALL_SUMMARY_SLUGS = new Set([
   'freshbooks', 'xero', 'quickbooks',
   'stripe', 'square', 'gocardless', 'adyen', 'wise',
@@ -73,6 +70,7 @@ const ALL_SUMMARY_SLUGS = new Set([
 
 export function IntegrationDetailDrawer({ slug, intg, status, lastSyncedAt, onClose, onConnect, onDisconnect, onResync, onSyncLog }: Props) {
   const { getToken } = useAuth()
+  const { convert } = useCurrency()
   const [logs, setLogs] = useState<SyncLogEntry[]>([])
   const [logsLoading, setLogsLoading] = useState(false)
   const [summary, setSummary] = useState<AccountSummary | null>(null)
@@ -164,7 +162,7 @@ export function IntegrationDetailDrawer({ slug, intg, status, lastSyncedAt, onCl
                           <SummaryCard
                             label="Outstanding"
                             value={String(summary.outstanding_invoices)}
-                            sub={formatCents(summary.outstanding_amount_cents)}
+                            sub={convert(summary.outstanding_amount_cents, 'GBP')}
                             accent={(summary.outstanding_invoices as number) > 0 ? 'warn' : 'ok'}
                           />
                         )}
@@ -172,7 +170,7 @@ export function IntegrationDetailDrawer({ slug, intg, status, lastSyncedAt, onCl
                           <SummaryCard
                             label="Overdue"
                             value={String(summary.overdue_invoices)}
-                            sub={(summary.overdue_invoices as number) > 0 ? formatCents(summary.overdue_amount_cents as number) : undefined}
+                            sub={(summary.overdue_invoices as number) > 0 ? convert(summary.overdue_amount_cents as number, 'GBP') : undefined}
                             accent={(summary.overdue_invoices as number) > 0 ? 'danger' : 'ok'}
                           />
                         )}
@@ -183,7 +181,7 @@ export function IntegrationDetailDrawer({ slug, intg, status, lastSyncedAt, onCl
                           <SummaryCard
                             label="Payments"
                             value={String(summary.total_payments)}
-                            sub={formatCents(summary.total_payments_amount_cents as number)}
+                            sub={convert(summary.total_payments_amount_cents as number, 'GBP')}
                             accent="ok"
                           />
                         )}
@@ -191,7 +189,7 @@ export function IntegrationDetailDrawer({ slug, intg, status, lastSyncedAt, onCl
                           <SummaryCard
                             label="Expenses"
                             value={String(summary.total_expenses)}
-                            sub={formatCents(summary.total_expenses_amount_cents as number)}
+                            sub={convert(summary.total_expenses_amount_cents as number, 'GBP')}
                           />
                         )}
                         {/* Xero / QuickBooks-style: entity counts only */}

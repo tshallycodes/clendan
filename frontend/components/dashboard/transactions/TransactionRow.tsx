@@ -3,6 +3,7 @@
 import { useRef, useState, useEffect } from 'react'
 import { useAuth } from '@clerk/nextjs'
 import { cn } from '@/lib/utils'
+import { useCurrency } from '@/components/Providers'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
@@ -37,16 +38,6 @@ const STATUS_STYLES: Record<string, string> = {
   blocked:     'bg-[rgba(255,77,109,0.08)] text-[#ff4d6d] border-[rgba(255,77,109,0.2)]',
 }
 
-function formatAmount(minor: number, currency: string): string {
-  try {
-    return new Intl.NumberFormat('en-GB', {
-      style: 'currency', currency, maximumFractionDigits: 2,
-    }).format(Math.abs(minor) / 100)
-  } catch {
-    return `${(Math.abs(minor) / 100).toFixed(2)} ${currency}`
-  }
-}
-
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' })
 }
@@ -63,6 +54,7 @@ interface Props {
 
 export function TransactionRow({ transaction: t, onCategoryUpdate, categories }: Props) {
   const { getToken } = useAuth()
+  const { convert } = useCurrency()
   const [open, setOpen] = useState(false)
   const [saving, setSaving] = useState(false)
   const ref = useRef<HTMLTableCellElement>(null)
@@ -130,7 +122,7 @@ export function TransactionRow({ transaction: t, onCategoryUpdate, categories }:
           'text-xs font-mono font-medium',
           isDebit ? 'text-[#ff4d6d]' : 'text-[#00C853]',
         )}>
-          {isDebit ? '−' : '+'}{formatAmount(t.amount_minor, t.currency)}
+          {isDebit ? '−' : '+'}{convert(t.amount_minor, t.currency)}
         </span>
       </td>
 

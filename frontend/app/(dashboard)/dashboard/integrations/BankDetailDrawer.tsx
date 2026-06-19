@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '@clerk/nextjs'
 import Image from 'next/image'
 import { BankDef } from './banks-data'
+import { useCurrency } from '@/components/Providers'
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
@@ -46,14 +47,6 @@ interface Props {
   onSyncLog: (slug: string, name: string) => void
 }
 
-function fmt(minor: number, currency: string): string {
-  try {
-    return new Intl.NumberFormat('en-GB', { style: 'currency', currency, minimumFractionDigits: 2 }).format(minor / 100)
-  } catch {
-    return `${(minor / 100).toFixed(2)}`
-  }
-}
-
 function StatusBadge({ status }: { status: string }) {
   const map: Record<string, { bg: string; color: string; border: string }> = {
     connected: { bg: 'rgba(0,200,83,0.08)', color: '#00C853', border: 'rgba(0,200,83,0.2)' },
@@ -84,6 +77,7 @@ function ConnectionSection({
   onResync: (integrationId: string, provider: string) => Promise<void>
   onSyncLog: (slug: string, name: string) => void
 }) {
+  const { convert } = useCurrency()
   const [confirmDisconnect, setConfirmDisconnect] = useState(false)
   const [disconnecting, setDisconnecting] = useState(false)
   const [resyncing, setResyncing] = useState(false)
@@ -112,7 +106,7 @@ function ConnectionSection({
                 <p className="text-xs font-mono text-brand-text truncate">{a.name}</p>
                 <p className="text-[10px] font-mono text-brand-muted uppercase mt-0.5">{a.subtype || a.type}</p>
               </div>
-              <p className="text-xs font-mono text-brand-text shrink-0">{fmt(a.current_balance_minor, a.currency)}</p>
+              <p className="text-xs font-mono text-brand-text shrink-0">{convert(a.current_balance_minor, a.currency)}</p>
             </div>
           ))}
         </div>
@@ -127,7 +121,7 @@ function ConnectionSection({
               <div key={t.id} className="flex items-center justify-between gap-4 px-4 py-2">
                 <p className="text-[10px] font-mono text-brand-secondary truncate">{t.merchant_name || t.description}</p>
                 <div className="text-right shrink-0">
-                  <p className="text-[10px] font-mono text-brand-text">{fmt(t.amount_minor, t.currency)}</p>
+                  <p className="text-[10px] font-mono text-brand-text">{convert(t.amount_minor, t.currency)}</p>
                   <p className="text-[10px] font-mono text-brand-muted">
                     {new Date(t.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
                   </p>

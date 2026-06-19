@@ -5,6 +5,7 @@ import { useAuth } from '@clerk/nextjs'
 import { motion } from 'framer-motion'
 import { cn } from '@/lib/utils'
 import { TransactionRow, type Transaction } from './TransactionRow'
+import { useCurrency } from '@/components/Providers'
 
 export type { Transaction }
 
@@ -32,16 +33,6 @@ const sectionVariants = {
   show: { opacity: 1, y: 0, transition: { duration: 0.38, ease: [0.25, 0.46, 0.45, 0.94] as const } },
 }
 
-function formatSumCurrency(minor: number, currency: string): string {
-  try {
-    return new Intl.NumberFormat('en-GB', {
-      style: 'currency', currency, maximumFractionDigits: 0,
-    }).format(minor / 100)
-  } catch {
-    return `${(minor / 100).toFixed(0)} ${currency}`
-  }
-}
-
 interface Props {
   initialTransactions: Transaction[]
   total: number
@@ -51,6 +42,7 @@ interface Props {
 
 export function TransactionsClient({ initialTransactions, total, totalOutMinor, totalInMinor }: Props) {
   const { getToken } = useAuth()
+  const { convert } = useCurrency()
   const [transactions, setTransactions] = useState(initialTransactions)
   const [filter, setFilter] = useState<StatusFilter>('all')
   const [search, setSearch] = useState('')
@@ -144,8 +136,6 @@ export function TransactionsClient({ initialTransactions, total, totalOutMinor, 
     }
   }
 
-  const { currency } = summary
-
   return (
     <motion.div variants={pageVariants} initial="hidden" animate="show" className="p-6 space-y-6">
 
@@ -172,7 +162,7 @@ export function TransactionsClient({ initialTransactions, total, totalOutMinor, 
           <div className="bg-brand-surface border border-brand-border rounded-sm p-4">
             <p className="text-[10px] font-mono text-brand-muted uppercase tracking-wider">Total Out</p>
             <p className="text-xl font-mono font-semibold text-[#ff4d6d] mt-1">
-              {formatSumCurrency(summary.totalOut, currency)}
+              {convert(summary.totalOut, summary.currency)}
             </p>
             <p className="text-[10px] font-mono text-brand-muted mt-1">
               {summary.debitCount} debit{summary.debitCount !== 1 ? 's' : ''}
@@ -181,7 +171,7 @@ export function TransactionsClient({ initialTransactions, total, totalOutMinor, 
           <div className="bg-brand-surface border border-brand-border rounded-sm p-4">
             <p className="text-[10px] font-mono text-brand-muted uppercase tracking-wider">Total In</p>
             <p className="text-xl font-mono font-semibold text-[#00C853] mt-1">
-              {formatSumCurrency(summary.totalIn, currency)}
+              {convert(summary.totalIn, summary.currency)}
             </p>
             <p className="text-[10px] font-mono text-brand-muted mt-1">
               {summary.creditCount} credit{summary.creditCount !== 1 ? 's' : ''}
@@ -193,7 +183,7 @@ export function TransactionsClient({ initialTransactions, total, totalOutMinor, 
               'text-xl font-mono font-semibold mt-1',
               summary.net >= 0 ? 'text-[#00C853]' : 'text-[#ff4d6d]',
             )}>
-              {summary.net >= 0 ? '+' : '−'}{formatSumCurrency(Math.abs(summary.net), currency)}
+              {summary.net >= 0 ? '+' : '−'}{convert(Math.abs(summary.net), summary.currency)}
             </p>
             <p className="text-[10px] font-mono text-brand-muted mt-1">
               {counts.pending} pending · {counts.matched} matched
