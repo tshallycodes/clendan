@@ -132,7 +132,7 @@ export function BankPicker({
 
   function nameToAbbr(name: string | null, fallback: string): string {
     if (!name) return fallback
-    return name.split(/\s+/).map((w) => w[0] ?? '').join('').toUpperCase().slice(0, 3) || fallback
+    return name.split(/\s+/).map((w) => w.replace(/[^A-Za-z]/g, '')[0] ?? '').filter(Boolean).join('').toUpperCase().slice(0, 3) || fallback
   }
 
   const fallbackAbbr =
