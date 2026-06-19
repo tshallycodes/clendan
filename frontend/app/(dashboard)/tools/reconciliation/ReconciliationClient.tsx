@@ -14,6 +14,7 @@ import { ReconciliationTable } from './ReconciliationTable'
 import { ToolExecutionsTab } from '@/components/dashboard/tools/ToolExecutionsTab'
 import { ToolApprovalsTab } from '@/components/dashboard/tools/ToolApprovalsTab'
 import { ToolAuditTab } from '@/components/dashboard/tools/ToolAuditTab'
+import { TOOLS } from '../tools-data'
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
@@ -90,6 +91,16 @@ function OverviewTab({
         </div>
       </div>
     </>
+  )
+}
+
+const RECONCILIATION_CAPABILITIES = TOOLS.find(t => t.slug === 'reconciliation')?.capabilities ?? []
+
+function NotDeployedTab({ message }: { message: string }) {
+  return (
+    <div className="bg-brand-surface border border-brand-border rounded-sm p-8 text-center">
+      <p className="text-xs font-mono text-brand-muted">{message}</p>
+    </div>
   )
 }
 
@@ -305,9 +316,19 @@ export function ReconciliationClient() {
         ))}
       </div>
 
-      {activeTab === 'overview' && (
+      {activeTab === 'overview' && !deployed && (
+        <ul className="bg-brand-surface border border-brand-border rounded-sm divide-y divide-brand-border">
+          {RECONCILIATION_CAPABILITIES.map(cap => (
+            <li key={cap} className="flex items-start gap-3 px-4 py-3">
+              <span className="text-brand-muted font-mono text-[10px] mt-0.5 shrink-0">→</span>
+              <span className="text-xs font-mono text-brand-secondary">{cap}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+      {activeTab === 'overview' && deployed && (
         <OverviewTab
-          periodStart={periodStart} periodEnd={periodEnd} toolId={deployed?.id ?? null} running={running}
+          periodStart={periodStart} periodEnd={periodEnd} toolId={deployed.id} running={running}
           runs={runs} runsLoading={runsLoading} selectedRun={selectedRun}
           items={items} itemsLoading={itemsLoading}
           onPeriodStartChange={setPeriodStart} onPeriodEndChange={setPeriodEnd}
@@ -315,9 +336,18 @@ export function ReconciliationClient() {
           onExport={handleExport}
         />
       )}
-      {activeTab === 'executions' && deployed && <ToolExecutionsTab toolId={deployed.id} />}
-      {activeTab === 'approvals' && deployed && <ToolApprovalsTab toolId={deployed.id} />}
-      {activeTab === 'audit' && deployed && <ToolAuditTab toolId={deployed.id} />}
+      {activeTab === 'executions' && (deployed
+        ? <ToolExecutionsTab toolId={deployed.id} />
+        : <NotDeployedTab message="Deploy this tool to start tracking executions." />
+      )}
+      {activeTab === 'approvals' && (deployed
+        ? <ToolApprovalsTab toolId={deployed.id} />
+        : <NotDeployedTab message="Deploy this tool to manage approvals." />
+      )}
+      {activeTab === 'audit' && (deployed
+        ? <ToolAuditTab toolId={deployed.id} />
+        : <NotDeployedTab message="Deploy this tool to view the audit trail." />
+      )}
 
       {showConfig && (
         <ConfigDrawer
