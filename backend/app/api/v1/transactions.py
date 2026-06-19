@@ -1,3 +1,4 @@
+from datetime import date, datetime
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -35,6 +36,8 @@ async def list_all_transactions(
     source: str | None = Query(None),
     limit: int = Query(50, le=200),
     offset: int = Query(0, ge=0),
+    from_date: date | None = Query(None),
+    to_date: date | None = Query(None),
 ):
     """
     Lists all bank transactions for the tenant across every connected source
@@ -47,6 +50,13 @@ async def list_all_transactions(
         where["status"] = status_filter
     if source:
         where["source"] = source
+    date_filter: dict = {}
+    if from_date:
+        date_filter["gte"] = datetime(from_date.year, from_date.month, from_date.day)
+    if to_date:
+        date_filter["lte"] = datetime(to_date.year, to_date.month, to_date.day, 23, 59, 59)
+    if date_filter:
+        where["date"] = date_filter
 
     import asyncio
     transactions, total, all_debits, all_credits = await asyncio.gather(

@@ -14,10 +14,11 @@ export default async function TransactionsPage() {
   let total = 0
   let totalOutMinor = 0
   let totalInMinor = 0
+  const ytdStart = `${new Date().getFullYear()}-01-01`
   try {
     const token = await getBackendToken()
     if (token) {
-      const data = await apiGet<TransactionsData>('/v1/transactions?limit=50', token)
+      const data = await apiGet<TransactionsData>(`/v1/transactions?limit=50&from_date=${ytdStart}`, token)
       transactions = data.transactions ?? []
       total = data.total ?? transactions.length
       totalOutMinor = data.total_out_minor ?? 0
@@ -31,6 +32,7 @@ export default async function TransactionsPage() {
       total={total}
       totalOutMinor={totalOutMinor}
       totalInMinor={totalInMinor}
+      fromDate={ytdStart}
     />
   )
 }

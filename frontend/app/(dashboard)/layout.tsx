@@ -11,6 +11,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
   const { userId } = await auth()
   if (!userId) redirect('/sign-in')
 
+  let needsOnboarding = false
   try {
     const token = await getBackendToken()
     if (token) {
@@ -18,11 +19,10 @@ export default async function DashboardLayout({ children }: { children: React.Re
         headers: { Authorization: `Bearer ${token}` },
         cache: 'no-store',
       })
-      if (res.status === 404 || res.status === 403) {
-        redirect('/onboarding')
-      }
+      if (res.status === 404 || res.status === 403) needsOnboarding = true
     }
   } catch { /* backend unreachable — proceed to dashboard */ }
+  if (needsOnboarding) redirect('/onboarding')
 
   return (
     <div className="flex min-h-screen bg-brand-bg">

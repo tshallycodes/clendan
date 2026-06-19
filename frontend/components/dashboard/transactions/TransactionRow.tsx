@@ -122,7 +122,7 @@ export function TransactionRow({ transaction: t, onCategoryUpdate, categories }:
           'text-xs font-mono font-medium',
           isDebit ? 'text-[#ff4d6d]' : 'text-[#00C853]',
         )}>
-          {isDebit ? '−' : '+'}{convert(t.amount_minor, t.currency)}
+          {isDebit ? '−' : '+'}{convert(Math.abs(t.amount_minor), t.currency)}
         </span>
       </td>
 

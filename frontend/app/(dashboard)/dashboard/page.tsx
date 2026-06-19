@@ -43,7 +43,8 @@ const INTEGRATION_SLUGS: { slug: string; name: string }[] = [
 ]
 
 export default async function DashboardPage() {
-  const token = await getBackendToken()
+  let token: string | null = null
+  try { token = await getBackendToken() } catch { /* clerk unavailable */ }
 
   let stats: Stats | null = null
   let tools: DeployedTool[] = []
