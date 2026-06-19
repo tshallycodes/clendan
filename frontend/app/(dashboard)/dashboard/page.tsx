@@ -33,7 +33,6 @@ interface IntegrationSummary {
   slug: string
   status: string
   last_synced_at: string | null
-  summary?: string
 }
 
 const INTEGRATION_SLUGS: { slug: string; name: string }[] = [
@@ -73,7 +72,6 @@ export default async function DashboardPage() {
         slug,
         status: data?.status ?? 'disconnected',
         last_synced_at: data?.last_synced_at ?? null,
-        summary: data?.summary,
       }
     })
   }
