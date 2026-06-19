@@ -22,6 +22,7 @@ export interface Transaction {
   account_id: string
   account_name: string | null
   account_subtype: string | null
+  institution_name: string | null
 }
 
 
@@ -102,7 +103,7 @@ export function TransactionRow({ transaction: t, onCategoryUpdate, categories }:
           {t.account_name ?? '—'}
         </span>
         <span className="text-[9px] font-mono text-brand-muted uppercase tracking-wider">
-          {t.account_subtype ? `${t.account_subtype} · ` : ''}{SOURCE_LABELS[t.source] ?? t.source.toUpperCase()}
+          {t.account_subtype ? `${t.account_subtype} · ` : ''}{t.institution_name ?? SOURCE_LABELS[t.source] ?? t.source.toUpperCase()}
         </span>
       </td>
 

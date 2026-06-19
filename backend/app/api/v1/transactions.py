@@ -65,7 +65,7 @@ async def list_all_transactions(
             order={"date": "desc"},
             take=limit,
             skip=offset,
-            include={"account": True},
+            include={"account": {"include": {"integration": True}}},
         ),
         db.banktransaction.count(where=where),
         db.banktransaction.find_many(where={**where, "amount_minor": {"gt": 0}}),
@@ -92,6 +92,11 @@ async def list_all_transactions(
                     "account_id": t.account_id,
                     "account_name": t.account.name if t.account else None,
                     "account_subtype": t.account.subtype if t.account else None,
+                    "institution_name": (
+                        t.account.integration.institution_name
+                        if t.account and t.account.integration
+                        else None
+                    ),
                 }
                 for t in transactions
             ],
