@@ -43,28 +43,35 @@ async def stripe_callback(
     Redirects to /dashboard/integrations?connected=stripe on success.
     All steps required — partial completion is a failure.
     """
+    logger.info("stripe_callback_received state_prefix=%s code_prefix=%s", state[:12], code[:8])
+
     # Validate and extract tenant_id from state (format: "{tenant_id}:{random}")
     parts = state.split(":", 1)
     if len(parts) != 2:
+        logger.error("stripe_callback_bad_state state=%s", state[:32])
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid OAuth state parameter",
         )
     tenant_id = parts[0]
+    logger.info("stripe_callback_tenant_id tenant_id=%s", tenant_id)
 
     # Verify tenant exists
     tenant = await db.tenant.find_unique(where={"id": tenant_id})
     if not tenant:
+        logger.error("stripe_callback_tenant_not_found tenant_id=%s", tenant_id)
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Tenant not found",
         )
+    logger.info("stripe_callback_tenant_ok tenant_id=%s", tenant_id)
 
     # Exchange OAuth code for access_token + stripe_user_id
     try:
         tokens = await stripe_client.exchange_stripe_code(code=code)
+        logger.info("stripe_callback_token_exchange_ok stripe_user_id=%s scope=%s", tokens.get("stripe_user_id"), tokens.get("scope"))
     except Exception as exc:
-        logger.error("Stripe OAuth code exchange failed: %s", type(exc).__name__)
+        logger.error("stripe_callback_token_exchange_failed exc=%s", type(exc).__name__, exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail="Stripe token exchange failed",
@@ -75,8 +82,11 @@ async def stripe_callback(
 
     # Upsert integration record — status=syncing until sync job confirms data present
     existing = await db.integration.find_first(
-        where={"tenant_id": tenant_id, "type": "stripe"}
+        where={"tenant_id": tenant_id, "type": "stripe", "status": {"not": "disconnected"}},
+        order={"connected_at": "desc"},
     )
+    logger.info("stripe_callback_existing_integration found=%s id=%s status=%s", existing is not None, existing.id if existing else None, existing.status if existing else None)
+
     if existing:
         integration = await db.integration.update(
             where={"id": existing.id},
@@ -86,6 +96,7 @@ async def stripe_callback(
                 "connected_at": datetime.now(UTC),
             },
         )
+        logger.info("stripe_callback_integration_updated id=%s", integration.id)
     else:
         integration = await db.integration.create(
             data={
@@ -96,18 +107,19 @@ async def stripe_callback(
                 "connected_at": datetime.now(UTC),
             }
         )
+        logger.info("stripe_callback_integration_created id=%s", integration.id)
 
     # Enqueue sync job — confirms connection and fetches initial data
     try:
         await enqueue_stripe_sync(integration_id=integration.id, tenant_id=tenant_id)
+        logger.info("stripe_callback_sync_enqueued integration_id=%s", integration.id)
     except Exception as exc:
-        logger.warning(
-            "Failed to enqueue Stripe sync after connect (will retry later): %s",
-            type(exc).__name__,
-        )
+        logger.warning("stripe_callback_sync_enqueue_failed exc=%s", type(exc).__name__, exc_info=True)
 
     frontend_url = get_settings().frontend_url.rstrip("/")
-    return connected_page("Stripe", f"{frontend_url}/dashboard/integrations?connected=stripe")
+    redirect_url = f"{frontend_url}/dashboard/integrations?connected=stripe"
+    logger.info("stripe_callback_redirecting url=%s", redirect_url)
+    return connected_page("Stripe", redirect_url)
 
 
 @router.get("/integrations/stripe/status")
@@ -117,8 +129,11 @@ async def stripe_status(
 ):
     """Returns Stripe integration status and connected_at for the authenticated tenant."""
     integration = await db.integration.find_first(
-        where={"tenant_id": current_user.tenant_id, "type": "stripe"}
+        where={"tenant_id": current_user.tenant_id, "type": "stripe", "status": {"not": "disconnected"}},
+        order={"connected_at": "desc"},
     )
+    logger.info("stripe_status_query tenant_id=%s found=%s status=%s", current_user.tenant_id, integration is not None, integration.status if integration else None)
+
     if not integration:
         return standard_response(data={"status": "not_connected"})
 

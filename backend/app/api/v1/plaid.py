@@ -65,11 +65,13 @@ async def exchange_token(
     All steps required — partial completion is a failure.
     """
     tenant_id = current_user.tenant_id
+    logger.info("plaid_exchange_token_started tenant_id=%s institution_id=%s institution_name=%s", tenant_id, body.institution_id, body.institution_name)
 
     try:
         creds = await plaid.exchange_public_token(body.public_token)
+        logger.info("plaid_exchange_token_ok tenant_id=%s item_id=%s", tenant_id, creds.get("item_id"))
     except Exception as exc:
-        logger.error("Plaid token exchange failed: %s", type(exc).__name__)
+        logger.error("plaid_exchange_token_failed tenant_id=%s exc=%s", tenant_id, type(exc).__name__, exc_info=True)
         raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail="Plaid token exchange failed")
 
     credentials_json = json.dumps({
@@ -90,8 +92,13 @@ async def exchange_token(
             "connected_at": datetime.now(UTC),
         }
     )
+    logger.info("plaid_integration_created integration_id=%s tenant_id=%s status=%s", integration.id, tenant_id, integration.status)
 
-    await enqueue_plaid_sync(integration.id, tenant_id)
+    try:
+        await enqueue_plaid_sync(integration.id, tenant_id)
+        logger.info("plaid_sync_enqueued integration_id=%s", integration.id)
+    except Exception as exc:
+        logger.error("plaid_sync_enqueue_failed integration_id=%s exc=%s", integration.id, type(exc).__name__, exc_info=True)
 
     return standard_response(
         data={"status": IntegrationStatus.SYNCING, "integration_id": integration.id}

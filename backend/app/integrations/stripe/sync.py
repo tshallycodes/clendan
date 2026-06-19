@@ -21,37 +21,41 @@ async def sync_stripe_connection(ctx: dict, integration_id: str, tenant_id: str)
     """
     db = get_db()
 
+    logger.info("stripe_sync_started integration_id=%s tenant_id=%s", integration_id, tenant_id)
+
     integration = await db.integration.find_unique(where={"id": integration_id})
     if not integration:
-        logger.warning("Sync skipped — integration %s not found", integration_id)
+        logger.warning("stripe_sync_skipped reason=not_found integration_id=%s", integration_id)
         return {"status": "skipped", "reason": "not_found"}
 
+    logger.info("stripe_sync_integration_found id=%s status=%s", integration.id, integration.status)
+
     if integration.tenant_id != tenant_id:
-        logger.error("Tenant mismatch on Stripe sync job — possible data leakage attempt blocked")
+        logger.error("stripe_sync_tenant_mismatch integration_id=%s", integration_id)
         return {"status": "error", "reason": "tenant_mismatch"}
 
     if integration.status == "disconnected":
-        logger.warning("Sync skipped — Stripe integration %s is disconnected", integration_id)
+        logger.warning("stripe_sync_skipped reason=disconnected integration_id=%s", integration_id)
         return {"status": "skipped", "reason": "disconnected"}
 
     try:
         creds = decrypt_credentials(integration.encrypted_credentials, tenant_id)
         access_token = creds.get("access_token", "")
+        logger.info("stripe_sync_creds_ok integration_id=%s has_token=%s", integration_id, bool(access_token))
         if not access_token:
+            logger.error("stripe_sync_missing_access_token integration_id=%s", integration_id)
+            await db.integration.update(where={"id": integration_id}, data={"status": "error"})
             return {"status": "error", "reason": "missing_access_token"}
 
         # Verify connection is live
         account = await stripe.get_stripe_account(access_token)
-        logger.info(
-            "Stripe account verified: tenant=%s account_id=%s",
-            tenant_id,
-            account.get("stripe_account_id"),
-        )
+        logger.info("stripe_sync_account_verified integration_id=%s stripe_account_id=%s", integration_id, account.get("stripe_account_id"))
 
         # Fetch charges
         start_ms = int(time.time() * 1000)
         charges = await stripe.fetch_recent_charges(access_token)
         charges_elapsed_ms = int(time.time() * 1000) - start_ms
+        logger.info("stripe_sync_charges_fetched integration_id=%s count=%d ms=%d", integration_id, len(charges), charges_elapsed_ms)
 
         await db.integrationsynclog.create(data={
             "tenant_id": tenant_id,
@@ -66,6 +70,7 @@ async def sync_stripe_connection(ctx: dict, integration_id: str, tenant_id: str)
         start_ms = int(time.time() * 1000)
         invoices = await stripe.fetch_recent_invoices(access_token)
         invoices_elapsed_ms = int(time.time() * 1000) - start_ms
+        logger.info("stripe_sync_invoices_fetched integration_id=%s count=%d ms=%d", integration_id, len(invoices), invoices_elapsed_ms)
 
         await db.integrationsynclog.create(data={
             "tenant_id": tenant_id,
@@ -79,7 +84,7 @@ async def sync_stripe_connection(ctx: dict, integration_id: str, tenant_id: str)
         # Re-read status — integration may have been disconnected while sync was running
         current = await db.integration.find_unique(where={"id": integration_id})
         if not current or current.status == "disconnected":
-            logger.info("Stripe sync aborted — integration %s was disconnected during run", integration_id)
+            logger.info("stripe_sync_aborted reason=disconnected_during_sync integration_id=%s", integration_id)
             return {"status": "skipped", "reason": "disconnected_during_sync"}
 
         import json
@@ -88,13 +93,8 @@ async def sync_stripe_connection(ctx: dict, integration_id: str, tenant_id: str)
             where={"id": integration_id},
             data={"status": "connected", "sync_metadata": json.dumps(sync_metadata)},
         )
+        logger.info("stripe_sync_ok integration_id=%s charges=%d invoices=%d", integration_id, len(charges), len(invoices))
 
-        logger.info(
-            "Stripe sync done: tenant=%s charges=%d invoices=%d",
-            tenant_id,
-            len(charges),
-            len(invoices),
-        )
         return {
             "status": "ok",
             "charges_synced": len(charges),
@@ -103,16 +103,11 @@ async def sync_stripe_connection(ctx: dict, integration_id: str, tenant_id: str)
         }
 
     except Exception as exc:
-        logger.error(
-            "Stripe sync failed for integration %s: %s",
-            integration_id,
-            type(exc).__name__,
-        )
+        logger.error("stripe_sync_failed integration_id=%s exc=%s", integration_id, type(exc).__name__, exc_info=True)
         await db.integration.update(
             where={"id": integration_id},
             data={"status": "error"},
         )
-
         await db.integrationsynclog.create(data={
             "tenant_id": tenant_id,
             "integration_id": integration_id,
@@ -121,7 +116,6 @@ async def sync_stripe_connection(ctx: dict, integration_id: str, tenant_id: str)
             "records_synced": 0,
             "duration_ms": 0,
         })
-
         return {"status": "error", "reason": type(exc).__name__}
 
 

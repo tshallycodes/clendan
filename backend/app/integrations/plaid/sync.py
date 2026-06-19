@@ -60,26 +60,34 @@ async def sync_plaid_transactions(ctx: dict, integration_id: str, tenant_id: str
     Uses cursor-based pagination. Stores accounts + transactions in DB.
     Zero trust: validates all data from Plaid before writing.
     """
+    logger.info("plaid_sync_started integration_id=%s tenant_id=%s", integration_id, tenant_id)
     db = get_db()
 
     integration = await db.integration.find_unique(where={"id": integration_id})
     if not integration or integration.status not in ("syncing", "connected"):
+        logger.warning("plaid_sync_skipped reason=not_in_syncable_state integration_id=%s status=%s", integration_id, integration.status if integration else "NOT_FOUND")
         return {"status": "skipped", "reason": "not_connected"}
 
+    logger.info("plaid_sync_integration_ok integration_id=%s status=%s institution_name=%s", integration_id, integration.status, integration.institution_name)
+
     if integration.tenant_id != tenant_id:
-        logger.error("Tenant mismatch on Plaid sync — blocked")
+        logger.error("plaid_sync_tenant_mismatch integration_id=%s", integration_id)
         return {"status": "error", "reason": "tenant_mismatch"}
 
     creds = json.loads(integration.encrypted_credentials)
     encrypted_access = creds.get("access_token", "")
     item_id = creds.get("item_id", "")
+    logger.info("plaid_sync_creds_check integration_id=%s has_access_token=%s has_item_id=%s", integration_id, bool(encrypted_access), bool(item_id))
 
     if not encrypted_access or not item_id:
+        logger.error("plaid_sync_incomplete_creds integration_id=%s", integration_id)
+        await db.integration.update(where={"id": integration_id}, data={"status": "error"})
         return {"status": "error", "reason": "incomplete_credentials"}
 
     try:
         _start = time.monotonic()
         # Sync accounts first
+        logger.info("plaid_sync_fetching_accounts integration_id=%s", integration_id)
         accounts_data = await plaid.get_accounts(encrypted_access)
         accounts_synced = 0
         for acct in accounts_data:
@@ -113,13 +121,19 @@ async def sync_plaid_transactions(ctx: dict, integration_id: str, tenant_id: str
                 })
             accounts_synced += 1
 
+        logger.info("plaid_sync_accounts_done integration_id=%s accounts_synced=%d", integration_id, accounts_synced)
+
         # Cursor-based transaction sync
         cursor = creds.get("sync_cursor")
         total_added = 0
         has_more = True
+        page = 0
+        logger.info("plaid_sync_transactions_start integration_id=%s cursor=%s", integration_id, cursor[:12] if cursor else None)
 
         while has_more:
             result = await plaid.sync_transactions(encrypted_access, cursor)
+            page += 1
+            logger.info("plaid_sync_txn_page integration_id=%s page=%d added=%d has_more=%s", integration_id, page, len(result.get("added", [])), result.get("has_more"))
 
             for txn in result["added"]:
                 txn_id = txn.get("transaction_id", "")
@@ -156,18 +170,21 @@ async def sync_plaid_transactions(ctx: dict, integration_id: str, tenant_id: str
             cursor = result["next_cursor"]
             has_more = result["has_more"]
 
+        logger.info("plaid_sync_transactions_done integration_id=%s total_added=%d pages=%d", integration_id, total_added, page)
+
         # Re-read status — integration may have been disconnected while sync was running
         current = await db.integration.find_unique(where={"id": integration_id})
         if not current or current.status == "disconnected":
-            logger.info("Plaid sync aborted — integration %s was disconnected during run", integration_id)
+            logger.info("plaid_sync_aborted reason=disconnected_during_sync integration_id=%s", integration_id)
             return {"status": "skipped", "reason": "disconnected_during_sync"}
 
-        # Persist updated cursor
+        # Persist updated cursor + mark connected
         creds["sync_cursor"] = cursor
         await db.integration.update(
             where={"id": integration_id},
             data={"encrypted_credentials": json.dumps(creds), "status": "connected", "last_synced_at": datetime.now(UTC)},
         )
+        logger.info("plaid_sync_status_connected integration_id=%s", integration_id)
 
         # Emit orchestrator events for newly synced transactions
         if total_added > 0:
@@ -227,16 +244,13 @@ async def sync_plaid_transactions(ctx: dict, integration_id: str, tenant_id: str
         # Dedup: if an older integration has accounts that are all present in this one, delete it
         await _dedup_plaid_connections(db, integration_id, tenant_id)
 
-        logger.info(
-            "Plaid sync done: tenant=%s accounts=%d txns_added=%d",
-            tenant_id,
-            accounts_synced,
-            total_added,
-        )
+        logger.info("plaid_sync_ok integration_id=%s accounts=%d txns_added=%d", integration_id, accounts_synced, total_added)
         return {"status": "ok", "accounts_synced": accounts_synced, "transactions_added": total_added}
 
     except Exception as exc:
         elapsed_ms = int((time.monotonic() - _start) * 1000)
+        logger.error("plaid_sync_failed integration_id=%s exc=%s elapsed_ms=%d", integration_id, type(exc).__name__, elapsed_ms, exc_info=True)
+        await db.integration.update(where={"id": integration_id}, data={"status": "error"})
         await db.integrationsynclog.create(data={
             "tenant_id": tenant_id,
             "integration_id": integration_id,
@@ -246,7 +260,6 @@ async def sync_plaid_transactions(ctx: dict, integration_id: str, tenant_id: str
             "duration_ms": elapsed_ms,
             "error_message": type(exc).__name__,
         })
-        logger.error("Plaid sync failed for integration %s: %s", integration_id, type(exc).__name__)
         return {"status": "error", "reason": type(exc).__name__}
 
 
