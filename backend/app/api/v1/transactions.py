@@ -49,7 +49,7 @@ async def list_all_transactions(
         where["source"] = source
 
     import asyncio
-    transactions, total, debit_agg, credit_agg = await asyncio.gather(
+    transactions, total, all_debits, all_credits = await asyncio.gather(
         db.banktransaction.find_many(
             where=where,
             order={"date": "desc"},
@@ -58,17 +58,11 @@ async def list_all_transactions(
             include={"account": True},
         ),
         db.banktransaction.count(where=where),
-        db.banktransaction.aggregate(
-            where={**where, "amount_minor": {"gt": 0}},
-            _sum={"amount_minor": True},
-        ),
-        db.banktransaction.aggregate(
-            where={**where, "amount_minor": {"lt": 0}},
-            _sum={"amount_minor": True},
-        ),
+        db.banktransaction.find_many(where={**where, "amount_minor": {"gt": 0}}),
+        db.banktransaction.find_many(where={**where, "amount_minor": {"lt": 0}}),
     )
-    total_out_minor: int = int(debit_agg.sum.amount_minor or 0)
-    total_in_minor: int = abs(int(credit_agg.sum.amount_minor or 0))
+    total_out_minor: int = sum(t.amount_minor for t in all_debits)
+    total_in_minor: int = sum(-t.amount_minor for t in all_credits)
 
     return standard_response(
         data={

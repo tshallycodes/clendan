@@ -1,6 +1,6 @@
 ﻿'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '@clerk/nextjs'
 import Image from 'next/image'
@@ -199,9 +199,10 @@ export function BankDetailDrawer({ bank, onClose, onConnect, onDisconnect, onRes
   const [connections, setConnections] = useState<BankConnection[]>([])
   const [loading, setLoading] = useState(false)
   const [logoError, setLogoError] = useState(false)
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
-  const fetchConnections = useCallback(async (bankDef: BankDef) => {
-    setLoading(true)
+  const fetchConnections = useCallback(async (bankDef: BankDef, silent = false) => {
+    if (!silent) setLoading(true)
     try {
       const token = await getToken()
       // Generic fallback cards (id ends with -generic) represent "any connection for this
@@ -213,25 +214,52 @@ export function BankDetailDrawer({ bank, onClose, onConnect, onDisconnect, onRes
       const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } })
       if (res.ok) {
         const json = await res.json()
-        setConnections(json.data?.connections ?? [])
+        const fetched: BankConnection[] = json.data?.connections ?? []
+        setConnections(fetched)
+        return fetched
       } else {
         console.error('[BankDetailDrawer] connections fetch failed', res.status, await res.text().catch(() => ''))
       }
     } catch (err) {
       console.error('[BankDetailDrawer] connections fetch error', err)
-    } finally { setLoading(false) }
+    } finally {
+      if (!silent) setLoading(false)
+    }
+    return null
   }, [getToken]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  function stopPolling() {
+    if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null }
+  }
+
+  function startPolling(bankDef: BankDef) {
+    if (pollRef.current) return
+    pollRef.current = setInterval(async () => {
+      const conns = await fetchConnections(bankDef, true)
+      if (!conns || !conns.some((c) => c.status === 'syncing')) stopPolling()
+    }, 3000)
+  }
 
   useEffect(() => {
     setLogoError(false)
     setConnections([])
+    stopPolling()
     if (!bank) return
     fetchConnections(bank)
+    return () => stopPolling()
   }, [bank?.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleDisconnect = async (integrationId: string, provider: string) => {
     await onDisconnect(integrationId, provider)
     if (bank) fetchConnections(bank)
+  }
+
+  const handleResync = async (integrationId: string, provider: string) => {
+    await onResync(integrationId, provider)
+    if (bank) {
+      await fetchConnections(bank, true)
+      startPolling(bank)
+    }
   }
 
   return (
@@ -301,7 +329,7 @@ export function BankDetailDrawer({ bank, onClose, onConnect, onDisconnect, onRes
                       conn={conn}
                       provider={bank.provider}
                       onDisconnect={handleDisconnect}
-                      onResync={onResync}
+                      onResync={handleResync}
                       onSyncLog={onSyncLog}
                     />
                   ))}
