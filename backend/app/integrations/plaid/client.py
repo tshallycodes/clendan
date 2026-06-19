@@ -141,13 +141,28 @@ async def _retry(fn, *args, **kwargs):
             return await fn(*args, **kwargs)
         except (httpx.HTTPStatusError, httpx.TimeoutException, httpx.NetworkError) as exc:
             last_exc = exc
+            body = ""
+            if isinstance(exc, httpx.HTTPStatusError):
+                try:
+                    body = exc.response.text[:500]
+                except Exception:
+                    pass
+            http_status = getattr(getattr(exc, "response", None), "status_code", "N/A")
             if attempt < MAX_ATTEMPTS - 1:
                 wait = BACKOFF_SECONDS * (2 ** attempt) + random.uniform(0, 0.5)
                 logger.warning(
-                    "Plaid call failed (attempt %d/%d), retry in %.1fs",
+                    "plaid_retry attempt=%d/%d status=%s body=%s retry_in=%.1fs",
                     attempt + 1,
                     MAX_ATTEMPTS,
+                    http_status,
+                    body,
                     wait,
                 )
                 await asyncio.sleep(wait)
+            else:
+                logger.error(
+                    "plaid_max_retries_exceeded status=%s body=%s",
+                    http_status,
+                    body,
+                )
     raise last_exc

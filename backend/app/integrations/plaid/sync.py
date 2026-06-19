@@ -254,7 +254,14 @@ async def sync_plaid_transactions(ctx: dict, integration_id: str, tenant_id: str
 
     except Exception as exc:
         elapsed_ms = int((time.monotonic() - _start) * 1000)
-        logger.error("plaid_sync_failed integration_id=%s exc=%s msg=%s elapsed_ms=%d", integration_id, type(exc).__name__, str(exc)[:200], elapsed_ms, exc_info=True)
+        _body = ""
+        try:
+            import httpx as _httpx
+            if isinstance(exc, _httpx.HTTPStatusError):
+                _body = exc.response.text[:500]
+        except Exception:
+            pass
+        logger.error("plaid_sync_failed integration_id=%s exc=%s msg=%s body=%s elapsed_ms=%d", integration_id, type(exc).__name__, str(exc)[:200], _body, elapsed_ms, exc_info=True)
         await db.integration.update(where={"id": integration_id}, data={"status": "error"})
         await db.integrationsynclog.create(data={
             "tenant_id": tenant_id,
