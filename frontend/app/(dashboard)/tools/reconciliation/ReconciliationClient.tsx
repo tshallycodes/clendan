@@ -35,9 +35,18 @@ function defaultPeriodEnd() {
   return new Date(d.getFullYear(), d.getMonth() + 1, 0).toISOString().slice(0, 10)
 }
 
+interface BankAccount {
+  id: string
+  name: string
+  subtype: string
+  institution_name: string | null
+}
+
 interface OverviewProps {
   periodStart: string
   periodEnd: string
+  accountId: string
+  accounts: BankAccount[]
   toolId: string | null
   running: boolean
   runs: ReconciliationRun[]
@@ -47,25 +56,29 @@ interface OverviewProps {
   itemsLoading: boolean
   onPeriodStartChange: (v: string) => void
   onPeriodEndChange: (v: string) => void
+  onAccountChange: (v: string) => void
   onRun: () => void
   onSelectRun: (run: ReconciliationRun) => void
   onExport: (runId: string) => void
 }
 
 function OverviewTab({
-  periodStart, periodEnd, toolId, running,
+  periodStart, periodEnd, accountId, accounts, toolId, running,
   runs, runsLoading, selectedRun, items, itemsLoading,
-  onPeriodStartChange, onPeriodEndChange, onRun, onSelectRun, onExport,
+  onPeriodStartChange, onPeriodEndChange, onAccountChange, onRun, onSelectRun, onExport,
 }: OverviewProps) {
   return (
     <>
       <RunControls
         periodStart={periodStart}
         periodEnd={periodEnd}
+        accountId={accountId}
+        accounts={accounts}
         toolReady={!!toolId}
         running={running}
         onPeriodStartChange={onPeriodStartChange}
         onPeriodEndChange={onPeriodEndChange}
+        onAccountChange={onAccountChange}
         onRun={onRun}
       />
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_2fr] gap-5">
@@ -132,6 +145,8 @@ export function ReconciliationClient() {
   const [itemsLoading, setItemsLoading] = useState(false)
   const [periodStart, setPeriodStart] = useState(defaultPeriodStart)
   const [periodEnd, setPeriodEnd] = useState(defaultPeriodEnd)
+  const [accountId, setAccountId] = useState('')
+  const [accounts, setAccounts] = useState<BankAccount[]>([])
   const [deployed, setDeployed] = useState<Tool | null>(null)
   const [running, setRunning] = useState(false)
   const [showConfig, setShowConfig] = useState(false)
@@ -178,12 +193,19 @@ export function ReconciliationClient() {
   useEffect(() => {
     async function init() {
       const token = await getToken()
-      const toolsRes = await fetch(`${API}/v1/tools`, { headers: { Authorization: `Bearer ${token}` } })
+      const [toolsRes, accountsRes] = await Promise.all([
+        fetch(`${API}/v1/tools`, { headers: { Authorization: `Bearer ${token}` } }),
+        fetch(`${API}/v1/reconciliation/accounts`, { headers: { Authorization: `Bearer ${token}` } }),
+      ])
       if (toolsRes.ok) {
         const toolsJson = await toolsRes.json()
         const tools: Tool[] = toolsJson.data?.tools ?? toolsJson.data ?? []
         const rec = tools.find((w) => w.type === 'reconciliation')
         if (rec) setDeployed(rec)
+      }
+      if (accountsRes.ok) {
+        const accountsJson = await accountsRes.json()
+        setAccounts(accountsJson.data?.accounts ?? [])
       }
       setRunsLoading(true)
       const list = await fetchRuns()
@@ -239,7 +261,7 @@ export function ReconciliationClient() {
       const res = await fetch(`${API}/v1/reconciliation/run`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ period_start: periodStart, period_end: periodEnd, tool_id: deployed.id }),
+        body: JSON.stringify({ period_start: periodStart, period_end: periodEnd, tool_id: deployed.id, account_id: accountId || null }),
       })
       if (!res.ok) return
       const json = await res.json()
@@ -348,10 +370,12 @@ export function ReconciliationClient() {
           {activeTab === 'overview' && (
             <>
               <OverviewTab
-                periodStart={periodStart} periodEnd={periodEnd} toolId={deployed?.id ?? null} running={running}
+                periodStart={periodStart} periodEnd={periodEnd} accountId={accountId} accounts={accounts}
+                toolId={deployed?.id ?? null} running={running}
                 runs={runs} runsLoading={runsLoading} selectedRun={selectedRun}
                 items={items} itemsLoading={itemsLoading}
                 onPeriodStartChange={setPeriodStart} onPeriodEndChange={setPeriodEnd}
+                onAccountChange={setAccountId}
                 onRun={handleRun} onSelectRun={(r) => { setSelectedRun(r); fetchItems(r.id) }}
                 onExport={handleExport}
               />

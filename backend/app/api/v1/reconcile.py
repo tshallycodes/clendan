@@ -31,6 +31,7 @@ class TriggerRunRequest(BaseModel):
     period_start: str   # ISO datetime string
     period_end: str     # ISO datetime string
     tool_id: str
+    account_id: Optional[str] = None
 
 
 # ---------------------------------------------------------------------------
@@ -149,6 +150,33 @@ async def get_run_items(
 
 
 # ---------------------------------------------------------------------------
+# GET /v1/reconciliation/accounts
+# ---------------------------------------------------------------------------
+
+
+@router.get("/reconciliation/accounts")
+async def list_reconciliation_accounts(current_user: RequireOrgAuth) -> dict:
+    """Returns all bank accounts for the tenant across all providers, for the run filter."""
+    db = get_db()
+    accounts = await db.bankaccount.find_many(
+        where={"tenant_id": current_user.tenant_id},
+        include={"integration": True},
+        order={"created_at": "asc"},
+    )
+    return standard_response(data={
+        "accounts": [
+            {
+                "id": a.id,
+                "name": a.name,
+                "subtype": a.subtype or "",
+                "institution_name": a.integration.institution_name if a.integration else None,
+            }
+            for a in accounts
+        ]
+    })
+
+
+# ---------------------------------------------------------------------------
 # POST /v1/reconciliation/run
 # ---------------------------------------------------------------------------
 
@@ -201,6 +229,7 @@ async def trigger_reconciliation_run(
         tool_id=body.tool_id,
         period_start=period_start,
         period_end=period_end,
+        account_id=body.account_id,
     )
 
     return standard_response(data={

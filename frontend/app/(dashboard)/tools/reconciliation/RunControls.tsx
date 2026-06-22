@@ -1,14 +1,24 @@
-﻿'use client'
+'use client'
 
 import { Loader2 } from 'lucide-react'
+
+interface Account {
+  id: string
+  name: string
+  subtype: string
+  institution_name: string | null
+}
 
 interface RunControlsProps {
   periodStart: string
   periodEnd: string
+  accountId: string
+  accounts: Account[]
   toolReady: boolean
   running: boolean
   onPeriodStartChange: (v: string) => void
   onPeriodEndChange: (v: string) => void
+  onAccountChange: (v: string) => void
   onRun: () => void
 }
 
@@ -18,10 +28,13 @@ const INPUT_CLS =
 export function RunControls({
   periodStart,
   periodEnd,
+  accountId,
+  accounts,
   toolReady,
   running,
   onPeriodStartChange,
   onPeriodEndChange,
+  onAccountChange,
   onRun,
 }: RunControlsProps) {
   return (
@@ -49,6 +62,26 @@ export function RunControls({
           className={INPUT_CLS}
         />
       </div>
+
+      {accounts.length > 0 && (
+        <div className="flex flex-col gap-1">
+          <label className="text-[10px] font-mono uppercase tracking-widest text-brand-muted">
+            Account
+          </label>
+          <select
+            value={accountId}
+            onChange={(e) => onAccountChange(e.target.value)}
+            className={INPUT_CLS}
+          >
+            <option value="">All accounts</option>
+            {accounts.map((a) => (
+              <option key={a.id} value={a.id}>
+                {a.institution_name ? `${a.institution_name} — ` : ''}{a.name}{a.subtype ? ` (${a.subtype})` : ''}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
 
       <div className="flex flex-col gap-1 justify-end">
         {!toolReady && !running && (
