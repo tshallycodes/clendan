@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { Fragment, useEffect, useState } from 'react'
 import { useAuth } from '@clerk/nextjs'
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
@@ -117,12 +117,11 @@ export function ToolExecutionsTab({ toolId }: { toolId: string | null }) {
               <tr><td colSpan={5} className="px-4 py-8 text-center text-brand-muted">No executions yet</td></tr>
             ) : executions.map(e => {
               const isExpanded = expanded === e.id
-              const isExpandable = e.status === 'failed' && (e.error_message || e.input_ref)
+              const isExpandable = e.status === 'failed'
               return (
-                <>
+                <Fragment key={e.id}>
                   <tr
-                    key={e.id}
-                    onClick={() => isExpandable ? setExpanded(isExpanded ? null : e.id) : undefined}
+                    onClick={() => { if (isExpandable) setExpanded(isExpanded ? null : e.id) }}
                     className={`border-t border-brand-border transition-colors ${isExpandable ? 'cursor-pointer' : ''} hover:bg-brand-elevated`}
                   >
                     <td className="px-4 py-2.5 text-brand-muted">
@@ -138,7 +137,7 @@ export function ToolExecutionsTab({ toolId }: { toolId: string | null }) {
                     </td>
                   </tr>
                   {isExpanded && (
-                    <tr key={`${e.id}-detail`} className="border-t border-brand-border bg-brand-elevated">
+                    <tr className="border-t border-brand-border bg-brand-elevated">
                       <td colSpan={5} className="px-4 py-3 space-y-2">
                         {e.input_ref && (
                           <p className="text-[10px] font-mono text-brand-muted">ref: {e.input_ref}</p>
@@ -153,7 +152,7 @@ export function ToolExecutionsTab({ toolId }: { toolId: string | null }) {
                       </td>
                     </tr>
                   )}
-                </>
+                </Fragment>
               )
             })}
           </tbody>
