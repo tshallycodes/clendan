@@ -127,15 +127,16 @@ model Tool {
 }
 
 model Execution {
-  id          String   @id @default(cuid())
-  tenant_id   String
-  tool_id   String
-  input_ref   String
-  decision    String
-  confidence  Float
-  status      String
-  duration_ms Int?
-  created_at  DateTime @default(now())
+  id            String   @id @default(cuid())
+  tenant_id     String
+  tool_id       String
+  input_ref     String
+  decision      String
+  confidence    Float
+  status        String
+  duration_ms   Int?
+  error_message String?
+  created_at    DateTime @default(now())
 
   tenant   Tenant     @relation(fields: [tenant_id], references: [id])
   tool   Tool     @relation(fields: [tool_id], references: [id])

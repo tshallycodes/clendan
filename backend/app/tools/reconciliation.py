@@ -461,7 +461,7 @@ async def run_reconciliation_job(
         try:
             await db.execution.update(
                 where={"id": execution_id},
-                data={"status": "failed", "decision": "failed"},
+                data={"status": "failed", "decision": "failed", "error_message": str(exc)[:2000]},
             )
         except Exception:
             pass

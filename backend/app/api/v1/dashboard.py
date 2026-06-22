@@ -72,6 +72,7 @@ async def list_executions(
                 "duration_ms": e.duration_ms,
                 "created_at": e.created_at.isoformat(),
                 "input_ref": e.input_ref,
+                "error_message": e.error_message,
                 "approval_id": e.approval.id if e.approval else None,
             }
             for e in executions

@@ -13,6 +13,8 @@ interface Execution {
   status: string
   duration_ms: number | null
   created_at: string
+  input_ref: string
+  error_message: string | null
 }
 
 type Filter = 'all' | 'auto' | 'approval_required' | 'blocked'
@@ -39,6 +41,7 @@ export function ToolExecutionsTab({ toolId }: { toolId: string | null }) {
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(false)
   const [filter, setFilter] = useState<Filter>('all')
+  const [expanded, setExpanded] = useState<string | null>(null)
 
   useEffect(() => {
     if (!toolId) return
@@ -101,6 +104,7 @@ export function ToolExecutionsTab({ toolId }: { toolId: string | null }) {
           <thead>
             <tr className="border-b border-brand-border">
               <th className="text-left px-4 py-2 text-brand-muted font-normal">Time</th>
+              <th className="text-left px-4 py-2 text-brand-muted font-normal">Ref</th>
               <th className="text-left px-4 py-2 text-brand-muted font-normal">Decision</th>
               <th className="text-left px-4 py-2 text-brand-muted font-normal">Status</th>
               <th className="text-right px-4 py-2 text-brand-muted font-normal">Duration</th>
@@ -108,23 +112,50 @@ export function ToolExecutionsTab({ toolId }: { toolId: string | null }) {
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={4} className="px-4 py-8 text-center text-brand-muted">Loading…</td></tr>
+              <tr><td colSpan={5} className="px-4 py-8 text-center text-brand-muted">Loading…</td></tr>
             ) : executions.length === 0 ? (
-              <tr><td colSpan={4} className="px-4 py-8 text-center text-brand-muted">No executions yet</td></tr>
-            ) : executions.map(e => (
-              <tr key={e.id} className="border-t border-brand-border hover:bg-brand-elevated transition-colors">
-                <td className="px-4 py-2.5 text-brand-muted">
-                  {new Date(e.created_at).toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
-                </td>
-                <td className="px-4 py-2.5 text-brand-secondary max-w-[200px] truncate">{e.decision || '—'}</td>
-                <td className="px-4 py-2.5">
-                  <span className={STATUS_CLASS[e.status] ?? 'text-brand-secondary'}>{e.status}</span>
-                </td>
-                <td className="px-4 py-2.5 text-right text-brand-muted">
-                  {e.duration_ms != null ? `${e.duration_ms}ms` : '—'}
-                </td>
-              </tr>
-            ))}
+              <tr><td colSpan={5} className="px-4 py-8 text-center text-brand-muted">No executions yet</td></tr>
+            ) : executions.map(e => {
+              const isExpanded = expanded === e.id
+              const isExpandable = e.status === 'failed' && (e.error_message || e.input_ref)
+              return (
+                <>
+                  <tr
+                    key={e.id}
+                    onClick={() => isExpandable ? setExpanded(isExpanded ? null : e.id) : undefined}
+                    className={`border-t border-brand-border transition-colors ${isExpandable ? 'cursor-pointer' : ''} hover:bg-brand-elevated`}
+                  >
+                    <td className="px-4 py-2.5 text-brand-muted">
+                      {new Date(e.created_at).toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                    </td>
+                    <td className="px-4 py-2.5 text-brand-muted max-w-[160px] truncate">{e.input_ref || '—'}</td>
+                    <td className="px-4 py-2.5 text-brand-secondary max-w-[160px] truncate">{e.decision || '—'}</td>
+                    <td className="px-4 py-2.5">
+                      <span className={STATUS_CLASS[e.status] ?? 'text-brand-secondary'}>{e.status}</span>
+                    </td>
+                    <td className="px-4 py-2.5 text-right text-brand-muted">
+                      {e.duration_ms != null ? `${e.duration_ms}ms` : '—'}
+                    </td>
+                  </tr>
+                  {isExpanded && (
+                    <tr key={`${e.id}-detail`} className="border-t border-brand-border bg-brand-elevated">
+                      <td colSpan={5} className="px-4 py-3 space-y-2">
+                        {e.input_ref && (
+                          <p className="text-[10px] font-mono text-brand-muted">ref: {e.input_ref}</p>
+                        )}
+                        {e.error_message ? (
+                          <pre className="text-[10px] font-mono text-[#ff4d6d] whitespace-pre-wrap bg-[rgba(255,77,109,0.06)] border border-[rgba(255,77,109,0.2)] rounded-sm p-3 overflow-x-auto max-h-48">
+                            {e.error_message}
+                          </pre>
+                        ) : (
+                          <p className="text-[10px] font-mono text-brand-muted">No error details recorded for this execution.</p>
+                        )}
+                      </td>
+                    </tr>
+                  )}
+                </>
+              )
+            })}
           </tbody>
         </table>
       </div>
