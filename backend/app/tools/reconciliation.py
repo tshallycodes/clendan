@@ -118,11 +118,14 @@ async def _call_claude(
     unmatched_bills: list[_BillRecord],
     settings_obj,
 ) -> list[_ClaudeItemResult]:
-    client = (
-        AsyncAnthropic(api_key=settings_obj.anthropic_api_key)
-        if settings_obj.anthropic_api_key
-        else AsyncAnthropic()
-    )
+    import os
+    api_key = settings_obj.anthropic_api_key or os.environ.get("ANTHROPIC_API_KEY")
+    if not api_key:
+        raise RuntimeError(
+            "ANTHROPIC_API_KEY is not configured. "
+            "Set it as an environment variable on the worker service."
+        )
+    client = AsyncAnthropic(api_key=api_key)
     payload = json.dumps(
         {
             "unmatched_transactions": [
