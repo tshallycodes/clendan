@@ -73,20 +73,22 @@ def build_auth_url(state: str, code_challenge: str) -> str:
     then pass code_challenge here. Store code_verifier for the callback.
     """
     settings = get_settings()
+    # HubSpot OAuth 2.1: scopes are configured in the app dashboard, not the URL.
+    # Including scope in the URL can cause "Unable to load app information" errors.
     params = {
         "client_id": settings.hubspot_client_id,
         "redirect_uri": settings.hubspot_redirect_uri,
-        "scope": HS_SCOPES,
         "state": state,
         "code_challenge": code_challenge,
         "code_challenge_method": "S256",
     }
+    auth_url = f"{HS_AUTH_URL}?{urlencode(params)}"
     logger.info("hubspot_build_auth_url", extra={
         "redirect_uri": settings.hubspot_redirect_uri,
         "client_id": (settings.hubspot_client_id[:12] + "...") if settings.hubspot_client_id else "MISSING",
-        "code_challenge_method": "S256",
+        "full_url": auth_url,
     })
-    return f"{HS_AUTH_URL}?{urlencode(params)}"
+    return auth_url
 
 
 async def exchange_code(code: str, tenant_id: str, code_verifier: str) -> dict:
