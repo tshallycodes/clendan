@@ -190,7 +190,7 @@ export function GenericToolClient({ tool, deployed }: Props) {
                     </motion.li>
                   ))}
                 </motion.ul>
-              : <NotDeployedTab message="No capabilities listed." />
+              : <div className="bg-brand-surface border border-brand-border rounded-sm p-8 text-center"><p className="text-xs font-mono text-brand-muted">No capabilities listed.</p></div>
           )}
           {activeTab === 'executions' && <ToolExecutionsTab toolId={deployed?.id ?? null} />}
           {activeTab === 'approvals' && <ToolApprovalsTab toolId={deployed?.id ?? null} />}
