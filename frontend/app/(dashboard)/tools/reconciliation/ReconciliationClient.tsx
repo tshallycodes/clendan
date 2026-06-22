@@ -15,6 +15,7 @@ import { ToolExecutionsTab } from '@/components/dashboard/tools/ToolExecutionsTa
 import { ToolApprovalsTab } from '@/components/dashboard/tools/ToolApprovalsTab'
 import { ToolAuditTab } from '@/components/dashboard/tools/ToolAuditTab'
 import { TOOLS } from '../tools-data'
+import { motion, AnimatePresence } from 'framer-motion'
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
@@ -102,6 +103,24 @@ function NotDeployedTab({ message }: { message: string }) {
       <p className="text-xs font-mono text-brand-muted">{message}</p>
     </div>
   )
+}
+
+const pageVariants = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.07 } },
+}
+const EASE = [0.25, 0.46, 0.45, 0.94] as const
+const sectionVariants = {
+  hidden: { opacity: 0, y: 14 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.38, ease: EASE } },
+}
+const capabilityVariants = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.05 } },
+}
+const capItemVariants = {
+  hidden: { opacity: 0, x: -8 },
+  show: { opacity: 1, x: 0, transition: { duration: 0.25, ease: EASE } },
 }
 
 const AUTONOMY_BADGE: Record<string, { label: string; className: string }> = {
@@ -252,20 +271,22 @@ export function ReconciliationClient() {
   const actionLoading = toggling || deploying
 
   return (
-    <div className="p-6 space-y-5">
-      <Link href="/tools" className="text-[11px] font-mono text-brand-muted hover:text-brand-secondary transition-colors">
-        ← Tools
-      </Link>
+    <motion.div variants={pageVariants} initial="hidden" animate="show" className="p-6 space-y-6">
+      <motion.div variants={sectionVariants}>
+        <Link href="/tools" className="text-[11px] font-mono text-brand-muted hover:text-brand-secondary transition-colors">
+          ← Tools
+        </Link>
+      </motion.div>
 
-      <div className="flex items-start justify-between gap-4 flex-wrap">
+      <motion.div variants={sectionVariants} className="flex items-start justify-between gap-4 flex-wrap">
         <div className="space-y-1">
           <div className="flex items-center gap-2 flex-wrap">
             <h1 className="font-heading font-bold text-2xl text-brand-text">Reconciliation</h1>
             {badge && <span className={`text-[10px] font-mono px-2 py-0.5 rounded-sm ${badge.className}`}>{badge.label}</span>}
             {deployed && <span className="text-[10px] font-mono text-brand-muted">v{deployed.version}</span>}
           </div>
-          <p className="text-[10px] font-mono text-brand-muted uppercase tracking-widest">
-            Match bank transactions against invoices
+          <p className="text-xs font-mono text-brand-muted">
+            Match bank transactions against invoices. Detects unmatched items and flags anomalies.
           </p>
         </div>
         {canConfigure && (
@@ -284,9 +305,9 @@ export function ReconciliationClient() {
             </button>
           </div>
         )}
-      </div>
+      </motion.div>
 
-      <div className="flex items-center gap-2">
+      <motion.div variants={sectionVariants} className="flex items-center gap-2">
         {isActive ? (
           <>
             <span className="relative flex h-2 w-2">
@@ -301,9 +322,9 @@ export function ReconciliationClient() {
             <span className="text-xs font-mono text-brand-muted">{deployed ? 'Paused' : 'Not deployed'}</span>
           </>
         )}
-      </div>
+      </motion.div>
 
-      <div className="flex gap-1 border-b border-brand-border">
+      <motion.div variants={sectionVariants} className="flex gap-1 border-b border-brand-border">
         {TABS.map(t => (
           <button key={t.key} type="button" onClick={() => setActiveTab(t.key)}
             className={`text-xs font-mono px-4 py-2.5 border-b-2 transition-colors -mb-px ${
@@ -314,42 +335,57 @@ export function ReconciliationClient() {
             {t.label}
           </button>
         ))}
-      </div>
+      </motion.div>
 
-      {activeTab === 'overview' && (
-        <>
-          {!deployed && (
-            <ul className="bg-brand-surface border border-brand-border rounded-sm divide-y divide-brand-border">
-              {RECONCILIATION_CAPABILITIES.map(cap => (
-                <li key={cap} className="flex items-start gap-3 px-4 py-3">
-                  <span className="text-brand-muted font-mono text-[10px] mt-0.5 shrink-0">→</span>
-                  <span className="text-xs font-mono text-brand-secondary">{cap}</span>
-                </li>
-              ))}
-            </ul>
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={activeTab}
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -8 }}
+          transition={{ duration: 0.2, ease: 'easeOut' }}
+        >
+          {activeTab === 'overview' && (
+            <>
+              {!deployed && (
+                <motion.ul
+                  variants={capabilityVariants}
+                  initial="hidden"
+                  animate="show"
+                  className="bg-brand-surface border border-brand-border rounded-sm divide-y divide-brand-border mb-5"
+                >
+                  {RECONCILIATION_CAPABILITIES.map(cap => (
+                    <motion.li key={cap} variants={capItemVariants} className="flex items-start gap-3 px-4 py-3">
+                      <span className="text-brand-muted font-mono text-[10px] mt-0.5 shrink-0">→</span>
+                      <span className="text-xs font-mono text-brand-secondary">{cap}</span>
+                    </motion.li>
+                  ))}
+                </motion.ul>
+              )}
+              <OverviewTab
+                periodStart={periodStart} periodEnd={periodEnd} toolId={deployed?.id ?? null} running={running}
+                runs={runs} runsLoading={runsLoading} selectedRun={selectedRun}
+                items={items} itemsLoading={itemsLoading}
+                onPeriodStartChange={setPeriodStart} onPeriodEndChange={setPeriodEnd}
+                onRun={handleRun} onSelectRun={(r) => { setSelectedRun(r); fetchItems(r.id) }}
+                onExport={handleExport}
+              />
+            </>
           )}
-          <OverviewTab
-            periodStart={periodStart} periodEnd={periodEnd} toolId={deployed?.id ?? null} running={running}
-            runs={runs} runsLoading={runsLoading} selectedRun={selectedRun}
-            items={items} itemsLoading={itemsLoading}
-            onPeriodStartChange={setPeriodStart} onPeriodEndChange={setPeriodEnd}
-            onRun={handleRun} onSelectRun={(r) => { setSelectedRun(r); fetchItems(r.id) }}
-            onExport={handleExport}
-          />
-        </>
-      )}
-      {activeTab === 'executions' && (deployed
-        ? <ToolExecutionsTab toolId={deployed.id} />
-        : <NotDeployedTab message="Deploy this tool to start tracking executions." />
-      )}
-      {activeTab === 'approvals' && (deployed
-        ? <ToolApprovalsTab toolId={deployed.id} />
-        : <NotDeployedTab message="Deploy this tool to manage approvals." />
-      )}
-      {activeTab === 'audit' && (deployed
-        ? <ToolAuditTab toolId={deployed.id} />
-        : <NotDeployedTab message="Deploy this tool to view the audit trail." />
-      )}
+          {activeTab === 'executions' && (deployed
+            ? <ToolExecutionsTab toolId={deployed.id} />
+            : <NotDeployedTab message="Deploy this tool to start tracking executions." />
+          )}
+          {activeTab === 'approvals' && (deployed
+            ? <ToolApprovalsTab toolId={deployed.id} />
+            : <NotDeployedTab message="Deploy this tool to manage approvals." />
+          )}
+          {activeTab === 'audit' && (deployed
+            ? <ToolAuditTab toolId={deployed.id} />
+            : <NotDeployedTab message="Deploy this tool to view the audit trail." />
+          )}
+        </motion.div>
+      </AnimatePresence>
 
       {showConfig && (
         <ConfigDrawer
@@ -359,6 +395,6 @@ export function ReconciliationClient() {
           onSaved={() => { setShowConfig(false); router.refresh() }}
         />
       )}
-    </div>
+    </motion.div>
   )
 }
