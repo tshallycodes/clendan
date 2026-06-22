@@ -118,7 +118,11 @@ async def _call_claude(
     unmatched_bills: list[_BillRecord],
     settings_obj,
 ) -> list[_ClaudeItemResult]:
-    client = AsyncAnthropic(api_key=settings_obj.anthropic_api_key)
+    client = (
+        AsyncAnthropic(api_key=settings_obj.anthropic_api_key)
+        if settings_obj.anthropic_api_key
+        else AsyncAnthropic()
+    )
     payload = json.dumps(
         {
             "unmatched_transactions": [
@@ -458,13 +462,17 @@ async def run_reconciliation_job(
             )
         return result
     except Exception as exc:
+        logger.error(
+            "reconciliation_job_failed",
+            extra={"execution_id": execution_id, "tenant_id": tenant_id, "error": str(exc)},
+        )
         try:
             await db.execution.update(
                 where={"id": execution_id},
                 data={"status": "failed", "decision": "failed", "error_message": str(exc)[:2000]},
             )
-        except Exception:
-            pass
+        except Exception as db_exc:
+            logger.error("reconciliation_db_update_failed", extra={"error": str(db_exc)})
         if ctx.get("job_try", 1) >= 3:
             await push_to_dlq(
                 job_id=str(ctx.get("job_id", "unknown")),
