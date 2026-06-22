@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import { useAuth } from '@clerk/nextjs'
 import { useCanConfigure } from '@/lib/auth-client'
 import { ConfigDrawer } from '@/components/dashboard/tools/ConfigDrawer'
@@ -130,7 +129,6 @@ const AUTONOMY_BADGE: Record<string, { label: string; className: string }> = {
 }
 
 export function ReconciliationClient() {
-  const router = useRouter()
   const { getToken } = useAuth()
   const canConfigure = useCanConfigure()
   const [activeTab, setActiveTab] = useState<Tab>('overview')
@@ -146,6 +144,15 @@ export function ReconciliationClient() {
   const [showConfig, setShowConfig] = useState(false)
   const [toggling, setToggling] = useState(false)
   const [deploying, setDeploying] = useState(false)
+
+  const fetchDeployed = useCallback(async () => {
+    const token = await getToken()
+    const res = await fetch(`${API}/v1/tools`, { headers: { Authorization: `Bearer ${token}` } })
+    if (!res.ok) return
+    const json = await res.json()
+    const tools: Tool[] = json.data?.tools ?? json.data ?? []
+    setDeployed(tools.find((w) => w.type === 'reconciliation') ?? null)
+  }, [getToken])
 
   const fetchRuns = useCallback(async () => {
     const token = await getToken()
@@ -202,7 +209,7 @@ export function ReconciliationClient() {
         method: 'PATCH',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
       })
-      router.refresh()
+      await fetchDeployed()
     } finally {
       setToggling(false)
     }
@@ -225,7 +232,7 @@ export function ReconciliationClient() {
           body: JSON.stringify({ type: 'reconciliation', autonomy_level: 'approve', config: getDefaultConfig('reconciliation') }),
         })
       }
-      router.refresh()
+      await fetchDeployed()
     } finally {
       setDeploying(false)
     }
@@ -390,7 +397,7 @@ export function ReconciliationClient() {
           tool={deployed}
           toolType="reconciliation"
           onClose={() => setShowConfig(false)}
-          onSaved={() => { setShowConfig(false); router.refresh() }}
+          onSaved={() => { setShowConfig(false); fetchDeployed() }}
         />
       )}
     </motion.div>
