@@ -33,6 +33,7 @@ export function ConfigDrawer({ tool, toolType, onClose, onSaved }: Props) {
   const [error, setError] = useState<string | null>(null)
   const [saved, setSaved] = useState(false)
   const [accounts, setAccounts] = useState<BankAccount[]>([])
+  const [accountsLoading, setAccountsLoading] = useState(toolType === 'reconciliation')
   const [selectedAccountIds, setSelectedAccountIds] = useState<string[]>(() => {
     const existing = (tool?.config_json as Record<string, unknown> | null)?.account_ids
     return Array.isArray(existing) ? (existing as string[]) : []
@@ -41,13 +42,17 @@ export function ConfigDrawer({ tool, toolType, onClose, onSaved }: Props) {
   useEffect(() => {
     if (toolType !== 'reconciliation') return
     async function fetchAccounts() {
-      const token = await getToken()
-      const res = await fetch(`${API}/v1/reconciliation/accounts`, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      if (res.ok) {
-        const json = await res.json()
-        setAccounts(json.data?.accounts ?? [])
+      try {
+        const token = await getToken()
+        const res = await fetch(`${API}/v1/reconciliation/accounts`, {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+        if (res.ok) {
+          const json = await res.json()
+          setAccounts(json.data?.accounts ?? [])
+        }
+      } finally {
+        setAccountsLoading(false)
       }
     }
     fetchAccounts()
@@ -121,7 +126,11 @@ export function ConfigDrawer({ tool, toolType, onClose, onSaved }: Props) {
           {toolType === 'reconciliation' && (
             <div className="space-y-2">
               <label className={labelClass}>Bank Accounts</label>
-              {accounts.length === 0 ? (
+              {accountsLoading ? (
+                <div className="bg-brand-bg border border-brand-border rounded-sm px-3 py-3">
+                  <p className="text-[10px] font-mono text-brand-muted">Loading accounts…</p>
+                </div>
+              ) : accounts.length === 0 ? (
                 <div className="bg-brand-bg border border-brand-border rounded-sm px-3 py-3">
                   <p className="text-[10px] font-mono text-brand-muted">No bank accounts found. Connect a bank via Integrations first.</p>
                 </div>
