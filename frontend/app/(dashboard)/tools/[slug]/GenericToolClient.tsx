@@ -119,7 +119,6 @@ export function GenericToolClient({ tool, deployed }: Props) {
           <div className="flex items-center gap-2 flex-wrap">
             <h1 className="font-heading font-bold text-2xl text-brand-text">{tool.name}</h1>
             {badge && <span className={`text-[10px] font-mono px-2 py-0.5 rounded-sm ${badge.className}`}>{badge.label}</span>}
-            {deployed && <span className="text-[10px] font-mono text-brand-muted">v{deployed.version}</span>}
           </div>
           <p className="text-xs font-mono text-brand-muted max-w-xl">{tool.desc}</p>
         </div>

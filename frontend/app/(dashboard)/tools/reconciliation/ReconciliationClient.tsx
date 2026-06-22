@@ -309,7 +309,6 @@ export function ReconciliationClient() {
           <div className="flex items-center gap-2 flex-wrap">
             <h1 className="font-heading font-bold text-2xl text-brand-text">Reconciliation</h1>
             {badge && <span className={`text-[10px] font-mono px-2 py-0.5 rounded-sm ${badge.className}`}>{badge.label}</span>}
-            {deployed && <span className="text-[10px] font-mono text-brand-muted">v{deployed.version}</span>}
           </div>
           <p className="text-xs font-mono text-brand-muted">
             Match bank transactions against invoices. Detects unmatched items and flags anomalies.
