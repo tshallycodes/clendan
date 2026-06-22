@@ -347,21 +347,6 @@ export function ReconciliationClient() {
         >
           {activeTab === 'overview' && (
             <>
-              {!deployed && (
-                <motion.ul
-                  variants={capabilityVariants}
-                  initial="hidden"
-                  animate="show"
-                  className="bg-brand-surface border border-brand-border rounded-sm divide-y divide-brand-border mb-5"
-                >
-                  {RECONCILIATION_CAPABILITIES.map(cap => (
-                    <motion.li key={cap} variants={capItemVariants} className="flex items-start gap-3 px-4 py-3">
-                      <span className="text-brand-muted font-mono text-[10px] mt-0.5 shrink-0">→</span>
-                      <span className="text-xs font-mono text-brand-secondary">{cap}</span>
-                    </motion.li>
-                  ))}
-                </motion.ul>
-              )}
               <OverviewTab
                 periodStart={periodStart} periodEnd={periodEnd} toolId={deployed?.id ?? null} running={running}
                 runs={runs} runsLoading={runsLoading} selectedRun={selectedRun}
@@ -370,6 +355,19 @@ export function ReconciliationClient() {
                 onRun={handleRun} onSelectRun={(r) => { setSelectedRun(r); fetchItems(r.id) }}
                 onExport={handleExport}
               />
+              <motion.ul
+                variants={capabilityVariants}
+                initial="hidden"
+                animate="show"
+                className="bg-brand-surface border border-brand-border rounded-sm divide-y divide-brand-border mt-5"
+              >
+                {RECONCILIATION_CAPABILITIES.map(cap => (
+                  <motion.li key={cap} variants={capItemVariants} className="flex items-start gap-3 px-4 py-3">
+                    <span className="text-brand-muted font-mono text-[10px] mt-0.5 shrink-0">→</span>
+                    <span className="text-xs font-mono text-brand-secondary">{cap}</span>
+                  </motion.li>
+                ))}
+              </motion.ul>
             </>
           )}
           {activeTab === 'executions' && (deployed
