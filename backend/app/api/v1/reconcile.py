@@ -118,7 +118,7 @@ async def get_run_items(
 
     txns = await db.banktransaction.find_many(
         where=txn_where,
-        include={"account": True, "matched_invoice": True},
+        include={"account": True, "matched_invoice": True, "matched_bill": True},
         order={"date": "desc"},
     )
 
@@ -137,7 +137,8 @@ async def get_run_items(
                 t.matched_invoice.invoice_number if t.matched_invoice else None
             ),
             "matched_vendor": (
-                t.matched_invoice.vendor if t.matched_invoice else None
+                t.matched_invoice.vendor if t.matched_invoice
+                else (t.matched_bill.contact_name if t.matched_bill else None)
             ),
             "reasoning": reasoning_lookup.get(t.id, ""),
         }
@@ -166,6 +167,15 @@ async def trigger_reconciliation_run(
         period_end = datetime.fromisoformat(body.period_end)
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=f"Invalid date format: {exc}") from exc
+
+    if period_start >= period_end:
+        raise HTTPException(status_code=422, detail="period_start must be before period_end")
+
+    in_flight = await db.execution.find_first(
+        where={"tenant_id": tenant_id, "tool_id": body.tool_id, "status": {"in": ["queued", "running"]}}
+    )
+    if in_flight:
+        raise HTTPException(status_code=409, detail="A reconciliation run is already in progress")
 
     tool = await db.tool.find_first(
         where={"id": body.tool_id, "tenant_id": tenant_id}
@@ -231,7 +241,7 @@ async def export_run_csv(
             "tenant_id": tenant_id,
             "date": {"gte": run.period_start, "lte": run.period_end},
         },
-        include={"account": True, "matched_invoice": True},
+        include={"account": True, "matched_invoice": True, "matched_bill": True},
         order={"date": "desc"},
     )
 
@@ -253,7 +263,8 @@ async def export_run_csv(
             t.currency,
             t.status,
             t.matched_invoice.invoice_number if t.matched_invoice else "",
-            t.matched_invoice.vendor if t.matched_invoice else "",
+            (t.matched_invoice.vendor if t.matched_invoice
+             else (t.matched_bill.contact_name if t.matched_bill else "")),
             reasoning_lookup.get(t.id, ""),
         ])
 

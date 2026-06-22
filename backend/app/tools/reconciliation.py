@@ -201,7 +201,7 @@ async def _execute_reconciliation(
         where={
             "tenant_id": tenant_id,
             "status": {"not": "reconciled"},
-            "date": {"gte": period_start},
+            "date": {"gte": period_start, "lte": period_end},
         }
     )
     transactions = [

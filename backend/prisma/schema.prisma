@@ -245,12 +245,14 @@ model BankTransaction {
   category                 String?
   ai_category              String?
   matched_invoice_id       String?
+  matched_bill_id          String?
   status                   String    @default("pending")
   created_at               DateTime  @default(now())
 
-  tenant          Tenant      @relation(fields: [tenant_id], references: [id])
-  account         BankAccount @relation(fields: [account_id], references: [id])
-  matched_invoice Invoice?    @relation(fields: [matched_invoice_id], references: [id])
+  tenant          Tenant           @relation(fields: [tenant_id], references: [id])
+  account         BankAccount      @relation(fields: [account_id], references: [id])
+  matched_invoice Invoice?         @relation(fields: [matched_invoice_id], references: [id])
+  matched_bill    AccountingBill?  @relation(fields: [matched_bill_id], references: [id])
 
   @@index([tenant_id])
   @@index([account_id])
@@ -322,8 +324,9 @@ model AccountingBill {
   created_at        DateTime  @default(now())
   updated_at        DateTime  @updatedAt
 
-  tenant      Tenant      @relation(fields: [tenant_id], references: [id])
-  integration Integration @relation(fields: [integration_id], references: [id])
+  tenant            Tenant            @relation(fields: [tenant_id], references: [id])
+  integration       Integration       @relation(fields: [integration_id], references: [id])
+  bank_transactions BankTransaction[]
 
   @@unique([integration_id, external_id])
   @@index([tenant_id])
