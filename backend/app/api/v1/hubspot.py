@@ -55,7 +55,7 @@ async def hubspot_connect(
 @router.get("/integrations/hubspot/callback")
 async def hubspot_callback(
     code: str = Query(...),
-    state: str = Query(...),
+    state: str = Query(None),
     db: Prisma = Depends(get_db_dep),
 ):
     """
@@ -64,6 +64,13 @@ async def hubspot_callback(
     Redirects to /dashboard/integrations?connected=hubspot on success.
     All steps required — partial completion is a failure.
     """
+    if not state:
+        logger.warning("hubspot_callback_missing_state", extra={"has_code": bool(code)})
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Missing state parameter. Use the Connect button in your Clendan dashboard — the HubSpot test URL does not include the required PKCE state.",
+        )
+
     # State format: {tenant_id}:{nonce}:{code_verifier}
     # Use maxsplit=2 so the verifier (which may contain base64url chars) is preserved intact.
     parts = state.split(":", 2)
