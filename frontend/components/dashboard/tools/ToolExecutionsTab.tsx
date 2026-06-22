@@ -33,19 +33,20 @@ const STATUS_CLASS: Record<string, string> = {
   queued:             'text-brand-muted',
 }
 
-export function ToolExecutionsTab({ toolId }: { toolId: string }) {
+export function ToolExecutionsTab({ toolId }: { toolId: string | null }) {
   const { getToken } = useAuth()
   const [executions, setExecutions] = useState<Execution[]>([])
   const [total, setTotal] = useState(0)
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false)
   const [filter, setFilter] = useState<Filter>('all')
 
   useEffect(() => {
+    if (!toolId) return
     async function load() {
       setLoading(true)
       try {
         const token = await getToken()
-        const params = new URLSearchParams({ tool_id: toolId, limit: '50' })
+        const params = new URLSearchParams({ tool_id: toolId!, limit: '50' })
         if (filter !== 'all') params.set('status', filter)
         const res = await fetch(`${API}/v1/dashboard/executions?${params}`, {
           headers: { Authorization: `Bearer ${token}` },

@@ -25,14 +25,15 @@ const FILTERS: { key: Filter; label: string }[] = [
   { key: 'rejected', label: 'Rejected' },
 ]
 
-export function ToolApprovalsTab({ toolId }: { toolId: string }) {
+export function ToolApprovalsTab({ toolId }: { toolId: string | null }) {
   const { getToken } = useAuth()
   const [approvals, setApprovals] = useState<Approval[]>([])
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false)
   const [acting, setActing] = useState<string | null>(null)
   const [filter, setFilter] = useState<Filter>('pending')
 
   useEffect(() => {
+    if (!toolId) return
     async function load() {
       setLoading(true)
       try {

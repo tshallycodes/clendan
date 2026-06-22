@@ -15,14 +15,15 @@ interface AuditEntry {
   reasoning_trace_json: string | null
 }
 
-export function ToolAuditTab({ toolId }: { toolId: string }) {
+export function ToolAuditTab({ toolId }: { toolId: string | null }) {
   const { getToken } = useAuth()
   const [entries, setEntries] = useState<AuditEntry[]>([])
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false)
   const [expanded, setExpanded] = useState<string | null>(null)
   const [search, setSearch] = useState('')
 
   useEffect(() => {
+    if (!toolId) return
     async function load() {
       setLoading(true)
       try {
@@ -55,14 +56,6 @@ export function ToolAuditTab({ toolId }: { toolId: string }) {
     return <div className="py-12 text-center text-xs font-mono text-brand-muted">Loading…</div>
   }
 
-  if (entries.length === 0) {
-    return (
-      <div className="bg-brand-surface border border-brand-border rounded-sm p-8 text-center">
-        <p className="text-xs font-mono text-brand-muted">No audit entries</p>
-      </div>
-    )
-  }
-
   return (
     <div className="space-y-3">
       <input
@@ -75,7 +68,9 @@ export function ToolAuditTab({ toolId }: { toolId: string }) {
 
       {filtered.length === 0 ? (
         <div className="bg-brand-surface border border-brand-border rounded-sm p-8 text-center">
-          <p className="text-xs font-mono text-brand-muted">No entries match your search</p>
+          <p className="text-xs font-mono text-brand-muted">
+            {search ? 'No entries match your search' : 'No audit entries yet'}
+          </p>
         </div>
       ) : (
         <div className="bg-brand-surface border border-brand-border rounded-sm overflow-hidden">

@@ -53,13 +53,6 @@ const capItemVariants = {
   show: { opacity: 1, x: 0, transition: { duration: 0.25, ease: EASE } },
 }
 
-function NotDeployedTab({ message }: { message: string }) {
-  return (
-    <div className="bg-brand-surface border border-brand-border rounded-sm p-8 text-center">
-      <p className="text-xs font-mono text-brand-muted">{message}</p>
-    </div>
-  )
-}
 
 export function GenericToolClient({ tool, deployed }: Props) {
   const router = useRouter()
@@ -199,18 +192,9 @@ export function GenericToolClient({ tool, deployed }: Props) {
                 </motion.ul>
               : <NotDeployedTab message="No capabilities listed." />
           )}
-          {activeTab === 'executions' && (deployed
-            ? <ToolExecutionsTab toolId={deployed.id} />
-            : <NotDeployedTab message="Deploy this tool to start tracking executions." />
-          )}
-          {activeTab === 'approvals' && (deployed
-            ? <ToolApprovalsTab toolId={deployed.id} />
-            : <NotDeployedTab message="Deploy this tool to manage approvals." />
-          )}
-          {activeTab === 'audit' && (deployed
-            ? <ToolAuditTab toolId={deployed.id} />
-            : <NotDeployedTab message="Deploy this tool to view the audit trail." />
-          )}
+          {activeTab === 'executions' && <ToolExecutionsTab toolId={deployed?.id ?? null} />}
+          {activeTab === 'approvals' && <ToolApprovalsTab toolId={deployed?.id ?? null} />}
+          {activeTab === 'audit' && <ToolAuditTab toolId={deployed?.id ?? null} />}
         </motion.div>
       </AnimatePresence>
 
