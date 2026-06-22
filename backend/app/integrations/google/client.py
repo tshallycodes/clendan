@@ -101,6 +101,14 @@ async def exchange_code(code: str, redirect_uri: str, tenant_id: str) -> dict:
     Returns encrypted credentials dict including token_expiry_at.
     """
     settings = get_settings()
+    logger.info("google_exchange_code_start", extra={
+        "tenant_id": tenant_id,
+        "redirect_uri": redirect_uri,
+        "token_url": GOOGLE_TOKEN_URL,
+        "client_id": (settings.google_client_id[:12] + "...") if settings.google_client_id else "MISSING",
+        "has_secret": bool(settings.google_client_secret),
+        "code_len": len(code) if code else 0,
+    })
 
     async def _call():
         async with httpx.AsyncClient() as client:
@@ -115,10 +123,17 @@ async def exchange_code(code: str, redirect_uri: str, tenant_id: str) -> dict:
                 },
                 timeout=15.0,
             )
+            logger.info("google_exchange_code_response", extra={
+                "tenant_id": tenant_id,
+                "http_status": response.status_code,
+                "has_error": "error" in response.text,
+                "response_preview": response.text[:200] if response.status_code != 200 else "OK",
+            })
             response.raise_for_status()
             return response.json()
 
     data = await _circuit.call(_retry, _call)
+    logger.info("google_exchange_code_ok", extra={"tenant_id": tenant_id, "has_access_token": bool(data.get("access_token")), "has_refresh_token": bool(data.get("refresh_token"))})
 
     expiry = (
         datetime.now(UTC) + timedelta(seconds=TOKEN_TTL_SECONDS - TOKEN_EARLY_REFRESH_SECONDS)

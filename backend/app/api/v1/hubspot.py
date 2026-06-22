@@ -30,8 +30,16 @@ async def hubspot_connect(
     db: Annotated[Prisma, Depends(get_db_dep)],
 ):
     """Returns the HubSpot OAuth authorization URL. Frontend redirects user here."""
+    settings = get_settings()
+    logger.info("hubspot_connect_start", extra={
+        "tenant_id": current_user.tenant_id,
+        "client_id": (settings.hubspot_client_id[:12] + "...") if settings.hubspot_client_id else "MISSING",
+        "redirect_uri": settings.hubspot_redirect_uri,
+        "has_client_secret": bool(settings.hubspot_client_secret),
+    })
     state = f"{current_user.tenant_id}:{secrets.token_urlsafe(16)}"
     auth_url = hs.build_auth_url(state=state)
+    logger.info("hubspot_connect_url_built", extra={"tenant_id": current_user.tenant_id, "url_prefix": auth_url[:80]})
     return standard_response(data={"auth_url": auth_url, "state": state})
 
 
@@ -55,45 +63,49 @@ async def hubspot_callback(
             detail="Invalid OAuth state",
         )
     tenant_id = parts[0]
+    logger.info("hubspot_callback_received", extra={"tenant_id": tenant_id, "has_code": bool(code)})
 
-    # Verify tenant exists (tenant isolation — never skip)
     tenant = await db.tenant.find_unique(where={"id": tenant_id})
     if not tenant:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Tenant not found",
-        )
+        logger.error("hubspot_callback_tenant_not_found", extra={"tenant_id": tenant_id})
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Tenant not found")
+    logger.info("hubspot_callback_tenant_ok", extra={"tenant_id": tenant_id})
 
-    # Exchange code for tokens — returns encrypted credentials blob
+    settings = get_settings()
+    logger.info("hubspot_callback_exchange_start", extra={
+        "tenant_id": tenant_id,
+        "client_id": (settings.hubspot_client_id[:12] + "...") if settings.hubspot_client_id else "MISSING",
+        "redirect_uri": settings.hubspot_redirect_uri,
+        "has_secret": bool(settings.hubspot_client_secret),
+    })
     try:
         encrypted_blob = await hs.exchange_code(code=code, tenant_id=tenant_id)
+        logger.info("hubspot_callback_exchange_ok", extra={"tenant_id": tenant_id})
     except Exception as exc:
-        logger.error("hubspot_token_exchange_failed tenant=%s error=%s", tenant_id, type(exc).__name__)
+        logger.error("hubspot_token_exchange_failed", extra={"tenant_id": tenant_id, "error": str(exc), "error_type": type(exc).__name__})
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
-            detail="HubSpot token exchange failed",
+            detail=f"HubSpot token exchange failed: {type(exc).__name__}: {exc}",
         )
 
-    # Decrypt to get access_token for portal info fetch (zero trust confirmation)
     try:
         raw_creds = decrypt_credentials(encrypted_blob, tenant_id)
         access_token = raw_creds["access_token"]
+        logger.info("hubspot_callback_decrypt_ok", extra={"tenant_id": tenant_id, "has_access_token": bool(access_token), "has_refresh_token": bool(raw_creds.get("refresh_token"))})
     except Exception as exc:
-        logger.error("hubspot_creds_decrypt_failed tenant=%s error=%s", tenant_id, type(exc).__name__)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Credential processing failed",
-        )
+        logger.error("hubspot_creds_decrypt_failed", extra={"tenant_id": tenant_id, "error": str(exc)})
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Credential processing failed")
 
-    # Fetch portal info — confirms the token is live and retrieves portal_id
+    logger.info("hubspot_callback_portal_info_start", extra={"tenant_id": tenant_id})
     try:
         portal_info = await hs.get_portal_info(access_token=access_token)
         portal_id = str(portal_info.get("hub_id", ""))
+        logger.info("hubspot_callback_portal_info_ok", extra={"tenant_id": tenant_id, "portal_id": portal_id})
     except Exception as exc:
-        logger.error("hubspot_portal_info_failed tenant=%s error=%s", tenant_id, type(exc).__name__)
+        logger.error("hubspot_portal_info_failed", extra={"tenant_id": tenant_id, "error": str(exc), "error_type": type(exc).__name__})
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
-            detail="Failed to fetch HubSpot portal info",
+            detail=f"Failed to fetch HubSpot portal info: {type(exc).__name__}: {exc}",
         )
 
     # Re-encrypt with portal_id merged in

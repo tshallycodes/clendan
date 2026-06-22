@@ -29,8 +29,16 @@ async def gmail_connect(
     current_user: RequireOrgAuth,
 ):
     """Returns Gmail OAuth authorization URL and state token."""
+    settings = get_settings()
+    logger.info("gmail_connect_start", extra={
+        "tenant_id": current_user.tenant_id,
+        "client_id": (settings.google_client_id[:12] + "...") if settings.google_client_id else "MISSING",
+        "redirect_uri": settings.google_redirect_uri_gmail,
+        "has_client_secret": bool(settings.google_client_secret),
+    })
     state = f"{current_user.tenant_id}:{secrets.token_urlsafe(16)}"
     auth_url = google.build_gmail_auth_url(state=state)
+    logger.info("gmail_connect_url_built", extra={"tenant_id": current_user.tenant_id, "url_prefix": auth_url[:80]})
     return standard_response(data={"url": auth_url, "state": state})
 
 
@@ -51,29 +59,40 @@ async def gmail_callback(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid OAuth state")
 
     tenant_id = parts[0]
+    logger.info("gmail_callback_received", extra={"tenant_id": tenant_id, "has_code": bool(code), "state_valid": True})
 
     # Verify tenant exists
     tenant = await db.tenant.find_unique(where={"id": tenant_id})
     if not tenant:
+        logger.error("gmail_callback_tenant_not_found", extra={"tenant_id": tenant_id})
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Tenant not found")
+    logger.info("gmail_callback_tenant_ok", extra={"tenant_id": tenant_id})
 
     # Exchange authorization code for tokens
     settings = get_settings()
+    logger.info("gmail_callback_exchange_start", extra={
+        "tenant_id": tenant_id,
+        "redirect_uri": settings.google_redirect_uri_gmail,
+        "client_id": (settings.google_client_id[:12] + "...") if settings.google_client_id else "MISSING",
+        "has_secret": bool(settings.google_client_secret),
+    })
     try:
         encrypted_creds_str = await google.exchange_code(
             code=code,
             redirect_uri=settings.google_redirect_uri_gmail,
             tenant_id=tenant_id,
         )
+        logger.info("gmail_callback_exchange_ok", extra={"tenant_id": tenant_id})
     except Exception as exc:
-        logger.error("gmail_token_exchange_failed tenant=%s: %s", tenant_id, type(exc).__name__)
-        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail="Gmail token exchange failed")
+        logger.error("gmail_token_exchange_failed", extra={"tenant_id": tenant_id, "error": str(exc), "error_type": type(exc).__name__})
+        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=f"Gmail token exchange failed: {type(exc).__name__}: {exc}")
 
-    # Decrypt to read tokens for watch setup, then re-encrypt with watch metadata
+    # Decrypt to read tokens for watch setup
     try:
         creds = decrypt_credentials(encrypted_creds_str, tenant_id)
+        logger.info("gmail_callback_decrypt_ok", extra={"tenant_id": tenant_id, "has_access_token": bool(creds.get("access_token")), "has_refresh_token": bool(creds.get("refresh_token"))})
     except ValueError as exc:
-        logger.error("gmail_callback_decrypt_failed tenant=%s: %s", tenant_id, type(exc).__name__)
+        logger.error("gmail_callback_decrypt_failed", extra={"tenant_id": tenant_id, "error": str(exc)})
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Credential processing failed")
 
     access_token = creds.get("access_token", "")
@@ -81,12 +100,16 @@ async def gmail_callback(
     # Set up Gmail watch
     watch_result: dict = {}
     if settings.google_pubsub_topic:
+        logger.info("gmail_callback_watch_setup_start", extra={"tenant_id": tenant_id, "topic": settings.google_pubsub_topic})
         try:
             watch_result = await google.setup_gmail_watch(access_token, settings.google_pubsub_topic)
             creds["history_id"] = watch_result.get("historyId", "")
             creds["watch_expiry"] = watch_result.get("expiration", "")
+            logger.info("gmail_callback_watch_setup_ok", extra={"tenant_id": tenant_id, "history_id": watch_result.get("historyId")})
         except Exception as exc:
-            logger.warning("gmail_watch_setup_failed tenant=%s: %s", tenant_id, type(exc).__name__)
+            logger.warning("gmail_watch_setup_failed", extra={"tenant_id": tenant_id, "error": str(exc)})
+    else:
+        logger.info("gmail_callback_watch_skipped_no_topic", extra={"tenant_id": tenant_id})
 
     # Re-encrypt with watch metadata included
     final_encrypted = encrypt_credentials(creds, tenant_id)
@@ -95,31 +118,28 @@ async def gmail_callback(
     existing = await db.integration.find_first(
         where={"tenant_id": tenant_id, "type": INTEGRATION_TYPE}
     )
-    if existing:
-        integration = await db.integration.update(
-            where={"id": existing.id},
-            data={
-                "encrypted_credentials": final_encrypted,
-                "status": "syncing",
-                "connected_at": datetime.now(UTC),
-            },
-        )
-    else:
-        integration = await db.integration.create(
-            data={
-                "tenant_id": tenant_id,
-                "type": INTEGRATION_TYPE,
-                "encrypted_credentials": final_encrypted,
-                "status": "syncing",
-                "connected_at": datetime.now(UTC),
-            }
-        )
+    try:
+        if existing:
+            integration = await db.integration.update(
+                where={"id": existing.id},
+                data={"encrypted_credentials": final_encrypted, "status": "syncing", "connected_at": datetime.now(UTC)},
+            )
+            logger.info("gmail_callback_integration_updated", extra={"tenant_id": tenant_id, "integration_id": existing.id})
+        else:
+            integration = await db.integration.create(
+                data={"tenant_id": tenant_id, "type": INTEGRATION_TYPE, "encrypted_credentials": final_encrypted, "status": "syncing", "connected_at": datetime.now(UTC)},
+            )
+            logger.info("gmail_callback_integration_created", extra={"tenant_id": tenant_id, "integration_id": integration.id})
+    except Exception as exc:
+        logger.error("gmail_callback_db_write_failed", extra={"tenant_id": tenant_id, "error": str(exc)})
+        raise
 
     # Enqueue background sync
     try:
         await enqueue_gmail_sync(integration_id=integration.id, tenant_id=tenant_id)
+        logger.info("gmail_callback_sync_enqueued", extra={"tenant_id": tenant_id, "integration_id": integration.id})
     except Exception as exc:
-        logger.warning("gmail_sync_enqueue_failed tenant=%s: %s", tenant_id, type(exc).__name__)
+        logger.warning("gmail_sync_enqueue_failed", extra={"tenant_id": tenant_id, "error": str(exc)})
 
     return standard_response(data={"status": "syncing", "integration_id": integration.id})
 

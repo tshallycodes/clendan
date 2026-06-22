@@ -29,8 +29,16 @@ async def drive_connect(
     current_user: RequireOrgAuth,
 ):
     """Returns Google Drive OAuth authorization URL and state token."""
+    settings = get_settings()
+    logger.info("drive_connect_start", extra={
+        "tenant_id": current_user.tenant_id,
+        "client_id": (settings.google_client_id[:12] + "...") if settings.google_client_id else "MISSING",
+        "redirect_uri": settings.google_redirect_uri_drive,
+        "has_client_secret": bool(settings.google_client_secret),
+    })
     state = f"{current_user.tenant_id}:{secrets.token_urlsafe(16)}"
     auth_url = google.build_drive_auth_url(state=state)
+    logger.info("drive_connect_url_built", extra={"tenant_id": current_user.tenant_id, "url_prefix": auth_url[:80]})
     return standard_response(data={"url": auth_url, "state": state})
 
 
@@ -51,53 +59,54 @@ async def drive_callback(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid OAuth state")
 
     tenant_id = parts[0]
+    logger.info("drive_callback_received", extra={"tenant_id": tenant_id, "has_code": bool(code)})
 
-    # Verify tenant exists
     tenant = await db.tenant.find_unique(where={"id": tenant_id})
     if not tenant:
+        logger.error("drive_callback_tenant_not_found", extra={"tenant_id": tenant_id})
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Tenant not found")
+    logger.info("drive_callback_tenant_ok", extra={"tenant_id": tenant_id})
 
-    # Exchange authorization code for tokens
     settings = get_settings()
+    logger.info("drive_callback_exchange_start", extra={
+        "tenant_id": tenant_id,
+        "redirect_uri": settings.google_redirect_uri_drive,
+        "client_id": (settings.google_client_id[:12] + "...") if settings.google_client_id else "MISSING",
+        "has_secret": bool(settings.google_client_secret),
+    })
     try:
         encrypted_creds_str = await google.exchange_code(
             code=code,
             redirect_uri=settings.google_redirect_uri_drive,
             tenant_id=tenant_id,
         )
+        logger.info("drive_callback_exchange_ok", extra={"tenant_id": tenant_id})
     except Exception as exc:
-        logger.error("drive_token_exchange_failed tenant=%s: %s", tenant_id, type(exc).__name__)
-        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail="Drive token exchange failed")
+        logger.error("drive_token_exchange_failed", extra={"tenant_id": tenant_id, "error": str(exc), "error_type": type(exc).__name__})
+        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=f"Drive token exchange failed: {type(exc).__name__}: {exc}")
 
-    # Upsert integration record
-    existing = await db.integration.find_first(
-        where={"tenant_id": tenant_id, "type": INTEGRATION_TYPE}
-    )
-    if existing:
-        integration = await db.integration.update(
-            where={"id": existing.id},
-            data={
-                "encrypted_credentials": encrypted_creds_str,
-                "status": "syncing",
-                "connected_at": datetime.now(UTC),
-            },
-        )
-    else:
-        integration = await db.integration.create(
-            data={
-                "tenant_id": tenant_id,
-                "type": INTEGRATION_TYPE,
-                "encrypted_credentials": encrypted_creds_str,
-                "status": "syncing",
-                "connected_at": datetime.now(UTC),
-            }
-        )
+    existing = await db.integration.find_first(where={"tenant_id": tenant_id, "type": INTEGRATION_TYPE})
+    try:
+        if existing:
+            integration = await db.integration.update(
+                where={"id": existing.id},
+                data={"encrypted_credentials": encrypted_creds_str, "status": "syncing", "connected_at": datetime.now(UTC)},
+            )
+            logger.info("drive_callback_integration_updated", extra={"tenant_id": tenant_id, "integration_id": existing.id})
+        else:
+            integration = await db.integration.create(
+                data={"tenant_id": tenant_id, "type": INTEGRATION_TYPE, "encrypted_credentials": encrypted_creds_str, "status": "syncing", "connected_at": datetime.now(UTC)},
+            )
+            logger.info("drive_callback_integration_created", extra={"tenant_id": tenant_id, "integration_id": integration.id})
+    except Exception as exc:
+        logger.error("drive_callback_db_write_failed", extra={"tenant_id": tenant_id, "error": str(exc)})
+        raise
 
-    # Enqueue background sync
     try:
         await enqueue_drive_sync(integration_id=integration.id, tenant_id=tenant_id)
+        logger.info("drive_callback_sync_enqueued", extra={"tenant_id": tenant_id, "integration_id": integration.id})
     except Exception as exc:
-        logger.warning("drive_sync_enqueue_failed tenant=%s: %s", tenant_id, type(exc).__name__)
+        logger.warning("drive_sync_enqueue_failed", extra={"tenant_id": tenant_id, "error": str(exc)})
 
     return standard_response(data={"status": "syncing", "integration_id": integration.id})
 
