@@ -6,7 +6,7 @@ interface Account {
   id: string
   name: string
   subtype: string
-  institution_name: string | null
+  source: string
 }
 
 interface RunControlsProps {
@@ -76,7 +76,7 @@ export function RunControls({
             <option value="">All accounts</option>
             {accounts.map((a) => (
               <option key={a.id} value={a.id}>
-                {a.institution_name ? `${a.institution_name} — ` : ''}{a.name}{a.subtype ? ` (${a.subtype})` : ''}
+                {a.name}{a.subtype ? ` (${a.subtype})` : ''}
               </option>
             ))}
           </select>

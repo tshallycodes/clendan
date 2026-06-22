@@ -9,7 +9,7 @@ interface BankAccount {
   id: string
   name: string
   subtype: string
-  institution_name: string | null
+  source: string
 }
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
@@ -149,9 +149,7 @@ export function ConfigDrawer({ tool, toolType, onClose, onSaved }: Props) {
                           />
                           <div className="min-w-0">
                             <p className="text-xs font-mono text-brand-text truncate">{a.name}</p>
-                            {a.institution_name && (
-                              <p className="text-[10px] font-mono text-brand-muted">{a.institution_name}{a.subtype ? ` · ${a.subtype}` : ''}</p>
-                            )}
+                            <p className="text-[10px] font-mono text-brand-muted">{a.source}{a.subtype ? ` · ${a.subtype}` : ''}</p>
                           </div>
                         </label>
                       )

@@ -160,7 +160,6 @@ async def list_reconciliation_accounts(current_user: RequireOrgAuth) -> dict:
     db = get_db()
     accounts = await db.bankaccount.find_many(
         where={"tenant_id": current_user.tenant_id},
-        include={"integration": True},
         order={"created_at": "asc"},
     )
     return standard_response(data={
@@ -169,7 +168,7 @@ async def list_reconciliation_accounts(current_user: RequireOrgAuth) -> dict:
                 "id": a.id,
                 "name": a.name,
                 "subtype": a.subtype or "",
-                "institution_name": a.integration.institution_name if a.integration else None,
+                "source": a.source,
             }
             for a in accounts
         ]

@@ -39,7 +39,7 @@ interface BankAccount {
   id: string
   name: string
   subtype: string
-  institution_name: string | null
+  source: string
 }
 
 interface OverviewProps {
