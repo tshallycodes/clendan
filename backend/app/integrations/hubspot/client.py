@@ -1,10 +1,13 @@
 """
-HubSpot OAuth 2.0 client.
+HubSpot OAuth 2.1 client (PKCE required).
 Handles: auth URL construction, code exchange, token refresh, portal info,
 contacts, companies, and deals.
 """
 import asyncio
+import base64
+import hashlib
 import random
+import secrets
 from datetime import datetime, UTC, timedelta
 from urllib.parse import urlencode
 
@@ -54,24 +57,52 @@ async def _retry(fn, *args, **kwargs):
 # OAuth helpers
 # ---------------------------------------------------------------------------
 
-def build_auth_url(state: str) -> str:
-    """Builds the HubSpot OAuth authorization URL."""
+def generate_pkce_pair() -> tuple[str, str]:
+    """Returns (code_verifier, code_challenge) for OAuth 2.1 PKCE S256 flow."""
+    verifier = base64.urlsafe_b64encode(secrets.token_bytes(32)).rstrip(b"=").decode()
+    challenge = base64.urlsafe_b64encode(
+        hashlib.sha256(verifier.encode()).digest()
+    ).rstrip(b"=").decode()
+    return verifier, challenge
+
+
+def build_auth_url(state: str, code_challenge: str) -> str:
+    """
+    Builds the HubSpot OAuth 2.1 authorization URL with PKCE S256.
+    Call generate_pkce_pair() first to get (code_verifier, code_challenge),
+    then pass code_challenge here. Store code_verifier for the callback.
+    """
     settings = get_settings()
     params = {
         "client_id": settings.hubspot_client_id,
         "redirect_uri": settings.hubspot_redirect_uri,
         "scope": HS_SCOPES,
         "state": state,
+        "code_challenge": code_challenge,
+        "code_challenge_method": "S256",
     }
+    logger.info("hubspot_build_auth_url", extra={
+        "redirect_uri": settings.hubspot_redirect_uri,
+        "client_id": (settings.hubspot_client_id[:12] + "...") if settings.hubspot_client_id else "MISSING",
+        "code_challenge_method": "S256",
+    })
     return f"{HS_AUTH_URL}?{urlencode(params)}"
 
 
-async def exchange_code(code: str, tenant_id: str) -> dict:
+async def exchange_code(code: str, tenant_id: str, code_verifier: str) -> dict:
     """
-    Exchanges authorization code for access + refresh tokens.
+    Exchanges authorization code for access + refresh tokens (OAuth 2.1 PKCE).
+    code_verifier must match the challenge sent in the authorization URL.
     Returns encrypted credentials dict with token_expiry_at.
     """
     settings = get_settings()
+    logger.info("hubspot_exchange_code_start", extra={
+        "tenant_id": tenant_id,
+        "token_url": HS_TOKEN_URL,
+        "redirect_uri": settings.hubspot_redirect_uri,
+        "has_verifier": bool(code_verifier),
+        "code_len": len(code) if code else 0,
+    })
 
     async def _call():
         async with httpx.AsyncClient() as client:
@@ -83,14 +114,21 @@ async def exchange_code(code: str, tenant_id: str) -> dict:
                     "client_secret": settings.hubspot_client_secret,
                     "redirect_uri": settings.hubspot_redirect_uri,
                     "code": code,
+                    "code_verifier": code_verifier,
                 },
                 headers={"Content-Type": "application/x-www-form-urlencoded"},
                 timeout=15.0,
             )
+            logger.info("hubspot_exchange_code_response", extra={
+                "tenant_id": tenant_id,
+                "http_status": response.status_code,
+                "response_preview": response.text[:300] if response.status_code != 200 else "OK",
+            })
             response.raise_for_status()
             return response.json()
 
     data = await _circuit.call(_retry, _call)
+    logger.info("hubspot_exchange_code_ok", extra={"tenant_id": tenant_id, "has_access_token": bool(data.get("access_token"))})
 
     expiry = (datetime.now(UTC) + timedelta(seconds=ACCESS_TOKEN_TTL_SECONDS)).isoformat()
 

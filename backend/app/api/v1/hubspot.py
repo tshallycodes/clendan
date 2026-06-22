@@ -37,9 +37,18 @@ async def hubspot_connect(
         "redirect_uri": settings.hubspot_redirect_uri,
         "has_client_secret": bool(settings.hubspot_client_secret),
     })
-    state = f"{current_user.tenant_id}:{secrets.token_urlsafe(16)}"
-    auth_url = hs.build_auth_url(state=state)
-    logger.info("hubspot_connect_url_built", extra={"tenant_id": current_user.tenant_id, "url_prefix": auth_url[:80]})
+    # OAuth 2.1 PKCE: generate verifier+challenge, embed verifier in state so the
+    # callback can retrieve it without external storage.
+    # State format: {tenant_id}:{nonce}:{code_verifier}
+    nonce = secrets.token_urlsafe(16)
+    code_verifier, code_challenge = hs.generate_pkce_pair()
+    state = f"{current_user.tenant_id}:{nonce}:{code_verifier}"
+    auth_url = hs.build_auth_url(state=state, code_challenge=code_challenge)
+    logger.info("hubspot_connect_url_built", extra={
+        "tenant_id": current_user.tenant_id,
+        "url_prefix": auth_url[:80],
+        "pkce": "S256",
+    })
     return standard_response(data={"auth_url": auth_url, "state": state})
 
 
@@ -55,15 +64,19 @@ async def hubspot_callback(
     Redirects to /dashboard/integrations?connected=hubspot on success.
     All steps required — partial completion is a failure.
     """
-    # Validate and extract tenant_id from state
-    parts = state.split(":", 1)
-    if len(parts) != 2:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid OAuth state",
-        )
+    # State format: {tenant_id}:{nonce}:{code_verifier}
+    # Use maxsplit=2 so the verifier (which may contain base64url chars) is preserved intact.
+    parts = state.split(":", 2)
+    if len(parts) < 2:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid OAuth state")
     tenant_id = parts[0]
-    logger.info("hubspot_callback_received", extra={"tenant_id": tenant_id, "has_code": bool(code)})
+    code_verifier = parts[2] if len(parts) == 3 else ""
+    logger.info("hubspot_callback_received", extra={
+        "tenant_id": tenant_id,
+        "has_code": bool(code),
+        "has_verifier": bool(code_verifier),
+        "state_parts": len(parts),
+    })
 
     tenant = await db.tenant.find_unique(where={"id": tenant_id})
     if not tenant:
@@ -72,14 +85,8 @@ async def hubspot_callback(
     logger.info("hubspot_callback_tenant_ok", extra={"tenant_id": tenant_id})
 
     settings = get_settings()
-    logger.info("hubspot_callback_exchange_start", extra={
-        "tenant_id": tenant_id,
-        "client_id": (settings.hubspot_client_id[:12] + "...") if settings.hubspot_client_id else "MISSING",
-        "redirect_uri": settings.hubspot_redirect_uri,
-        "has_secret": bool(settings.hubspot_client_secret),
-    })
     try:
-        encrypted_blob = await hs.exchange_code(code=code, tenant_id=tenant_id)
+        encrypted_blob = await hs.exchange_code(code=code, tenant_id=tenant_id, code_verifier=code_verifier)
         logger.info("hubspot_callback_exchange_ok", extra={"tenant_id": tenant_id})
     except Exception as exc:
         logger.error("hubspot_token_exchange_failed", extra={"tenant_id": tenant_id, "error": str(exc), "error_type": type(exc).__name__})
