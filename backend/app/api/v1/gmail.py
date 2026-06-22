@@ -39,7 +39,7 @@ async def gmail_connect(
     state = f"{current_user.tenant_id}:{secrets.token_urlsafe(16)}"
     auth_url = google.build_gmail_auth_url(state=state)
     logger.info("gmail_connect_url_built", extra={"tenant_id": current_user.tenant_id, "url_prefix": auth_url[:80]})
-    return standard_response(data={"url": auth_url, "state": state})
+    return standard_response(data={"auth_url": auth_url, "state": state})
 
 
 @router.get("/integrations/gmail/callback")
