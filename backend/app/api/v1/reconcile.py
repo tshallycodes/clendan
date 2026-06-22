@@ -31,7 +31,7 @@ class TriggerRunRequest(BaseModel):
     period_start: str   # ISO datetime string
     period_end: str     # ISO datetime string
     tool_id: str
-    account_id: Optional[str] = None
+    account_ids: Optional[list[str]] = None
 
 
 # ---------------------------------------------------------------------------
@@ -229,7 +229,7 @@ async def trigger_reconciliation_run(
         tool_id=body.tool_id,
         period_start=period_start,
         period_end=period_end,
-        account_id=body.account_id,
+        account_ids=body.account_ids,
     )
 
     return standard_response(data={

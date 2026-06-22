@@ -183,7 +183,7 @@ async def _execute_reconciliation(
     period_days: int = 90,
     period_start: datetime | None = None,
     period_end: datetime | None = None,
-    account_id: str | None = None,
+    account_ids: list[str] | None = None,
 ) -> dict:
     settings_obj = get_settings()
     db = get_db()
@@ -203,8 +203,8 @@ async def _execute_reconciliation(
         "status": {"not": "reconciled"},
         "date": {"gte": period_start, "lte": period_end},
     }
-    if account_id:
-        txn_where["account_id"] = account_id
+    if account_ids:
+        txn_where["account_id"] = {"in": account_ids}
     raw_txns = await db.banktransaction.find_many(where=txn_where)
     transactions = [
         _TransactionRecord(
@@ -425,7 +425,7 @@ async def run_reconciliation_job(
     period_days: int = 90,
     period_start: datetime | None = None,
     period_end: datetime | None = None,
-    account_id: str | None = None,
+    account_ids: list[str] | None = None,
 ) -> dict:
     db = get_db()
     settings_obj = get_settings()
@@ -435,7 +435,7 @@ async def run_reconciliation_job(
         result = await _execute_reconciliation(
             tenant_id, tool_id, execution_id, period_days,
             period_start=period_start, period_end=period_end,
-            account_id=account_id,
+            account_ids=account_ids,
         )
         duration_ms = int(time.time() * 1000) - start_ms
         await db.execution.update(

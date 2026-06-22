@@ -258,10 +258,14 @@ export function ReconciliationClient() {
     setRunning(true)
     try {
       const token = await getToken()
+      const configAccountIds = (deployed.config_json as Record<string, unknown> | null)?.account_ids
+      const runAccountIds = accountId
+        ? [accountId]
+        : (Array.isArray(configAccountIds) && configAccountIds.length > 0 ? configAccountIds as string[] : null)
       const res = await fetch(`${API}/v1/reconciliation/run`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ period_start: periodStart, period_end: periodEnd, tool_id: deployed.id, account_id: accountId || null }),
+        body: JSON.stringify({ period_start: periodStart, period_end: periodEnd, tool_id: deployed.id, account_ids: runAccountIds }),
       })
       if (!res.ok) return
       const json = await res.json()
