@@ -3,6 +3,8 @@
 import { useState } from 'react'
 import { Select } from '@/components/ui/Select'
 import { NumberInput } from '@/components/ui/NumberInput'
+import { useCurrency } from '@/components/Providers'
+import { CURRENCY_MAP } from '@/lib/currency'
 
 const inputClass = 'w-full bg-brand-bg border border-brand-border focus:border-brand-green rounded-sm px-3 py-2 text-xs font-mono text-brand-text outline-none transition-colors'
 const labelClass = 'text-[10px] font-mono text-brand-muted uppercase tracking-widest'
@@ -289,6 +291,8 @@ function InfoIcon({ fieldKey, open, onToggle }: {
 export function ToolConfigFields({ toolType, config, onChange }: ToolConfigFieldsProps) {
   const fields = WORKER_FIELDS[toolType] ?? []
   const [openHint, setOpenHint] = useState<string | null>(null)
+  const { currency } = useCurrency()
+  const currencySymbol = CURRENCY_MAP[currency]?.symbol ?? currency
 
   if (fields.length === 0) return null
 
@@ -400,7 +404,7 @@ export function ToolConfigFields({ toolType, config, onChange }: ToolConfigField
               onChange={v => onChange(field.key, v)}
             />
             {field.penceDisplay && (
-              <p className="text-[10px] font-mono text-brand-muted">£{((value as number) / 100).toFixed(2)}</p>
+              <p className="text-[10px] font-mono text-brand-muted">{currencySymbol}{((value as number) / 100).toFixed(2)}</p>
             )}
             {hintOpen && field.description && (
               <p className="text-[10px] font-mono text-brand-secondary bg-brand-elevated border border-brand-border rounded-sm px-2.5 py-2 leading-relaxed">
