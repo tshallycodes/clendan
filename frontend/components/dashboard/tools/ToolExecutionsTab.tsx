@@ -35,6 +35,20 @@ const STATUS_CLASS: Record<string, string> = {
   queued:             'text-brand-muted',
 }
 
+function ElapsedTimer({ since }: { since: string }) {
+  const [elapsed, setElapsed] = useState(0)
+  useEffect(() => {
+    const start = new Date(since).getTime()
+    const tick = () => setElapsed(Math.floor((Date.now() - start) / 1000))
+    tick()
+    const id = setInterval(tick, 1000)
+    return () => clearInterval(id)
+  }, [since])
+  const m = Math.floor(elapsed / 60)
+  const s = elapsed % 60
+  return <span className="text-[#f5a623]">{m > 0 ? `${m}m ` : ''}{s}s</span>
+}
+
 export function ToolExecutionsTab({ toolId }: { toolId: string | null }) {
   const { getToken } = useAuth()
   const [executions, setExecutions] = useState<Execution[]>([])
@@ -45,8 +59,10 @@ export function ToolExecutionsTab({ toolId }: { toolId: string | null }) {
 
   useEffect(() => {
     if (!toolId) return
-    async function load() {
-      setLoading(true)
+    let pollId: ReturnType<typeof setTimeout> | null = null
+
+    async function load(silent = false) {
+      if (!silent) setLoading(true)
       try {
         const token = await getToken()
         const params = new URLSearchParams({ tool_id: toolId!, limit: '50' })
@@ -56,14 +72,18 @@ export function ToolExecutionsTab({ toolId }: { toolId: string | null }) {
         })
         if (res.ok) {
           const json = await res.json()
-          setExecutions(json.data?.executions ?? [])
+          const list: Execution[] = json.data?.executions ?? []
+          setExecutions(list)
           setTotal(json.data?.total ?? 0)
+          const hasActive = list.some(e => e.status === 'running' || e.status === 'queued')
+          if (hasActive) pollId = setTimeout(() => load(true), 3000)
         }
       } finally {
-        setLoading(false)
+        if (!silent) setLoading(false)
       }
     }
     load()
+    return () => { if (pollId) clearTimeout(pollId) }
   }, [toolId, filter, getToken])
 
   const auto = executions.filter(e => e.status === 'auto').length
@@ -133,7 +153,11 @@ export function ToolExecutionsTab({ toolId }: { toolId: string | null }) {
                       <span className={STATUS_CLASS[e.status] ?? 'text-brand-secondary'}>{e.status}</span>
                     </td>
                     <td className="px-4 py-2.5 text-right text-brand-muted">
-                      {e.duration_ms != null ? `${e.duration_ms}ms` : '—'}
+                      {e.duration_ms != null
+                        ? `${(e.duration_ms / 1000).toFixed(1)}s`
+                        : (e.status === 'running' || e.status === 'queued')
+                          ? <ElapsedTimer since={e.created_at} />
+                          : '—'}
                     </td>
                   </tr>
                   {isExpanded && (

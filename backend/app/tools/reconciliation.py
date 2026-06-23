@@ -448,6 +448,11 @@ async def run_reconciliation_job(
     settings_obj = get_settings()
     start_ms = int(time.time() * 1000)
 
+    await db.execution.update(
+        where={"id": execution_id},
+        data={"status": "running"},
+    )
+
     try:
         result = await _execute_reconciliation(
             tenant_id, tool_id, execution_id, period_days,
