@@ -18,10 +18,16 @@ function fmtDateTime(d: string) {
   return new Date(d).toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })
 }
 
+function emailToName(email: string | null): string {
+  if (!email) return 'system'
+  return email.split('@')[0]
+}
+
 function runLabel(run: ReconciliationRun) {
   const period = `${fmtDate(run.period_start)} – ${fmtDate(run.period_end)}`
   const stats = `${run.matched_count} matched · ${run.unmatched_count} unprocessed · ${run.flagged_count} flagged`
-  return `${fmtDateTime(run.created_at)} · ${period} · ${stats}`
+  const by = emailToName(run.triggered_by_email)
+  return `${fmtDateTime(run.created_at)} · ${by} · ${period} · ${stats}`
 }
 
 export function RunHistory({ runs, loading, selectedId, onSelect }: RunHistoryProps) {

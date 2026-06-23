@@ -211,6 +211,7 @@ async def _execute_reconciliation(
     period_start: datetime | None = None,
     period_end: datetime | None = None,
     account_ids: list[str] | None = None,
+    triggered_by_email: str | None = None,
 ) -> dict:
     settings_obj = get_settings()
     db = get_db()
@@ -406,6 +407,7 @@ async def _execute_reconciliation(
         "review_count": sum(1 for r in claude_results if r.action == "review"),
         "total_txn_count": len(transactions),
         "total_inv_count": len(invoices),
+        "triggered_by_email": triggered_by_email,
         "details_json": PrismaJson({
             "claude_assessments": [r.model_dump() for r in claude_results],
             "unmatched_transaction_ids": [t.id for t in unmatched_txns],
@@ -453,6 +455,7 @@ async def run_reconciliation_job(
     period_start: datetime | None = None,
     period_end: datetime | None = None,
     account_ids: list[str] | None = None,
+    triggered_by_email: str | None = None,
 ) -> dict:
     db = get_db()
     settings_obj = get_settings()
@@ -468,6 +471,7 @@ async def run_reconciliation_job(
             tenant_id, tool_id, execution_id, period_days,
             period_start=period_start, period_end=period_end,
             account_ids=account_ids,
+            triggered_by_email=triggered_by_email,
         )
         duration_ms = int(time.time() * 1000) - start_ms
         await db.execution.update(

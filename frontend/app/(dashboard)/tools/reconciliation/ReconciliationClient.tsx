@@ -300,6 +300,11 @@ export function ReconciliationClient() {
         </div>
         {canConfigure && (
           <div className="flex items-center gap-2">
+            {deployed?.last_configured_by_email && (
+              <p className="text-[10px] font-mono text-brand-muted hidden sm:block">
+                Last configured by {deployed.last_configured_by_email.split('@')[0]}
+              </p>
+            )}
             <button type="button" onClick={() => setShowConfig(true)}
               className="text-xs font-mono border border-brand-border text-brand-text hover:bg-brand-elevated rounded-sm px-3 py-1.5 transition-colors">
               Configure
@@ -415,9 +420,16 @@ export function ReconciliationClient() {
               onClick={e => e.stopPropagation()}
             >
               <div className="flex items-center justify-between px-4 py-3 border-b border-brand-border">
-                <p className="text-[10px] font-mono uppercase tracking-widest text-brand-muted">
-                  Results · {new Date(selectedRun.period_start).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' })} – {new Date(selectedRun.period_end).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
-                </p>
+                <div className="flex items-center gap-3">
+                  <p className="text-[10px] font-mono uppercase tracking-widest text-brand-muted">
+                    Results · {new Date(selectedRun.period_start).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' })} – {new Date(selectedRun.period_end).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                  </p>
+                  {selectedRun.triggered_by_email && (
+                    <p className="text-[10px] font-mono text-brand-muted">
+                      by {selectedRun.triggered_by_email}
+                    </p>
+                  )}
+                </div>
                 <button
                   type="button"
                   onClick={() => setModalOpen(false)}

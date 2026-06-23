@@ -78,6 +78,7 @@ def _serialize_tool(w: Any) -> dict:
         "status": w.status,
         "version": w.version,
         "config_json": w.config_json,
+        "last_configured_by_email": w.last_configured_by_email,
     }
 
 
@@ -98,6 +99,7 @@ async def deploy_tool(
             "config_json": Json(body.config),
             "status": "active",
             "version": 1,
+            "last_configured_by_email": current_user.email,
         }
     )
 
@@ -168,6 +170,7 @@ async def update_tool(
         update_data["status"] = body.status
     if body.config is not None:
         update_data["config_json"] = Json(body.config)
+        update_data["last_configured_by_email"] = current_user.email
 
     updated = await db.tool.update(
         where={"id": tool_id},

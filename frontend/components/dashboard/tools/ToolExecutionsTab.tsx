@@ -15,6 +15,7 @@ interface Execution {
   created_at: string
   input_ref: string
   error_message: string | null
+  triggered_by_email: string | null
 }
 
 type Filter = 'all' | 'auto' | 'approval_required' | 'blocked'
@@ -156,6 +157,7 @@ export function ToolExecutionsTab({ toolId }: { toolId: string | null }) {
           <thead>
             <tr className="border-b border-brand-border">
               <th className="text-left px-4 py-2 text-brand-muted font-normal">Time</th>
+              <th className="text-left px-4 py-2 text-brand-muted font-normal">Run by</th>
               <th className="text-left px-4 py-2 text-brand-muted font-normal">Ref</th>
               <th className="text-left px-4 py-2 text-brand-muted font-normal">Decision</th>
               <th className="text-left px-4 py-2 text-brand-muted font-normal">Status</th>
@@ -164,9 +166,9 @@ export function ToolExecutionsTab({ toolId }: { toolId: string | null }) {
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={5} className="px-4 py-8 text-center text-brand-muted">Loading…</td></tr>
+              <tr><td colSpan={6} className="px-4 py-8 text-center text-brand-muted">Loading…</td></tr>
             ) : executions.length === 0 ? (
-              <tr><td colSpan={5} className="px-4 py-8 text-center text-brand-muted">No executions yet</td></tr>
+              <tr><td colSpan={6} className="px-4 py-8 text-center text-brand-muted">No executions yet</td></tr>
             ) : executions.map(e => {
               const isExpanded = expanded === e.id
               const isExpandable = e.status === 'failed'
@@ -178,6 +180,9 @@ export function ToolExecutionsTab({ toolId }: { toolId: string | null }) {
                   >
                     <td className="px-4 py-2.5 text-brand-muted">
                       {new Date(e.created_at).toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                    </td>
+                    <td className="px-4 py-2.5 text-brand-secondary max-w-[120px] truncate" title={e.triggered_by_email ?? ''}>
+                      {e.triggered_by_email ? e.triggered_by_email.split('@')[0] : '—'}
                     </td>
                     <td className="px-4 py-2.5 text-brand-muted max-w-[160px] truncate">{e.input_ref || '—'}</td>
                     <td className={`px-4 py-2.5 max-w-[160px] truncate ${DECISION_CLASS[e.decision] ?? 'text-brand-secondary'}`}>{e.decision || '—'}</td>
@@ -194,7 +199,7 @@ export function ToolExecutionsTab({ toolId }: { toolId: string | null }) {
                   </tr>
                   {isExpanded && (
                     <tr className="border-t border-brand-border bg-brand-elevated">
-                      <td colSpan={5} className="px-4 py-3 space-y-2">
+                      <td colSpan={6} className="px-4 py-3 space-y-2">
                         {e.input_ref && (
                           <p className="text-[10px] font-mono text-brand-muted">ref: {e.input_ref}</p>
                         )}

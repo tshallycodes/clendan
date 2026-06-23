@@ -15,6 +15,7 @@ export interface Tool {
   status: 'active' | 'inactive'
   version: number
   config_json?: Record<string, unknown>
+  last_configured_by_email?: string | null
 }
 
 export function formatType(type: string): string {

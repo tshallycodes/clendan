@@ -8,6 +8,7 @@ export interface ReconciliationRun {
   flagged_count: number
   review_count: number
   total_txn_count: number
+  triggered_by_email: string | null
   created_at: string
 }
 

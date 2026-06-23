@@ -70,6 +70,7 @@ async def list_reconciliation_runs(
             "review_count": r.review_count,
             "total_txn_count": r.total_txn_count,
             "total_inv_count": r.total_inv_count,
+            "triggered_by_email": r.triggered_by_email,
             "created_at": r.created_at.isoformat(),
         }
         for r in runs
@@ -223,6 +224,7 @@ async def trigger_reconciliation_run(
         "decision": "pending",
         "confidence": 0.0,
         "status": "queued",
+        "triggered_by_email": current_user.email,
     })
 
     from app.queue.pool import get_queue_pool
@@ -235,6 +237,7 @@ async def trigger_reconciliation_run(
         period_start=period_start,
         period_end=period_end,
         account_ids=body.account_ids,
+        triggered_by_email=current_user.email,
     )
 
     return standard_response(data={

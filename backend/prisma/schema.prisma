@@ -112,13 +112,14 @@ model IntegrationSyncLog {
 }
 
 model Tool {
-  id             String @id @default(cuid())
-  tenant_id      String
-  type           String
-  config_json    Json
-  autonomy_level String @default("approve")
-  version        Int    @default(1)
-  status         String @default("inactive")
+  id                        String  @id @default(cuid())
+  tenant_id                 String
+  type                      String
+  config_json               Json
+  autonomy_level            String  @default("approve")
+  version                   Int     @default(1)
+  status                    String  @default("inactive")
+  last_configured_by_email  String?
 
   tenant     Tenant      @relation(fields: [tenant_id], references: [id])
   executions Execution[]
@@ -127,16 +128,17 @@ model Tool {
 }
 
 model Execution {
-  id            String   @id @default(cuid())
-  tenant_id     String
-  tool_id       String
-  input_ref     String
-  decision      String
-  confidence    Float
-  status        String
-  duration_ms   Int?
-  error_message String?
-  created_at    DateTime @default(now())
+  id                   String   @id @default(cuid())
+  tenant_id            String
+  tool_id              String
+  input_ref            String
+  decision             String
+  confidence           Float
+  status               String
+  duration_ms          Int?
+  error_message        String?
+  triggered_by_email   String?
+  created_at           DateTime @default(now())
 
   tenant   Tenant     @relation(fields: [tenant_id], references: [id])
   tool   Tool     @relation(fields: [tool_id], references: [id])
@@ -562,20 +564,21 @@ model InviteLink {
 }
 
 model ReconciliationRun {
-  id              String   @id @default(cuid())
-  tenant_id       String
-  execution_id    String?
-  period_start    DateTime
-  period_end      DateTime
-  status          String   @default("completed")
-  matched_count   Int      @default(0)
-  unmatched_count Int      @default(0)
-  flagged_count   Int      @default(0)
-  review_count    Int      @default(0)
-  total_txn_count Int      @default(0)
-  total_inv_count Int      @default(0)
-  details_json    Json?
-  created_at      DateTime @default(now())
+  id                   String   @id @default(cuid())
+  tenant_id            String
+  execution_id         String?
+  period_start         DateTime
+  period_end           DateTime
+  status               String   @default("completed")
+  matched_count        Int      @default(0)
+  unmatched_count      Int      @default(0)
+  flagged_count        Int      @default(0)
+  review_count         Int      @default(0)
+  total_txn_count      Int      @default(0)
+  total_inv_count      Int      @default(0)
+  details_json         Json?
+  triggered_by_email   String?
+  created_at           DateTime @default(now())
 
   tenant Tenant @relation(fields: [tenant_id], references: [id])
 
