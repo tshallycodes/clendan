@@ -101,14 +101,15 @@ def _dates_match(txn_date: datetime, due_date: datetime | None, window_days: int
 
 
 _CLAUDE_SYSTEM_PROMPT = (
-    "You are a financial reconciliation model. Assess each unmatched item and return "
-    "a JSON array — one object per item — with exactly these fields:\n"
-    '  "item_id": string, "item_type": "transaction"|"invoice"|"bill",\n'
-    '  "severity": "low"|"medium"|"high", "action": "ok"|"review"|"flag",\n'
-    '  "reasoning": one concise sentence (include likely match suggestions where obvious).\n'
-    "high=large/stale/duplicate; medium=moderate age; low=small/recent. "
-    "flag=immediate; review=human needed; ok=auto-resolve. "
-    "Return ONLY a valid JSON array. No markdown."
+    "You are a financial reconciliation model. Assess each unmatched item and classify it.\n"
+    "You MUST respond with ONLY a raw JSON array (no markdown, no code fences, no explanation).\n"
+    "Each element must have exactly: "
+    '"item_id" (string), "item_type" ("transaction"|"invoice"|"bill"), '
+    '"severity" ("low"|"medium"|"high"), "action" ("ok"|"review"|"flag"), '
+    '"reasoning" (one sentence).\n'
+    "Rules: high/flag=large amount or stale >90d or duplicate; "
+    "medium/review=moderate; low/ok=small or recent.\n"
+    "If the input list is empty, return an empty array: []"
 )
 
 
@@ -172,6 +173,14 @@ async def _call_claude(
                 logger.warning("claude_response_truncated", extra={"chars": len(message.content[0].text)})
                 raise RuntimeError("Claude response was truncated (max_tokens hit). Reduce batch size.")
             raw_text = message.content[0].text.strip()
+            if not raw_text:
+                return []
+            # Strip markdown code fences if present
+            if raw_text.startswith("```"):
+                raw_text = raw_text.split("```")[1]
+                if raw_text.startswith("json"):
+                    raw_text = raw_text[4:]
+                raw_text = raw_text.strip()
             parsed = json.loads(raw_text)
             if not isinstance(parsed, list):
                 raise ValueError("Claude response is not a JSON array")
