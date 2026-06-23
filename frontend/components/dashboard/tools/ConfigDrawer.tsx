@@ -103,6 +103,12 @@ export function ConfigDrawer({ tool, toolType, onClose, onSaved }: Props) {
           <div>
             <h2 className="font-heading font-semibold text-brand-text text-sm">{formatType(toolType)}</h2>
             <p className="text-[10px] font-mono text-brand-muted mt-0.5">{toolType}</p>
+            {tool?.last_configured_by_email && (
+              <p className="text-[10px] font-mono text-brand-muted mt-1">
+                Last configured by{' '}
+                <span className="text-brand-secondary">{tool.last_configured_by_email.split('@')[0]}</span>
+              </p>
+            )}
           </div>
           <button type="button" onClick={onClose} className="text-brand-muted hover:text-brand-text transition-colors text-lg leading-none">✕</button>
         </div>

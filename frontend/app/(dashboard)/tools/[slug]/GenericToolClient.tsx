@@ -125,6 +125,12 @@ export function GenericToolClient({ tool, deployed }: Props) {
 
         {canConfigure && (
           <div className="flex items-center gap-2">
+            {deployed?.last_configured_by_email && (
+              <p className="text-[10px] font-mono text-brand-muted hidden sm:block">
+                Last configured by{' '}
+                <span className="text-brand-secondary">{deployed.last_configured_by_email.split('@')[0]}</span>
+              </p>
+            )}
             <button type="button" onClick={() => setShowConfig(true)}
               className="text-xs font-mono border border-brand-border text-brand-text hover:bg-brand-elevated rounded-sm px-3 py-1.5 transition-colors">
               Configure

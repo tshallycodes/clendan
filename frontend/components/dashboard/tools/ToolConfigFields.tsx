@@ -217,6 +217,34 @@ const WORKER_FIELDS: Record<string, FieldDef[]> = {
     { key: 'adverse_action_notice_auto', type: 'boolean', label: 'Auto adverse action notice', default: true,
       description: 'When on, rejection notices are automatically sent to declined applicants. This is legally required in most jurisdictions.' },
   ],
+  tax_compliance: [
+    { key: 'vat_alert_threshold_cents', type: 'number', label: 'VAT liability alert threshold', penceDisplay: true, default: 1000000,
+      description: 'Alert and route for approval when the net VAT liability for the period exceeds this amount. Default £10,000.' },
+    { key: 'missing_tax_flag_threshold_cents', type: 'number', label: 'Missing tax code flag above', penceDisplay: true, default: 10000,
+      description: 'Flag any invoice, bill, or expense above this amount that has no tax code assigned. Default £100 — keeps low-value items out of the review queue.' },
+  ],
+  financial_reporting: [
+    { key: 'lookback_days', type: 'number', label: 'Reporting lookback period', unit: 'days', default: 30,
+      description: 'How many days back the report covers when run. E.g. 30 = last 30 days of P&L, balance sheet, and cash flow.' },
+    { key: 'anomaly_variance_pct', type: 'number', label: 'Anomaly variance threshold', unit: '0–1', step: 0.01, min: 0, max: 1, default: 0.25,
+      description: 'Flag a line item as anomalous if it varies by more than this percentage versus the prior equivalent period. 0.25 = flag anything more than 25% different.' },
+  ],
+  payment_run: [
+    { key: 'auto_pay_limit_cents', type: 'number', label: 'Auto-pay limit', penceDisplay: true, default: 100000,
+      description: 'Bills up to this amount are automatically scheduled for payment without a human approver. Default £1,000.' },
+    { key: 'approval_threshold_cents', type: 'number', label: 'Approval required above', penceDisplay: true, default: 250000,
+      description: 'Bills above this amount are routed to a human approver before being added to the payment run. Default £2,500.' },
+    { key: 'due_within_days', type: 'number', label: 'Pay bills due within', unit: 'days', default: 7,
+      description: 'Only include bills in the payment run that are due within this many days. Prevents paying too far in advance and helps manage cash timing.' },
+    { key: 'max_bills_per_run', type: 'number', label: 'Max bills per run', unit: 'bills', default: 50,
+      description: 'Maximum number of bills included in a single payment run batch. Limits the size of any one run for easier review.' },
+  ],
+  budgeting: [
+    { key: 'over_budget_alert_pct', type: 'number', label: 'Over-budget alert threshold', unit: '0–1', step: 0.01, min: 0, max: 1, default: 0.10,
+      description: 'Alert when actual spend on a budget line exceeds the budgeted amount by more than this percentage. 0.10 = alert at 10% overspend.' },
+    { key: 'critical_overspend_pct', type: 'number', label: 'Critical overspend threshold', unit: '0–1', step: 0.01, min: 0, max: 1, default: 0.25,
+      description: 'Route for human approval when actual spend exceeds the budget line by more than this percentage. 0.25 = escalate at 25% over budget.' },
+  ],
 }
 
 export function getDefaultConfig(toolType: string): Record<string, unknown> {
@@ -239,7 +267,11 @@ function InfoIcon({ fieldKey, open, onToggle }: {
       type="button"
       onClick={() => onToggle(fieldKey)}
       aria-label="What does this setting do?"
-      className={`ml-1 inline-flex items-center justify-center w-3.5 h-3.5 rounded-full border transition-colors shrink-0 ${open ? 'border-brand-secondary text-brand-secondary' : 'border-brand-muted text-brand-muted hover:border-brand-secondary hover:text-brand-secondary'}`}
+      className={`ml-1.5 inline-flex items-center justify-center w-3.5 h-3.5 rounded-full border transition-all shrink-0 ${
+        open
+          ? 'border-[#00a8cc] text-[#00a8cc] bg-[rgba(0,168,204,0.12)]'
+          : 'border-[rgba(0,168,204,0.45)] text-[#00a8cc] opacity-70 hover:opacity-100 hover:bg-[rgba(0,168,204,0.08)]'
+      }`}
     >
       <svg width="8" height="8" viewBox="0 0 8 8" fill="none" aria-hidden="true">
         <text x="4" y="6.5" textAnchor="middle" fontSize="7" fontFamily="monospace" fill="currentColor">i</text>
