@@ -29,7 +29,11 @@ interface Props {
 export function ConfigDrawer({ tool, toolType, onClose, onSaved }: Props) {
   const { getToken } = useAuth()
   const [autonomy, setAutonomy] = useState<string>(tool?.autonomy_level ?? 'approve')
-  const [config, setConfig] = useState<Record<string, unknown>>(getDefaultConfig(toolType))
+  const [config, setConfig] = useState<Record<string, unknown>>(() => {
+    const defaults = getDefaultConfig(toolType)
+    const existing = tool?.config_json as Record<string, unknown> | null
+    return existing ? { ...defaults, ...existing } : defaults
+  })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [saved, setSaved] = useState(false)

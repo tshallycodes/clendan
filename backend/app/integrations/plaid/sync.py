@@ -242,6 +242,24 @@ async def sync_plaid_transactions(ctx: dict, integration_id: str, tenant_id: str
                         idempotency_key=f"plaid:treasury:{integration_id}:{sync_key}",
                         db=db,
                     )
+                    # Real-time reconciliation: trigger if tenant has it configured
+                    try:
+                        recon_tool = await db.tool.find_first(
+                            where={"tenant_id": tenant_id, "type": "reconciliation", "status": "active"}
+                        )
+                        if recon_tool:
+                            cfg = recon_tool.config_json or {}
+                            if cfg.get("reconciliation_frequency") == "real-time":
+                                hour_bucket = datetime.now(UTC).strftime("%Y-%m-%dT%H")
+                                await enqueue_orchestrator_event(
+                                    tenant_id=tenant_id,
+                                    event_type="reconciliation_run",
+                                    payload={"period_days": 1, "triggered_by": "plaid_sync"},
+                                    idempotency_key=f"reconciliation:realtime:{tenant_id}:{hour_bucket}",
+                                    db=db,
+                                )
+                    except Exception as exc:
+                        logger.error("plaid_realtime_recon_enqueue_failed tenant=%s: %s", tenant_id, type(exc).__name__)
             except Exception as exc:
                 logger.error("plaid_sync_event_enqueue_failed", extra={"error": str(exc)})
 

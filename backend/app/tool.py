@@ -58,6 +58,26 @@ from app.tools.budgeting import run_budgeting_job
 
 logger = get_logger(__name__)
 
+_DAY_MAP = {
+    "monday": 0, "tuesday": 1, "wednesday": 2, "thursday": 3,
+    "friday": 4, "saturday": 5, "sunday": 6,
+}
+
+
+def _apply_autonomy_override(decision: str, autonomy_level: str) -> str:
+    """Override policy decision based on tool autonomy level.
+    auto: promote approval_required → auto_approved (blocked is never overridden).
+    suggest: demote auto_approved → approval_required.
+    approve: no change.
+    """
+    if decision == Decision.BLOCKED.value:
+        return decision
+    if autonomy_level == "auto" and decision == Decision.APPROVAL_REQUIRED.value:
+        return Decision.AUTO_APPROVED.value
+    if autonomy_level == "suggest" and decision == Decision.AUTO_APPROVED.value:
+        return Decision.APPROVAL_REQUIRED.value
+    return decision
+
 
 async def run_orchestrator_job(
     ctx: dict,
@@ -369,6 +389,15 @@ async def run_orchestrator_job(
             reasoning = f"'{event_type}' routed — tool not yet implemented"
 
         duration_ms = int(time.time() * 1000) - start_ms
+
+        # Apply autonomy level override for inline policy decisions (not routed/queued)
+        if decision not in (Decision.BLOCKED.value, "routed", "queued"):
+            _tool_rec = await db.tool.find_unique(where={"id": tool_id})
+            if _tool_rec:
+                overridden = _apply_autonomy_override(decision, _tool_rec.autonomy_level)
+                if overridden != decision:
+                    reasoning = f"[autonomy={_tool_rec.autonomy_level}: {decision}→{overridden}] {reasoning}"
+                    decision = overridden
 
         # Audit BEFORE updating execution
         await write_audit_log(
@@ -718,6 +747,68 @@ async def run_budget_check_weekly(ctx: dict) -> None:
             logger.error("budget_check_cron_failed tenant=%s: %s", tool.tenant_id, type(exc).__name__)
 
 
+async def run_reconciliation_scheduled_check(_ctx: dict) -> None:
+    """Hourly cron: fires reconciliation_run for tools configured for daily or weekly frequency.
+    Real-time frequency is handled separately via sync hooks in plaid/truelayer sync.
+    """
+    from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
+    from app.orchestrator.events import enqueue_orchestrator_event
+    db = get_db()
+    now_utc = datetime.now(UTC)
+
+    tools = await db.tool.find_many(where={"type": "reconciliation", "status": "active"})
+    for tool in tools:
+        try:
+            cfg = tool.config_json or {}
+            frequency = cfg.get("reconciliation_frequency", "daily")
+            if frequency == "real-time":
+                continue
+
+            tz_name = cfg.get("run_timezone", "UTC")
+            try:
+                tz = ZoneInfo(tz_name)
+            except ZoneInfoNotFoundError:
+                logger.warning("reconciliation_cron_unknown_tz tool=%s tz=%s — falling back to UTC", tool.id, tz_name)
+                tz = UTC
+
+            now_local = now_utc.astimezone(tz)
+            current_hour = now_local.hour
+            current_weekday = now_local.weekday()  # 0=Monday, 6=Sunday
+            date_key = now_local.strftime("%Y-%m-%d")
+
+            run_hour = int(cfg.get("run_hour_utc", 2))
+            if current_hour != run_hour:
+                continue
+
+            if frequency == "weekly":
+                day_value = cfg.get("run_day_of_week", "monday")
+                run_day = _DAY_MAP.get(str(day_value).lower(), 0)
+                if current_weekday != run_day:
+                    continue
+                idem_key = f"reconciliation:scheduled:{tool.id}:{date_key}"
+                period_days = 7
+            else:
+                idem_key = f"reconciliation:scheduled:{tool.id}:{date_key}:{current_hour}"
+                period_days = 1
+
+            await enqueue_orchestrator_event(
+                tenant_id=tool.tenant_id,
+                event_type="reconciliation_run",
+                payload={"period_days": period_days},
+                idempotency_key=idem_key,
+                db=db,
+            )
+            logger.info(
+                "reconciliation_scheduled_fired tenant=%s tool=%s frequency=%s tz=%s",
+                tool.tenant_id, tool.id, frequency, tz_name,
+            )
+        except Exception as exc:
+            logger.error(
+                "reconciliation_cron_failed tenant=%s tool=%s: %s",
+                tool.tenant_id, tool.id, type(exc).__name__,
+            )
+
+
 async def startup(ctx: dict) -> None:
     await connect_db()
     logger.info("arq tool started")
@@ -732,6 +823,7 @@ class ToolSettings:
     functions = [
         run_orchestrator_job,
         run_revenue_recognition_monthly,
+        run_reconciliation_scheduled_check,
         sync_quickbooks_connection,
         sync_plaid_transactions,
         reconcile_plaid_transactions,
@@ -784,7 +876,8 @@ class ToolSettings:
         cron(run_financial_reporting_monthly, day=1, hour=1, minute=0),
         cron(run_payment_run_weekly, weekday=0, hour=7, minute=0),
         cron(run_budget_check_weekly, weekday=0, hour=7, minute=30),
-        cron(fetch_exchange_rates_daily, hour=0, minute=5),  # daily at 00:05 UTC
+        cron(fetch_exchange_rates_daily, hour=0, minute=5),
+        cron(run_reconciliation_scheduled_check, minute=0),  # hourly — checks per-tool run_hour_utc / run_day_of_week
     ]
     on_startup = startup
     on_shutdown = shutdown
