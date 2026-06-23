@@ -1,3 +1,4 @@
+import json
 from typing import Any, Optional
 
 from app.core.db import get_db
@@ -22,13 +23,15 @@ async def write_audit_log(
     """
     db = get_db()
     try:
+        # Round-trip through json to sanitize any non-serializable Python types
+        safe_trace = json.loads(json.dumps(reasoning_trace, default=str))
         record = await db.auditlog.create(
             data={
                 "tenant_id": tenant_id,
                 "execution_id": execution_id,
                 "actor": actor,
                 "action": action,
-                "reasoning_trace_json": reasoning_trace,
+                "reasoning_trace_json": safe_trace,
                 "model_version": model_version,
             }
         )
