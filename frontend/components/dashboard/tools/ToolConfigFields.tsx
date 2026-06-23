@@ -25,7 +25,7 @@ const WORKER_FIELDS: Record<string, FieldDef[]> = {
     { key: 'amount_tolerance_minor_units', type: 'number',  label: 'Amount tolerance',          penceDisplay: true, default: 150 },
     { key: 'amount_tolerance_pct',         type: 'number',  label: 'Amount tolerance %',        unit: '0–0.01', step: 0.0001, min: 0, max: 0.01, default: 0.0003 },
     { key: 'date_tolerance_days',          type: 'number',  label: 'Date tolerance',            unit: 'days', default: 5 },
-    { key: 'reconciliation_frequency',     type: 'select',  label: 'Run frequency',             options: ['daily', 'weekly', 'real_time'], default: 'daily' },
+    { key: 'reconciliation_frequency',     type: 'select',  label: 'Run frequency',             options: ['daily', 'weekly', 'real-time'], default: 'daily' },
     { key: 'unmatched_alert_days',         type: 'number',  label: 'Alert on unmatched after',  unit: 'days', default: 5 },
     { key: 'stale_open_item_days',         type: 'number',  label: 'Stale open item threshold', unit: 'days', default: 90 },
     { key: 'auto_match_confidence_min',    type: 'number',  label: 'Auto-match min confidence', unit: '0–1', step: 0.01, min: 0, max: 1, default: 0.95 },
@@ -172,7 +172,10 @@ export function ToolConfigFields({ toolType, config, onChange }: ToolConfigField
               <Select
                 value={value as string}
                 onChange={v => onChange(field.key, v)}
-                options={field.options!.map(opt => ({ value: opt, label: opt }))}
+                options={field.options!.map(opt => ({
+                  value: opt,
+                  label: opt.replace(/[-_]/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
+                }))}
               />
             </div>
           )
