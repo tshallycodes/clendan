@@ -83,11 +83,16 @@ export function IntegrationsSection() {
 
   useEffect(() => { fetchStatuses() }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Only these slugs have reliable sync endpoints that complete successfully
+  const RESYNCABLE_SLUGS = new Set(['plaid', 'truelayer', 'mono', 'xero', 'quickbooks'])
+
   async function resyncAll() {
     setResyncing(true)
     try {
       const token = await getToken()
-      const toSync = integrations.filter((i) => i.status === 'connected' || i.status === 'syncing')
+      const toSync = integrations.filter(
+        (i) => i.status === 'connected' && RESYNCABLE_SLUGS.has(i.slug)
+      )
       await Promise.allSettled(
         toSync.map(({ slug }) =>
           fetch(`${API}/v1/integrations/${slug}/sync`, {
@@ -97,7 +102,7 @@ export function IntegrationsSection() {
         )
       )
       await fetchStatuses()
-      toast('All integrations resynced', 'success')
+      toast('Bank and accounting integrations resynced', 'success')
     } catch {
       toast('Resync failed — check individual integrations', 'error')
     } finally {
