@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
+import { X } from 'lucide-react'
 import { useAuth } from '@clerk/nextjs'
 import { useCanConfigure } from '@/lib/auth-client'
 import { ConfigDrawer } from '@/components/dashboard/tools/ConfigDrawer'
@@ -51,21 +52,18 @@ interface OverviewProps {
   running: boolean
   runs: ReconciliationRun[]
   runsLoading: boolean
-  selectedRun: ReconciliationRun | null
-  items: ReconciliationItem[]
-  itemsLoading: boolean
+  selectedId: string | null
   onPeriodStartChange: (v: string) => void
   onPeriodEndChange: (v: string) => void
   onAccountChange: (v: string) => void
   onRun: () => void
   onSelectRun: (run: ReconciliationRun) => void
-  onExport: (runId: string) => void
 }
 
 function OverviewTab({
   periodStart, periodEnd, accountId, accounts, toolId, running,
-  runs, runsLoading, selectedRun, items, itemsLoading,
-  onPeriodStartChange, onPeriodEndChange, onAccountChange, onRun, onSelectRun, onExport,
+  runs, runsLoading, selectedId,
+  onPeriodStartChange, onPeriodEndChange, onAccountChange, onRun, onSelectRun,
 }: OverviewProps) {
   return (
     <>
@@ -81,27 +79,9 @@ function OverviewTab({
         onAccountChange={onAccountChange}
         onRun={onRun}
       />
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_2fr] gap-5">
-        <div className="space-y-2">
-          <p className="text-[10px] font-mono uppercase tracking-widest text-brand-muted">Run History</p>
-          <RunHistory runs={runs} loading={runsLoading} selectedId={selectedRun?.id ?? null} onSelect={onSelectRun} />
-        </div>
-        <div className="space-y-2">
-          <p className="text-[10px] font-mono uppercase tracking-widest text-brand-muted">
-            {selectedRun
-              ? `Results · ${new Date(selectedRun.period_start).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })} – ${new Date(selectedRun.period_end).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}`
-              : 'Results'}
-          </p>
-          {selectedRun ? (
-            <ReconciliationTable items={items} loading={itemsLoading} runId={selectedRun.id} onExport={onExport} />
-          ) : (
-            !runsLoading && (
-              <div className="bg-brand-surface border border-brand-border rounded-sm p-8 text-center">
-                <p className="text-xs font-mono text-brand-muted">Select a run to view results.</p>
-              </div>
-            )
-          )}
-        </div>
+      <div className="space-y-2 mt-5">
+        <p className="text-[10px] font-mono uppercase tracking-widest text-brand-muted">Run History</p>
+        <RunHistory runs={runs} loading={runsLoading} selectedId={selectedId} onSelect={onSelectRun} />
       </div>
     </>
   )
@@ -152,6 +132,7 @@ export function ReconciliationClient() {
   const [showConfig, setShowConfig] = useState(false)
   const [toggling, setToggling] = useState(false)
   const [deploying, setDeploying] = useState(false)
+  const [modalOpen, setModalOpen] = useState(false)
 
   const fetchDeployed = useCallback(async () => {
     const token = await getToken()
@@ -274,6 +255,7 @@ export function ReconciliationClient() {
       const fresh = updated?.find((r) => r.id === newRun.id) ?? newRun
       setSelectedRun(fresh)
       fetchItems(fresh.id)
+      setModalOpen(true)
     } finally {
       setRunning(false)
     }
@@ -375,12 +357,11 @@ export function ReconciliationClient() {
               <OverviewTab
                 periodStart={periodStart} periodEnd={periodEnd} accountId={accountId} accounts={accounts}
                 toolId={deployed?.id ?? null} running={running}
-                runs={runs} runsLoading={runsLoading} selectedRun={selectedRun}
-                items={items} itemsLoading={itemsLoading}
+                runs={runs} runsLoading={runsLoading} selectedId={selectedRun?.id ?? null}
                 onPeriodStartChange={setPeriodStart} onPeriodEndChange={setPeriodEnd}
                 onAccountChange={setAccountId}
-                onRun={handleRun} onSelectRun={(r) => { setSelectedRun(r); fetchItems(r.id) }}
-                onExport={handleExport}
+                onRun={handleRun}
+                onSelectRun={(r) => { setSelectedRun(r); fetchItems(r.id); setModalOpen(true) }}
               />
               <motion.ul
                 variants={capabilityVariants}
@@ -411,6 +392,44 @@ export function ReconciliationClient() {
           onSaved={() => { setShowConfig(false); fetchDeployed() }}
         />
       )}
+
+      <AnimatePresence>
+        {modalOpen && selectedRun && (
+          <motion.div
+            key="run-modal-overlay"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
+            className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-[rgba(0,0,0,0.7)] p-8"
+            onClick={() => setModalOpen(false)}
+          >
+            <motion.div
+              key="run-modal-panel"
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 16 }}
+              transition={{ duration: 0.2, ease: 'easeOut' }}
+              className="relative bg-brand-surface border border-brand-border rounded-sm w-full max-w-6xl"
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between px-4 py-3 border-b border-brand-border">
+                <p className="text-[10px] font-mono uppercase tracking-widest text-brand-muted">
+                  Results · {new Date(selectedRun.period_start).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' })} – {new Date(selectedRun.period_end).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setModalOpen(false)}
+                  className="text-brand-muted hover:text-brand-text transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              <ReconciliationTable items={items} loading={itemsLoading} runId={selectedRun.id} onExport={handleExport} />
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   )
 }
