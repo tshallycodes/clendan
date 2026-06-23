@@ -10,6 +10,7 @@ import { InviteLinksSection } from '@/components/dashboard/settings/team/InviteL
 import { PolicySection } from '@/components/dashboard/settings/PolicySection'
 import { BillingSection } from '@/components/dashboard/settings/BillingSection'
 import { CurrencySelector } from '@/components/dashboard/settings/CurrencySelector'
+import { TimezoneSelector } from '@/components/dashboard/settings/TimezoneSelector'
 import { AnimatedPage, AnimatedSection } from '@/components/dashboard/AnimatedPage'
 
 export const metadata: Metadata = { title: 'Settings' }
@@ -109,6 +110,20 @@ export default async function SettingsPage() {
                 <CurrencySelector />
                 <p className="text-[10px] font-mono text-brand-muted leading-relaxed">
                   All monetary values across the dashboard are displayed in this currency. Amounts are converted from their native currency at read time — stored values are never modified.
+                </p>
+              </div>
+            </section>
+          </AnimatedSection>
+
+          {/* Timezone */}
+          <AnimatedSection>
+            <section className="space-y-4">
+              <h2 className="text-[10px] font-mono uppercase tracking-widest text-brand-muted border-b border-brand-border pb-2">Timezone</h2>
+              <div className="space-y-2">
+                <p className="text-[10px] font-mono text-brand-muted uppercase tracking-wide">Organisation timezone</p>
+                <TimezoneSelector />
+                <p className="text-[10px] font-mono text-brand-muted leading-relaxed">
+                  Used for scheduling automated tool runs (daily reconciliation, weekly payment runs, etc.) and displaying timestamps across the dashboard.
                 </p>
               </div>
             </section>

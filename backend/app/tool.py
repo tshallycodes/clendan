@@ -764,7 +764,8 @@ async def run_reconciliation_scheduled_check(_ctx: dict) -> None:
             if frequency == "real-time":
                 continue
 
-            tz_name = cfg.get("run_timezone", "UTC")
+            tenant = await db.tenant.find_unique(where={"id": tool.tenant_id})
+            tz_name = (tenant.timezone if tenant and tenant.timezone else None) or "UTC"
             try:
                 tz = ZoneInfo(tz_name)
             except ZoneInfoNotFoundError:

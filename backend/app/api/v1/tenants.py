@@ -3,9 +3,10 @@ from typing import Annotated, Optional
 from fastapi import APIRouter, Depends, HTTPException, status
 from prisma import Prisma
 from pydantic import BaseModel, field_validator
+from zoneinfo import ZoneInfoNotFoundError
 
 from app.core.db import get_db_dep
-from app.core.security import RequireOrgAuth, CurrentUser
+from app.core.security import RequireOrgAuth
 from app.core.responses import standard_response
 from app.models.schemas import TenantResponse
 
@@ -13,16 +14,31 @@ router = APIRouter(tags=["tenants"])
 
 
 class PatchTenantRequest(BaseModel):
-    name: str
+    name: Optional[str] = None
+    timezone: Optional[str] = None
 
     @field_validator("name")
     @classmethod
-    def validate_name(cls, v: str) -> str:
+    def validate_name(cls, v: Optional[str]) -> Optional[str]:
+        if v is None:
+            return v
         v = v.strip()
         if not v:
             raise ValueError("name must not be empty")
         if len(v) > 200:
             raise ValueError("name must be 200 characters or fewer")
+        return v
+
+    @field_validator("timezone")
+    @classmethod
+    def validate_timezone(cls, v: Optional[str]) -> Optional[str]:
+        if v is None:
+            return v
+        try:
+            from zoneinfo import ZoneInfo
+            ZoneInfo(v)
+        except ZoneInfoNotFoundError:
+            raise ValueError(f"Unknown timezone: {v}")
         return v
 
 
@@ -103,10 +119,18 @@ async def patch_my_tenant(
     current_user: RequireOrgAuth,
     db: Annotated[Prisma, Depends(get_db_dep)],
 ):
-    """Update the authenticated user's tenant. Currently supports: name."""
+    """Update the authenticated user's tenant. Supports: name, timezone."""
+    patch: dict = {}
+    if body.name is not None:
+        patch["name"] = body.name
+    if body.timezone is not None:
+        patch["timezone"] = body.timezone
+    if not patch:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Nothing to update")
+
     updated_tenant = await db.tenant.update(
         where={"id": current_user.tenant_id},
-        data={"name": body.name},
+        data=patch,
     )
     if not updated_tenant:
         raise HTTPException(

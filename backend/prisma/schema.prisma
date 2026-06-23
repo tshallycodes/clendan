@@ -31,6 +31,7 @@ model Tenant {
   domain              String?
   domain_matching     Boolean  @default(false)
   onboarding_complete Boolean  @default(false)
+  timezone            String   @default("UTC")
   members             Member[]
   invitations         Invitation[]
   invite_links        InviteLink[]

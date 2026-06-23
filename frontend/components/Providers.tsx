@@ -83,6 +83,24 @@ function ToastItem({ item, onDismiss }: { item: ToastItem; onDismiss: (id: strin
 }
 
 // ---------------------------------------------------------------------------
+// Timezone
+// ---------------------------------------------------------------------------
+
+interface TimezoneCtx {
+  timezone: string
+  setTimezone: (tz: string) => Promise<void>
+}
+
+const TimezoneContext = createContext<TimezoneCtx>({
+  timezone: 'UTC',
+  setTimezone: async () => {},
+})
+
+export function useTimezone() {
+  return useContext(TimezoneContext)
+}
+
+// ---------------------------------------------------------------------------
 // Currency
 // ---------------------------------------------------------------------------
 
@@ -120,28 +138,30 @@ export function Providers({ children }: { children: React.ReactNode }) {
   const [theme, setThemeState] = useState('dark')
   const [toasts, setToasts] = useState<ToastItem[]>([])
 
-  // Currency state
+  // Currency + Timezone state
   const { getToken } = useAuth()
   const [currency, setCurrencyState] = useState('USD')
   const [rates, setRates] = useState<Record<string, number>>({})
   const [ratesUpdatedAt, setRatesUpdatedAt] = useState<string | null>(null)
   const [isStale, setIsStale] = useState(false)
+  const [timezone, setTimezoneState] = useState('UTC')
 
   useEffect(() => {
     const saved = localStorage.getItem('theme') ?? 'dark'
     setThemeState(saved)
   }, [])
 
-  // Fetch rates + user preference once the auth token is available
+  // Fetch rates, currency preference, and tenant timezone once auth is available
   useEffect(() => {
     let cancelled = false
     async function load() {
       const token = await getToken().catch(() => null)
       if (!token || cancelled) return
       try {
-        const [ratesRes, prefRes] = await Promise.all([
+        const [ratesRes, prefRes, tenantRes] = await Promise.all([
           fetch(`${API_BASE}/v1/currency/rates`, { headers: { Authorization: `Bearer ${token}` } }),
           fetch(`${API_BASE}/v1/currency/preferences`, { headers: { Authorization: `Bearer ${token}` } }),
+          fetch(`${API_BASE}/v1/tenants/me`, { headers: { Authorization: `Bearer ${token}` } }),
         ])
         if (ratesRes.ok) {
           const ratesJson = await ratesRes.json()
@@ -159,10 +179,20 @@ export function Providers({ children }: { children: React.ReactNode }) {
             localStorage.setItem('preferredCurrency', saved)
           }
         }
+        if (tenantRes.ok) {
+          const tenantJson = await tenantRes.json()
+          const tz = tenantJson.data?.tenant?.timezone
+          if (!cancelled && tz) {
+            setTimezoneState(tz)
+            localStorage.setItem('timezone', tz)
+          }
+        }
       } catch {
-        // Network error — use localStorage fallback
-        const local = localStorage.getItem('preferredCurrency')
-        if (!cancelled && local) setCurrencyState(local)
+        // Network error — use localStorage fallbacks
+        const localCurrency = localStorage.getItem('preferredCurrency')
+        if (!cancelled && localCurrency) setCurrencyState(localCurrency)
+        const localTz = localStorage.getItem('timezone')
+        if (!cancelled && localTz) setTimezoneState(localTz)
       }
     }
     load()
@@ -187,6 +217,18 @@ export function Providers({ children }: { children: React.ReactNode }) {
     }).catch(() => {})
   }, [getToken])
 
+  const setTimezone = useCallback(async (tz: string) => {
+    setTimezoneState(tz)
+    localStorage.setItem('timezone', tz)
+    const token = await getToken().catch(() => null)
+    if (!token) return
+    await fetch(`${API_BASE}/v1/tenants/me`, {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ timezone: tz }),
+    }).catch(() => {})
+  }, [getToken])
+
   const convert = useCallback(
     (amountMinor: number, sourceCurrency: string) =>
       formatCurrency(amountMinor, sourceCurrency, currency, rates),
@@ -205,6 +247,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <ThemeContext.Provider value={{ theme, setTheme }}>
       <ToastContext.Provider value={{ toast }}>
+        <TimezoneContext.Provider value={{ timezone, setTimezone }}>
         <CurrencyContext.Provider value={{ currency, setCurrency, rates, ratesUpdatedAt, isStale, convert }}>
           {children}
           <div className="fixed bottom-6 right-6 z-[9999] flex flex-col gap-2 items-end pointer-events-none">
@@ -217,6 +260,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
             </AnimatePresence>
           </div>
         </CurrencyContext.Provider>
+        </TimezoneContext.Provider>
       </ToastContext.Provider>
     </ThemeContext.Provider>
   )
