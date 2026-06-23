@@ -15,6 +15,130 @@ interface AuditEntry {
   reasoning_trace_json: Record<string, unknown> | string | null
 }
 
+interface Assessment {
+  action: 'flag' | 'review' | 'ok'
+  item_id: string
+  severity: 'high' | 'medium' | 'low'
+  item_type: string
+  reasoning: string
+}
+
+function ReconciliationTrace({ trace }: { trace: Record<string, unknown> }) {
+  const decision = trace.overall_decision as string
+  const policyBreach = trace.policy_breach as boolean
+  const txnCount = (trace.transaction_count as number) || 0
+  const matchedTxns = (trace.matched_transactions as number) || 0
+  const unmatchedTxns = (trace.unmatched_transactions as number) || 0
+  const billCount = (trace.bill_count as number) || 0
+  const unmatchedBills = (trace.unmatched_bills as number) || 0
+  const invoiceCount = (trace.invoice_count as number) || 0
+  const unmatchedInvoices = (trace.unmatched_invoices as number) || 0
+  const unmatchedPct = (trace.unmatched_pct as number) || 0
+  const assessments = (trace.claude_assessments as Assessment[]) || []
+  const flagged = assessments.filter(a => a.action === 'flag')
+  const reviews = assessments.filter(a => a.action === 'review')
+
+  const decisionConfig = {
+    flagged:           { label: 'Flagged — issues found',  color: 'text-[#ff4d6d]', bg: 'bg-[rgba(255,77,109,0.08)]', border: 'border-[rgba(255,77,109,0.2)]' },
+    approval_required: { label: 'Approval required',       color: 'text-[#00a8cc]', bg: 'bg-[rgba(0,168,204,0.08)]', border: 'border-[rgba(0,168,204,0.2)]' },
+    auto_approved:     { label: 'Auto-approved',           color: 'text-[#00C853]', bg: 'bg-[rgba(0,200,83,0.08)]',  border: 'border-[rgba(0,200,83,0.2)]' },
+  }
+  const dc = decisionConfig[decision as keyof typeof decisionConfig] ?? decisionConfig.auto_approved
+
+  return (
+    <div className="space-y-4 pt-2">
+      <div className={`inline-flex px-3 py-1.5 rounded-sm border ${dc.bg} ${dc.border}`}>
+        <span className={`text-xs font-mono font-medium ${dc.color}`}>{dc.label}</span>
+      </div>
+
+      <div className="grid grid-cols-3 gap-2">
+        <div className="bg-brand-bg border border-brand-border rounded-sm p-3">
+          <p className="text-[10px] font-mono text-brand-muted uppercase tracking-widest">Transactions reviewed</p>
+          <p className="text-xl font-heading font-bold text-brand-text mt-1">{txnCount}</p>
+          <p className="text-[10px] font-mono text-brand-muted mt-0.5">{matchedTxns} matched · {unmatchedTxns} unmatched</p>
+        </div>
+        <div className="bg-brand-bg border border-brand-border rounded-sm p-3">
+          <p className="text-[10px] font-mono text-brand-muted uppercase tracking-widest">Bills / Invoices</p>
+          <p className="text-xl font-heading font-bold text-brand-text mt-1">{billCount + invoiceCount}</p>
+          <p className="text-[10px] font-mono text-brand-muted mt-0.5">
+            {unmatchedBills + unmatchedInvoices} unmatched
+          </p>
+        </div>
+        <div className="bg-brand-bg border border-brand-border rounded-sm p-3">
+          <p className="text-[10px] font-mono text-brand-muted uppercase tracking-widest">Unmatched rate</p>
+          <p className={`text-xl font-heading font-bold mt-1 ${unmatchedPct > 0.2 ? 'text-[#ff4d6d]' : 'text-[#00C853]'}`}>
+            {Math.round(unmatchedPct * 100)}%
+          </p>
+          <p className="text-[10px] font-mono text-brand-muted mt-0.5">
+            {policyBreach ? 'Policy threshold exceeded' : 'Within policy'}
+          </p>
+        </div>
+      </div>
+
+      {flagged.length > 0 && (
+        <div className="space-y-1.5">
+          <p className="text-[10px] font-mono uppercase tracking-widest text-[#ff4d6d]">
+            Flagged items · {flagged.length}
+          </p>
+          {flagged.map((a, i) => (
+            <div key={i} className="bg-[rgba(255,77,109,0.04)] border border-[rgba(255,77,109,0.15)] rounded-sm px-3 py-2.5">
+              <p className="text-[11px] font-mono text-brand-secondary leading-relaxed">{a.reasoning}</p>
+              <p className="text-[10px] font-mono text-brand-muted mt-1 capitalize">{a.item_type} · {a.severity} severity</p>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {reviews.length > 0 && (
+        <div className="space-y-1.5">
+          <p className="text-[10px] font-mono uppercase tracking-widest text-[#00a8cc]">
+            Needs review · {reviews.length}
+          </p>
+          {reviews.map((a, i) => (
+            <div key={i} className="bg-[rgba(0,168,204,0.04)] border border-[rgba(0,168,204,0.15)] rounded-sm px-3 py-2.5">
+              <p className="text-[11px] font-mono text-brand-secondary leading-relaxed">{a.reasoning}</p>
+              <p className="text-[10px] font-mono text-brand-muted mt-1 capitalize">{a.item_type} · {a.severity} severity</p>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function TraceView({ entry }: { entry: AuditEntry }) {
+  const [showRaw, setShowRaw] = useState(false)
+  const trace = typeof entry.reasoning_trace_json === 'object' ? entry.reasoning_trace_json : null
+  const isReconciliation = entry.action?.startsWith('reconciliation:') && trace && 'overall_decision' in trace
+
+  return (
+    <div className="space-y-2">
+      {isReconciliation && (
+        <div className="flex justify-end">
+          <button
+            type="button"
+            onClick={() => setShowRaw(v => !v)}
+            className="text-[10px] font-mono text-brand-muted hover:text-brand-secondary transition-colors"
+          >
+            {showRaw ? 'Show summary' : 'View raw'}
+          </button>
+        </div>
+      )}
+      {isReconciliation && !showRaw ? (
+        <ReconciliationTrace trace={trace!} />
+      ) : (
+        entry.reasoning_trace_json && (
+          <pre className="text-[10px] font-mono text-brand-secondary whitespace-pre-wrap bg-brand-bg border border-brand-border rounded-sm p-3 overflow-x-auto max-h-64">
+            {typeof entry.reasoning_trace_json === 'object'
+              ? JSON.stringify(entry.reasoning_trace_json, null, 2)
+              : entry.reasoning_trace_json}
+          </pre>
+        )
+      )}
+    </div>
+  )
+}
+
 export function ToolAuditTab({ toolId }: { toolId: string | null }) {
   const { getToken } = useAuth()
   const [entries, setEntries] = useState<AuditEntry[]>([])
@@ -93,20 +217,14 @@ export function ToolAuditTab({ toolId }: { toolId: string | null }) {
                 </div>
               </button>
               {expanded === e.id && (
-                <div className="px-4 pb-3 space-y-2 border-t border-brand-border">
+                <div className="px-4 pb-4 space-y-2 border-t border-brand-border">
                   {e.execution_id && (
-                    <p className="text-[10px] font-mono text-brand-muted">execution: {e.execution_id}</p>
+                    <p className="text-[10px] font-mono text-brand-muted pt-2">execution: {e.execution_id}</p>
                   )}
                   {e.model_version && (
                     <p className="text-[10px] font-mono text-brand-muted">model: {e.model_version}</p>
                   )}
-                  {e.reasoning_trace_json && (
-                    <pre className="text-[10px] font-mono text-brand-secondary whitespace-pre-wrap bg-brand-bg border border-brand-border rounded-sm p-3 overflow-x-auto max-h-48">
-                      {typeof e.reasoning_trace_json === 'object'
-                        ? JSON.stringify(e.reasoning_trace_json, null, 2)
-                        : e.reasoning_trace_json}
-                    </pre>
-                  )}
+                  <TraceView entry={e} />
                 </div>
               )}
             </div>
