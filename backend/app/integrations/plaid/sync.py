@@ -168,7 +168,7 @@ async def sync_plaid_transactions(ctx: dict, integration_id: str, tenant_id: str
                         "description": txn.get("name", ""),
                         "date": datetime.fromisoformat(date_str),
                         "category": (txn.get("personal_finance_category") or {}).get("primary"),
-                        "status": "pending",
+                        "status": "pending" if txn.get("pending", False) else "unprocessed",
                     })
                     total_added += 1
 
@@ -197,7 +197,7 @@ async def sync_plaid_transactions(ctx: dict, integration_id: str, tenant_id: str
                 from app.orchestrator.events import enqueue_orchestrator_event
 
                 new_txns = await db.banktransaction.find_many(
-                    where={"tenant_id": tenant_id, "status": "pending"},
+                    where={"tenant_id": tenant_id, "status": {"in": ["pending", "unprocessed"]}},
                     take=total_added,
                     order={"created_at": "desc"},
                 )

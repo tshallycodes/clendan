@@ -261,7 +261,7 @@ async def _do_sync_truelayer_connection(integration_id: str, tenant_id: str) -> 
                             "description": txn.get("description", ""),
                             "date": date_parsed,
                             "category": txn.get("transaction_classification", [None])[0] if txn.get("transaction_classification") else None,
-                            "status": "pending",
+                            "status": "unprocessed",
                         })
                         txn_count += 1
 
@@ -314,7 +314,7 @@ async def _do_sync_truelayer_connection(integration_id: str, tenant_id: str) -> 
             try:
                 from app.orchestrator.events import enqueue_orchestrator_event
                 new_txns = await db.banktransaction.find_many(
-                    where={"tenant_id": tenant_id, "source": "truelayer", "status": "pending"},
+                    where={"tenant_id": tenant_id, "source": "truelayer", "status": {"in": ["pending", "unprocessed"]}},
                     take=total_transactions,
                     order={"created_at": "desc"},
                 )

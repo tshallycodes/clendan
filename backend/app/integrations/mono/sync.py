@@ -122,7 +122,7 @@ async def sync_mono_transactions(ctx: dict, integration_id: str, tenant_id: str)
                     "description": txn.get("narration", ""),
                     "category": txn.get("category"),
                     "date": txn_date,
-                    "status": "pending",
+                    "status": "unprocessed",
                 })
                 total_added += 1
 
@@ -144,7 +144,7 @@ async def sync_mono_transactions(ctx: dict, integration_id: str, tenant_id: str)
                 from app.orchestrator.events import enqueue_orchestrator_event
 
                 new_txns = await db.banktransaction.find_many(
-                    where={"tenant_id": tenant_id, "source": "mono", "status": "pending"},
+                    where={"tenant_id": tenant_id, "source": "mono", "status": {"in": ["pending", "unprocessed"]}},
                     take=total_added,
                     order={"created_at": "desc"},
                 )

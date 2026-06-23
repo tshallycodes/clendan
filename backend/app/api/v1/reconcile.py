@@ -296,9 +296,10 @@ async def export_run_csv(
             reasoning_lookup.get(t.id, ""),
         ])
 
-    output.seek(0)
+    # Encode with utf-8-sig to prepend the UTF-8 BOM so Excel opens correctly
+    csv_bytes = output.getvalue().encode('utf-8-sig')
     return StreamingResponse(
-        iter([output.getvalue()]),
-        media_type="text/csv",
+        iter([csv_bytes]),
+        media_type="text/csv; charset=utf-8",
         headers={"Content-Disposition": f"attachment; filename=\"reconciliation_{run_id}.csv\""},
     )

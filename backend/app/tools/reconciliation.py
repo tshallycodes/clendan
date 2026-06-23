@@ -227,7 +227,7 @@ async def _execute_reconciliation(
 
     txn_where: dict = {
         "tenant_id": tenant_id,
-        "status": {"not": "reconciled"},
+        "status": {"in": ["pending", "unprocessed", "categorised"]},
         "date": {"gte": period_start, "lte": period_end},
     }
     if account_ids:
