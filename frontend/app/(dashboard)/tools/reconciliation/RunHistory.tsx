@@ -1,5 +1,6 @@
 'use client'
 
+import { Select } from '@/components/ui/Select'
 import { ReconciliationRun } from './types'
 
 interface RunHistoryProps {
@@ -30,22 +31,15 @@ export function RunHistory({ runs, loading, selectedId, onSelect }: RunHistoryPr
     )
   }
 
-  const selected = runs.find(r => r.id === selectedId)
-  const placeholder = selected ? runLabel(selected) : 'Select a run to view results…'
-
   return (
-    <select
-      value=""
-      onChange={e => {
-        const run = runs.find(r => r.id === e.target.value)
+    <Select
+      value={selectedId ?? ''}
+      options={runs.map(r => ({ value: r.id, label: runLabel(r) }))}
+      onChange={v => {
+        const run = runs.find(r => r.id === v)
         if (run) onSelect(run)
       }}
-      className="w-full bg-brand-bg border border-brand-border text-brand-text text-xs font-mono rounded-sm px-3 py-2 focus:border-[#00C853] focus:outline-none cursor-pointer"
-    >
-      <option value="" disabled>{placeholder}</option>
-      {runs.map(run => (
-        <option key={run.id} value={run.id}>{runLabel(run)}</option>
-      ))}
-    </select>
+      placeholder="Select a run to view results…"
+    />
   )
 }

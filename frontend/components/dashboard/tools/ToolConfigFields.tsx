@@ -1,5 +1,7 @@
 'use client'
 
+import { Select } from '@/components/ui/Select'
+
 const inputClass = 'w-full bg-brand-bg border border-brand-border focus:border-brand-green rounded-sm px-3 py-2 text-xs font-mono text-brand-text outline-none transition-colors'
 const labelClass = 'text-[10px] font-mono text-brand-muted uppercase tracking-widest'
 
@@ -166,9 +168,11 @@ export function ToolConfigFields({ toolType, config, onChange }: ToolConfigField
           return (
             <div key={field.key} className="space-y-1.5">
               <label className={labelClass}>{field.label}</label>
-              <select value={value as string} onChange={e => onChange(field.key, e.target.value)} className={inputClass}>
-                {field.options!.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-              </select>
+              <Select
+                value={value as string}
+                onChange={v => onChange(field.key, v)}
+                options={field.options!.map(opt => ({ value: opt, label: opt }))}
+              />
             </div>
           )
         }

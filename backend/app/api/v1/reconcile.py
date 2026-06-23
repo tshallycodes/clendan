@@ -10,7 +10,7 @@ import io
 from datetime import datetime
 from typing import Optional
 
-from fastapi import HTTPException
+from fastapi import HTTPException, Query
 from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
@@ -246,6 +246,7 @@ async def trigger_reconciliation_run(
 async def export_run_csv(
     run_id: str,
     current_user: RequireOrgAuth,
+    display_currency: str | None = Query(None),
 ) -> StreamingResponse:
     """Export all items for a reconciliation run as CSV."""
     db = get_db()
@@ -273,6 +274,23 @@ async def export_run_csv(
         order={"date": "desc"},
     )
 
+    rates_map: dict[str, float] = {}
+    target_currency: str | None = None
+    if display_currency:
+        target_currency = display_currency.upper()
+        if target_currency != "GBP":
+            ex_rates = await db.exchangerate.find_many(where={"base_currency": "USD"})
+            rates_map = {r.target_currency: float(r.rate) for r in ex_rates}
+            rates_map.setdefault("USD", 1.0)
+
+    def _convert(amount_minor: int, src: str) -> tuple[str, str]:
+        major = amount_minor / 100
+        if not target_currency or src.upper() == target_currency or src.upper() not in rates_map or target_currency not in rates_map:
+            return f"{major:.2f}", src
+        usd = major / rates_map[src.upper()]
+        converted = usd * rates_map[target_currency]
+        return f"{converted:.2f}", target_currency
+
     output = io.StringIO()
     writer = csv.writer(output)
     writer.writerow([
@@ -282,13 +300,14 @@ async def export_run_csv(
     ])
 
     for t in txns:
+        amount_str, currency_code = _convert(t.amount_minor, t.currency)
         writer.writerow([
             t.date.isoformat(),
             t.account.name if t.account else "",
             t.description or "",
             t.merchant_name or "",
-            f"{t.amount_minor / 100:.2f}",
-            t.currency,
+            amount_str,
+            currency_code,
             t.status,
             t.matched_invoice.invoice_number if t.matched_invoice else "",
             (t.matched_invoice.vendor if t.matched_invoice

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useAuth } from '@clerk/nextjs'
+import { Select } from '@/components/ui/Select'
 import { ToolConfigFields, getDefaultConfig } from './ToolConfigFields'
 import type { Tool } from './ToolCard'
 
@@ -92,7 +93,6 @@ export function ConfigDrawer({ tool, toolType, onClose, onSaved }: Props) {
     }
   }
 
-  const inputClass = 'w-full bg-brand-bg border border-brand-border focus:border-[#00C853] rounded-sm px-3 py-2 text-xs font-mono text-brand-text outline-none transition-colors'
   const labelClass = 'text-[10px] font-mono text-brand-muted uppercase tracking-widest'
 
   return (
@@ -110,11 +110,15 @@ export function ConfigDrawer({ tool, toolType, onClose, onSaved }: Props) {
         <div className="space-y-5">
           <div className="space-y-1.5">
             <label className={labelClass}>Autonomy Level</label>
-            <select value={autonomy} onChange={(e) => setAutonomy(e.target.value)} className={inputClass}>
-              <option value="auto">Auto — executes without approval</option>
-              <option value="approve">Approve — requires human approval above threshold</option>
-              <option value="suggest">Suggest — recommends actions only</option>
-            </select>
+            <Select
+              value={autonomy}
+              onChange={setAutonomy}
+              options={[
+                { value: 'auto', label: 'Auto — executes without approval' },
+                { value: 'approve', label: 'Approve — requires human approval above threshold' },
+                { value: 'suggest', label: 'Suggest — recommends actions only' },
+              ]}
+            />
           </div>
 
           <ToolConfigFields

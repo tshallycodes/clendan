@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { X } from 'lucide-react'
 import { useAuth } from '@clerk/nextjs'
 import { useCanConfigure } from '@/lib/auth-client'
+import { useCurrency } from '@/components/Providers'
 import { ConfigDrawer } from '@/components/dashboard/tools/ConfigDrawer'
 import type { Tool } from '@/components/dashboard/tools/ToolCard'
 import { ReconciliationRun, ReconciliationItem } from './types'
@@ -36,18 +37,9 @@ function defaultPeriodEnd() {
   return new Date(d.getFullYear(), d.getMonth() + 1, 0).toISOString().slice(0, 10)
 }
 
-interface BankAccount {
-  id: string
-  name: string
-  subtype: string
-  source: string
-}
-
 interface OverviewProps {
   periodStart: string
   periodEnd: string
-  accountId: string
-  accounts: BankAccount[]
   toolId: string | null
   running: boolean
   runs: ReconciliationRun[]
@@ -55,28 +47,24 @@ interface OverviewProps {
   selectedId: string | null
   onPeriodStartChange: (v: string) => void
   onPeriodEndChange: (v: string) => void
-  onAccountChange: (v: string) => void
   onRun: () => void
   onSelectRun: (run: ReconciliationRun) => void
 }
 
 function OverviewTab({
-  periodStart, periodEnd, accountId, accounts, toolId, running,
+  periodStart, periodEnd, toolId, running,
   runs, runsLoading, selectedId,
-  onPeriodStartChange, onPeriodEndChange, onAccountChange, onRun, onSelectRun,
+  onPeriodStartChange, onPeriodEndChange, onRun, onSelectRun,
 }: OverviewProps) {
   return (
     <>
       <RunControls
         periodStart={periodStart}
         periodEnd={periodEnd}
-        accountId={accountId}
-        accounts={accounts}
         toolReady={!!toolId}
         running={running}
         onPeriodStartChange={onPeriodStartChange}
         onPeriodEndChange={onPeriodEndChange}
-        onAccountChange={onAccountChange}
         onRun={onRun}
       />
       <div className="space-y-2 mt-5">
@@ -117,6 +105,7 @@ const AUTONOMY_BADGE: Record<string, { label: string; className: string }> = {
 export function ReconciliationClient() {
   const { getToken } = useAuth()
   const canConfigure = useCanConfigure()
+  const { currency } = useCurrency()
   const [activeTab, setActiveTab] = useState<Tab>('overview')
   const [runs, setRuns] = useState<ReconciliationRun[]>([])
   const [runsLoading, setRunsLoading] = useState(true)
@@ -125,8 +114,6 @@ export function ReconciliationClient() {
   const [itemsLoading, setItemsLoading] = useState(false)
   const [periodStart, setPeriodStart] = useState(defaultPeriodStart)
   const [periodEnd, setPeriodEnd] = useState(defaultPeriodEnd)
-  const [accountId, setAccountId] = useState('')
-  const [accounts, setAccounts] = useState<BankAccount[]>([])
   const [deployed, setDeployed] = useState<Tool | null>(null)
   const [running, setRunning] = useState(false)
   const [showConfig, setShowConfig] = useState(false)
@@ -174,19 +161,12 @@ export function ReconciliationClient() {
   useEffect(() => {
     async function init() {
       const token = await getToken()
-      const [toolsRes, accountsRes] = await Promise.all([
-        fetch(`${API}/v1/tools`, { headers: { Authorization: `Bearer ${token}` } }),
-        fetch(`${API}/v1/reconciliation/accounts`, { headers: { Authorization: `Bearer ${token}` } }),
-      ])
+      const toolsRes = await fetch(`${API}/v1/tools`, { headers: { Authorization: `Bearer ${token}` } })
       if (toolsRes.ok) {
         const toolsJson = await toolsRes.json()
         const tools: Tool[] = toolsJson.data?.tools ?? toolsJson.data ?? []
         const rec = tools.find((w) => w.type === 'reconciliation')
         if (rec) setDeployed(rec)
-      }
-      if (accountsRes.ok) {
-        const accountsJson = await accountsRes.json()
-        setAccounts(accountsJson.data?.accounts ?? [])
       }
       setRunsLoading(true)
       const list = await fetchRuns()
@@ -240,9 +220,7 @@ export function ReconciliationClient() {
     try {
       const token = await getToken()
       const configAccountIds = (deployed.config_json as Record<string, unknown> | null)?.account_ids
-      const runAccountIds = accountId
-        ? [accountId]
-        : (Array.isArray(configAccountIds) && configAccountIds.length > 0 ? configAccountIds as string[] : null)
+      const runAccountIds = Array.isArray(configAccountIds) && configAccountIds.length > 0 ? configAccountIds as string[] : null
       const res = await fetch(`${API}/v1/reconciliation/run`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
@@ -263,7 +241,9 @@ export function ReconciliationClient() {
 
   async function handleExport(runId: string) {
     const token = await getToken()
-    const res = await fetch(`${API}/v1/reconciliation/runs/${runId}/export`, {
+    const params = new URLSearchParams()
+    if (currency && currency !== 'GBP') params.set('display_currency', currency)
+    const res = await fetch(`${API}/v1/reconciliation/runs/${runId}/export?${params}`, {
       headers: { Authorization: `Bearer ${token}` },
     })
     if (!res.ok) return
@@ -355,11 +335,10 @@ export function ReconciliationClient() {
           {activeTab === 'overview' && (
             <>
               <OverviewTab
-                periodStart={periodStart} periodEnd={periodEnd} accountId={accountId} accounts={accounts}
+                periodStart={periodStart} periodEnd={periodEnd}
                 toolId={deployed?.id ?? null} running={running}
                 runs={runs} runsLoading={runsLoading} selectedId={selectedRun?.id ?? null}
                 onPeriodStartChange={setPeriodStart} onPeriodEndChange={setPeriodEnd}
-                onAccountChange={setAccountId}
                 onRun={handleRun}
                 onSelectRun={(r) => { setSelectedRun(r); fetchItems(r.id); setModalOpen(true) }}
               />
