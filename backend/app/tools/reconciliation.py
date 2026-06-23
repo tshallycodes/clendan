@@ -126,27 +126,34 @@ async def _call_claude(
             "Set it as an environment variable on the worker service."
         )
     client = AsyncAnthropic(api_key=api_key)
+
+    # Cap items per batch to keep responses within token budget
+    _MAX_ITEMS = 40
+    txns_batch = unmatched_txns[:_MAX_ITEMS]
+    invs_batch = unmatched_invs[:_MAX_ITEMS]
+    bills_batch = unmatched_bills[:_MAX_ITEMS]
+
     payload = json.dumps(
         {
             "unmatched_transactions": [
                 {"item_id": t.id, "item_type": "transaction", "amount_minor": t.amount_minor,
                  "currency": t.currency, "merchant_name": t.merchant_name,
                  "description": t.description, "date": t.date.isoformat(), "status": t.status}
-                for t in unmatched_txns
+                for t in txns_batch
             ],
             "unmatched_invoices": [
                 {"item_id": i.id, "item_type": "invoice", "outstanding_cents": i.outstanding_cents,
                  "total_cents": i.total_cents, "contact_name": i.contact_name,
                  "due_date": i.due_date.isoformat() if i.due_date else None,
                  "status": i.status, "source": i.source}
-                for i in unmatched_invs
+                for i in invs_batch
             ],
             "unmatched_bills": [
                 {"item_id": b.id, "item_type": "bill", "outstanding_cents": b.outstanding_cents,
                  "total_cents": b.total_cents, "contact_name": b.contact_name,
                  "due_date": b.due_date.isoformat() if b.due_date else None,
                  "status": b.status, "source": b.source}
-                for b in unmatched_bills
+                for b in bills_batch
             ],
         },
         default=str,
@@ -158,9 +165,12 @@ async def _call_claude(
         try:
             message = await client.messages.create(
                 model=settings_obj.claude_model,
-                max_tokens=2048,
+                max_tokens=8096,
                 messages=[{"role": "user", "content": prompt}],
             )
+            if message.stop_reason == "max_tokens":
+                logger.warning("claude_response_truncated", extra={"chars": len(message.content[0].text)})
+                raise RuntimeError("Claude response was truncated (max_tokens hit). Reduce batch size.")
             raw_text = message.content[0].text.strip()
             parsed = json.loads(raw_text)
             if not isinstance(parsed, list):
