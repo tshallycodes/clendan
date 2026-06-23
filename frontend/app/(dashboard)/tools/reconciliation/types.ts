@@ -21,6 +21,8 @@ export interface ReconciliationItem {
   amount_minor: number
   currency: string
   status: string
+  ai_action: 'flag' | 'review' | 'ok' | null
+  ai_severity: 'high' | 'medium' | 'low' | null
   matched_invoice_number: string | null
   matched_vendor: string | null
   reasoning: string

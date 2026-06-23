@@ -100,13 +100,17 @@ async def get_run_items(
     if run is None:
         raise HTTPException(status_code=404, detail="Reconciliation run not found")
 
-    # Build reasoning lookup from run's details_json
+    # Build reasoning + action lookups from run's details_json
     reasoning_lookup: dict[str, str] = {}
+    action_lookup: dict[str, str] = {}
+    severity_lookup: dict[str, str] = {}
     if run.details_json and isinstance(run.details_json, dict):
         for assessment in run.details_json.get("claude_assessments", []):
             item_id = assessment.get("item_id")
             if item_id:
                 reasoning_lookup[item_id] = assessment.get("reasoning", "")
+                action_lookup[item_id] = assessment.get("action", "")
+                severity_lookup[item_id] = assessment.get("severity", "")
 
     txn_where: dict = {
         "tenant_id": tenant_id,
@@ -134,6 +138,8 @@ async def get_run_items(
             "amount_minor": t.amount_minor,
             "currency": t.currency,
             "status": t.status,
+            "ai_action": action_lookup.get(t.id) or None,
+            "ai_severity": severity_lookup.get(t.id) or None,
             "matched_invoice_number": (
                 t.matched_invoice.invoice_number if t.matched_invoice else None
             ),
@@ -259,11 +265,13 @@ async def export_run_csv(
         raise HTTPException(status_code=404, detail="Reconciliation run not found")
 
     reasoning_lookup: dict[str, str] = {}
+    action_lookup_csv: dict[str, str] = {}
     if run.details_json and isinstance(run.details_json, dict):
         for assessment in run.details_json.get("claude_assessments", []):
             item_id = assessment.get("item_id")
             if item_id:
                 reasoning_lookup[item_id] = assessment.get("reasoning", "")
+                action_lookup_csv[item_id] = assessment.get("action", "")
 
     txns = await db.banktransaction.find_many(
         where={
@@ -295,8 +303,8 @@ async def export_run_csv(
     writer = csv.writer(output)
     writer.writerow([
         "date", "account_name", "description", "merchant_name",
-        "amount", "currency", "status", "matched_invoice_number",
-        "matched_vendor", "reasoning",
+        "amount", "currency", "bank_status", "ai_assessment",
+        "matched_invoice_number", "matched_vendor", "reasoning",
     ])
 
     for t in txns:
@@ -309,6 +317,7 @@ async def export_run_csv(
             amount_str,
             currency_code,
             t.status,
+            action_lookup_csv.get(t.id, ""),
             t.matched_invoice.invoice_number if t.matched_invoice else "",
             (t.matched_invoice.vendor if t.matched_invoice
              else (t.matched_bill.contact_name if t.matched_bill else "")),
