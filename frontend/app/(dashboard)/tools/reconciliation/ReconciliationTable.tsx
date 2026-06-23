@@ -168,8 +168,8 @@ export function ReconciliationTable({ items, loading, runId, onExport }: Reconci
                     <tr
                       onClick={() => hasReasoning && setExpandedId(isExpanded ? null : item.id)}
                       className={`border-b border-brand-border transition-colors ${hasReasoning ? 'cursor-pointer' : ''} hover:bg-brand-elevated ${
-                        item.ai_action === 'flag' ? 'border-l-2 border-l-[#ff4d6d]' :
-                        item.ai_action === 'review' ? 'border-l-2 border-l-[#00a8cc]' : ''
+                        item.ai_action === 'flag' ? 'border-l border-l-[#ff4d6d]' :
+                        item.ai_action === 'review' ? 'border-l border-l-[#00a8cc]' : ''
                       }`}
                     >
                       <td className="px-3 py-2 text-brand-secondary whitespace-nowrap">
