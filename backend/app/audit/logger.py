@@ -1,6 +1,8 @@
 import json
 from typing import Any, Optional
 
+from prisma import Json as PrismaJson
+
 from app.core.db import get_db
 from app.core.logging import get_logger
 
@@ -31,7 +33,7 @@ async def write_audit_log(
                 "execution_id": execution_id,
                 "actor": actor,
                 "action": action,
-                "reasoning_trace_json": safe_trace,
+                "reasoning_trace_json": PrismaJson(safe_trace),
                 "model_version": model_version,
             }
         )

@@ -9,6 +9,7 @@ from datetime import UTC, datetime, timedelta
 from typing import Literal
 
 from anthropic import APIConnectionError, APIStatusError, AsyncAnthropic
+from prisma import Json as PrismaJson
 from pydantic import BaseModel
 
 from app.audit.logger import write_audit_log
@@ -405,14 +406,14 @@ async def _execute_reconciliation(
         "review_count": sum(1 for r in claude_results if r.action == "review"),
         "total_txn_count": len(transactions),
         "total_inv_count": len(invoices),
-        "details_json": {
+        "details_json": PrismaJson({
             "claude_assessments": [r.model_dump() for r in claude_results],
             "unmatched_transaction_ids": [t.id for t in unmatched_txns],
             "unmatched_invoice_ids": [i.id for i in unmatched_invs],
             "unmatched_bill_ids": [b.id for b in unmatched_bills],
             "policy_breach": policy_breach,
             "unmatched_pct": round(unmatched_pct, 4),
-        },
+        }),
     })
 
     actions_taken: list[str] = []
