@@ -157,6 +157,7 @@ async def sync_plaid_transactions(ctx: dict, integration_id: str, tenant_id: str
                 existing_txn = await db.banktransaction.find_unique(
                     where={"plaid_transaction_id": txn_id}
                 )
+                correct_status = "pending" if txn.get("pending", False) else "unprocessed"
                 if not existing_txn:
                     await db.banktransaction.create(data={
                         "tenant_id": tenant_id,
@@ -168,9 +169,15 @@ async def sync_plaid_transactions(ctx: dict, integration_id: str, tenant_id: str
                         "description": txn.get("name", ""),
                         "date": datetime.fromisoformat(date_str),
                         "category": (txn.get("personal_finance_category") or {}).get("primary"),
-                        "status": "pending" if txn.get("pending", False) else "unprocessed",
+                        "status": correct_status,
                     })
                     total_added += 1
+                elif existing_txn.status == "pending" and correct_status == "unprocessed":
+                    # Old sync hardcoded "pending" for all — correct it without touching reconciled/categorised rows
+                    await db.banktransaction.update(
+                        where={"id": existing_txn.id},
+                        data={"status": "unprocessed"},
+                    )
 
             cursor = result["next_cursor"]
             has_more = result["has_more"]

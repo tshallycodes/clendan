@@ -52,6 +52,7 @@ export function IntegrationsSection() {
   const [loading, setLoading] = useState(true)
   const [disconnecting, setDisconnecting] = useState<string | null>(null)
   const [confirmSlug, setConfirmSlug] = useState<string | null>(null)
+  const [resyncing, setResyncing] = useState(false)
 
   async function fetchStatuses() {
     const token = await getToken()
@@ -80,6 +81,28 @@ export function IntegrationsSection() {
   }
 
   useEffect(() => { fetchStatuses() }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  async function resyncAll() {
+    setResyncing(true)
+    try {
+      const token = await getToken()
+      const toSync = integrations.filter((i) => i.status === 'connected' || i.status === 'syncing')
+      await Promise.allSettled(
+        toSync.map(({ slug }) =>
+          fetch(`${API}/v1/integrations/${slug}/sync`, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+          })
+        )
+      )
+      await fetchStatuses()
+      toast('All integrations resynced', 'success')
+    } catch {
+      toast('Resync failed — check individual integrations', 'error')
+    } finally {
+      setResyncing(false)
+    }
+  }
 
   async function disconnect(slug: string) {
     setDisconnecting(slug)
@@ -193,13 +216,20 @@ export function IntegrationsSection() {
         )
       })}
 
-      <div className="bg-brand-surface px-4 py-3">
+      <div className="bg-brand-surface px-4 py-3 flex items-center justify-between">
         <Link
           href="/dashboard/integrations"
           className="text-[10px] font-mono text-brand-muted hover:text-brand-text transition-colors"
         >
           Manage all integrations →
         </Link>
+        <button
+          onClick={resyncAll}
+          disabled={resyncing}
+          className="text-[10px] font-mono text-brand-secondary border border-brand-border bg-transparent hover:bg-brand-elevated rounded-sm px-2 py-1 transition-colors disabled:opacity-50"
+        >
+          {resyncing ? 'Syncing…' : 'Resync All'}
+        </button>
       </div>
     </div>
   )

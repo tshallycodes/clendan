@@ -12,7 +12,7 @@ interface AuditEntry {
   model_version: string
   created_at: string
   execution_id: string | null
-  reasoning_trace_json: string | null
+  reasoning_trace_json: Record<string, unknown> | string | null
 }
 
 export function ToolAuditTab({ toolId }: { toolId: string | null }) {
@@ -102,7 +102,9 @@ export function ToolAuditTab({ toolId }: { toolId: string | null }) {
                   )}
                   {e.reasoning_trace_json && (
                     <pre className="text-[10px] font-mono text-brand-secondary whitespace-pre-wrap bg-brand-bg border border-brand-border rounded-sm p-3 overflow-x-auto max-h-48">
-                      {e.reasoning_trace_json}
+                      {typeof e.reasoning_trace_json === 'object'
+                        ? JSON.stringify(e.reasoning_trace_json, null, 2)
+                        : e.reasoning_trace_json}
                     </pre>
                   )}
                 </div>

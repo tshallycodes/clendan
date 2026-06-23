@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { X } from 'lucide-react'
 import { useAuth } from '@clerk/nextjs'
@@ -120,6 +120,8 @@ export function ReconciliationClient() {
   const [toggling, setToggling] = useState(false)
   const [deploying, setDeploying] = useState(false)
   const [modalOpen, setModalOpen] = useState(false)
+  const [polling, setPolling] = useState(false)
+  const pollRunCountRef = useRef(0)
 
   const fetchDeployed = useCallback(async () => {
     const token = await getToken()
@@ -157,6 +159,30 @@ export function ReconciliationClient() {
       setItemsLoading(false)
     }
   }, [getToken])
+
+  useEffect(() => {
+    if (!polling) return
+    let active = true
+    const interval = setInterval(async () => {
+      if (!active) return
+      const list = await fetchRuns()
+      if (list && list.length > pollRunCountRef.current) {
+        active = false
+        setPolling(false)
+        setRunning(false)
+      }
+    }, 6000)
+    const timeout = setTimeout(() => {
+      active = false
+      setPolling(false)
+      setRunning(false)
+    }, 5 * 60 * 1000)
+    return () => {
+      active = false
+      clearInterval(interval)
+      clearTimeout(timeout)
+    }
+  }, [polling, fetchRuns])
 
   useEffect(() => {
     async function init() {
@@ -226,15 +252,11 @@ export function ReconciliationClient() {
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ period_start: periodStart, period_end: periodEnd, tool_id: deployed.id, account_ids: runAccountIds }),
       })
-      if (!res.ok) return
-      const json = await res.json()
-      const newRun: ReconciliationRun = json.data
-      const updated = await fetchRuns()
-      const fresh = updated?.find((r) => r.id === newRun.id) ?? newRun
-      setSelectedRun(fresh)
-      fetchItems(fresh.id)
-      setModalOpen(true)
-    } finally {
+      if (!res.ok) { setRunning(false); return }
+      // Run is queued in the worker — keep button disabled and poll for it to appear
+      pollRunCountRef.current = runs.length
+      setPolling(true)
+    } catch {
       setRunning(false)
     }
   }

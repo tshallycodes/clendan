@@ -264,6 +264,12 @@ async def _do_sync_truelayer_connection(integration_id: str, tenant_id: str) -> 
                             "status": "unprocessed",
                         })
                         txn_count += 1
+                    elif existing_txn.status == "pending":
+                        # Old sync hardcoded "pending" — TrueLayer only returns settled txns
+                        await db.banktransaction.update(
+                            where={"id": existing_txn.id},
+                            data={"status": "unprocessed"},
+                        )
 
                 total_transactions += txn_count
                 logger.info("tl_sync_transactions_written tl_account_id=%s new=%d", tl_account_id, txn_count)

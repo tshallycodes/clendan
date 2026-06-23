@@ -98,7 +98,12 @@ async def sync_mono_transactions(ctx: dict, integration_id: str, tenant_id: str)
                     where={"mono_transaction_id": txn_id}
                 )
                 if existing_txn:
-                    page += 1
+                    if existing_txn.status == "pending":
+                        # Old sync hardcoded "pending" — Mono only returns settled txns
+                        await db.banktransaction.update(
+                            where={"id": existing_txn.id},
+                            data={"status": "unprocessed"},
+                        )
                     continue
 
                 amount_raw = txn.get("amount", 0) or 0
