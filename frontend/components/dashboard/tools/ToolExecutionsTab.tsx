@@ -28,11 +28,22 @@ const FILTERS: { key: Filter; label: string }[] = [
 
 const STATUS_CLASS: Record<string, string> = {
   auto:               'text-[#00C853]',
+  auto_approved:      'text-[#00C853]',
   approval_required:  'text-[#00a8cc]',
   blocked:            'text-[#ff4d6d]',
+  flagged:            'text-[#ff4d6d]',
   failed:             'text-[#ff4d6d]',
   running:            'text-[#f5a623]',
   queued:             'text-brand-muted',
+  completed:          'text-brand-secondary',
+}
+
+const DECISION_CLASS: Record<string, string> = {
+  auto_approved:      'text-[#00C853]',
+  approval_required:  'text-[#00a8cc]',
+  flagged:            'text-[#ff4d6d]',
+  blocked:            'text-[#ff4d6d]',
+  auto:               'text-[#00C853]',
 }
 
 function ElapsedTimer({ since }: { since: string }) {
@@ -148,7 +159,7 @@ export function ToolExecutionsTab({ toolId }: { toolId: string | null }) {
                       {new Date(e.created_at).toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
                     </td>
                     <td className="px-4 py-2.5 text-brand-muted max-w-[160px] truncate">{e.input_ref || '—'}</td>
-                    <td className="px-4 py-2.5 text-brand-secondary max-w-[160px] truncate">{e.decision || '—'}</td>
+                    <td className={`px-4 py-2.5 max-w-[160px] truncate ${DECISION_CLASS[e.decision] ?? 'text-brand-secondary'}`}>{e.decision || '—'}</td>
                     <td className="px-4 py-2.5">
                       <span className={STATUS_CLASS[e.status] ?? 'text-brand-secondary'}>{e.status}</span>
                     </td>

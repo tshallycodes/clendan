@@ -14,8 +14,14 @@ function fmtDate(d: string) {
   return new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' })
 }
 
+function fmtDateTime(d: string) {
+  return new Date(d).toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })
+}
+
 function runLabel(run: ReconciliationRun) {
-  return `${fmtDate(run.period_start)} – ${fmtDate(run.period_end)} · ${run.matched_count}m ${run.unmatched_count}u ${run.flagged_count}f`
+  const period = `${fmtDate(run.period_start)} – ${fmtDate(run.period_end)}`
+  const stats = `${run.matched_count} matched · ${run.unmatched_count} unprocessed · ${run.flagged_count} flagged`
+  return `${fmtDateTime(run.created_at)} · ${period} · ${stats}`
 }
 
 export function RunHistory({ runs, loading, selectedId, onSelect }: RunHistoryProps) {
