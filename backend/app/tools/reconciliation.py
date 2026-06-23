@@ -164,7 +164,7 @@ async def _call_claude(
     for attempt in range(settings_obj.max_agent_attempts):
         try:
             message = await client.messages.create(
-                model=settings_obj.claude_model,
+                model="claude-haiku-4-5-20251001",
                 max_tokens=8096,
                 messages=[{"role": "user", "content": prompt}],
             )
