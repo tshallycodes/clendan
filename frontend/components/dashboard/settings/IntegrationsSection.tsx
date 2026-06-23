@@ -53,6 +53,7 @@ export function IntegrationsSection() {
   const [disconnecting, setDisconnecting] = useState<string | null>(null)
   const [confirmSlug, setConfirmSlug] = useState<string | null>(null)
   const [resyncing, setResyncing] = useState(false)
+  const [resettingSync, setResettingSync] = useState(false)
 
   async function fetchStatuses() {
     const token = await getToken()
@@ -101,6 +102,23 @@ export function IntegrationsSection() {
       toast('Resync failed — check individual integrations', 'error')
     } finally {
       setResyncing(false)
+    }
+  }
+
+  async function resetSyncing() {
+    setResettingSync(true)
+    try {
+      const token = await getToken()
+      await fetch(`${API}/v1/integrations/reset-syncing`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      })
+      await fetchStatuses()
+      toast('Sync status reset — integrations marked connected', 'success')
+    } catch {
+      toast('Reset failed', 'error')
+    } finally {
+      setResettingSync(false)
     }
   }
 
@@ -223,13 +241,24 @@ export function IntegrationsSection() {
         >
           Manage all integrations →
         </Link>
-        <button
-          onClick={resyncAll}
-          disabled={resyncing}
-          className="text-[10px] font-mono text-brand-secondary border border-brand-border bg-transparent hover:bg-brand-elevated rounded-sm px-2 py-1 transition-colors disabled:opacity-50"
-        >
-          {resyncing ? 'Syncing…' : 'Resync All'}
-        </button>
+        <div className="flex items-center gap-2">
+          {connected.some((i) => i.status === 'syncing') && (
+            <button
+              onClick={resetSyncing}
+              disabled={resettingSync}
+              className="text-[10px] font-mono text-[#f5a623] border border-[#f5a623]/30 bg-[rgba(245,166,35,0.08)] hover:bg-[rgba(245,166,35,0.12)] rounded-sm px-2 py-1 transition-colors disabled:opacity-50"
+            >
+              {resettingSync ? 'Resetting…' : 'Reset Syncing'}
+            </button>
+          )}
+          <button
+            onClick={resyncAll}
+            disabled={resyncing}
+            className="text-[10px] font-mono text-brand-secondary border border-brand-border bg-transparent hover:bg-brand-elevated rounded-sm px-2 py-1 transition-colors disabled:opacity-50"
+          >
+            {resyncing ? 'Syncing…' : 'Resync All'}
+          </button>
+        </div>
       </div>
     </div>
   )

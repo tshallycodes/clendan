@@ -428,6 +428,23 @@ async def integration_sync_log(
     ])
 
 
+@router.post("/integrations/reset-syncing")
+async def reset_syncing_integrations(
+    current_user: RequireOrgAuth,
+    db: Annotated[Prisma, Depends(get_db_dep)],
+):
+    """Resets all stuck 'syncing' integrations to 'connected' for the tenant.
+    Safe to call when sync jobs crashed or background tasks were lost mid-flight.
+    """
+    tenant_id = current_user.tenant_id
+    updated = await db.integration.update_many(
+        where={"tenant_id": tenant_id, "status": "syncing"},
+        data={"status": "connected", "last_synced_at": datetime.now(UTC)},
+    )
+    logger.info("reset_syncing_integrations tenant=%s count=%s", tenant_id, updated)
+    return standard_response(data={"reset_count": updated})
+
+
 @router.delete("/integrations/quickbooks/disconnect")
 async def quickbooks_disconnect(
     current_user: RequireOrgAuth,
