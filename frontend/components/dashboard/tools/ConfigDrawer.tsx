@@ -106,11 +106,12 @@ export function ConfigDrawer({ tool, toolType, onClose, onSaved }: Props) {
         <div className="flex items-center justify-between mb-6">
           <div>
             <h2 className="font-heading font-semibold text-brand-text text-sm">{formatType(toolType)}</h2>
-            <p className="text-[10px] font-mono text-brand-muted mt-0.5">{toolType}</p>
-            {tool?.last_configured_by_email && (
+            {tool && (
               <p className="text-[10px] font-mono text-brand-muted mt-1">
                 Last configured by{' '}
-                <span className="text-brand-secondary">{tool.last_configured_by_email.split('@')[0]}</span>
+                <span className="text-brand-secondary">
+                  {tool.last_configured_by_email ? tool.last_configured_by_email.split('@')[0] : '—'}
+                </span>
               </p>
             )}
           </div>
