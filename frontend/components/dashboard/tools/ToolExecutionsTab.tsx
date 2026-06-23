@@ -60,46 +60,67 @@ function ElapsedTimer({ since }: { since: string }) {
   return <span className="text-[#f5a623]">{m > 0 ? `${m}m ` : ''}{s}s</span>
 }
 
+const PAGE_SIZE = 10
+
 export function ToolExecutionsTab({ toolId }: { toolId: string | null }) {
   const { getToken } = useAuth()
   const [executions, setExecutions] = useState<Execution[]>([])
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(false)
+  const [loadingMore, setLoadingMore] = useState(false)
   const [filter, setFilter] = useState<Filter>('all')
   const [expanded, setExpanded] = useState<string | null>(null)
+
+  async function fetchPage(offset: number, silent = false) {
+    const token = await getToken()
+    const params = new URLSearchParams({ tool_id: toolId!, limit: String(PAGE_SIZE), offset: String(offset) })
+    if (filter !== 'all') params.set('status', filter)
+    const res = await fetch(`${API}/v1/dashboard/executions?${params}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+    if (!res.ok) return null
+    const json = await res.json()
+    return json.data as { executions: Execution[]; total: number } | null
+  }
 
   useEffect(() => {
     if (!toolId) return
     let pollId: ReturnType<typeof setTimeout> | null = null
 
-    async function load(silent = false) {
-      if (!silent) setLoading(true)
+    async function load() {
+      setLoading(true)
       try {
-        const token = await getToken()
-        const params = new URLSearchParams({ tool_id: toolId!, limit: '50' })
-        if (filter !== 'all') params.set('status', filter)
-        const res = await fetch(`${API}/v1/dashboard/executions?${params}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        })
-        if (res.ok) {
-          const json = await res.json()
-          const list: Execution[] = json.data?.executions ?? []
-          setExecutions(list)
-          setTotal(json.data?.total ?? 0)
-          const hasActive = list.some(e => e.status === 'running' || e.status === 'queued')
-          if (hasActive) pollId = setTimeout(() => load(true), 3000)
+        const data = await fetchPage(0)
+        if (data) {
+          setExecutions(data.executions)
+          setTotal(data.total)
+          const hasActive = data.executions.some(e => e.status === 'running' || e.status === 'queued')
+          if (hasActive) pollId = setTimeout(load, 3000)
         }
       } finally {
-        if (!silent) setLoading(false)
+        setLoading(false)
       }
     }
     load()
     return () => { if (pollId) clearTimeout(pollId) }
-  }, [toolId, filter, getToken])
+  }, [toolId, filter, getToken]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const auto = executions.filter(e => e.status === 'auto').length
-  const blocked = executions.filter(e => e.status === 'blocked').length
-  const autoPercent = executions.length ? Math.round((auto / executions.length) * 100) : 0
+  async function loadMore() {
+    setLoadingMore(true)
+    try {
+      const data = await fetchPage(executions.length)
+      if (data) {
+        setExecutions(prev => [...prev, ...data.executions])
+        setTotal(data.total)
+      }
+    } finally {
+      setLoadingMore(false)
+    }
+  }
+
+  const auto = executions.filter(e => e.status === 'auto' || e.status === 'auto_approved').length
+  const blocked = executions.filter(e => e.status === 'blocked' || e.status === 'flagged').length
+  const autoPercent = total ? Math.round((auto / total) * 100) : 0
 
   return (
     <div className="space-y-4">
@@ -193,6 +214,17 @@ export function ToolExecutionsTab({ toolId }: { toolId: string | null }) {
           </tbody>
         </table>
       </div>
+
+      {executions.length < total && (
+        <button
+          type="button"
+          onClick={loadMore}
+          disabled={loadingMore}
+          className="w-full py-2 text-[10px] font-mono text-brand-muted border border-brand-border rounded-sm hover:text-brand-secondary hover:bg-brand-elevated transition-colors disabled:opacity-50"
+        >
+          {loadingMore ? 'Loading…' : `Load more · ${executions.length} of ${total}`}
+        </button>
+      )}
     </div>
   )
 }
