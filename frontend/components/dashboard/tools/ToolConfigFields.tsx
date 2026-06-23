@@ -1,6 +1,7 @@
 'use client'
 
 import { Select } from '@/components/ui/Select'
+import { NumberInput } from '@/components/ui/NumberInput'
 
 const inputClass = 'w-full bg-brand-bg border border-brand-border focus:border-brand-green rounded-sm px-3 py-2 text-xs font-mono text-brand-text outline-none transition-colors'
 const labelClass = 'text-[10px] font-mono text-brand-muted uppercase tracking-widest'
@@ -189,14 +190,12 @@ export function ToolConfigFields({ toolType, config, onChange }: ToolConfigField
         return (
           <div key={field.key} className="space-y-1.5">
             <label className={labelClass}>{field.label}{field.unit && <span className="normal-case opacity-60"> ({field.unit})</span>}</label>
-            <input
-              type="number"
+            <NumberInput
               value={value as number}
               min={field.min ?? 0}
               max={field.max}
               step={field.step ?? 1}
-              onChange={e => onChange(field.key, field.step ? parseFloat(e.target.value) : parseInt(e.target.value, 10))}
-              className={inputClass}
+              onChange={v => onChange(field.key, v)}
             />
             {field.penceDisplay && (
               <p className="text-[10px] font-mono text-brand-muted">£{((value as number) / 100).toFixed(2)}</p>
