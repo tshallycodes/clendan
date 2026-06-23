@@ -20,6 +20,7 @@ interface FieldDef {
   max?: number
   options?: string[]
   penceDisplay?: boolean
+  showWhen?: (config: Record<string, unknown>) => boolean
 }
 
 const WORKER_FIELDS: Record<string, FieldDef[]> = {
@@ -35,17 +36,14 @@ const WORKER_FIELDS: Record<string, FieldDef[]> = {
     { key: 'run_hour_utc', type: 'number', label: 'Run at hour', unit: '0–23', min: 0, max: 23, default: 2,
       description: 'Hour of the day (in your organisation timezone set in Settings) to fire daily or weekly reconciliation. 0 = midnight, 9 = 9:00 AM. Has no effect for Real-time frequency.' },
     { key: 'run_day_of_week', type: 'select', label: 'Weekly run day', options: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'], default: 'monday',
-      description: 'Which day of the week to run reconciliation. Only applies when Run Frequency is set to Weekly.' },
+      description: 'Which day of the week to run reconciliation.',
+      showWhen: (cfg) => cfg['reconciliation_frequency'] === 'weekly' },
     { key: 'unmatched_alert_days', type: 'number', label: 'Alert on unmatched after', unit: 'days', default: 5,
       description: 'Flag any transaction or invoice that has been unmatched for longer than this many days. Prevents items slipping through unnoticed.' },
     { key: 'stale_open_item_days', type: 'number', label: 'Stale open item threshold', unit: 'days', default: 90,
       description: 'Mark open items as stale if they remain unmatched beyond this threshold. Prompts a write-off or escalation review.' },
     { key: 'auto_match_confidence_min', type: 'number', label: 'Auto-match min confidence', unit: '0–1', step: 0.01, min: 0, max: 1, default: 0.95,
       description: "Claude must reach at least this confidence (0–1) to auto-match without human review. 0.95 means 95% certainty required before matching happens automatically." },
-    { key: 'run_hour_utc', type: 'number', label: 'Run at hour (UTC)', unit: '0–23', min: 0, max: 23, default: 2,
-      description: 'UTC hour to fire daily or weekly reconciliation. 2 = 2:00 AM UTC. Has no effect when Run Frequency is set to Real-time.' },
-    { key: 'run_day_of_week', type: 'select', label: 'Weekly run day', options: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'], default: 'monday',
-      description: 'Which day of the week to run reconciliation. Only applies when Run Frequency is set to Weekly.' },
   ],
   document_intelligence: [
     { key: 'auto_approve_threshold', type: 'number', label: 'Auto-approve under', penceDisplay: true, default: 50000,
@@ -302,6 +300,7 @@ export function ToolConfigFields({ toolType, config, onChange }: ToolConfigField
     <div className="space-y-3 border-t border-brand-border pt-3">
       <p className={labelClass}>Tool Settings</p>
       {fields.map((field) => {
+        if (field.showWhen && !field.showWhen(config)) return null
         const value = config[field.key] ?? field.default
         const hintOpen = openHint === field.key
 
