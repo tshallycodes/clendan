@@ -101,29 +101,39 @@ async def sync_plaid_transactions(ctx: dict, integration_id: str, tenant_id: str
             logger.info("plaid_sync_account integration_id=%s plaid_account_id=%s name=%s type=%s balance=%s currency=%s",
                 integration_id, plaid_account_id, acct.get("name"), acct.get("type"), current, currency)
 
+            mask = acct.get("mask") or ""
+            inst = integration.institution_name or ""
+            if inst and mask:
+                account_name = f"{inst} ****{mask}"
+            elif inst:
+                account_name = f"{inst} - {acct.get('name', 'Account')}"
+            else:
+                account_name = acct.get("name", "") or acct.get("official_name", "Account")
+
             existing = await db.bankaccount.find_unique(where={"plaid_account_id": plaid_account_id})
             if existing:
                 await db.bankaccount.update(
                     where={"id": existing.id},
                     data={
+                        "name": account_name,
                         "current_balance_minor": plaid.plaid_amount_to_minor(current, currency),
                         "integration_id": integration_id,
                     },
                 )
-                logger.info("plaid_sync_account_updated db_id=%s plaid_account_id=%s", existing.id, plaid_account_id)
+                logger.info("plaid_sync_account_updated db_id=%s plaid_account_id=%s name=%s", existing.id, plaid_account_id, account_name)
             else:
                 created = await db.bankaccount.create(data={
                     "tenant_id": tenant_id,
                     "integration_id": integration_id,
                     "plaid_account_id": plaid_account_id,
                     "plaid_item_id": item_id,
-                    "name": acct.get("name", ""),
+                    "name": account_name,
                     "type": acct.get("type", ""),
                     "subtype": acct.get("subtype", ""),
                     "current_balance_minor": plaid.plaid_amount_to_minor(current, currency),
                     "currency": currency,
                 })
-                logger.info("plaid_sync_account_created db_id=%s plaid_account_id=%s", created.id, plaid_account_id)
+                logger.info("plaid_sync_account_created db_id=%s plaid_account_id=%s name=%s", created.id, plaid_account_id, account_name)
             accounts_synced += 1
 
         logger.info("plaid_sync_accounts_done integration_id=%s accounts_synced=%d", integration_id, accounts_synced)

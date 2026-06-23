@@ -49,10 +49,14 @@ async def sync_mono_transactions(ctx: dict, integration_id: str, tenant_id: str)
             where={"mono_account_id": mono_acct_id_plain}
         ) if mono_acct_id_plain else None
 
+        raw_name = account_data.get("name", "") or account_data.get("type", "Account")
+        account_name = f"{institution_name} - {raw_name}" if institution_name else raw_name
+
         if existing_acct:
             await db.bankaccount.update(
                 where={"id": existing_acct.id},
                 data={
+                    "name": account_name,
                     "current_balance_minor": mono.mono_amount_to_minor(balance_raw, "debit"),
                     "integration_id": integration_id,
                 },
@@ -64,7 +68,7 @@ async def sync_mono_transactions(ctx: dict, integration_id: str, tenant_id: str)
                 "integration_id": integration_id,
                 "source": "mono",
                 "mono_account_id": mono_acct_id_plain,
-                "name": account_data.get("name", ""),
+                "name": account_name,
                 "type": account_data.get("type", "").lower(),
                 "subtype": institution.get("type", "").lower() or None,
                 "current_balance_minor": mono.mono_amount_to_minor(balance_raw, "debit"),

@@ -184,23 +184,28 @@ async def _do_sync_truelayer_connection(integration_id: str, tenant_id: str) -> 
             existing_account = await db.bankaccount.find_first(
                 where={"truelayer_account_id": tl_account_id, "tenant_id": tenant_id}
             )
+            display = account.get("display_name") or account.get("account_type", "Account")
+            inst = integration.institution_name or ""
+            account_name = f"{inst} - {display}" if inst else display
+
             if existing_account:
                 await db.bankaccount.update(
                     where={"id": existing_account.id},
                     data={
+                        "name": account_name,
                         "current_balance_minor": balance_minor,
                         "integration_id": integration_id,
                     },
                 )
                 db_account_id = existing_account.id
-                logger.info("tl_sync_account_updated db_account_id=%s tl_account_id=%s", db_account_id, tl_account_id)
+                logger.info("tl_sync_account_updated db_account_id=%s tl_account_id=%s name=%s", db_account_id, tl_account_id, account_name)
             else:
                 created = await db.bankaccount.create(data={
                     "tenant_id": tenant_id,
                     "integration_id": integration_id,
                     "source": "truelayer",
                     "truelayer_account_id": tl_account_id,
-                    "name": account.get("display_name") or account.get("account_type", "Account"),
+                    "name": account_name,
                     "type": account.get("account_type", "transaction").lower(),
                     "subtype": account.get("account_subtype", ""),
                     "current_balance_minor": balance_minor,
