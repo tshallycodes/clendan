@@ -140,3 +140,81 @@ body {
 
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* ─── Clerk sign-in / sign-up dark mode overrides ───────────────────────── */
+/* Applied globally so they work in both light and dark contexts.             */
+.cl-rootBox,
+.cl-card {
+  background-color: #111111 !important;
+  border: 1px solid #2c2c2c !important;
+  box-shadow: none !important;
+}
+
+.cl-headerTitle {
+  color: #f0f0f0 !important;
+}
+
+.cl-headerSubtitle {
+  color: #888888 !important;
+}
+
+/* Social provider buttons */
+.cl-socialButtonsBlockButton {
+  background-color: #1a1a1a !important;
+  border: 1px solid #2c2c2c !important;
+  color: #f0f0f0 !important;
+}
+.cl-socialButtonsBlockButton:hover {
+  background-color: #222222 !important;
+}
+.cl-socialButtonsBlockButtonText {
+  color: #f0f0f0 !important;
+}
+
+/* GitHub icon is black — invert it to white on dark backgrounds */
+.cl-providerIcon--github,
+[data-provider="github"] img,
+[data-provider="github"] svg {
+  filter: invert(1) !important;
+}
+
+/* Divider "or" */
+.cl-dividerLine {
+  background-color: #2c2c2c !important;
+}
+.cl-dividerText {
+  color: #555555 !important;
+}
+
+/* Form field labels and inputs */
+.cl-formFieldLabel {
+  color: #a0a0a0 !important;
+}
+.cl-formFieldInput {
+  background-color: #1a1a1a !important;
+  border-color: #2c2c2c !important;
+  color: #f0f0f0 !important;
+}
+.cl-formFieldInput::placeholder {
+  color: #555555 !important;
+}
+.cl-formFieldInput:focus {
+  border-color: #00C853 !important;
+}
+
+/* Footer links */
+.cl-footerActionText {
+  color: #666666 !important;
+}
+.cl-footerActionLink {
+  color: #00C853 !important;
+}
+.cl-footerActionLink:hover {
+  color: #00a844 !important;
+}
+
+/* Misc */
+.cl-identityPreviewText { color: #f0f0f0 !important; }
+.cl-formResendCodeLink  { color: #00C853 !important; }
+.cl-alertText          { color: #f0f0f0 !important; }
+.cl-badge              { color: #a0a0a0 !important; }

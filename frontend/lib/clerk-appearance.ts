@@ -1,6 +1,5 @@
-import type { Appearance } from '@clerk/nextjs/server'
-
-export const clerkDarkAppearance: Appearance = {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const clerkDarkAppearance: any = {
   variables: {
     colorBackground: '#111111',
     colorText: '#f0f0f0',
