@@ -46,6 +46,8 @@ const WORKER_FIELDS: Record<string, FieldDef[]> = {
       description: 'Mark open items as stale if they remain unmatched beyond this threshold. Prompts a write-off or escalation review.' },
     { key: 'auto_match_confidence_min', type: 'number', label: 'Auto-match min confidence', unit: '0–1', step: 0.01, min: 0, max: 1, default: 0.95,
       description: "Claude must reach at least this confidence (0–1) to auto-match without human review. 0.95 means 95% certainty required before matching happens automatically." },
+    { key: 'include_reconciled', type: 'boolean', label: 'Re-reconcile previously matched transactions', default: false,
+      description: 'When on, transactions already marked as reconciled in a previous run are included in future runs. Use this if you suspect a prior run matched incorrectly or you want to audit completed matches.' },
   ],
   document_intelligence: [
     { key: 'auto_approve_threshold', type: 'number', label: 'Auto-approve under', penceDisplay: true, default: 50000,

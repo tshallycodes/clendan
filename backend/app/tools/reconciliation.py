@@ -30,14 +30,14 @@ class _ToolPolicy(BaseModel):
     unmatched_pct_threshold: float = 0.20
     match_amount_tolerance_pct: float = 0.01
     match_date_window_days: int = 30
-    # Retained for backward-compat with existing stored configs
-    staleness_days: int = 30
+    staleness_days: int = 30  # retained for backward-compat
     auto_match_confidence_min: float = 0.95
     partial_match_enabled: bool = True
     reconciliation_frequency: str = "daily"
     stale_open_item_days: int = 90
     period_lock_respect: bool = True
     segregation_of_duties_enforced: bool = True
+    include_reconciled: bool = False
 
 
 class _TransactionRecord(BaseModel):
@@ -249,9 +249,12 @@ async def _execute_reconciliation(
         raise ValueError(f"Tool {tool_id} not found for tenant {tenant_id}")
     policy = _parse_policy(tool.config_json if isinstance(tool.config_json, dict) else {})
 
+    txn_statuses = ["pending", "unprocessed", "categorised"]
+    if policy.include_reconciled:
+        txn_statuses.append("reconciled")
     txn_where: dict = {
         "tenant_id": tenant_id,
-        "status": {"in": ["pending", "unprocessed", "categorised"]},
+        "status": {"in": txn_statuses},
         "date": {"gte": period_start, "lte": period_end},
     }
     if account_ids:
