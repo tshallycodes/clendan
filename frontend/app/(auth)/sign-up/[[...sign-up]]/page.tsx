@@ -1,23 +1,13 @@
 ﻿import { SignUp } from '@clerk/nextjs'
 import { Logo } from '@/components/Logo'
+import { clerkDarkAppearance } from '@/lib/clerk-appearance'
 
 export default function SignUpPage() {
   return (
     <div className="min-h-screen bg-brand-bg flex items-center justify-center">
       <div className="flex flex-col items-center gap-8">
         <Logo size="lg" />
-        <SignUp
-          appearance={{
-            variables: {
-              colorBackground: '#111111',
-              colorText: '#e8f0e8',
-              colorPrimary: '#00C853',
-              colorInputBackground: '#0a0a0a',
-              colorInputText: '#e8f0e8',
-              borderRadius: '4px',
-            },
-          }}
-        />
+        <SignUp appearance={clerkDarkAppearance} />
       </div>
     </div>
   )
