@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useAuth } from '@clerk/nextjs'
-import { Copy, Check, ArrowSquareOut, Plus, X, Lightning, GitBranch, ShieldCheck } from '@phosphor-icons/react'
+import { Copy, Check, ArrowSquareOut, Plus, X, Lightning, GitBranch, ShieldCheck, Trash } from '@phosphor-icons/react'
 import { useToast } from '@/components/Providers'
 import { motion } from 'framer-motion'
 import { CodeBlock } from '@/components/dashboard/api/CodeBlock'
@@ -113,10 +113,10 @@ function CopyButton({ text }: { text: string }) {
   )
 }
 
-function ApiKeysSection({ keys, loading, showForm, setShowForm, newName, setNewName, creating, handleCreate, handleRevoke, revealedKey, setRevealedKey }: {
+function ApiKeysSection({ keys, loading, showForm, setShowForm, newName, setNewName, creating, handleCreate, handleRevoke, handleDelete, revealedKey, setRevealedKey }: {
   keys: ApiKey[]; loading: boolean; showForm: boolean; setShowForm: (v: boolean) => void
   newName: string; setNewName: (v: string) => void; creating: boolean
-  handleCreate: () => void; handleRevoke: (id: string) => void
+  handleCreate: () => void; handleRevoke: (id: string) => void; handleDelete: (id: string) => void
   revealedKey: string | null; setRevealedKey: (v: string | null) => void
 }) {
   const [copiedKey, setCopiedKey] = useState(false)
@@ -167,6 +167,10 @@ function ApiKeysSection({ keys, loading, showForm, setShowForm, newName, setNewN
                   Revoke
                 </button>
               )}
+              <button type="button" onClick={() => handleDelete(k.id)}
+                className="shrink-0 text-brand-muted hover:text-[#ff4d6d] transition-colors p-0.5">
+                <Trash className="w-3.5 h-3.5" />
+              </button>
             </div>
           ))}
         </div>
@@ -224,6 +228,14 @@ export function DeveloperPageClient() {
       await fetch(`${API}/v1/api-keys/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } })
       await fetchKeys(); toast('API key revoked', 'success')
     } catch { toast('Failed to revoke key', 'error') }
+  }
+
+  async function handleDelete(id: string) {
+    try {
+      const token = await getToken()
+      await fetch(`${API}/v1/api-keys/${id}/permanent`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } })
+      await fetchKeys(); toast('API key deleted', 'success')
+    } catch { toast('Failed to delete key', 'error') }
   }
 
   return (
@@ -296,7 +308,7 @@ export function DeveloperPageClient() {
             <p className="text-[10px] font-mono uppercase tracking-widest text-brand-muted">API Keys</p>
             <ApiKeysSection keys={keys} loading={loading} showForm={showForm} setShowForm={setShowForm}
               newName={newName} setNewName={setNewName} creating={creating}
-              handleCreate={handleCreate} handleRevoke={handleRevoke}
+              handleCreate={handleCreate} handleRevoke={handleRevoke} handleDelete={handleDelete}
               revealedKey={revealedKey} setRevealedKey={setRevealedKey} />
           </motion.div>
 
