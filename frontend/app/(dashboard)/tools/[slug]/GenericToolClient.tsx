@@ -121,14 +121,6 @@ export function GenericToolClient({ tool, deployed }: Props) {
             {badge && <span className={`text-[10px] font-mono px-2 py-0.5 rounded-sm ${badge.className}`}>{badge.label}</span>}
           </div>
           <p className="text-xs font-mono text-brand-muted max-w-xl">{tool.desc}</p>
-          {deployed && (
-            <p className="text-[10px] font-mono text-brand-muted">
-              Last configured by{' '}
-              <span className="text-brand-secondary">
-                {deployed.last_configured_by_email ? deployed.last_configured_by_email.split('@')[0] : '—'}
-              </span>
-            </p>
-          )}
         </div>
 
         {canConfigure && (

@@ -170,6 +170,7 @@ async def update_tool(
         update_data["status"] = body.status
     if body.config is not None:
         update_data["config_json"] = Json(body.config)
+    if current_user.email:
         update_data["last_configured_by_email"] = current_user.email
 
     updated = await db.tool.update(

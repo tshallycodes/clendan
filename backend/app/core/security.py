@@ -89,7 +89,7 @@ async def get_current_user(
     if not user_id:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token: missing sub claim")
 
-    email = payload.get("email", "") or payload.get("email_address", "")
+    email: str = payload.get("email", "") or payload.get("email_address", "")
     org_id: str = payload.get("org_id", "")
 
     if org_id:
@@ -101,6 +101,11 @@ async def get_current_user(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Organisation not provisioned — complete onboarding",
             )
+        # Clerk JWTs don't include email by default — fall back to Member table
+        if not email:
+            member = await db.member.find_unique(where={"clerk_user_id": user_id})
+            if member and member.email:
+                email = member.email
     else:
         # Clerk Organizations not active — resolve tenant via Member table
         member = await db.member.find_unique(where={"clerk_user_id": user_id})
@@ -116,6 +121,8 @@ async def get_current_user(
                 detail="Organisation not found",
             )
         role = member.role.lower()
+        if not email and member.email:
+            email = member.email
 
     return CurrentUser(
         user_id=user_id,

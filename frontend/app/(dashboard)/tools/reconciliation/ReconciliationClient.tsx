@@ -297,14 +297,6 @@ export function ReconciliationClient() {
           <p className="text-xs font-mono text-brand-muted">
             Match bank transactions against invoices. Detects unmatched items and flags anomalies.
           </p>
-          {deployed && (
-            <p className="text-[10px] font-mono text-brand-muted">
-              Last configured by{' '}
-              <span className="text-brand-secondary">
-                {deployed.last_configured_by_email ? deployed.last_configured_by_email.split('@')[0] : '—'}
-              </span>
-            </p>
-          )}
         </div>
         {canConfigure && (
           <div className="flex items-center gap-2">
