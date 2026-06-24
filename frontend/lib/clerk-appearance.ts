@@ -1,5 +1,7 @@
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const clerkDarkAppearance: any = {
+import { dark } from '@clerk/themes'
+
+export const clerkDarkAppearance = {
+  baseTheme: dark,
   variables: {
     colorBackground: '#111111',
     colorText: '#f0f0f0',
@@ -13,64 +15,16 @@ export const clerkDarkAppearance: any = {
     fontSize: '14px',
   },
   elements: {
-    card: {
-      backgroundColor: '#111111',
-      border: '1px solid #2c2c2c',
-      boxShadow: 'none',
-    },
-    headerTitle: {
-      color: '#f0f0f0',
-    },
-    headerSubtitle: {
-      color: '#888888',
-    },
-    socialButtonsBlockButton: {
-      backgroundColor: '#1a1a1a',
-      border: '1px solid #2c2c2c',
-      color: '#f0f0f0',
-    },
-    socialButtonsBlockButtonText: {
-      color: '#f0f0f0',
-      fontWeight: '500',
-    },
-    dividerLine: {
-      backgroundColor: '#2c2c2c',
-    },
-    dividerText: {
-      color: '#555555',
-    },
-    formFieldLabel: {
-      color: '#a0a0a0',
-    },
-    formFieldInput: {
-      backgroundColor: '#1a1a1a',
-      border: '1px solid #2c2c2c',
-      color: '#f0f0f0',
-    },
-    formFieldInputShowPasswordButton: {
-      color: '#666666',
-    },
-    formButtonPrimary: {
-      backgroundColor: '#00C853',
-      color: '#000000',
-    },
-    footerActionText: {
-      color: '#666666',
-    },
-    footerActionLink: {
-      color: '#00C853',
-    },
-    identityPreviewText: {
-      color: '#f0f0f0',
-    },
-    identityPreviewEditButtonIcon: {
-      color: '#666666',
-    },
-    alertText: {
-      color: '#f0f0f0',
-    },
-    formResendCodeLink: {
-      color: '#00C853',
-    },
+    card: 'bg-[#111111] border border-[#2c2c2c] shadow-none',
+    headerTitle: 'text-[#f0f0f0]',
+    headerSubtitle: 'text-[#888888]',
+    socialButtonsBlockButton: 'bg-[#1a1a1a] border border-[#2c2c2c] text-[#f0f0f0] hover:bg-[#222222]',
+    socialButtonsBlockButtonText: 'text-[#f0f0f0] font-medium',
+    dividerLine: 'bg-[#2c2c2c]',
+    dividerText: 'text-[#555555]',
+    formFieldLabel: 'text-[#a0a0a0]',
+    formButtonPrimary: 'bg-[#00C853] text-black hover:bg-[#00a844]',
+    footerActionText: 'text-[#666666]',
+    footerActionLink: 'text-[#00C853] hover:text-[#00a844]',
   },
 }
