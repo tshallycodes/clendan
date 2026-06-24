@@ -29,8 +29,8 @@ type ResponseState =
   | { kind: 'loading' }
   | { kind: 'result'; data: unknown }
 
-const MAX_POLL_ATTEMPTS = 5
-const POLL_INTERVAL_MS = 3000
+const MAX_POLL_ATTEMPTS = 20
+const POLL_INTERVAL_MS = 4000
 
 export function ApiPlayground() {
   const [selectedTool, setSelectedTool] = useState<ToolName>('invoice_processing')
@@ -52,7 +52,7 @@ export function ApiPlayground() {
 
   async function pollExecution(executionId: string, attempt: number) {
     if (attempt >= MAX_POLL_ATTEMPTS) {
-      setResponse({ kind: 'result', data: { error: 'Polling timed out after max attempts', execution_id: executionId } })
+      setResponse({ kind: 'result', data: { note: 'Job is still running. Poll manually.', execution_id: executionId } })
       return
     }
     pollRef.current = setTimeout(async () => {
