@@ -13,15 +13,19 @@ _logger = get_logger(__name__)
 router = APIRouter(prefix="/execute", tags=["agents"])
 
 _TOOL_TYPES = [
-    "invoice_processing",
-    "fraud_detection",
-    "ai_accountant",
-    "collections",
-    "expense_control",
     "reconciliation",
+    "document_intelligence",
+    "ai_accountant",
+    "spend_control",
+    "ar_collections",
+    "risk_compliance",
+    "treasury_cash",
     "revenue_recognition",
-    "compliance_check",
-    "treasury",
+    "credit_underwriting",
+    "tax_compliance",
+    "financial_reporting",
+    "payment_run",
+    "budgeting",
 ]
 
 
