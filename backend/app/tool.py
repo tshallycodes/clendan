@@ -163,7 +163,7 @@ async def run_orchestrator_job(
             decision, confidence, reasoning = "routed", 1.0, "Routed to Compliance tool"
 
         elif event_type == "reconciliation_run":
-            pool = await get_queue_pool()
+            from app.tools.reconciliation import _execute_reconciliation
 
             def _parse_dt(val: str | None) -> datetime | None:
                 if not val:
@@ -174,21 +174,43 @@ async def run_orchestrator_job(
                 except (ValueError, TypeError):
                     return None
 
-            recon_kwargs: dict = {
-                "execution_id": execution_id,
-                "tenant_id": tenant_id,
-                "tool_id": tool_id,
-                "period_days": payload.get("period_days", 30),
-            }
-            period_start = _parse_dt(payload.get("period_start"))
-            period_end = _parse_dt(payload.get("period_end"))
-            if period_start:
-                recon_kwargs["period_start"] = period_start
-            if period_end:
-                recon_kwargs["period_end"] = period_end
+            result = await _execute_reconciliation(
+                tenant_id=tenant_id,
+                tool_id=tool_id,
+                execution_id=execution_id,
+                period_days=payload.get("period_days", 30),
+                period_start=_parse_dt(payload.get("period_start")),
+                period_end=_parse_dt(payload.get("period_end")),
+            )
+            # _execute_reconciliation writes its own audit log and ReconciliationRun record.
+            # Apply autonomy override then update execution directly — no second queue hop.
+            real_decision = result["decision"]
+            _tool_rec = await db.tool.find_unique(where={"id": tool_id})
+            if _tool_rec and real_decision != Decision.BLOCKED.value:
+                overridden = _apply_autonomy_override(real_decision, _tool_rec.autonomy_level)
+                if overridden != real_decision:
+                    real_decision = overridden
 
-            await pool.enqueue_job("run_reconciliation_job", **recon_kwargs)
-            decision, confidence, reasoning = "routed", 1.0, "Routed to Reconciliation tool"
+            duration_ms_recon = int(time.time() * 1000) - start_ms
+            if real_decision == Decision.APPROVAL_REQUIRED.value:
+                _settings = get_settings()
+                existing_approval = await db.approval.find_first(where={"execution_id": execution_id})
+                if not existing_approval:
+                    await db.approval.create(data={
+                        "tenant_id": tenant_id,
+                        "execution_id": execution_id,
+                        "expires_at": datetime.now(UTC) + timedelta(seconds=_settings.approval_ttl_seconds),
+                    })
+            await db.execution.update(
+                where={"id": execution_id},
+                data={
+                    "status": "completed",
+                    "decision": real_decision,
+                    "confidence": result["confidence"],
+                    "duration_ms": duration_ms_recon,
+                },
+            )
+            return {"status": "ok", "execution_id": execution_id, "decision": real_decision}
 
         elif event_type == "expense_control_run":
             pool = await get_queue_pool()

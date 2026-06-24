@@ -115,6 +115,27 @@ _CLAUDE_SYSTEM_PROMPT = (
 
 
 _BATCH_SIZE = 40
+_AUTO_OK_THRESHOLD_MINOR = 1500  # items below £15/€15/$15 auto-classified without Claude
+
+
+def _pre_classify(
+    txns: list[_TransactionRecord],
+) -> tuple[list[_TransactionRecord], list[_ClaudeItemResult]]:
+    """Fast-path: classify tiny transactions as ok locally, send the rest to Claude."""
+    needs_claude: list[_TransactionRecord] = []
+    auto: list[_ClaudeItemResult] = []
+    for txn in txns:
+        if abs(txn.amount_minor) < _AUTO_OK_THRESHOLD_MINOR:
+            auto.append(_ClaudeItemResult(
+                item_id=txn.id,
+                item_type="transaction",
+                severity="low",
+                action="ok",
+                reasoning=f"Auto-classified: amount {abs(txn.amount_minor) / 100:.2f} below review threshold.",
+            ))
+        else:
+            needs_claude.append(txn)
+    return needs_claude, auto
 
 
 async def _call_claude_batch(
@@ -357,11 +378,12 @@ async def _execute_reconciliation(
     unmatched_pct = len(unmatched_txns) / total_txns if total_txns > 0 else 0.0
     policy_breach = unmatched_pct > policy.unmatched_pct_threshold
 
-    claude_results: list[_ClaudeItemResult] = []
-    if unmatched_txns or unmatched_invs or unmatched_bills:
-        claude_results = await _call_claude(
-            unmatched_txns, unmatched_invs, unmatched_bills, settings_obj
-        )
+    txns_for_claude, auto_results = _pre_classify(unmatched_txns)
+    claude_results: list[_ClaudeItemResult] = list(auto_results)
+    if txns_for_claude or unmatched_invs or unmatched_bills:
+        claude_results.extend(await _call_claude(
+            txns_for_claude, unmatched_invs, unmatched_bills, settings_obj
+        ))
 
     has_flag = any(r.action == "flag" for r in claude_results) or policy_breach
     has_review = any(r.action == "review" for r in claude_results)
