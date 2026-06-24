@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import csv
 import io
-from datetime import datetime
+from datetime import UTC, datetime, timedelta
 from typing import Optional
 
 from fastapi import HTTPException, Query
@@ -205,11 +205,18 @@ async def trigger_reconciliation_run(
     if period_start >= period_end:
         raise HTTPException(status_code=422, detail="period_start must be before period_end")
 
+    _stale_cutoff = datetime.now(UTC) - timedelta(minutes=30)
     in_flight = await db.execution.find_first(
         where={"tenant_id": tenant_id, "tool_id": body.tool_id, "status": {"in": ["queued", "running"]}}
     )
     if in_flight:
-        raise HTTPException(status_code=409, detail="A reconciliation run is already in progress")
+        if in_flight.created_at.replace(tzinfo=UTC) >= _stale_cutoff:
+            raise HTTPException(status_code=409, detail="A reconciliation run is already in progress")
+        # Execution stuck for >30 min — mark failed so the new run can proceed
+        await db.execution.update(
+            where={"id": in_flight.id},
+            data={"status": "failed", "decision": "failed", "error_message": "Timed out — marked failed by new run trigger"},
+        )
 
     tool = await db.tool.find_first(
         where={"id": body.tool_id, "tenant_id": tenant_id}

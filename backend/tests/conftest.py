@@ -74,6 +74,14 @@ prisma_stub = MagicMock()
 prisma_stub.Prisma = MockPrisma
 sys.modules["prisma"] = prisma_stub
 
+# prisma.errors — must be a real exception class so `except UniqueViolationError:` works
+class _UniqueViolationError(Exception):
+    pass
+
+prisma_errors_stub = MagicMock()
+prisma_errors_stub.UniqueViolationError = _UniqueViolationError
+sys.modules["prisma.errors"] = prisma_errors_stub
+
 # python-jose — JWT library, requires C extensions
 _stub("jose")
 _stub("jose.jwt")

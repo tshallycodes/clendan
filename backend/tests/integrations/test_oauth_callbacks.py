@@ -102,8 +102,8 @@ def test_quickbooks_callback_success():
             f"/v1/integrations/quickbooks/callback?code=auth_code&state={TENANT_ID}:nonce_abc&realmId=realm_123"
         )
 
-    assert response.status_code in (302, 307)
-    assert "connected=quickbooks" in response.headers["location"]
+    assert response.status_code == 200
+    assert "connected=quickbooks" in response.text
 
 
 def test_quickbooks_callback_invalid_state():

@@ -1,6 +1,5 @@
 'use client'
 
-import { Spinner } from '@phosphor-icons/react'
 import { DatePicker } from '@/components/ui/DatePicker'
 
 interface RunControlsProps {
@@ -48,7 +47,11 @@ export function RunControls({
           disabled={running || !toolReady}
           className="flex items-center gap-2 bg-[#00C853] text-black text-xs font-mono px-4 py-2 rounded-sm hover:bg-[#00a844] active:scale-[0.97] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {running && <Spinner className="w-3 h-3 animate-spin" />}
+          {running && (
+            <svg className="w-3 h-3 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeDasharray="40" strokeDashoffset="10" strokeLinecap="round" />
+            </svg>
+          )}
           {running ? 'Running...' : 'Run Reconciliation'}
         </button>
       </div>
