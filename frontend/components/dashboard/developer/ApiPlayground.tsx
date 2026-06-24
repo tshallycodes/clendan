@@ -26,7 +26,7 @@ type ToolName = typeof TOOLS[number]
 
 type ResponseState =
   | { kind: 'idle' }
-  | { kind: 'loading' }
+  | { kind: 'loading'; attempt?: number }
   | { kind: 'result'; data: unknown }
 
 const MAX_POLL_ATTEMPTS = 20
@@ -71,6 +71,7 @@ export function ApiPlayground() {
       setResponse({ kind: 'result', data: { note: 'Job is still running. Poll manually.', execution_id: executionId } })
       return
     }
+    setResponse({ kind: 'loading', attempt: attempt + 1 })
     pollRef.current = setTimeout(async () => {
       try {
         const res = await fetch(`${API}/v1/execute/${executionId}`, {
@@ -221,7 +222,9 @@ export function ApiPlayground() {
             className="flex items-center gap-2 bg-[#00C853] text-black hover:bg-[#00a844] active:scale-[0.97] rounded-sm px-4 py-2 text-xs font-mono font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Play className="w-3.5 h-3.5" weight="fill" />
-            {response.kind === 'loading' ? 'Executing…' : 'Run'}
+            {response.kind === 'loading'
+              ? response.attempt ? `Polling ${response.attempt}/${MAX_POLL_ATTEMPTS}…` : 'Queuing…'
+              : 'Run'}
           </button>
         </div>
 
@@ -233,7 +236,21 @@ export function ApiPlayground() {
               <p className="text-xs font-mono text-brand-muted">Response will appear here</p>
             )}
             {response.kind === 'loading' && (
-              <p className="text-xs font-mono text-brand-muted animate-pulse">Executing...</p>
+              <div className="space-y-2">
+                <p className="text-xs font-mono text-brand-muted animate-pulse">
+                  {response.attempt
+                    ? `Polling result… (${response.attempt}/${MAX_POLL_ATTEMPTS})`
+                    : 'Queuing job…'}
+                </p>
+                {response.attempt && (
+                  <div className="w-full bg-brand-border rounded-full h-0.5">
+                    <div
+                      className="bg-[#00C853] h-0.5 rounded-full transition-all duration-500"
+                      style={{ width: `${(response.attempt / MAX_POLL_ATTEMPTS) * 100}%` }}
+                    />
+                  </div>
+                )}
+              </div>
             )}
             {response.kind === 'result' && (
               <pre className="text-xs font-mono text-brand-text whitespace-pre-wrap break-all">
