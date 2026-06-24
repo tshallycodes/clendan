@@ -321,31 +321,34 @@ async def _execute_reconciliation(
     match_map: dict[str, dict] = {}
 
     for txn in transactions:
-        for invoice in invoices:
-            if invoice.id in matched_inv_ids:
-                continue
-            if (
-                _amounts_match(txn.amount_minor, invoice.outstanding_cents, policy.match_amount_tolerance_pct)
-                and _dates_match(txn.date, invoice.due_date, policy.match_date_window_days)
-            ):
-                matched_txn_ids.add(txn.id)
-                matched_inv_ids.add(invoice.id)
-                match_map[txn.id] = {"type": "invoice", "id": invoice.id}
-                break
-
-        if txn.id in matched_txn_ids:
-            continue
-        for bill in bills:
-            if bill.id in matched_bill_ids:
-                continue
-            if (
-                _amounts_match(txn.amount_minor, bill.outstanding_cents, policy.match_amount_tolerance_pct)
-                and _dates_match(txn.date, bill.due_date, policy.match_date_window_days)
-            ):
-                matched_txn_ids.add(txn.id)
-                matched_bill_ids.add(bill.id)
-                match_map[txn.id] = {"type": "bill", "id": bill.id}
-                break
+        txn_abs = abs(txn.amount_minor)
+        if txn.amount_minor < 0:
+            # Credit (money in) — match against invoices
+            for invoice in invoices:
+                if invoice.id in matched_inv_ids:
+                    continue
+                if (
+                    _amounts_match(txn_abs, invoice.outstanding_cents, policy.match_amount_tolerance_pct)
+                    and _dates_match(txn.date, invoice.due_date, policy.match_date_window_days)
+                ):
+                    matched_txn_ids.add(txn.id)
+                    matched_inv_ids.add(invoice.id)
+                    match_map[txn.id] = {"type": "invoice", "id": invoice.id}
+                    break
+        elif txn.amount_minor > 0:
+            # Debit (money out) — match against bills
+            for bill in bills:
+                if bill.id in matched_bill_ids:
+                    continue
+                if (
+                    _amounts_match(txn_abs, bill.outstanding_cents, policy.match_amount_tolerance_pct)
+                    and _dates_match(txn.date, bill.due_date, policy.match_date_window_days)
+                ):
+                    matched_txn_ids.add(txn.id)
+                    matched_bill_ids.add(bill.id)
+                    match_map[txn.id] = {"type": "bill", "id": bill.id}
+                    break
+        # Zero-amount transactions are passed to Claude for assessment
 
     unmatched_txns = [t for t in transactions if t.id not in matched_txn_ids]
     unmatched_invs = [i for i in invoices if i.id not in matched_inv_ids]

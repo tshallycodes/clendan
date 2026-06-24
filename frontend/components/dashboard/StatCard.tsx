@@ -27,12 +27,13 @@ function useCountUp(target: number, duration = 1200) {
 interface StatCardProps {
   value: number | string
   label: string
+  description?: string
   change?: string
   changeDirection?: 'up' | 'down' | 'neutral' | 'warning'
   delay?: number
 }
 
-export function StatCard({ value, label, change, changeDirection = 'neutral', delay = 0 }: StatCardProps) {
+export function StatCard({ value, label, description, change, changeDirection = 'neutral', delay = 0 }: StatCardProps) {
   const numeric = typeof value === 'number' ? value : null
   const animated = useCountUp(numeric ?? 0)
   const display = numeric !== null ? animated : value
@@ -45,7 +46,10 @@ export function StatCard({ value, label, change, changeDirection = 'neutral', de
       className="bg-brand-surface border border-brand-border rounded-sm p-4"
     >
       <div className="font-heading text-3xl font-bold text-brand-text mb-1">{display}</div>
-      <div className="text-brand-muted text-[10px] font-mono uppercase tracking-widest mb-2">{label}</div>
+      <div className="text-brand-muted text-[10px] font-mono uppercase tracking-widest mb-1">{label}</div>
+      {description && (
+        <div className="text-brand-muted text-[10px] font-mono mb-2 leading-relaxed">{description}</div>
+      )}
       {change && (
         <div className={cn('text-xs font-mono',
           changeDirection === 'up'      && 'text-brand-green',

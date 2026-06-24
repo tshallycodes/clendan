@@ -30,6 +30,7 @@ export function IntegrationsHealth({ integrations }: { integrations: Integration
     <div className="bg-brand-surface border border-brand-border rounded-sm overflow-hidden">
       <div className="px-5 py-4 border-b border-brand-border">
         <h2 className="font-heading font-semibold text-brand-text text-sm">Integrations</h2>
+        <p className="text-[10px] font-mono text-brand-muted mt-0.5">Connected data sources your agents pull from — sync status and last activity</p>
       </div>
       {visible.length === 0 ? (
         <p className="px-5 py-8 text-xs font-mono text-brand-muted text-center">

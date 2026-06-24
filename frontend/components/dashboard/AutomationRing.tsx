@@ -122,11 +122,11 @@ export function AutomationRing({ autoApproved, total }: Props) {
           </div>
         )}
 
-        {total === 0 && (
-          <p className="text-[10px] font-mono text-brand-muted">
-            Deploy a tool to start tracking
-          </p>
-        )}
+        <p className="text-[10px] font-mono text-brand-muted leading-relaxed">
+          {total === 0
+            ? 'Deploy a tool to start tracking. Higher automation means fewer decisions routed to you.'
+            : 'Percentage of agent runs completed without requiring your approval.'}
+        </p>
       </div>
     </div>
   )

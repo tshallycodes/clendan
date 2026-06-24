@@ -81,12 +81,24 @@ export default async function DashboardPage() {
 
   const s = stats ?? { executions: 0, pending_approvals: 0, active_tools: 0, invoices: 0, transactions: 0 }
 
+  const statusMessage = (() => {
+    if (s.active_tools === 0) return 'No tools deployed yet — deploy your first AI agent to begin automating.'
+    if (s.pending_approvals > 0) return `${s.pending_approvals} decision${s.pending_approvals > 1 ? 's' : ''} need${s.pending_approvals === 1 ? 's' : ''} your review before agents can proceed.`
+    return `All systems running — ${s.active_tools} tool${s.active_tools > 1 ? 's' : ''} active, no action required.`
+  })()
+
+  const statusColor = s.active_tools === 0
+    ? 'text-brand-muted'
+    : s.pending_approvals > 0
+      ? 'text-[#f5a623]'
+      : 'text-[#00C853]'
+
   return (
     <AnimatedPage className="p-6 space-y-6">
       <AnimatedSection>
         <div>
           <h1 className="font-heading font-bold text-2xl text-brand-text">Dashboard</h1>
-          <p className="text-brand-muted text-xs font-mono mt-1">Agent execution summary</p>
+          <p className={`text-xs font-mono mt-1 ${statusColor}`}>{statusMessage}</p>
         </div>
       </AnimatedSection>
 
@@ -95,6 +107,7 @@ export default async function DashboardPage() {
           <StatCard
             value={s.executions}
             label="Total Executions"
+            description="Times your AI agents have run tasks end-to-end"
             change="+0 today"
             changeDirection="neutral"
             delay={0}
@@ -102,13 +115,15 @@ export default async function DashboardPage() {
           <StatCard
             value={s.pending_approvals}
             label="Pending Approvals"
-            change={s.pending_approvals > 0 ? `${s.pending_approvals} pending review` : '+0 today'}
+            description="Agent decisions waiting for your sign-off before action is taken"
+            change={s.pending_approvals > 0 ? `${s.pending_approvals} awaiting review` : 'no action needed'}
             changeDirection={s.pending_approvals > 0 ? 'warning' : 'neutral'}
             delay={0.08}
           />
           <StatCard
             value={s.invoices}
             label="Invoices Processed"
+            description="Documents extracted, classified, and matched by your agents"
             change="+0 today"
             changeDirection="neutral"
             delay={0.16}
@@ -116,6 +131,7 @@ export default async function DashboardPage() {
           <StatCard
             value={s.transactions}
             label="Transactions Synced"
+            description="Bank records pulled from connected accounts via Plaid"
             change="+0 today"
             changeDirection="neutral"
             delay={0.24}
