@@ -1,6 +1,7 @@
 'use client'
 
 import { Loader2 } from 'lucide-react'
+import { DatePicker } from '@/components/ui/DatePicker'
 
 interface RunControlsProps {
   periodStart: string
@@ -11,9 +12,6 @@ interface RunControlsProps {
   onPeriodEndChange: (v: string) => void
   onRun: () => void
 }
-
-const INPUT_CLS =
-  'bg-brand-bg border border-brand-border rounded-sm text-brand-text px-3 py-2 text-xs font-mono focus:outline-none focus:border-brand-green'
 
 export function RunControls({
   periodStart,
@@ -30,24 +28,14 @@ export function RunControls({
         <label className="text-[10px] font-mono uppercase tracking-widest text-brand-muted">
           Period Start
         </label>
-        <input
-          type="date"
-          value={periodStart}
-          onChange={(e) => onPeriodStartChange(e.target.value)}
-          className={INPUT_CLS}
-        />
+        <DatePicker value={periodStart} onChange={onPeriodStartChange} />
       </div>
 
       <div className="flex flex-col gap-1">
         <label className="text-[10px] font-mono uppercase tracking-widest text-brand-muted">
           Period End
         </label>
-        <input
-          type="date"
-          value={periodEnd}
-          onChange={(e) => onPeriodEndChange(e.target.value)}
-          className={INPUT_CLS}
-        />
+        <DatePicker value={periodEnd} onChange={onPeriodEndChange} />
       </div>
 
       <div className="flex flex-col gap-1 justify-end">

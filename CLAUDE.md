@@ -335,8 +335,8 @@ Always use Tailwind design token classes (`bg-brand-surface`, `text-brand-text`,
 | `border-brand-border` / `divide-brand-border` | `#e0e0e0` | `#2c2c2c` | Card borders, dividers |
 | `border-brand-border-subtle` | `#ebebeb` | `#222222` | Subtle separators |
 | `text-brand-text` | `#0d1117` | `#f0f0f0` | Primary text |
-| `text-brand-secondary` | `#3d4754` | `#c8cdd4` | Labels, metadata |
-| `text-brand-muted` | `#5d6b7a` | `#9aa3ad` | Timestamps, captions, placeholders |
+| `text-brand-secondary` | `#3d4754` | `#eaecef` | Labels, metadata |
+| `text-brand-muted` | `#5d6b7a` | `#d0d5dc` | Timestamps, captions, placeholders |
 
 **Hard rule: never write raw hex values for any of the above.** Use the Tailwind token class.
 Inline styles are allowed only for dynamic values (e.g. computed chart colours, bank brand colours).
