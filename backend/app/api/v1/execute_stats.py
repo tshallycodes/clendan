@@ -37,11 +37,10 @@ async def execution_stats(
     Returns aggregate execution counts per tool type for the authenticated tenant.
     Authenticated via API key (same as POST /execute).
     """
-    if not authorization.startswith("Bearer ck_live_"):
+    if not authorization.startswith("ck_live_"):
         raise HTTPException(status_code=401, detail="Invalid API key format")
 
-    raw_key = authorization.removeprefix("Bearer ")
-    key_hash = hashlib.sha256(raw_key.encode()).hexdigest()
+    key_hash = hashlib.sha256(authorization.encode()).hexdigest()
 
     db = get_db()
 

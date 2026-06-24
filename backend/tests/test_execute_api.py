@@ -29,7 +29,7 @@ _TOOL_ID = "tool_test"
 _EXECUTION_ID = "exec_test"
 
 VALID_HEADERS = {
-    "Authorization": f"Bearer {_VALID_KEY}",
+    "Authorization": _VALID_KEY,
     "Idempotency-Key": "idem_key_001",
 }
 
@@ -128,7 +128,7 @@ class TestPostExecute:
         client = TestClient(app)
         response = client.post(
             "/v1/execute",
-            headers={"Authorization": "Bearer bad_key", "Idempotency-Key": "k1"},
+            headers={"Authorization": "bad_key", "Idempotency-Key": "k1"},
             json={"tool": "reconciliation"},
         )
         assert response.status_code == 401
@@ -137,7 +137,7 @@ class TestPostExecute:
         client = TestClient(app)
         response = client.post(
             "/v1/execute",
-            headers={"Authorization": f"Bearer {_VALID_KEY}"},
+            headers={"Authorization": _VALID_KEY},
             json={"tool": "reconciliation"},
         )
         assert response.status_code == 422
@@ -236,7 +236,7 @@ class TestPostExecute:
         ):
             response = client.post(
                 "/v1/execute",
-                headers={"Authorization": f"Bearer {_VALID_KEY}", "Idempotency-Key": f"idem_{tool_type}"},
+                headers={"Authorization": _VALID_KEY, "Idempotency-Key": f"idem_{tool_type}"},
                 json={"tool": tool_type},
             )
         assert response.status_code == 200, f"Tool '{tool_type}' returned {response.status_code}: {response.text}"
@@ -268,7 +268,7 @@ class TestGetExecution:
         with patch("app.api.v1.execute.get_db", return_value=db):
             response = client.get(
                 f"/v1/execute/{_EXECUTION_ID}",
-                headers={"Authorization": f"Bearer {_VALID_KEY}"},
+                headers={"Authorization": _VALID_KEY},
             )
         assert response.status_code == 200
         data = response.json()["data"]
@@ -285,7 +285,7 @@ class TestGetExecution:
         with patch("app.api.v1.execute.get_db", return_value=db):
             response = client.get(
                 f"/v1/execute/{_EXECUTION_ID}",
-                headers={"Authorization": f"Bearer {_VALID_KEY}"},
+                headers={"Authorization": _VALID_KEY},
             )
         data = response.json()["data"]
         assert data["reasoning_trace"] is not None
@@ -297,7 +297,7 @@ class TestGetExecution:
         with patch("app.api.v1.execute.get_db", return_value=db):
             response = client.get(
                 f"/v1/execute/{_EXECUTION_ID}",
-                headers={"Authorization": f"Bearer {_VALID_KEY}"},
+                headers={"Authorization": _VALID_KEY},
             )
         data = response.json()["data"]
         assert data["reasoning_trace"] is None
@@ -310,7 +310,7 @@ class TestGetExecution:
         with patch("app.api.v1.execute.get_db", return_value=db):
             response = client.get(
                 "/v1/execute/does_not_exist",
-                headers={"Authorization": f"Bearer {_VALID_KEY}"},
+                headers={"Authorization": _VALID_KEY},
             )
         assert response.status_code == 404
 
@@ -318,7 +318,7 @@ class TestGetExecution:
         client = TestClient(app)
         response = client.get(
             f"/v1/execute/{_EXECUTION_ID}",
-            headers={"Authorization": "Bearer not_a_valid_key"},
+            headers={"Authorization": "not_a_valid_key"},
         )
         assert response.status_code == 401
 
@@ -331,6 +331,6 @@ class TestGetExecution:
         with patch("app.api.v1.execute.get_db", return_value=db):
             response = client.get(
                 "/v1/execute/other_tenant_exec",
-                headers={"Authorization": f"Bearer {_VALID_KEY}"},
+                headers={"Authorization": _VALID_KEY},
             )
         assert response.status_code == 404

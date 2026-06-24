@@ -48,7 +48,7 @@ export default function ApiDocsPage() {
           Generate keys from the <span className="text-brand-text">Developer</span> page.
         </p>
         <CodeBlock lang="bash" code={`curl ${BASE_URL}/execute \\
-  -H "Authorization: Bearer ck_live_..."`} />
+  -H "Authorization: ck_live_..."`} />
       </section>
 
       <section className="space-y-3">
@@ -77,12 +77,12 @@ export default function ApiDocsPage() {
           path="/v1/execute"
           description="Enqueue a tool execution. Returns immediately with an execution_id. Poll for the result."
           headers={[
-            { name: 'Authorization',  required: true,  description: 'Bearer ck_live_...' },
+            { name: 'Authorization',  required: true,  description: 'ck_live_...' },
             { name: 'Idempotency-Key', required: true,  description: 'Unique key per operation (UUID recommended)' },
             { name: 'Content-Type',   required: true,  description: 'application/json' },
           ]}
           example={`curl -X POST ${BASE_URL}/execute \\
-  -H "Authorization: Bearer ck_live_..." \\
+  -H "Authorization: ck_live_..." \\
   -H "Idempotency-Key: $(uuidgen)" \\
   -H "Content-Type: application/json" \\
   -d '{
@@ -110,10 +110,10 @@ export default function ApiDocsPage() {
           path="/v1/execute/{execution_id}"
           description="Fetch the current state of an execution. Poll until status is not queued or running."
           headers={[
-            { name: 'Authorization', required: true, description: 'Bearer ck_live_...' },
+            { name: 'Authorization', required: true, description: 'ck_live_...' },
           ]}
           example={`curl ${BASE_URL}/execute/<execution_id> \\
-  -H "Authorization: Bearer ck_live_..."`}
+  -H "Authorization: ck_live_..."`}
         />
         <CodeBlock lang="json" code={`{
   "data": {
@@ -137,10 +137,10 @@ export default function ApiDocsPage() {
           path="/v1/execute/tools"
           description="Returns all tools deployed for your tenant, including their type, autonomy level, and status."
           headers={[
-            { name: 'Authorization', required: true, description: 'Bearer ck_live_...' },
+            { name: 'Authorization', required: true, description: 'ck_live_...' },
           ]}
           example={`curl ${BASE_URL}/execute/tools \\
-  -H "Authorization: Bearer ck_live_..."`}
+  -H "Authorization: ck_live_..."`}
         />
       </section>
 
@@ -152,21 +152,21 @@ export default function ApiDocsPage() {
             path="/v1/execute/approvals"
             description="List all pending approval requests awaiting a human decision."
             headers={[
-              { name: 'Authorization', required: true, description: 'Bearer ck_live_...' },
+              { name: 'Authorization', required: true, description: 'ck_live_...' },
             ]}
             example={`curl ${BASE_URL}/execute/approvals \\
-  -H "Authorization: Bearer ck_live_..."`}
+  -H "Authorization: ck_live_..."`}
           />
           <EndpointCard
             method="POST"
             path="/v1/execute/approvals/{id}/approve"
             description="Approve a pending action. Enforces expiry TTL — stale approvals are rejected."
             headers={[
-              { name: 'Authorization',   required: true, description: 'Bearer ck_live_...' },
+              { name: 'Authorization',   required: true, description: 'ck_live_...' },
               { name: 'Idempotency-Key', required: true, description: 'Unique key per operation' },
             ]}
             example={`curl -X POST ${BASE_URL}/execute/approvals/<id>/approve \\
-  -H "Authorization: Bearer ck_live_..." \\
+  -H "Authorization: ck_live_..." \\
   -H "Idempotency-Key: $(uuidgen)"`}
           />
           <EndpointCard
@@ -174,11 +174,11 @@ export default function ApiDocsPage() {
             path="/v1/execute/approvals/{id}/reject"
             description="Reject a pending action. The execution is marked blocked and logged to the audit trail."
             headers={[
-              { name: 'Authorization',   required: true, description: 'Bearer ck_live_...' },
+              { name: 'Authorization',   required: true, description: 'ck_live_...' },
               { name: 'Idempotency-Key', required: true, description: 'Unique key per operation' },
             ]}
             example={`curl -X POST ${BASE_URL}/execute/approvals/<id>/reject \\
-  -H "Authorization: Bearer ck_live_..." \\
+  -H "Authorization: ck_live_..." \\
   -H "Idempotency-Key: $(uuidgen)"`}
           />
         </div>
@@ -191,10 +191,10 @@ export default function ApiDocsPage() {
           path="/v1/execute/audit"
           description="Immutable append-only audit trail of every agent action taken for your tenant."
           headers={[
-            { name: 'Authorization', required: true, description: 'Bearer ck_live_...' },
+            { name: 'Authorization', required: true, description: 'ck_live_...' },
           ]}
           example={`curl "${BASE_URL}/execute/audit?limit=20&offset=0" \\
-  -H "Authorization: Bearer ck_live_..."`}
+  -H "Authorization: ck_live_..."`}
         />
       </section>
 
@@ -205,10 +205,10 @@ export default function ApiDocsPage() {
           path="/v1/execute/transactions"
           description="Paginated list of financial transactions synced and processed by your deployed tools."
           headers={[
-            { name: 'Authorization', required: true, description: 'Bearer ck_live_...' },
+            { name: 'Authorization', required: true, description: 'ck_live_...' },
           ]}
           example={`curl "${BASE_URL}/execute/transactions?limit=20&offset=0" \\
-  -H "Authorization: Bearer ck_live_..."`}
+  -H "Authorization: ck_live_..."`}
         />
       </section>
 

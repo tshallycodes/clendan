@@ -49,10 +49,9 @@ class ExecuteRequest(BaseModel):
 
 async def _resolve_api_key(authorization: str) -> tuple[str, str]:
     """Validate API key and return (tenant_id, api_key_id), or raise 401."""
-    if not authorization.startswith("Bearer ck_live_"):
+    if not authorization.startswith("ck_live_"):
         raise HTTPException(status_code=401, detail="Invalid API key format")
-    raw_key = authorization.removeprefix("Bearer ")
-    key_hash = hashlib.sha256(raw_key.encode()).hexdigest()
+    key_hash = hashlib.sha256(authorization.encode()).hexdigest()
     db = get_db()
     api_key = await db.apikey.find_first(where={"key_hash": key_hash, "status": "active"})
     if not api_key:
@@ -74,7 +73,7 @@ async def execute(
 ):
     """
     Direct API execution path for external callers.
-    Authenticates via API key (Bearer ck_live_...), enqueues the requested tool.
+    Authenticates via API key (ck_live_...), enqueues the requested tool.
     Same Idempotency-Key + tenant + tool returns the existing execution record.
     """
     tenant_id, api_key_id = await _resolve_api_key(authorization)

@@ -58,7 +58,7 @@ export function ApiPlayground() {
     pollRef.current = setTimeout(async () => {
       try {
         const res = await fetch(`${API}/v1/execute/${executionId}`, {
-          headers: { Authorization: `Bearer ${apiKey}` },
+          headers: { Authorization: apiKey },
         })
         const json: unknown = await res.json()
         const inner = ((json as Record<string, unknown>)?.['data']) as Record<string, unknown> | undefined
@@ -91,7 +91,7 @@ export function ApiPlayground() {
       const res = await fetch(`${API}/v1/execute`, {
         method: 'POST',
         headers: {
-          Authorization: `Bearer ${apiKey}`,
+          Authorization: apiKey,
           'Idempotency-Key': idempotencyKey,
           'Content-Type': 'application/json',
         },
