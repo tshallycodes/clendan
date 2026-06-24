@@ -3,7 +3,7 @@
 ## Base URL
 
 ```
-https://api.clendan.com/v1
+https://api-production-0d35.up.railway.app/v1
 ```
 
 All endpoints are versioned under `/v1`. Every response has this shape:
@@ -19,87 +19,137 @@ All endpoints are versioned under `/v1`. Every response has this shape:
 
 ## Authentication
 
-Dashboard endpoints use a short-lived Clerk JWT passed as `Authorization: Bearer <token>`.
+Two authentication schemes are used depending on the endpoint type:
 
-Agent execution endpoints use `X-Tenant-ID` (your tenant ID) paired with `Idempotency-Key` (unique UUID per operation).
+| Endpoint type | Header |
+| --- | --- |
+| Dashboard (internal) | `Authorization: Bearer <clerk-jwt>` |
+| External API (agent execution) | `Authorization: ck_live_...` |
 
-Financial write endpoints require `Idempotency-Key` — the same key safely retries and returns the existing result.
+Generate API keys from the Developer page. Keys are shown only once on creation — copy immediately. To revoke, use the Revoke button in the Developer page.
 
 Rate limit: 120 requests per minute.
 
-## Endpoints
+## Agent Execution Endpoints
 
-### POST /v1/onboarding
-Create your tenant and user on first sign-in. Safe to call multiple times — idempotent.
-Required headers: `Authorization: Bearer <clerk-token>`
-
-### GET /v1/dashboard/stats
-Returns execution counts, pending approvals, active tools, invoices processed, and transactions synced.
-Required headers: `Authorization: Bearer <clerk-token>`
-
-### GET /v1/dashboard/executions?limit=20&offset=0
-Paginated list of agent executions for your tenant, newest first.
-Required headers: `Authorization: Bearer <clerk-token>`
-
-### GET /v1/dashboard/approvals
-All pending human-approval requests awaiting a decision.
-Required headers: `Authorization: Bearer <clerk-token>`
-
-### GET /v1/dashboard/audit
-Immutable audit trail — append-only log of every agent action.
-Required headers: `Authorization: Bearer <clerk-token>`
-
-### POST /v1/agents/{tool_id}/run
-Enqueue a document for processing by a specific tool. Returns immediately with execution_id.
-Required headers: `X-Tenant-ID`, `Idempotency-Key`
-
-```bash
-FILE_B64=$(base64 -w0 invoice.pdf)
-
-curl -X POST https://api.clendan.com/v1/agents/<tool_id>/run \
-  -H "X-Tenant-ID: <your-tenant-id>" \
-  -H "Idempotency-Key: $(uuidgen)" \
-  -H "Content-Type: application/json" \
-  -d "{\"file_bytes_b64\": \"$FILE_B64\", \"content_type\": \"application/pdf\"}"
-```
-
-### POST /v1/approvals/{approval_id}/respond
-Approve or reject a pending action. Enforces expiry TTL — stale approvals rejected with 410.
-Required headers: `X-Tenant-ID`
-
-```json
-{ "action": "approve", "responder_id": "<your-user-id>" }
-{ "action": "reject",  "responder_id": "<your-user-id>" }
-```
+All agent execution endpoints authenticate with `Authorization: ck_live_...`.
 
 ### POST /v1/execute
-Run any deployed tool directly.
 
-### GET /v1/tools
-List all deployed tools for your tenant.
+Trigger any deployed tool. Returns immediately with an `execution_id` — poll the result endpoint to get the outcome.
 
-### GET /v1/approvals
-List all pending approvals.
+Required headers: `Authorization: ck_live_...`, `Idempotency-Key: <uuid>`, `Content-Type: application/json`
 
-### POST /v1/approvals/{id}/approve
-Approve an agent action.
+```bash
+curl -X POST https://api-production-0d35.up.railway.app/v1/execute \
+  -H "Authorization: ck_live_..." \
+  -H "Idempotency-Key: $(uuidgen)" \
+  -H "Content-Type: application/json" \
+  -d '{"tool": "invoice_processing", "payload": {}}'
+```
 
-### POST /v1/approvals/{id}/reject
-Reject an agent action.
+Response:
 
-### GET /v1/audit
-Query the immutable audit log.
+```json
+{ "execution_id": "...", "status": "queued", "decision": "pending", "idempotent": false }
+```
 
-### GET /v1/transactions
-List synced bank transactions.
+Available tool types: `invoice_processing`, `receipt_processing`, `expense_control`, `collections`, `fraud_detection`, `treasury`, `compliance`, `reconciliation`, `revenue_recognition`, `ai_accountant`, `credit_underwriting`, `document_intelligence`, `spend_control`
 
-### POST /v1/webhooks
-Register a webhook endpoint to receive real-time events.
+### GET /v1/execute/{execution_id}
+
+Poll for the result of a queued execution.
+
+Required headers: `Authorization: ck_live_...`
+
+```bash
+curl https://api-production-0d35.up.railway.app/v1/execute/<execution_id> \
+  -H "Authorization: ck_live_..."
+```
+
+Response fields: `status`, `decision`, `confidence`, `reasoning_trace`, `duration_ms`, `error`
+
+### GET /v1/execute/tools
+
+List all active deployed tools for the tenant.
+
+Required headers: `Authorization: ck_live_...`
+
+```bash
+curl https://api-production-0d35.up.railway.app/v1/execute/tools \
+  -H "Authorization: ck_live_..."
+```
+
+### GET /v1/execute/approvals
+
+List all pending approvals awaiting a human decision.
+
+Required headers: `Authorization: ck_live_...`
+
+```bash
+curl https://api-production-0d35.up.railway.app/v1/execute/approvals \
+  -H "Authorization: ck_live_..."
+```
+
+### POST /v1/execute/approvals/{id}/approve
+
+Approve a pending agent action.
+
+Required headers: `Authorization: ck_live_...`, `Idempotency-Key: <uuid>`
+
+```bash
+curl -X POST https://api-production-0d35.up.railway.app/v1/execute/approvals/<id>/approve \
+  -H "Authorization: ck_live_..." \
+  -H "Idempotency-Key: $(uuidgen)"
+```
+
+### POST /v1/execute/approvals/{id}/reject
+
+Reject a pending agent action.
+
+Required headers: `Authorization: ck_live_...`, `Idempotency-Key: <uuid>`
+
+```bash
+curl -X POST https://api-production-0d35.up.railway.app/v1/execute/approvals/<id>/reject \
+  -H "Authorization: ck_live_..." \
+  -H "Idempotency-Key: $(uuidgen)"
+```
+
+### GET /v1/execute/audit
+
+Query the immutable audit log. Supports `limit` and `offset` query parameters (default: limit=20, offset=0).
+
+Required headers: `Authorization: ck_live_...`
+
+```bash
+curl "https://api-production-0d35.up.railway.app/v1/execute/audit?limit=20&offset=0" \
+  -H "Authorization: ck_live_..."
+```
+
+### GET /v1/execute/transactions
+
+List synced bank transactions. Supports `limit` and `offset` query parameters.
+
+Required headers: `Authorization: ck_live_...`
+
+```bash
+curl "https://api-production-0d35.up.railway.app/v1/execute/transactions?limit=20&offset=0" \
+  -H "Authorization: ck_live_..."
+```
+
+## Idempotency
+
+All POST requests require an `Idempotency-Key` header. Use a UUID generated at the point of the call. Sending the same key again returns the existing result without re-executing.
+
+```python
+import uuid
+idempotency_key = str(uuid.uuid4())  # generate fresh per intended operation
+```
 
 ## Webhook Events
 
 | Event | Description |
-|---|---|
+| --- | --- |
 | `tool.executed` | Tool completed execution |
 | `tool.approval_required` | Human approval needed |
 | `tool.policy_blocked` | Policy engine blocked action |
@@ -108,53 +158,41 @@ Register a webhook endpoint to receive real-time events.
 | `transaction.synced` | New transactions ingested |
 | `audit.written` | Audit log entry created |
 
-## API Keys
-
-Generate API keys in the Developer page. Keys are prefixed `ck_live_` for production. Keys are shown only once — copy them immediately. To revoke, use the Revoke button in the Developer page.
-
-Pass keys as the Authorization header: `Authorization: ck_live_...`
-
 ## Python Example
 
 ```python
-import base64, uuid, httpx
+import uuid, requests
 
-BASE = "https://api.clendan.com/v1"
-TENANT_ID = "<your-tenant-id>"
-TOOL_ID = "<your-tool-id>"
+API_KEY = "ck_live_..."
+BASE = "https://api-production-0d35.up.railway.app/v1"
 
-with open("invoice.pdf", "rb") as f:
-    b64 = base64.b64encode(f.read()).decode()
-
-resp = httpx.post(
-    f"{BASE}/agents/{TOOL_ID}/run",
+resp = requests.post(
+    f"{BASE}/execute",
     headers={
-        "X-Tenant-ID":     TENANT_ID,
+        "Authorization": API_KEY,
         "Idempotency-Key": str(uuid.uuid4()),
+        "Content-Type": "application/json",
     },
-    json={"file_bytes_b64": b64, "content_type": "application/pdf"},
+    json={"tool": "invoice_processing", "payload": {}},
 )
-print(resp.json()["data"])  # {"execution_id": "...", "status": "queued"}
+data = resp.json()["data"]
+print(data["execution_id"], data["status"])  # "queued"
 ```
 
 ## TypeScript Example
 
 ```typescript
-const BASE = "https://api.clendan.com/v1"
-const TENANT_ID = "<your-tenant-id>"
-const TOOL_ID = "<your-tool-id>"
+const API_KEY = "ck_live_..."
+const BASE = "https://api-production-0d35.up.railway.app/v1"
 
-const fileBytes = await fs.readFile("invoice.pdf")
-const b64 = fileBytes.toString("base64")
-
-const res = await fetch(`${BASE}/agents/${TOOL_ID}/run`, {
+const res = await fetch(`${BASE}/execute`, {
   method: "POST",
   headers: {
-    "X-Tenant-ID":     TENANT_ID,
+    "Authorization": API_KEY,
     "Idempotency-Key": crypto.randomUUID(),
-    "Content-Type":    "application/json",
+    "Content-Type": "application/json",
   },
-  body: JSON.stringify({ file_bytes_b64: b64, content_type: "application/pdf" }),
+  body: JSON.stringify({ tool: "invoice_processing", payload: {} }),
 })
 
 const { data } = await res.json()
