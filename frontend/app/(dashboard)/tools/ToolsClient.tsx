@@ -1,7 +1,7 @@
 ﻿'use client'
 
 import Link from 'next/link'
-import { ArrowRight } from 'lucide-react'
+import { ArrowRight } from '@phosphor-icons/react'
 import { motion } from 'framer-motion'
 import { TOOLS, type ToolDef } from './tools-data'
 import type { Tool } from '@/components/dashboard/tools/ToolCard'

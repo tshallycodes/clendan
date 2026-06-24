@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useAuth } from '@clerk/nextjs'
 import Link from 'next/link'
-import { CheckCircle } from 'lucide-react'
+import { CheckCircle } from '@phosphor-icons/react'
 import { AnimatePresence, motion } from 'framer-motion'
 import type { Tool } from './ToolCard'
 

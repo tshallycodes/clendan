@@ -1,6 +1,6 @@
 'use client'
 
-import { ChevronUp, ChevronDown } from 'lucide-react'
+import { CaretUp, CaretDown } from '@phosphor-icons/react'
 
 interface NumberInputProps {
   value: number
@@ -47,14 +47,14 @@ export function NumberInput({ value, min, max, step = 1, onChange, className }: 
           onClick={increment}
           className="flex-1 w-7 flex items-center justify-center text-brand-muted hover:text-brand-text hover:bg-brand-elevated border-b border-brand-border transition-colors"
         >
-          <ChevronUp size={10} />
+          <CaretUp size={10} />
         </button>
         <button
           type="button"
           onClick={decrement}
           className="flex-1 w-7 flex items-center justify-center text-brand-muted hover:text-brand-text hover:bg-brand-elevated transition-colors"
         >
-          <ChevronDown size={10} />
+          <CaretDown size={10} />
         </button>
       </div>
     </div>

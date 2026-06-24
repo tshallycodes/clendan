@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useAuth } from '@clerk/nextjs'
-import { Check } from 'lucide-react'
+import { Check } from '@phosphor-icons/react'
 import { ROLE_LABEL } from './types'
 import { useToast } from '@/components/Providers'
 

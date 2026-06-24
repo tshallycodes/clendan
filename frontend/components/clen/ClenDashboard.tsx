@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { usePathname } from 'next/navigation'
-import { MessageCircle } from 'lucide-react'
+import { ChatCircle } from '@phosphor-icons/react'
 import { ClenPanel } from './ClenPanel'
 import { cn } from '@/lib/utils'
 
@@ -25,7 +25,7 @@ export function ClenDashboard() {
           'relative flex items-center justify-center',
           !isOpen && 'animate-[clen-pulse_2.4s_ease-in-out_infinite]',
         )}>
-          <MessageCircle className={cn(
+          <ChatCircle className={cn(
             'w-3.5 h-3.5 shrink-0 transition-colors',
             isOpen ? 'text-brand-green' : 'text-brand-green',
           )} />

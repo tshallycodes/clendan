@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
-import { X } from 'lucide-react'
+import { X } from '@phosphor-icons/react'
 import { useAuth } from '@clerk/nextjs'
 import { useCanConfigure } from '@/lib/auth-client'
 import { useCurrency } from '@/components/Providers'

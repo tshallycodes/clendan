@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { Cpu, Receipt, CheckSquare } from 'lucide-react'
+import { Cpu, Receipt, CheckSquare } from '@phosphor-icons/react'
 
 const ACTIONS = [
   {

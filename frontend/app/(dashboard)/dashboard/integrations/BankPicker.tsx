@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Image from 'next/image'
-import { Plus } from 'lucide-react'
+import { Plus } from '@phosphor-icons/react'
 import { BANKS, BankDef } from './banks-data'
 import { IntegrationStatus } from './types'
 

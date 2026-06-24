@@ -3,7 +3,7 @@
 import React from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Home, CheckSquare, Plug, Code2, Cpu, Settings, LogOut, Receipt } from 'lucide-react'
+import { House, CheckSquare, Plugs, Code, Cpu, Gear, SignOut, Receipt } from '@phosphor-icons/react'
 import { useClerk } from '@clerk/nextjs'
 import { cn } from '@/lib/utils'
 import { ThemeToggle } from '@/components/ThemeToggle'
@@ -11,13 +11,13 @@ import { motion } from 'framer-motion'
 import { Logo } from '@/components/Logo'
 
 const NAV: { icon: React.ElementType; label: string; href: string; external?: boolean }[] = [
-  { icon: Home,        label: 'Dashboard',    href: '/dashboard' },
+  { icon: House,        label: 'Dashboard',    href: '/dashboard' },
   { icon: CheckSquare, label: 'Approvals',    href: '/approvals' },
   { icon: Receipt,     label: 'Transactions', href: '/transactions' },
-  { icon: Plug,        label: 'Integrations', href: '/dashboard/integrations' },
+  { icon: Plugs,       label: 'Integrations', href: '/dashboard/integrations' },
   { icon: Cpu,         label: 'Tools',        href: '/tools' },
-  { icon: Code2,       label: 'Developer',    href: '/developer' },
-  { icon: Settings,    label: 'Settings',     href: '/settings' },
+  { icon: Code,        label: 'Developer',    href: '/developer' },
+  { icon: Gear,        label: 'Settings',     href: '/settings' },
 ]
 
 export function Sidebar() {
@@ -76,7 +76,7 @@ export function Sidebar() {
           onClick={() => signOut({ redirectUrl: '/sign-in' })}
           className="w-full text-xs font-mono text-brand-muted hover:text-[#c5123b] transition-colors flex items-center justify-center gap-2 border border-brand-border px-3 py-2 rounded-sm"
         >
-          <LogOut className="w-3 h-3" />
+          <SignOut className="w-3 h-3" />
           Sign out
         </button>
       </div>

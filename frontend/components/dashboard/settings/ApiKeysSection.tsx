@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useAuth } from '@clerk/nextjs'
-import { Copy, Check, Plus, X } from 'lucide-react'
+import { Copy, Check, Plus, X } from '@phosphor-icons/react'
 import { useCanConfigure } from '@/lib/auth-client'
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'

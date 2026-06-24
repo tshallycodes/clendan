@@ -3,7 +3,7 @@
 import React, { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Home, CheckSquare, Plug, Code2, Cpu, Settings, LogOut, Receipt, Menu, X } from 'lucide-react'
+import { House, CheckSquare, Plugs, Code, Cpu, Gear, SignOut, Receipt, List, X } from '@phosphor-icons/react'
 import { useClerk } from '@clerk/nextjs'
 import { motion, AnimatePresence } from 'framer-motion'
 import { cn } from '@/lib/utils'
@@ -11,13 +11,13 @@ import { ThemeToggle } from '@/components/ThemeToggle'
 import { Logo } from '@/components/Logo'
 
 const NAV: { icon: React.ElementType; label: string; href: string; external?: boolean }[] = [
-  { icon: Home,        label: 'Dashboard',    href: '/dashboard' },
+  { icon: House,        label: 'Dashboard',    href: '/dashboard' },
   { icon: CheckSquare, label: 'Approvals',    href: '/approvals' },
   { icon: Receipt,     label: 'Transactions', href: '/transactions' },
-  { icon: Plug,        label: 'Integrations', href: '/dashboard/integrations' },
+  { icon: Plugs,       label: 'Integrations', href: '/dashboard/integrations' },
   { icon: Cpu,         label: 'Tools',        href: '/tools' },
-  { icon: Code2,       label: 'Developer',    href: '/developer' },
-  { icon: Settings,    label: 'Settings',     href: '/settings' },
+  { icon: Code,        label: 'Developer',    href: '/developer' },
+  { icon: Gear,        label: 'Settings',     href: '/settings' },
 ]
 
 export function MobileNav() {
@@ -36,7 +36,7 @@ export function MobileNav() {
           className="text-brand-muted hover:text-brand-text transition-colors p-1"
           aria-label="Open navigation"
         >
-          <Menu className="w-5 h-5" />
+          <List className="w-5 h-5" />
         </button>
       </div>
 
@@ -111,7 +111,7 @@ export function MobileNav() {
                   onClick={() => signOut({ redirectUrl: '/sign-in' })}
                   className="w-full text-xs font-mono text-brand-muted hover:text-[#ff4d6d] transition-colors flex items-center justify-center gap-2 border border-brand-border px-3 py-2 rounded-sm"
                 >
-                  <LogOut className="w-3 h-3" />
+                  <SignOut className="w-3 h-3" />
                   Sign out
                 </button>
               </div>

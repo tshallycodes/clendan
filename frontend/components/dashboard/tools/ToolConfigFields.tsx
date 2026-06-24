@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { Info } from '@phosphor-icons/react'
 import { Select } from '@/components/ui/Select'
 import { NumberInput } from '@/components/ui/NumberInput'
 import { useCurrency } from '@/components/Providers'
@@ -277,15 +278,11 @@ function InfoIcon({ fieldKey, open, onToggle }: {
       type="button"
       onClick={() => onToggle(fieldKey)}
       aria-label="What does this setting do?"
-      className={`ml-1.5 inline-flex items-center justify-center w-3.5 h-3.5 rounded-full border transition-all shrink-0 ${
-        open
-          ? 'border-[#00a8cc] text-[#00a8cc] bg-[rgba(0,168,204,0.12)]'
-          : 'border-[rgba(0,168,204,0.45)] text-[#00a8cc] opacity-70 hover:opacity-100 hover:bg-[rgba(0,168,204,0.08)]'
+      className={`ml-2 shrink-0 transition-all ${
+        open ? 'text-[#00a8cc]' : 'text-[rgba(0,168,204,0.5)] hover:text-[#00a8cc]'
       }`}
     >
-      <svg width="8" height="8" viewBox="0 0 8 8" fill="none" aria-hidden="true">
-        <text x="4" y="6.5" textAnchor="middle" fontSize="7" fontFamily="monospace" fill="currentColor">i</text>
-      </svg>
+      <Info size={13} weight="fill" />
     </button>
   )
 }
@@ -314,9 +311,9 @@ export function ToolConfigFields({ toolType, config, onChange }: ToolConfigField
           const isOn = value as boolean
           return (
             <div key={field.key}>
-              <div className="flex items-center justify-between">
-                <span className={`${labelClass} flex items-center`}>
-                  {field.label}
+              <div className="flex items-start justify-between gap-6">
+                <span className={`${labelClass} flex items-center flex-1 min-w-0`}>
+                  <span className="leading-relaxed">{field.label}</span>
                   {field.description && (
                     <InfoIcon fieldKey={field.key} open={hintOpen} onToggle={toggleHint} />
                   )}
@@ -324,7 +321,7 @@ export function ToolConfigFields({ toolType, config, onChange }: ToolConfigField
                 <button
                   type="button"
                   onClick={() => onChange(field.key, !isOn)}
-                  className={`text-xs font-mono px-3 py-1 rounded-sm border transition-colors ${isOn ? 'border-brand-green text-brand-green' : 'border-brand-border text-brand-muted'}`}
+                  className={`shrink-0 text-xs font-mono px-3 py-1 rounded-sm border transition-colors ${isOn ? 'border-brand-green text-brand-green' : 'border-brand-border text-brand-muted'}`}
                 >
                   {isOn ? 'ON' : 'OFF'}
                 </button>

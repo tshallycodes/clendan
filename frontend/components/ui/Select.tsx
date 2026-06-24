@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { ChevronDown } from 'lucide-react'
+import { CaretDown } from '@phosphor-icons/react'
 
 export interface SelectOption {
   value: string
@@ -41,7 +41,7 @@ export function Select({ value, options, onChange, placeholder, className }: Sel
         className={`w-full flex items-center justify-between bg-brand-bg border rounded-sm px-3 py-2 text-xs font-mono text-brand-text outline-none transition-colors ${open ? 'border-[#00C853]' : 'border-brand-border'}`}
       >
         <span className={selected ? 'text-brand-text' : 'text-brand-muted'}>{displayLabel}</span>
-        <ChevronDown
+        <CaretDown
           size={12}
           className={`shrink-0 ml-2 text-brand-muted transition-transform duration-150 ${open ? 'rotate-180' : ''}`}
         />

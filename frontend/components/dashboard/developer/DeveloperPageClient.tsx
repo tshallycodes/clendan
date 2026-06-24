@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useAuth } from '@clerk/nextjs'
-import { Copy, Check, ExternalLink, Plus, X, Zap, GitBranch, ShieldCheck } from 'lucide-react'
+import { Copy, Check, ArrowSquareOut, Plus, X, Lightning, GitBranch, ShieldCheck } from '@phosphor-icons/react'
 import { useToast } from '@/components/Providers'
 import { motion } from 'framer-motion'
 import { CodeBlock } from '@/components/dashboard/api/CodeBlock'
@@ -71,7 +71,7 @@ const pageVariants = { hidden: {}, show: { transition: { staggerChildren: 0.07 }
 const fadeUp = { hidden: { opacity: 0, y: 14 }, show: { opacity: 1, y: 0, transition: { duration: 0.35, ease: EASE } } }
 
 const CAPABILITIES = [
-  { icon: Zap, title: 'Execute Tools', desc: 'Trigger any deployed AI tool via a single POST endpoint.' },
+  { icon: Lightning, title: 'Execute Tools', desc: 'Trigger any deployed AI tool via a single POST endpoint.' },
   { icon: GitBranch, title: 'Webhooks', desc: 'Real-time events when agents complete tasks or require approval.' },
   { icon: ShieldCheck, title: 'Audit Trail', desc: 'Query the full immutable log of every agent action.' },
 ]
@@ -238,7 +238,7 @@ export function DeveloperPageClient() {
         </div>
         <a href={DOCS_URL} target="_blank" rel="noopener noreferrer"
           className="shrink-0 flex items-center gap-1.5 text-xs font-mono border border-brand-border text-brand-text hover:bg-brand-elevated rounded-sm px-3 py-1.5 transition-colors">
-          API Reference <ExternalLink className="w-3 h-3" />
+          API Reference <ArrowSquareOut className="w-3 h-3" />
         </a>
       </motion.div>
 

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Check, Copy } from 'lucide-react'
+import { Check, Copy } from '@phosphor-icons/react'
 import { Light as SyntaxHighlighter } from 'react-syntax-highlighter'
 import python from 'react-syntax-highlighter/dist/esm/languages/hljs/python'
 import javascript from 'react-syntax-highlighter/dist/esm/languages/hljs/javascript'

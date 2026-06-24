@@ -1,7 +1,7 @@
 'use client'
 
 import { Fragment, useState } from 'react'
-import { Download } from 'lucide-react'
+import { DownloadSimple } from '@phosphor-icons/react'
 import { ReconciliationItem } from './types'
 import { useCurrency } from '@/components/Providers'
 
@@ -106,7 +106,7 @@ export function ReconciliationTable({ items, loading, runId, onExport }: Reconci
             onClick={() => onExport(runId)}
             className="flex items-center gap-1.5 text-[10px] font-mono text-brand-secondary border border-brand-border px-3 py-1.5 rounded-sm hover:text-brand-text hover:border-brand-text transition-colors shrink-0"
           >
-            <Download className="w-3 h-3" />
+            <DownloadSimple className="w-3 h-3" />
             Export CSV
           </button>
         </div>
