@@ -72,6 +72,9 @@ class MockPrisma:
 # Prisma ORM — client is generated from schema; not available without `prisma generate`
 prisma_stub = MagicMock()
 prisma_stub.Prisma = MockPrisma
+# Json must be a pass-through so `PrismaJson({"k": "v"})` returns the dict, not a MagicMock.
+# Tests that inspect call_args["data"]["reasoning_trace_json"] would otherwise get a MagicMock.
+prisma_stub.Json = lambda x: x
 sys.modules["prisma"] = prisma_stub
 
 # prisma.errors — must be a real exception class so `except UniqueViolationError:` works

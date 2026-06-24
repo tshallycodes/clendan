@@ -1,6 +1,6 @@
 ﻿"""
-Reconciliation API — /v1/reconciliation/*
-Endpoints: list runs, run items, trigger run, export CSV.
+Reconciliation API — /v1/reconciliation/* and /v1/reconcile (inline stub).
+Endpoints: list runs, run items, trigger run, export CSV, inline dataset compare.
 All queries scoped to current_user.tenant_id (no cross-tenant access).
 """
 from __future__ import annotations
@@ -341,3 +341,25 @@ async def export_run_csv(
         media_type="text/csv; charset=utf-8",
         headers={"Content-Disposition": f"attachment; filename=\"reconciliation_{run_id}.csv\""},
     )
+
+
+# ---------------------------------------------------------------------------
+# POST /v1/reconcile — inline dataset reconciliation stub
+# ---------------------------------------------------------------------------
+
+
+class InlineReconcileRequest(BaseModel):
+    source_dataset: list = []
+    target_dataset: list = []
+
+
+@router.post("/reconcile")
+async def reconcile_datasets(_body: InlineReconcileRequest, _current_user: RequireOrgAuth) -> dict:
+    """Inline dataset-to-dataset reconciliation stub. Full implementation via /v1/reconciliation/run."""
+    return standard_response(data={
+        "matched": [],
+        "unmatched": [],
+        "flagged": [],
+        "confidence": 0.0,
+        "status": "pending",
+    })

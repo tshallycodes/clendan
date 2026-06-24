@@ -1,10 +1,10 @@
-﻿"""
+"""
 Integration tests for the invoice processing tool.
 
 These tests call execute_invoice_tool directly (bypassing the arq queue)
 to verify the full decision flow end-to-end with all dependencies mocked.
 
-1.8 coverage:
+Coverage:
 - Auto-approved execution end-to-end
 - Approval-required execution end-to-end
 - Blocked execution end-to-end
@@ -12,7 +12,7 @@ to verify the full decision flow end-to-end with all dependencies mocked.
 """
 
 import pytest
-from unittest.mock import AsyncMock, MagicMock, patch, call
+from unittest.mock import AsyncMock, patch
 
 from app.models.invoice_parse import ParsedInvoice
 
@@ -60,6 +60,8 @@ COMMON_ARGS = dict(
     policy_config=POLICY_CONFIG,
 )
 
+_QB_WRITE = "app.integrations.quickbooks.write.write_bill_to_quickbooks"
+
 
 def _mock_audit():
     return AsyncMock(return_value="audit-log-id")
@@ -67,11 +69,11 @@ def _mock_audit():
 
 @pytest.mark.asyncio
 async def test_auto_approved_end_to_end():
-    mock_accounting = AsyncMock()
+    mock_accounting = AsyncMock(return_value={"qb_bill_id": "bill_001"})
 
     with (
         patch("app.tools.invoice_processing._extract_invoice", return_value=PARSED_INVOICE_AUTO),
-        patch("app.tools.invoice_processing._mock_accounting_write", mock_accounting),
+        patch(_QB_WRITE, mock_accounting),
         patch("app.tools.invoice_processing.write_audit_log", _mock_audit()),
     ):
         from app.tools.invoice_processing import execute_invoice_tool
@@ -84,11 +86,11 @@ async def test_auto_approved_end_to_end():
 
 @pytest.mark.asyncio
 async def test_approval_required_end_to_end():
-    mock_accounting = AsyncMock()
+    mock_accounting = AsyncMock(return_value={"qb_bill_id": "bill_001"})
 
     with (
         patch("app.tools.invoice_processing._extract_invoice", return_value=PARSED_INVOICE_APPROVE),
-        patch("app.tools.invoice_processing._mock_accounting_write", mock_accounting),
+        patch(_QB_WRITE, mock_accounting),
         patch("app.tools.invoice_processing.write_audit_log", _mock_audit()),
     ):
         from app.tools.invoice_processing import execute_invoice_tool
@@ -100,11 +102,11 @@ async def test_approval_required_end_to_end():
 
 @pytest.mark.asyncio
 async def test_blocked_end_to_end():
-    mock_accounting = AsyncMock()
+    mock_accounting = AsyncMock(return_value={"qb_bill_id": "bill_001"})
 
     with (
         patch("app.tools.invoice_processing._extract_invoice", return_value=PARSED_INVOICE_BLOCKED),
-        patch("app.tools.invoice_processing._mock_accounting_write", mock_accounting),
+        patch(_QB_WRITE, mock_accounting),
         patch("app.tools.invoice_processing.write_audit_log", _mock_audit()),
     ):
         from app.tools.invoice_processing import execute_invoice_tool
@@ -115,14 +117,12 @@ async def test_blocked_end_to_end():
 
 @pytest.mark.asyncio
 async def test_blocked_no_accounting_write_proof():
-    """
-    Proof requirement from 1.8: blocked case must never trigger an accounting write.
-    """
-    mock_accounting = AsyncMock()
+    """Proof requirement: blocked case must never trigger an accounting write."""
+    mock_accounting = AsyncMock(return_value={"qb_bill_id": "bill_001"})
 
     with (
         patch("app.tools.invoice_processing._extract_invoice", return_value=PARSED_INVOICE_BLOCKED),
-        patch("app.tools.invoice_processing._mock_accounting_write", mock_accounting),
+        patch(_QB_WRITE, mock_accounting),
         patch("app.tools.invoice_processing.write_audit_log", _mock_audit()),
     ):
         from app.tools.invoice_processing import execute_invoice_tool
@@ -142,10 +142,11 @@ async def test_audit_written_before_accounting_write():
 
     async def mock_accounting(*args, **kwargs):
         call_order.append("accounting")
+        return {"qb_bill_id": "bill_001"}
 
     with (
         patch("app.tools.invoice_processing._extract_invoice", return_value=PARSED_INVOICE_AUTO),
-        patch("app.tools.invoice_processing._mock_accounting_write", mock_accounting),
+        patch(_QB_WRITE, mock_accounting),
         patch("app.tools.invoice_processing.write_audit_log", mock_audit),
     ):
         from app.tools.invoice_processing import execute_invoice_tool
@@ -162,11 +163,11 @@ async def test_operation_fails_if_audit_write_fails():
     async def failing_audit(*args, **kwargs):
         raise RuntimeError("Audit log write failed — operation cannot complete")
 
-    mock_accounting = AsyncMock()
+    mock_accounting = AsyncMock(return_value={"qb_bill_id": "bill_001"})
 
     with (
         patch("app.tools.invoice_processing._extract_invoice", return_value=PARSED_INVOICE_AUTO),
-        patch("app.tools.invoice_processing._mock_accounting_write", mock_accounting),
+        patch(_QB_WRITE, mock_accounting),
         patch("app.tools.invoice_processing.write_audit_log", failing_audit),
     ):
         from app.tools.invoice_processing import execute_invoice_tool
@@ -177,10 +178,16 @@ async def test_operation_fails_if_audit_write_fails():
 
 
 @pytest.mark.asyncio
-async def test_low_confidence_raises_error():
+async def test_low_confidence_blocked_by_policy():
+    """Low OCR confidence routes through policy engine and returns blocked — not ValueError."""
     low_confidence_invoice = PARSED_INVOICE_AUTO.model_copy(update={"confidence": 0.3})
 
-    with patch("app.tools.invoice_processing._extract_invoice", return_value=low_confidence_invoice):
+    with (
+        patch("app.tools.invoice_processing._extract_invoice", return_value=low_confidence_invoice),
+        patch("app.tools.invoice_processing.write_audit_log", _mock_audit()),
+    ):
         from app.tools.invoice_processing import execute_invoice_tool
-        with pytest.raises(ValueError, match="confidence"):
-            await execute_invoice_tool(**COMMON_ARGS)
+        result = await execute_invoice_tool(**COMMON_ARGS)
+
+    assert result["decision"] == "blocked"
+    assert "confidence" in result["reason"].lower()

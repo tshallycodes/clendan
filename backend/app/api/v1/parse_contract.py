@@ -1,10 +1,11 @@
 """
 Contract Parse API — POST /v1/parse/contract.
-# TODO: wire contract extraction model in Phase 2
+Stub implementation — returns structured placeholder data until the extraction model is wired.
 """
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 from pydantic import BaseModel
 
+from app.core.responses import standard_response
 from app.core.security import RequireOrgAuth
 
 router = APIRouter(tags=["contract"])
@@ -17,4 +18,15 @@ class ParseContractRequest(BaseModel):
 
 @router.post("/parse/contract")
 async def parse_contract(body: ParseContractRequest, current_user: RequireOrgAuth) -> dict:
-    raise HTTPException(status_code=501, detail="Contract parsing is not yet available")
+    return standard_response(data={
+        "counterparty": None,
+        "contract_type": None,
+        "effective_date": None,
+        "expiry_date": None,
+        "obligations": [],
+        "amounts": [],
+        "payment_terms": None,
+        "governing_law": None,
+        "confidence": 0.0,
+        "status": "pending",
+    })
