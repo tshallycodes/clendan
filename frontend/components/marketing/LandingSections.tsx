@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { Lightning, Link, ShieldCheck } from '@phosphor-icons/react'
+import { Lightning, Link as LinkIcon, ShieldCheck } from '@phosphor-icons/react'
 import { motion } from 'framer-motion'
 import { FadeInUp, StaggerContainer, StaggerItem } from './AnimationWrappers'
 
@@ -68,7 +68,7 @@ export function ProblemStatement() {
 
 const SOLUTIONS = [
   { icon: Lightning, title: 'Deploy AI Tools', desc: 'Autonomous agents that execute real financial tasks, not just surface insights.' },
-  { icon: Link, title: 'Connect Your Stack', desc: 'Native integrations with Xero, QuickBooks, Plaid, Stripe, and your ERP.' },
+  { icon: LinkIcon, title: 'Connect Your Stack', desc: 'Native integrations with Xero, QuickBooks, Plaid, Stripe, and your ERP.' },
   { icon: ShieldCheck, title: 'Full Audit Trail', desc: 'Every action logged, every decision explained. Policy-enforced by default.' },
 ]
 
