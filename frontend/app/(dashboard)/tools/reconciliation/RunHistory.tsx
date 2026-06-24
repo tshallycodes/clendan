@@ -19,7 +19,7 @@ function fmtDateTime(d: string) {
 }
 
 function emailToName(email: string | null): string {
-  if (!email) return 'system'
+  if (!email) return 'Scheduled'
   return email.split('@')[0]
 }
 
