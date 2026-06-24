@@ -201,6 +201,8 @@ export function ApiPlayground() {
                 value={apiKey}
                 onChange={(e) => setApiKey(e.target.value)}
                 placeholder="ck_live_..."
+                autoComplete="new-password"
+                name="playground-api-key"
                 className="flex-1 min-w-0 bg-brand-bg border border-brand-border focus:border-[#00C853] text-brand-text placeholder:text-brand-muted rounded-sm px-3 py-2 text-xs font-mono outline-none"
               />
               <button
