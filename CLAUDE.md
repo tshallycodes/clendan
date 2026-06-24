@@ -490,11 +490,11 @@ Clendan is sharp-edged — infrastructure product aesthetic. Default: `sm`. Max:
 
 ## Implemented Architecture Decisions
 
-These patterns are live in the codebase. Do not re-derive or change them without understanding the reasoning below.
+These patterns apply to every tool, not just any one integration. Do not re-derive or change them without understanding the reasoning below.
 
 ### Autonomy Level Enforcement (`backend/app/tool.py`)
 
-Every tool has an `autonomy_level` field: `auto`, `approve`, or `suggest`. This overrides inline policy decisions in `run_orchestrator_job` after the decision is set, before the audit write.
+Every tool has an `autonomy_level` field (`auto` / `approve` / `suggest`) that overrides the policy engine decision in `run_orchestrator_job`, after the decision is set but before the audit write. `blocked` is never overridden.
 
 ```python
 def _apply_autonomy_override(decision: str, autonomy_level: str) -> str:
@@ -502,58 +502,41 @@ def _apply_autonomy_override(decision: str, autonomy_level: str) -> str:
         return "auto_approved"
     if autonomy_level == "suggest" and decision == "auto_approved":
         return "approval_required"
-    return decision  # blocked is never overridden
+    return decision
 ```
 
-The override is logged in the reasoning trace: `[autonomy=auto: approval_required→auto_approved]`.
+The override is logged in the reasoning trace: `[autonomy=auto: approval_required→auto_approved]`. Every new tool must pass through this function.
 
-### Reconciliation Scheduling (`backend/app/tool.py`)
+### Scheduled Tool Pattern (`backend/app/tool.py`)
 
-Hourly arq cron `run_reconciliation_scheduled_check` fires every hour. For each active reconciliation tool it:
+Tools that run on a schedule register an hourly arq cron job. The cron reads the tool's `config_json` for schedule settings, converts to tenant timezone using `ZoneInfo(tenant.timezone)` (falls back to UTC on error), and uses **date-bucketed idempotency keys** to prevent double-firing. Tools with `real-time` frequency skip the cron and trigger directly from integration sync hooks instead.
 
-1. Reads `config_json.reconciliation_frequency` (daily / weekly / real-time)
-2. Reads `config_json.run_hour_utc` (int 0–23) — compared against local hour in tenant timezone
-3. For `weekly`: reads `config_json.run_day_of_week` and compares against `now_local.weekday()`
-4. Uses `ZoneInfo(tenant.timezone)` for local time conversion — falls back to UTC on `ZoneInfoNotFoundError`
-5. Uses date-bucketed idempotency keys to prevent double-firing:
-   - Daily: `reconciliation:scheduled:{tool_id}:{YYYY-MM-DD}:{HH}`
-   - Weekly: `reconciliation:scheduled:{tool_id}:{YYYY-MM-DD}`
-6. Skips `real-time` frequency — those are triggered by sync hooks instead
-
-Registered in `ToolSettings.cron_jobs`: `cron(run_reconciliation_scheduled_check, minute=0)`
-
-### Real-Time Reconciliation Triggers
-
-After any Plaid or TrueLayer sync completes, if a `reconciliation` tool with `frequency == "real-time"` exists for the tenant, `enqueue_orchestrator_event` is called immediately. Idempotency key is hour-bucketed: `reconciliation:realtime:{tenant_id}:{YYYY-MM-DDTHH}`. Located in:
-
-- `backend/app/integrations/plaid/sync.py`
-- `backend/app/integrations/truelayer/sync.py`
+Cron jobs are registered in `ToolSettings.cron_jobs`. All scheduled tools follow this pattern — not just reconciliation.
 
 ### Tenant Timezone Architecture
 
-Timezone is a **global tenant setting**, NOT per-tool. Stored in `Tenant.timezone` (default `"UTC"`).
+Timezone is a **global tenant setting** — never per-tool. Stored in `Tenant.timezone` (default `"UTC"`).
 
 - **DB**: `Tenant.timezone String @default("UTC")`
 - **API**: `PATCH /v1/tenants/me` with `{ timezone: "Europe/London" }` — validated with `ZoneInfo(v)`
 - **Frontend**: `useTimezone()` hook from `Providers.tsx` — fetches on load, PATCHes on change, caches in `localStorage`
-- **Settings page**: `TimezoneSelector` component — searchable, 30 timezones across 6 regions
-- **Reconciliation config**: `run_hour_utc` description references Settings timezone. The `run_timezone` field was deliberately removed from tool config — timezone is global, not per-tool.
+- **Settings page**: `TimezoneSelector` component — searchable dropdown, 30 timezones across 6 regions
+
+Any tool config that references time (run hour, schedule window, etc.) should describe it relative to the tenant timezone from Settings — never add a timezone field to individual tool config.
 
 ### Conditional Config Fields (`frontend/components/dashboard/tools/ToolConfigFields.tsx`)
 
-`FieldDef` has an optional `showWhen` predicate:
+`FieldDef` has an optional `showWhen` predicate for fields that only apply under certain conditions:
 
 ```typescript
 showWhen?: (config: Record<string, unknown>) => boolean
 ```
 
-Applied in the renderer: `if (field.showWhen && !field.showWhen(config)) return null`
-
-Used for `run_day_of_week` which only shows when `reconciliation_frequency === 'weekly'`. Apply this pattern for any field that should conditionally appear based on another field's value.
+Applied in the renderer: `if (field.showWhen && !field.showWhen(config)) return null`. Use this for any config field whose visibility depends on another field's value.
 
 ### ConfigDrawer Config Initialisation
 
-Config state merges existing saved config with defaults so deployed tools show their saved values and new fields appear with sensible defaults:
+Config state always merges existing saved config with defaults — so deployed tools show their saved values and newly added fields appear with sensible defaults:
 
 ```typescript
 const [config, setConfig] = useState<Record<string, unknown>>(() => {
@@ -563,9 +546,9 @@ const [config, setConfig] = useState<Record<string, unknown>>(() => {
 })
 ```
 
-### Clerk JWT Email Fallback (`backend/app/core/security.py`)
+### Clerk JWT Email — Always Falls Back to Member Table (`backend/app/core/security.py`)
 
-Clerk JWTs do not include the `email` claim by default. `get_current_user` falls back to `Member.email` when the JWT email is empty:
+Clerk JWTs do not include the `email` claim by default. `get_current_user` always falls back to `Member.email`:
 
 ```python
 email = payload.get("email", "") or payload.get("email_address", "")
@@ -575,27 +558,27 @@ if not email:
         email = member.email
 ```
 
-This applies in both the `org_id` branch and the no-org fallback branch.
+`current_user.email` is always populated this way across every endpoint. Do not work around it by looking up the Member separately in individual routes.
 
-### `last_configured_by_email` (`backend/app/api/v1/tools.py`)
+### `last_configured_by_email` on All Tools (`backend/app/api/v1/tools.py`)
 
-- Set on **any** tool PATCH (autonomy change, config change, or both) — not only when config changes
-- Only written when `current_user.email` is non-empty (guards against writing blank over a real value)
-- Shows under the Configure drawer title, NOT on the tool page itself
-- Displays as username only: `email.split('@')[0]` — never the full email address
+- Written on **any** tool PATCH — autonomy change, config change, or both
+- Only written when `current_user.email` is non-empty (prevents blank overwriting a real value)
+- Shown in the Configure drawer header only — never on the tool page itself
+- Displayed as username only: `email.split('@')[0]`
 
 ### Audit Trace Rendering (`frontend/components/dashboard/tools/ToolAuditTab.tsx`)
 
-Two structured trace renderers replace raw JSON for expanded audit rows:
+Expanded audit rows render structured summaries, not raw JSON. Two renderers exist:
 
-- **`ReconciliationTrace`** — for `action.startsWith('reconciliation:')` AND trace has `overall_decision`. Shows decision badge, transaction/bill/invoice stats, flagged items, needs-review items.
-- **`OrchestratorTrace`** — for any trace with a `decision` key (e.g. `event_routed:routed`). Shows decision badge, event type / confidence / duration stats, reasoning block, payload fields.
+- **`OrchestratorTrace`** — any trace with a `decision` key. Shows decision badge, event type / confidence / duration, reasoning, payload fields.
+- **`ReconciliationTrace`** — reconciliation-specific. Shows transaction stats, flagged items, needs-review items.
 
-Both have a "View raw" toggle that shows the underlying JSON. Always add a formatter here before falling back to raw JSON for new action types.
+Both have a "View raw" toggle. When adding a new tool, add a formatter in `TraceView` rather than letting it fall through to raw JSON.
 
-### Currency Symbols in Tool Config
+### Currency Symbols in Tool Config (`frontend/components/dashboard/tools/ToolConfigFields.tsx`)
 
-Tool config fields that display monetary values use `useCurrency()` + `CURRENCY_MAP` — never hardcode `£`:
+Any tool config field showing a monetary value uses the tenant's display currency — never hardcode `£`:
 
 ```typescript
 const { currency } = useCurrency()
@@ -604,7 +587,7 @@ const currencySymbol = CURRENCY_MAP[currency]?.symbol ?? currency
 
 ### Database Migrations on Railway
 
-Railway's arq environment is non-interactive. Use `python -m prisma db push` instead of `prisma migrate dev` for schema changes in that environment. `migrate dev` will hang waiting for confirmation input.
+Use `python -m prisma db push` for schema changes — not `prisma migrate dev`. Railway's arq environment is non-interactive and `migrate dev` will hang waiting for confirmation.
 
 ---
 
