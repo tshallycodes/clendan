@@ -32,9 +32,25 @@ type ResponseState =
 const MAX_POLL_ATTEMPTS = 20
 const POLL_INTERVAL_MS = 4000
 
+const DEFAULT_PAYLOADS: Record<ToolName, object> = {
+  invoice_processing:    { invoice_id: 'inv_001', amount_minor: 125000, currency: 'GBP', vendor: 'Acme Ltd' },
+  receipt_processing:    { receipt_id: 'rec_001', amount_minor: 4250, currency: 'GBP', merchant: 'Pret A Manger' },
+  expense_control:       { employee_id: 'emp_001', amount_minor: 8500, currency: 'GBP', category: 'travel', description: 'Train to London' },
+  collections:           { invoice_id: 'inv_001', outstanding_cents: 250000, due_date: '2026-05-01', contact_email: 'finance@client.com' },
+  fraud_detection:       { transaction_id: 'txn_001', amount_minor: 99900, currency: 'GBP', merchant: 'Unknown Vendor', country: 'NG' },
+  treasury:              { account_id: 'acc_001', balance_minor: 5000000, currency: 'GBP', forecast_days: 30 },
+  compliance:            { entity_id: 'ent_001', entity_type: 'vendor', jurisdiction: 'GB' },
+  reconciliation:        { period_start: '2026-05-01', period_end: '2026-05-31' },
+  revenue_recognition:   { contract_id: 'con_001', amount_minor: 1200000, currency: 'GBP', start_date: '2026-01-01', end_date: '2026-12-31' },
+  ai_accountant:         { query: 'Summarise outstanding liabilities for May 2026', context: 'month-end review' },
+  credit_underwriting:   { applicant_id: 'app_001', requested_amount_minor: 5000000, currency: 'GBP', term_months: 12 },
+  document_intelligence: { document_id: 'doc_001', document_type: 'invoice', source: 'email_attachment' },
+  spend_control:         { employee_id: 'emp_001', amount_minor: 35000, currency: 'GBP', category: 'software', vendor: 'Figma' },
+}
+
 export function ApiPlayground() {
   const [selectedTool, setSelectedTool] = useState<ToolName>('invoice_processing')
-  const [payloadText, setPayloadText] = useState('{}')
+  const [payloadText, setPayloadText] = useState(() => JSON.stringify(DEFAULT_PAYLOADS['invoice_processing'], null, 2))
   const [idempotencyKey, setIdempotencyKey] = useState('')
   const [apiKey, setApiKey] = useState('')
   const [showApiKey, setShowApiKey] = useState(false)
@@ -131,7 +147,11 @@ export function ApiPlayground() {
             <label className="text-[10px] font-mono uppercase tracking-widest text-brand-muted">Tool</label>
             <select
               value={selectedTool}
-              onChange={(e) => setSelectedTool(e.target.value as ToolName)}
+              onChange={(e) => {
+                const tool = e.target.value as ToolName
+                setSelectedTool(tool)
+                setPayloadText(JSON.stringify(DEFAULT_PAYLOADS[tool], null, 2))
+              }}
               className="w-full bg-brand-bg border border-brand-border focus:border-[#00C853] text-brand-text rounded-sm px-3 py-2 text-xs font-mono outline-none appearance-none cursor-pointer"
             >
               {TOOLS.map((t) => (
