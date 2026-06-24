@@ -334,9 +334,9 @@ Always use Tailwind design token classes (`bg-brand-surface`, `text-brand-text`,
 | `bg-brand-elevated` | `#f0f0f0` | `#1a1a1a` | Modals, dropdowns, nested cards |
 | `border-brand-border` / `divide-brand-border` | `#e0e0e0` | `#2c2c2c` | Card borders, dividers |
 | `border-brand-border-subtle` | `#ebebeb` | `#222222` | Subtle separators |
-| `text-brand-text` | `#111111` | `#f0f0f0` | Primary text |
-| `text-brand-secondary` | `#444444` | `#a0a0a0` | Labels, metadata |
-| `text-brand-muted` | `#888888` | `#666666` | Timestamps, captions, placeholders |
+| `text-brand-text` | `#0d1117` | `#f0f0f0` | Primary text |
+| `text-brand-secondary` | `#3d4754` | `#c8cdd4` | Labels, metadata |
+| `text-brand-muted` | `#5d6b7a` | `#9aa3ad` | Timestamps, captions, placeholders |
 
 **Hard rule: never write raw hex values for any of the above.** Use the Tailwind token class.
 Inline styles are allowed only for dynamic values (e.g. computed chart colours, bank brand colours).
@@ -487,6 +487,126 @@ Clendan is sharp-edged — infrastructure product aesthetic. Default: `sm`. Max:
 - Integration connection flow: OAuth → callback → store encrypted token → trigger initial sync → poll → confirm data present → mark connected. All steps required.
 - `POST /v1/agents/{id}/run` is idempotent — same idempotency key must return same result
 - Dashboard reads from DB-backed endpoints only — never calls external APIs directly from UI
+
+## Implemented Architecture Decisions
+
+These patterns are live in the codebase. Do not re-derive or change them without understanding the reasoning below.
+
+### Autonomy Level Enforcement (`backend/app/tool.py`)
+
+Every tool has an `autonomy_level` field: `auto`, `approve`, or `suggest`. This overrides inline policy decisions in `run_orchestrator_job` after the decision is set, before the audit write.
+
+```python
+def _apply_autonomy_override(decision: str, autonomy_level: str) -> str:
+    if autonomy_level == "auto" and decision == "approval_required":
+        return "auto_approved"
+    if autonomy_level == "suggest" and decision == "auto_approved":
+        return "approval_required"
+    return decision  # blocked is never overridden
+```
+
+The override is logged in the reasoning trace: `[autonomy=auto: approval_required→auto_approved]`.
+
+### Reconciliation Scheduling (`backend/app/tool.py`)
+
+Hourly arq cron `run_reconciliation_scheduled_check` fires every hour. For each active reconciliation tool it:
+
+1. Reads `config_json.reconciliation_frequency` (daily / weekly / real-time)
+2. Reads `config_json.run_hour_utc` (int 0–23) — compared against local hour in tenant timezone
+3. For `weekly`: reads `config_json.run_day_of_week` and compares against `now_local.weekday()`
+4. Uses `ZoneInfo(tenant.timezone)` for local time conversion — falls back to UTC on `ZoneInfoNotFoundError`
+5. Uses date-bucketed idempotency keys to prevent double-firing:
+   - Daily: `reconciliation:scheduled:{tool_id}:{YYYY-MM-DD}:{HH}`
+   - Weekly: `reconciliation:scheduled:{tool_id}:{YYYY-MM-DD}`
+6. Skips `real-time` frequency — those are triggered by sync hooks instead
+
+Registered in `ToolSettings.cron_jobs`: `cron(run_reconciliation_scheduled_check, minute=0)`
+
+### Real-Time Reconciliation Triggers
+
+After any Plaid or TrueLayer sync completes, if a `reconciliation` tool with `frequency == "real-time"` exists for the tenant, `enqueue_orchestrator_event` is called immediately. Idempotency key is hour-bucketed: `reconciliation:realtime:{tenant_id}:{YYYY-MM-DDTHH}`. Located in:
+
+- `backend/app/integrations/plaid/sync.py`
+- `backend/app/integrations/truelayer/sync.py`
+
+### Tenant Timezone Architecture
+
+Timezone is a **global tenant setting**, NOT per-tool. Stored in `Tenant.timezone` (default `"UTC"`).
+
+- **DB**: `Tenant.timezone String @default("UTC")`
+- **API**: `PATCH /v1/tenants/me` with `{ timezone: "Europe/London" }` — validated with `ZoneInfo(v)`
+- **Frontend**: `useTimezone()` hook from `Providers.tsx` — fetches on load, PATCHes on change, caches in `localStorage`
+- **Settings page**: `TimezoneSelector` component — searchable, 30 timezones across 6 regions
+- **Reconciliation config**: `run_hour_utc` description references Settings timezone. The `run_timezone` field was deliberately removed from tool config — timezone is global, not per-tool.
+
+### Conditional Config Fields (`frontend/components/dashboard/tools/ToolConfigFields.tsx`)
+
+`FieldDef` has an optional `showWhen` predicate:
+
+```typescript
+showWhen?: (config: Record<string, unknown>) => boolean
+```
+
+Applied in the renderer: `if (field.showWhen && !field.showWhen(config)) return null`
+
+Used for `run_day_of_week` which only shows when `reconciliation_frequency === 'weekly'`. Apply this pattern for any field that should conditionally appear based on another field's value.
+
+### ConfigDrawer Config Initialisation
+
+Config state merges existing saved config with defaults so deployed tools show their saved values and new fields appear with sensible defaults:
+
+```typescript
+const [config, setConfig] = useState<Record<string, unknown>>(() => {
+  const defaults = getDefaultConfig(toolType)
+  const existing = tool?.config_json as Record<string, unknown> | null
+  return existing ? { ...defaults, ...existing } : defaults
+})
+```
+
+### Clerk JWT Email Fallback (`backend/app/core/security.py`)
+
+Clerk JWTs do not include the `email` claim by default. `get_current_user` falls back to `Member.email` when the JWT email is empty:
+
+```python
+email = payload.get("email", "") or payload.get("email_address", "")
+if not email:
+    member = await db.member.find_unique(where={"clerk_user_id": user_id})
+    if member and member.email:
+        email = member.email
+```
+
+This applies in both the `org_id` branch and the no-org fallback branch.
+
+### `last_configured_by_email` (`backend/app/api/v1/tools.py`)
+
+- Set on **any** tool PATCH (autonomy change, config change, or both) — not only when config changes
+- Only written when `current_user.email` is non-empty (guards against writing blank over a real value)
+- Shows under the Configure drawer title, NOT on the tool page itself
+- Displays as username only: `email.split('@')[0]` — never the full email address
+
+### Audit Trace Rendering (`frontend/components/dashboard/tools/ToolAuditTab.tsx`)
+
+Two structured trace renderers replace raw JSON for expanded audit rows:
+
+- **`ReconciliationTrace`** — for `action.startsWith('reconciliation:')` AND trace has `overall_decision`. Shows decision badge, transaction/bill/invoice stats, flagged items, needs-review items.
+- **`OrchestratorTrace`** — for any trace with a `decision` key (e.g. `event_routed:routed`). Shows decision badge, event type / confidence / duration stats, reasoning block, payload fields.
+
+Both have a "View raw" toggle that shows the underlying JSON. Always add a formatter here before falling back to raw JSON for new action types.
+
+### Currency Symbols in Tool Config
+
+Tool config fields that display monetary values use `useCurrency()` + `CURRENCY_MAP` — never hardcode `£`:
+
+```typescript
+const { currency } = useCurrency()
+const currencySymbol = CURRENCY_MAP[currency]?.symbol ?? currency
+```
+
+### Database Migrations on Railway
+
+Railway's arq environment is non-interactive. Use `python -m prisma db push` instead of `prisma migrate dev` for schema changes in that environment. `migrate dev` will hang waiting for confirmation input.
+
+---
 
 ## graphify
 
