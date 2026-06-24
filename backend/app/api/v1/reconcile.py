@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import csv
 import io
+import uuid
 from datetime import UTC, datetime, timedelta
 from typing import Optional
 
@@ -227,7 +228,7 @@ async def trigger_reconciliation_run(
     execution = await db.execution.create(data={
         "tenant_id": tenant_id,
         "tool_id": body.tool_id,
-        "input_ref": f"manual:{period_start.date()}:{period_end.date()}",
+        "input_ref": f"manual:{period_start.date()}:{period_end.date()}:{uuid.uuid4().hex[:8]}",
         "decision": "pending",
         "confidence": 0.0,
         "status": "queued",
