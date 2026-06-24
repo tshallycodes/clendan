@@ -231,7 +231,7 @@ export function ApiPlayground() {
         {/* Right — response panel */}
         <div className="space-y-1.5">
           <label className="text-[10px] font-mono uppercase tracking-widest text-brand-muted">Response</label>
-          <div className="bg-brand-bg border border-brand-border rounded-sm p-4 min-h-[280px] overflow-auto">
+          <div className="bg-brand-bg border border-brand-border rounded-sm p-4 min-h-[280px] max-h-[500px] overflow-y-auto">
             {response.kind === 'idle' && (
               <p className="text-xs font-mono text-brand-muted">Response will appear here</p>
             )}
