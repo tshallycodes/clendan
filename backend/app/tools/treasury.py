@@ -27,26 +27,28 @@ logger = get_logger(__name__)
 _ACTOR = "tool:treasury:v1"
 _MODEL_VERSION = "treasury-v1"
 
+_DAYS_30 = 30
+_DAYS_90 = 90
+
 
 # ---------------------------------------------------------------------------
 # Policy
 # ---------------------------------------------------------------------------
 
-
 class _ToolPolicy(BaseModel):
-    min_balance_alert: int = 1000000                      # pence — alert if total balance below this
-    cash_runway_warning_days: int = 90                    # alert if forecast runway < this many days
-    forecast_horizon_days: int = 30                       # look this far back for spending rate
-    minimum_operating_balance_alert_days: int = 45        # days of expenses — better than fixed amount
+    min_balance_alert: int = 1000000          # pence — alert threshold
+    cash_runway_warning_days: int = 90
+    forecast_horizon_days: int = 30
+    minimum_operating_balance_alert_days: int = 45
     critical_balance_alert_days: int = 14
     runway_alert_days: int = 90
     runway_critical_days: int = 30
-    forecast_update_frequency: str = "weekly"             # "daily" | "weekly" | "monthly"
-    forecast_method: str = "hybrid"                       # "simple_moving_avg" | "weighted_moving_avg" | "ml_forecast" | "hybrid"
-    cash_sweep_enabled: bool = False                      # Dangerous if miscalibrated — off by default
-    cash_sweep_threshold: int = 50000000                  # minor units ($500,000)
-    cash_sweep_retain_minimum: int = 10000000             # minor units ($100,000)
-    bank_counterparty_limit: int = 25000000               # minor units ($250,000) — FDIC ceiling
+    forecast_update_frequency: str = "weekly"
+    forecast_method: str = "hybrid"
+    cash_sweep_enabled: bool = False          # off by default — miscalibration risk
+    cash_sweep_threshold: int = 50000000      # $500,000
+    cash_sweep_retain_minimum: int = 10000000 # $100,000
+    bank_counterparty_limit: int = 25000000   # $250,000 FDIC ceiling
     bank_counterparty_count_min: int = 2
     investment_max_single_counterparty_pct: float = 0.25
     fx_exposure_alert_pct: float = 0.20
@@ -58,7 +60,6 @@ class _ToolPolicy(BaseModel):
 # ---------------------------------------------------------------------------
 # Internal data models
 # ---------------------------------------------------------------------------
-
 
 class _AccountSummary(BaseModel):
     id: str
@@ -77,12 +78,20 @@ class _TransactionSummary(BaseModel):
     category: str | None
 
 
+class _BurnRate(BaseModel):
+    daily_burn_30d: int          # average daily outflow in minor units over last 30 days
+    daily_burn_90d: int          # average daily outflow in minor units over last 90 days
+    runway_days_30d: int | None  # None when no outflow history
+    runway_days_90d: int | None
+
+
 class _ClaudeResult(BaseModel):
     total_balance_minor: int
     avg_daily_spend_minor: int
     forecast_runway_days: int
     alerts: list[str]
-    recommended_action: Literal["ok", "review", "alert"]
+    recommended_action: Literal["monitor", "sweep", "alert_cfo", "emergency"]
+    sweep_recommended: bool
     reasoning: str
 
 
@@ -90,98 +99,95 @@ class _ClaudeResult(BaseModel):
 # Policy parser
 # ---------------------------------------------------------------------------
 
-
 def _parse_policy(config_json: dict) -> _ToolPolicy:
     raw = config_json.get("policy", config_json)
-    return _ToolPolicy(
-        min_balance_alert=raw.get("min_balance_alert", 1000000),
-        cash_runway_warning_days=raw.get("cash_runway_warning_days", 90),
-        forecast_horizon_days=raw.get("forecast_horizon_days", 30),
-        minimum_operating_balance_alert_days=raw.get("minimum_operating_balance_alert_days", 45),
-        critical_balance_alert_days=raw.get("critical_balance_alert_days", 14),
-        runway_alert_days=raw.get("runway_alert_days", 90),
-        runway_critical_days=raw.get("runway_critical_days", 30),
-        forecast_update_frequency=raw.get("forecast_update_frequency", "weekly"),
-        forecast_method=raw.get("forecast_method", "hybrid"),
-        cash_sweep_enabled=raw.get("cash_sweep_enabled", False),
-        cash_sweep_threshold=raw.get("cash_sweep_threshold", 50000000),
-        cash_sweep_retain_minimum=raw.get("cash_sweep_retain_minimum", 10000000),
-        bank_counterparty_limit=raw.get("bank_counterparty_limit", 25000000),
-        bank_counterparty_count_min=raw.get("bank_counterparty_count_min", 2),
-        investment_max_single_counterparty_pct=raw.get("investment_max_single_counterparty_pct", 0.25),
-        fx_exposure_alert_pct=raw.get("fx_exposure_alert_pct", 0.20),
-        ar_aging_visibility_enabled=raw.get("ar_aging_visibility_enabled", True),
-        payroll_reserve_days=raw.get("payroll_reserve_days", 5),
-        daily_reconciliation_enabled=raw.get("daily_reconciliation_enabled", True),
+    defaults = _ToolPolicy()
+    filtered = {k: raw[k] for k in _ToolPolicy.model_fields if k in raw}
+    return _ToolPolicy(**{**defaults.model_dump(), **filtered})
+
+
+# ---------------------------------------------------------------------------
+# Burn rate calculation (integer arithmetic only)
+# ---------------------------------------------------------------------------
+
+def _compute_burn_rate(
+    transactions: list[_TransactionSummary],
+    total_balance_minor: int,
+    now: datetime,
+) -> _BurnRate:
+    def _outflows(cutoff: datetime) -> int:
+        return sum(abs(t.amount_minor) for t in transactions if t.amount_minor < 0 and t.date >= cutoff)
+
+    out30 = _outflows(now - timedelta(days=_DAYS_30))
+    out90 = _outflows(now - timedelta(days=_DAYS_90))
+    burn30: int = out30 // _DAYS_30
+    burn90: int = out90 // _DAYS_90
+    return _BurnRate(
+        daily_burn_30d=burn30,
+        daily_burn_90d=burn90,
+        runway_days_30d=total_balance_minor // burn30 if burn30 > 0 else None,
+        runway_days_90d=total_balance_minor // burn90 if burn90 > 0 else None,
     )
+
+
+def _confidence_from_runway(runway_days_30d: int | None) -> float:
+    if runway_days_30d is None:
+        return 0.75  # no transaction history — cannot assess
+    if runway_days_30d > 180:
+        return 0.95
+    if runway_days_30d > 90:
+        return 0.80
+    if runway_days_30d > 60:
+        return 0.65
+    return 0.50  # <= 60 days — low confidence, needs human review
 
 
 # ---------------------------------------------------------------------------
 # Claude prompt + call
 # ---------------------------------------------------------------------------
 
-
 def _build_claude_prompt(
     accounts: list[_AccountSummary],
     recent_transactions: list[_TransactionSummary],
+    burn_rate: _BurnRate,
     policy: _ToolPolicy,
 ) -> str:
-    accounts_json = json.dumps(
-        [
-            {
-                "id": a.id,
-                "name": a.name,
-                "type": a.type,
-                "current_balance_minor": a.current_balance_minor,
-                "currency": a.currency,
-            }
-            for a in accounts
-        ],
-        indent=2,
-    )
-    transactions_json = json.dumps(
-        [
-            {
-                "id": t.id,
-                "account_id": t.account_id,
-                "amount_minor": t.amount_minor,
-                "date": t.date.isoformat(),
-                "description": t.description,
-                "category": t.category,
-            }
-            for t in recent_transactions
-        ],
+    accts = json.dumps([a.model_dump() for a in accounts], indent=2)
+    txns = json.dumps(
+        [{"id": t.id, "account_id": t.account_id, "amount_minor": t.amount_minor,
+          "date": t.date.isoformat(), "description": t.description, "category": t.category}
+         for t in recent_transactions],
         indent=2,
     )
     return (
-        "You are a treasury analyst. Analyse the bank accounts and recent transactions below.\n\n"
+        "You are a treasury analyst. Analyse accounts, transactions, and burn rates below.\n\n"
+        f"Pre-computed burn rates (minor units):\n"
+        f"  daily_burn_30d={burn_rate.daily_burn_30d}  daily_burn_90d={burn_rate.daily_burn_90d}\n"
+        f"  runway_days_30d={burn_rate.runway_days_30d}  runway_days_90d={burn_rate.runway_days_90d}\n\n"
         "Tasks:\n"
-        f"1. Calculate average daily spend (in minor currency units, i.e. pence/cents) from the "
-        f"last {policy.forecast_horizon_days} days of transactions. "
-        "Only outgoing amounts (negative amount_minor) count as spend.\n"
-        "2. Forecast runway = total_balance_minor / avg_daily_spend_minor "
-        "(use 1 as minimum denominator to avoid division by zero).\n"
-        "3. Identify any unusual spending patterns (sudden spikes, abnormal categories, etc).\n\n"
-        "Return ONLY a single JSON object — no markdown, no prose — with exactly these fields:\n"
-        '  "total_balance_minor": integer (sum of all account balances),\n'
-        '  "avg_daily_spend_minor": integer (average daily outflow in minor units),\n'
-        '  "forecast_runway_days": integer (total_balance_minor / max(avg_daily_spend_minor, 1)),\n'
-        '  "alerts": array of short alert strings (empty array if none),\n'
-        '  "recommended_action": one of "ok" | "review" | "alert",\n'
-        '  "reasoning": one concise paragraph.\n\n'
-        f"Bank Accounts:\n{accounts_json}\n\n"
-        f"Recent Transactions (last {policy.forecast_horizon_days} days):\n{transactions_json}"
+        "1. Validate avg_daily_spend_minor from transactions (outflows only, negative amount_minor).\n"
+        "2. Identify TOP 3 anomalous spend categories with totals in minor units.\n"
+        "3. Recommend cash sweep if balance is high relative to needs — name target account.\n"
+        "4. State whether a runway alert should fire and at what threshold.\n"
+        "5. Choose recommended_action: monitor|sweep|alert_cfo|emergency.\n\n"
+        "Return ONLY a JSON object with fields:\n"
+        '  total_balance_minor, avg_daily_spend_minor, forecast_runway_days,\n'
+        '  alerts (array — include top-3 anomalous categories as "<cat>: <amount> minor units"),\n'
+        '  recommended_action ("monitor"|"sweep"|"alert_cfo"|"emergency"),\n'
+        '  sweep_recommended (boolean), reasoning (one paragraph).\n\n'
+        f"Accounts:\n{accts}\n\nTransactions (last {policy.forecast_horizon_days}d):\n{txns}"
     )
 
 
 async def _call_claude(
     accounts: list[_AccountSummary],
     transactions: list[_TransactionSummary],
+    burn_rate: _BurnRate,
     policy: _ToolPolicy,
     settings_obj,
 ) -> _ClaudeResult:
     client = AsyncAnthropic(api_key=settings_obj.anthropic_api_key)
-    prompt = _build_claude_prompt(accounts, transactions, policy)
+    prompt = _build_claude_prompt(accounts, transactions, burn_rate, policy)
     last_exc: Exception | None = None
 
     for attempt in range(settings_obj.max_agent_attempts):
@@ -216,7 +222,6 @@ async def _call_claude(
 # Core execution
 # ---------------------------------------------------------------------------
 
-
 async def _execute_treasury(
     tenant_id: str,
     tool_id: str,
@@ -224,6 +229,7 @@ async def _execute_treasury(
 ) -> dict:
     settings_obj = get_settings()
     db = get_db()
+    now = datetime.now(UTC)
 
     # Fetch tool config scoped to tenant
     tool = await db.tool.find_first(
@@ -259,16 +265,16 @@ async def _execute_treasury(
     # Hard rule: low balance check BEFORE calling Claude
     alert_triggered: bool = total_balance_minor < policy.min_balance_alert
 
-    # Fetch recent transactions scoped to tenant
-    cutoff = datetime.now(UTC) - timedelta(days=policy.forecast_horizon_days)
+    # Fetch 90 days of transactions to cover both burn rate windows
+    cutoff_90 = now - timedelta(days=_DAYS_90)
     raw_txns = await db.banktransaction.find_many(
         where={
             "tenant_id": tenant_id,
-            "date": {"gte": cutoff},
+            "date": {"gte": cutoff_90},
         }
     )
 
-    recent_transactions = [
+    all_transactions = [
         _TransactionSummary(
             id=t.id,
             account_id=t.account_id,
@@ -280,32 +286,37 @@ async def _execute_treasury(
         for t in raw_txns
     ]
 
-    # Call Claude for runway forecast and pattern analysis
-    claude_result = await _call_claude(accounts, recent_transactions, policy, settings_obj)
+    # Compute burn rates before calling Claude
+    burn_rate = _compute_burn_rate(all_transactions, total_balance_minor, now)
 
-    # Runway check — integer division, no floats
-    safe_avg_daily = max(claude_result.avg_daily_spend_minor, 1)
-    forecast_runway_days: int = total_balance_minor // safe_avg_daily
-    runway_alert: bool = forecast_runway_days < policy.cash_runway_warning_days
+    # Subset for Claude context — only the configured forecast horizon
+    cutoff_horizon = now - timedelta(days=policy.forecast_horizon_days)
+    recent_transactions = [t for t in all_transactions if t.date >= cutoff_horizon]
+
+    # Call Claude for runway forecast, anomaly detection, and action recommendation
+    claude_result = await _call_claude(
+        accounts, recent_transactions, burn_rate, policy, settings_obj
+    )
+
+    # Runway check using 30d burn rate (most current)
+    runway_days_30d = burn_rate.runway_days_30d
+    runway_alert: bool = (
+        runway_days_30d is not None and runway_days_30d < policy.cash_runway_warning_days
+    )
 
     # Derive overall decision
     critically_low = total_balance_minor < (policy.min_balance_alert // 2)
-    critically_short_runway = forecast_runway_days < (policy.cash_runway_warning_days // 2)
+    critically_short_runway = (
+        runway_days_30d is not None
+        and runway_days_30d < (policy.cash_runway_warning_days // 2)
+    )
 
-    if alert_triggered or runway_alert or claude_result.alerts:
-        if critically_low or critically_short_runway:
-            overall_decision = "approval_required"
-        else:
-            overall_decision = "approval_required"
+    if alert_triggered or runway_alert or claude_result.alerts or critically_low or critically_short_runway:
+        overall_decision = "approval_required"
     else:
         overall_decision = "auto_approved"
 
-    # Confidence: higher when healthy, lower when alerts are present
-    alert_count = len(claude_result.alerts)
-    if overall_decision == "auto_approved":
-        confidence = round(min(1.0, 0.90 + (0.02 * max(0, 5 - alert_count))), 4)
-    else:
-        confidence = round(max(0.50, 0.85 - (0.05 * alert_count)), 4)
+    confidence = _confidence_from_runway(burn_rate.runway_days_30d)
 
     actions_taken: list[str] = []
     if alert_triggered:
@@ -315,7 +326,7 @@ async def _execute_treasury(
         )
     if runway_alert:
         actions_taken.append(
-            f"runway_alert: forecast runway {forecast_runway_days} days is below "
+            f"runway_alert: 30d runway {runway_days_30d} days is below "
             f"warning threshold {policy.cash_runway_warning_days} days"
         )
     for alert in claude_result.alerts:
@@ -326,12 +337,17 @@ async def _execute_treasury(
     reasoning_trace: dict = {
         "overall_decision": overall_decision,
         "total_balance_minor": total_balance_minor,
+        "burn_rate_daily_minor_30d": burn_rate.daily_burn_30d,
+        "burn_rate_daily_minor_90d": burn_rate.daily_burn_90d,
+        "runway_days_30d": burn_rate.runway_days_30d,
+        "runway_days_90d": burn_rate.runway_days_90d,
         "avg_daily_spend_minor": claude_result.avg_daily_spend_minor,
-        "forecast_runway_days": forecast_runway_days,
+        "forecast_runway_days": claude_result.forecast_runway_days,
         "alert_triggered": alert_triggered,
         "runway_alert": runway_alert,
+        "recommended_action": claude_result.recommended_action,
+        "sweep_recommended": claude_result.sweep_recommended,
         "policy": policy.model_dump(),
-        "claude_recommended_action": claude_result.recommended_action,
         "claude_alerts": claude_result.alerts,
         "claude_reasoning": claude_result.reasoning,
         "account_count": len(accounts),
@@ -360,7 +376,6 @@ async def _execute_treasury(
 # ---------------------------------------------------------------------------
 # arq job entrypoint
 # ---------------------------------------------------------------------------
-
 
 async def run_treasury_job(
     ctx: dict,
@@ -415,7 +430,6 @@ async def run_treasury_job(
 # ---------------------------------------------------------------------------
 # BaseTool class (orchestrator interface)
 # ---------------------------------------------------------------------------
-
 
 class TreasuryTool(BaseTool):
     TOOL_TYPE = ToolType.TREASURY

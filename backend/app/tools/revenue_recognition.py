@@ -1,5 +1,6 @@
 ﻿import asyncio
 import json
+import time
 from calendar import monthrange
 from datetime import date, datetime, UTC
 from typing import Any
@@ -26,7 +27,6 @@ MIN_CONFIDENCE = 0.4
 # ---------------------------------------------------------------------------
 # Typed models
 # ---------------------------------------------------------------------------
-
 class RecognitionPeriod(BaseModel):
     period: str
     recognised_minor: int
@@ -35,16 +35,24 @@ class RecognitionPeriod(BaseModel):
 
 
 class JournalEntry(BaseModel):
-    date: str
-    debit_account: str
-    credit_account: str
-    amount_minor: int
+    period: str                  # YYYY-MM
+    debit_account: str           # "Accounts Receivable" | "Contract Asset"
+    credit_account: str          # "Revenue" | "Deferred Revenue"
+    amount_minor: int            # always positive
     description: str
+
+
+class PerformanceObligation(BaseModel):
+    name: str
+    standalone_selling_price_minor: int
+    satisfied_at_point: bool      # True = at-point, False = over-time
 
 
 class ClaudeRecognitionResult(BaseModel):
     recognition_method: str
-    performance_obligations: list[str]
+    performance_obligations: list[PerformanceObligation]
+    variable_consideration_minor: int = 0
+    constrained_variable_minor: int = 0
     recognition_schedule: list[RecognitionPeriod]
     journal_entries: list[JournalEntry]
     confidence: float
@@ -54,12 +62,12 @@ class ClaudeRecognitionResult(BaseModel):
 class _ToolPolicy(BaseModel):
     accounting_standard: str = "ASC 606"
     recognition_method: str = "over-time"
-    recognition_frequency: str = "daily"                          # "daily" | "monthly"
-    variable_consideration_method: str = "expected_value"         # "expected_value" | "most_likely_amount"
-    variable_consideration_constraint_enabled: bool = True        # ASC 606 legal requirement
+    recognition_frequency: str = "daily"
+    variable_consideration_method: str = "expected_value"
+    variable_consideration_constraint_enabled: bool = True   # ASC 606 legal requirement
     variable_consideration_review_frequency: str = "each_reporting_date"
-    ssp_estimation_method: str = "adjusted_market"                # "adjusted_market" | "expected_cost_plus" | "residual"
-    contract_modification_handling: str = "prospective"           # "prospective" | "cumulative_catch_up"
+    ssp_estimation_method: str = "adjusted_market"
+    contract_modification_handling: str = "prospective"
     material_right_tracking_enabled: bool = True
     milestone_completion_threshold_pct: float = 1.00
     auto_close_completed_obligations: bool = True
@@ -68,20 +76,8 @@ class _ToolPolicy(BaseModel):
 
 def _parse_policy(config_json: dict) -> _ToolPolicy:
     raw = config_json.get("policy", config_json)
-    return _ToolPolicy(
-        accounting_standard=raw.get("accounting_standard", "ASC 606"),
-        recognition_method=raw.get("recognition_method", "over-time"),
-        recognition_frequency=raw.get("recognition_frequency", "daily"),
-        variable_consideration_method=raw.get("variable_consideration_method", "expected_value"),
-        variable_consideration_constraint_enabled=raw.get("variable_consideration_constraint_enabled", True),
-        variable_consideration_review_frequency=raw.get("variable_consideration_review_frequency", "each_reporting_date"),
-        ssp_estimation_method=raw.get("ssp_estimation_method", "adjusted_market"),
-        contract_modification_handling=raw.get("contract_modification_handling", "prospective"),
-        material_right_tracking_enabled=raw.get("material_right_tracking_enabled", True),
-        milestone_completion_threshold_pct=raw.get("milestone_completion_threshold_pct", 1.00),
-        auto_close_completed_obligations=raw.get("auto_close_completed_obligations", True),
-        period_lock_enforcement=raw.get("period_lock_enforcement", True),
-    )
+    filtered = {k: raw[k] for k in _ToolPolicy.model_fields if k in raw}
+    return _ToolPolicy(**{**_ToolPolicy().model_dump(), **filtered})
 
 
 class ContractInput(BaseModel):
@@ -98,9 +94,7 @@ class ContractInput(BaseModel):
 # ---------------------------------------------------------------------------
 # Schedule calculation (integer arithmetic only)
 # ---------------------------------------------------------------------------
-
 def _month_periods(start: date, end: date) -> list[str]:
-    """Return YYYY-MM period labels for every month from start through end inclusive."""
     periods: list[str] = []
     year, month = start.year, start.month
     end_ym = (end.year, end.month)
@@ -118,7 +112,6 @@ def _last_day_of_month(period: str) -> str:
     last = monthrange(year, month)[1]
     return f"{year:04d}-{month:02d}-{last:02d}"
 
-
 def _build_at_point_schedule(
     total_value_minor: int,
     start_date: date,
@@ -134,10 +127,9 @@ def _build_at_point_schedule(
             reasoning="At-point recognition: full contract value recognised at service delivery date.",
         )
     ]
-    entry_date = _last_day_of_month(period)
     journals = [
         JournalEntry(
-            date=entry_date,
+            period=period,
             debit_account="Accounts Receivable",
             credit_account="Revenue",
             amount_minor=total_value_minor,
@@ -145,7 +137,6 @@ def _build_at_point_schedule(
         )
     ]
     return schedule, journals
-
 
 def _build_over_time_schedule(
     total_value_minor: int,
@@ -170,8 +161,6 @@ def _build_over_time_schedule(
         amount = per_month + (remainder if idx == num_months - 1 else 0)
         cumulative_recognised += amount
         deferred = total_value_minor - cumulative_recognised
-        entry_date = _last_day_of_month(period)
-
         schedule.append(RecognitionPeriod(
             period=period,
             recognised_minor=amount,
@@ -183,8 +172,8 @@ def _build_over_time_schedule(
         ))
 
         journals.append(JournalEntry(
-            date=entry_date,
-            debit_account="Deferred Revenue",
+            period=period,
+            debit_account="Contract Asset",
             credit_account="Revenue",
             amount_minor=amount,
             description=f"Monthly revenue recognition {period} — contract {contract_id}",
@@ -196,10 +185,9 @@ def _build_over_time_schedule(
 # ---------------------------------------------------------------------------
 # Claude call
 # ---------------------------------------------------------------------------
-
 _RECOGNITION_PROMPT = """\
-You are a revenue recognition specialist applying {standard} accounting rules.
-Analyse the contract below and return ONLY a valid JSON object with no markdown.
+You are a revenue recognition specialist applying {standard} (IFRS 15) accounting rules.
+Analyse the contract below following the five-step model. Return ONLY a valid JSON object with no markdown.
 
 Contract ID: {contract_id}
 Total Value: {total_value_minor} minor units ({currency})
@@ -209,24 +197,48 @@ Configured recognition method: {recognition_method}
 Contract text:
 {contract_text}
 
+Follow these five steps explicitly:
+
+Step 1 — Identify the contract: Confirm this is an enforceable contract with commercial substance.
+Step 2 — Identify performance obligations: List each distinct good or service separately. For each, provide its standalone selling price (SSP) in minor units. If SSP cannot be observed directly, estimate using adjusted market assessment.
+Step 3 — Determine transaction price: State the total transaction price. Identify any variable components (bonuses, penalties, usage-based fees). Apply the constraint — only include variable amounts you are highly confident (>= 90%) will not reverse significantly.
+Step 4 — Allocate to performance obligations: Allocate the constrained transaction price proportionally by SSP across all obligations.
+Step 5 — Recognise revenue: For each obligation, recognise when (at-point) or as (over-time) it is satisfied.
+
 Required JSON shape:
 {{
   "recognition_method": "at-point|over-time",
-  "performance_obligations": ["<string>"],
+  "performance_obligations": [
+    {{
+      "name": "<string>",
+      "standalone_selling_price_minor": <integer>,
+      "satisfied_at_point": <boolean>
+    }}
+  ],
+  "variable_consideration_minor": <integer — total variable amount identified, 0 if none>,
+  "constrained_variable_minor": <integer — portion included after applying the constraint>,
   "recognition_schedule": [
     {{"period": "YYYY-MM", "recognised_minor": <integer>, "deferred_minor": <integer>, "reasoning": "<string>"}}
   ],
   "journal_entries": [
-    {{"date": "YYYY-MM-DD", "debit_account": "<string>", "credit_account": "<string>", "amount_minor": <integer>, "description": "<string>"}}
+    {{
+      "period": "YYYY-MM",
+      "debit_account": "Accounts Receivable|Contract Asset",
+      "credit_account": "Revenue|Deferred Revenue",
+      "amount_minor": <integer — always positive>,
+      "description": "<string>"
+    }}
   ],
   "confidence": <float 0.0-1.0>,
-  "reasoning": "<overall reasoning>"
+  "reasoning": "<overall reasoning covering all five steps>"
 }}
 
 Rules:
 - All amounts must be integers (minor units — pence or cents). Never use floats for currency.
 - recognition_method must match the configured method unless the contract clearly contradicts it.
 - Include one schedule entry per month for over-time, one entry for at-point.
+- Debit "Accounts Receivable" when cash is due immediately; "Contract Asset" for unbilled earned revenue.
+- Credit "Revenue" when recognised; "Deferred Revenue" when cash received before recognition.
 - Return ONLY the JSON object.
 """
 
@@ -276,7 +288,6 @@ async def _call_claude(validated: ContractInput) -> ClaudeRecognitionResult:
 # ---------------------------------------------------------------------------
 # Core execution
 # ---------------------------------------------------------------------------
-
 async def _execute_revenue_recognition(
     tenant_id: str,
     tool_id: str,
@@ -302,13 +313,40 @@ async def _execute_revenue_recognition(
     if claude_result.recognition_method in ("at-point", "over-time"):
         effective_method = claude_result.recognition_method
 
+    # SSP allocation — proportional when multiple performance obligations exist
+    obligations = claude_result.performance_obligations
+    total_ssp: int = sum(o.standalone_selling_price_minor for o in obligations)
+    transaction_price_minor = validated.total_value_minor
+
+    ssp_allocations: list[dict[str, Any]] = []
+    if len(obligations) > 1 and total_ssp > 0:
+        for ob in obligations:
+            allocated = (ob.standalone_selling_price_minor * transaction_price_minor) // total_ssp
+            ssp_allocations.append({
+                "name": ob.name,
+                "standalone_selling_price_minor": ob.standalone_selling_price_minor,
+                "allocated_price_minor": allocated,
+                "satisfied_at_point": ob.satisfied_at_point,
+            })
+        # Use allocated price of the primary obligation for the schedule
+        schedule_value = ssp_allocations[0]["allocated_price_minor"]
+    else:
+        schedule_value = transaction_price_minor
+        if obligations:
+            ssp_allocations.append({
+                "name": obligations[0].name,
+                "standalone_selling_price_minor": obligations[0].standalone_selling_price_minor,
+                "allocated_price_minor": transaction_price_minor,
+                "satisfied_at_point": obligations[0].satisfied_at_point,
+            })
+
     if effective_method == "at-point":
         schedule, journals = _build_at_point_schedule(
-            validated.total_value_minor, start, validated.currency, validated.contract_id
+            schedule_value, start, validated.currency, validated.contract_id
         )
     else:
         schedule, journals = _build_over_time_schedule(
-            validated.total_value_minor, start, end, validated.currency, validated.contract_id
+            schedule_value, start, end, validated.currency, validated.contract_id
         )
 
     num_periods = len(schedule)
@@ -330,7 +368,9 @@ async def _execute_revenue_recognition(
         "start_date": validated.start_date,
         "end_date": validated.end_date,
         "num_periods": num_periods,
-        "performance_obligations": claude_result.performance_obligations,
+        "performance_obligations": ssp_allocations,
+        "variable_consideration_minor": claude_result.variable_consideration_minor,
+        "constrained_variable_minor": claude_result.constrained_variable_minor,
         "schedule_summary": [
             {"period": s.period, "recognised_minor": s.recognised_minor}
             for s in schedule
@@ -355,7 +395,9 @@ async def _execute_revenue_recognition(
         "actions_taken": actions_taken,
         "recognition_method": effective_method,
         "accounting_standard": validated.accounting_standard,
-        "performance_obligations": claude_result.performance_obligations,
+        "performance_obligations": ssp_allocations,
+        "variable_consideration_minor": claude_result.variable_consideration_minor,
+        "constrained_variable_minor": claude_result.constrained_variable_minor,
         "recognition_schedule": [s.model_dump() for s in schedule],
         "journal_entries": [j.model_dump() for j in journals],
         "contract_id": validated.contract_id,
@@ -368,7 +410,6 @@ async def _execute_revenue_recognition(
 # ---------------------------------------------------------------------------
 # arq job entry point
 # ---------------------------------------------------------------------------
-
 async def run_revenue_recognition_job(
     ctx: dict,
     *,
@@ -377,8 +418,6 @@ async def run_revenue_recognition_job(
     tool_id: str,
     contract_data: dict,
 ) -> dict:
-    import time
-
     db = get_db()
     start_ms = int(time.time() * 1000)
 
@@ -419,66 +458,22 @@ async def run_revenue_recognition_job(
 # ---------------------------------------------------------------------------
 # BaseTool adapter (Orchestrator interface)
 # ---------------------------------------------------------------------------
-
 class RevenueRecognitionTool(BaseTool):
     TOOL_TYPE = ToolType.REVENUE_RECOGNITION
     REQUIRED_TOOLS: list[str] = []
     VERSION = WORKER_VERSION
 
     async def execute(self, input_data: dict[str, Any], tenant_id: str) -> ToolOutput:
-        validated = ContractInput(**input_data)
-
-        start = date.fromisoformat(validated.start_date)
-        end = date.fromisoformat(validated.end_date)
-
-        if end < start:
-            raise ValueError(
-                f"end_date {validated.end_date} is before start_date {validated.start_date}"
-            )
-
-        claude_result = await _call_claude(validated)
-
-        if claude_result.confidence < MIN_CONFIDENCE:
-            raise ValueError(
-                f"Claude recognition confidence {claude_result.confidence} is below minimum {MIN_CONFIDENCE}"
-            )
-
-        effective_method = validated.recognition_method
-        if claude_result.recognition_method in ("at-point", "over-time"):
-            effective_method = claude_result.recognition_method
-
-        if effective_method == "at-point":
-            schedule, journals = _build_at_point_schedule(
-                validated.total_value_minor, start, validated.currency, validated.contract_id
-            )
-        else:
-            schedule, journals = _build_over_time_schedule(
-                validated.total_value_minor, start, end, validated.currency, validated.contract_id
-            )
-
-        minor_symbol_map = {"GBP": "£", "USD": "$", "EUR": "€"}
-        symbol = minor_symbol_map.get(validated.currency, validated.currency)
-
-        actions_taken: list[str] = [
-            f"Scheduled {entry.period}: {symbol}{entry.recognised_minor / 100:.2f}"
-            for entry in schedule
-        ]
-
+        execution_id: str = input_data["execution_id"]
+        tool_id: str = input_data.get("tool_id", "")
+        result = await _execute_revenue_recognition(
+            tenant_id, tool_id, execution_id, input_data
+        )
         return ToolOutput(
             tool_type=self.TOOL_TYPE,
-            decision="revenue_scheduled",
-            confidence=claude_result.confidence,
-            reasoning=claude_result.reasoning,
-            actions_taken=actions_taken,
-            output_data={
-                "recognition_method": effective_method,
-                "accounting_standard": validated.accounting_standard,
-                "performance_obligations": claude_result.performance_obligations,
-                "recognition_schedule": [s.model_dump() for s in schedule],
-                "journal_entries": [j.model_dump() for j in journals],
-                "contract_id": validated.contract_id,
-                "total_value_minor": validated.total_value_minor,
-                "currency": validated.currency,
-                "num_periods": len(schedule),
-            },
+            decision=result["decision"],
+            confidence=result["confidence"],
+            reasoning=result["reasoning"],
+            actions_taken=result["actions_taken"],
+            output_data={k: result[k] for k in result if k not in ("decision", "reasoning", "actions_taken")},
         )
