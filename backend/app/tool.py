@@ -164,13 +164,30 @@ async def run_orchestrator_job(
 
         elif event_type == "reconciliation_run":
             pool = await get_queue_pool()
-            await pool.enqueue_job(
-                "run_reconciliation_job",
-                execution_id=execution_id,
-                tenant_id=tenant_id,
-                tool_id=tool_id,
-                period_days=payload.get("period_days", 30),
-            )
+
+            def _parse_dt(val: str | None) -> datetime | None:
+                if not val:
+                    return None
+                try:
+                    dt = datetime.fromisoformat(str(val))
+                    return dt if dt.tzinfo else dt.replace(tzinfo=UTC)
+                except (ValueError, TypeError):
+                    return None
+
+            recon_kwargs: dict = {
+                "execution_id": execution_id,
+                "tenant_id": tenant_id,
+                "tool_id": tool_id,
+                "period_days": payload.get("period_days", 30),
+            }
+            period_start = _parse_dt(payload.get("period_start"))
+            period_end = _parse_dt(payload.get("period_end"))
+            if period_start:
+                recon_kwargs["period_start"] = period_start
+            if period_end:
+                recon_kwargs["period_end"] = period_end
+
+            await pool.enqueue_job("run_reconciliation_job", **recon_kwargs)
             decision, confidence, reasoning = "routed", 1.0, "Routed to Reconciliation tool"
 
         elif event_type == "expense_control_run":

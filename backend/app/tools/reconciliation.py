@@ -192,7 +192,7 @@ async def _call_claude(
     unmatched_bills: list[_BillRecord],
     settings_obj,
 ) -> list[_ClaudeItemResult]:
-    """Batch-processes all unmatched items through Claude, _BATCH_SIZE items per call."""
+    """Batch-processes all unmatched items through Claude. All batches run in parallel."""
     import os
     api_key = settings_obj.anthropic_api_key or os.environ.get("ANTHROPIC_API_KEY")
     if not api_key:
@@ -201,17 +201,14 @@ async def _call_claude(
             "Set it as an environment variable on the worker service."
         )
     client = AsyncAnthropic(api_key=api_key)
-    all_results: list[_ClaudeItemResult] = []
+    batch_coros = []
 
-    # Transactions: batch independently (usually the largest set)
     for i in range(0, max(len(unmatched_txns), 1), _BATCH_SIZE):
         batch_txns = unmatched_txns[i:i + _BATCH_SIZE]
         if not batch_txns:
             break
-        results = await _call_claude_batch(batch_txns, [], [], client, settings_obj)
-        all_results.extend(results)
+        batch_coros.append(_call_claude_batch(batch_txns, [], [], client, settings_obj))
 
-    # Invoices + bills: batch together (they're related)
     inv_count = len(unmatched_invs)
     bill_count = len(unmatched_bills)
     if inv_count or bill_count:
@@ -220,9 +217,15 @@ async def _call_claude(
             batch_bills = unmatched_bills[i:i + _BATCH_SIZE]
             if not batch_invs and not batch_bills:
                 break
-            results = await _call_claude_batch([], batch_invs, batch_bills, client, settings_obj)
-            all_results.extend(results)
+            batch_coros.append(_call_claude_batch([], batch_invs, batch_bills, client, settings_obj))
 
+    if not batch_coros:
+        return []
+
+    batch_results = await asyncio.gather(*batch_coros)
+    all_results: list[_ClaudeItemResult] = []
+    for results in batch_results:
+        all_results.extend(results)
     return all_results
 
 
