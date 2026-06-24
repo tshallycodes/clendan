@@ -259,7 +259,17 @@ async def _execute_reconciliation(
     }
     if account_ids:
         txn_where["account_id"] = {"in": account_ids}
-    raw_txns = await db.banktransaction.find_many(where=txn_where)
+
+    raw_txns, raw_invs, raw_bills = await asyncio.gather(
+        db.banktransaction.find_many(where=txn_where),
+        db.accountinginvoice.find_many(
+            where={"tenant_id": tenant_id, "status": {"in": ["sent", "viewed", "partial"]}}
+        ),
+        db.accountingbill.find_many(
+            where={"tenant_id": tenant_id, "status": {"not_in": ["paid", "void"]}}
+        ),
+    )
+
     transactions = [
         _TransactionRecord(
             id=t.id,
@@ -274,13 +284,6 @@ async def _execute_reconciliation(
         )
         for t in raw_txns
     ]
-
-    raw_invs = await db.accountinginvoice.find_many(
-        where={
-            "tenant_id": tenant_id,
-            "status": {"in": ["sent", "viewed", "partial"]},
-        }
-    )
     invoices = [
         _InvoiceRecord(
             id=i.id,
@@ -294,13 +297,6 @@ async def _execute_reconciliation(
         )
         for i in raw_invs
     ]
-
-    raw_bills = await db.accountingbill.find_many(
-        where={
-            "tenant_id": tenant_id,
-            "status": {"not_in": ["paid", "void"]},
-        }
-    )
     bills = [
         _BillRecord(
             id=b.id,
@@ -407,22 +403,28 @@ async def _execute_reconciliation(
         execution_id=execution_id,
     )
 
+    match_updates = []
     if matched_txn_ids:
-        await db.banktransaction.update_many(
-            where={"id": {"in": list(matched_txn_ids)}, "tenant_id": tenant_id},
-            data={"status": "reconciled"},
+        match_updates.append(
+            db.banktransaction.update_many(
+                where={"id": {"in": list(matched_txn_ids)}, "tenant_id": tenant_id},
+                data={"status": "reconciled"},
+            )
         )
-
     for txn_id, match_info in match_map.items():
-        update_data: dict = {}
-        if match_info["type"] == "invoice":
-            update_data["matched_invoice_id"] = match_info["id"]
-        else:
-            update_data["matched_bill_id"] = match_info["id"]
-        await db.banktransaction.update(
-            where={"id": txn_id, "tenant_id": tenant_id},
-            data=update_data,
+        update_data: dict = (
+            {"matched_invoice_id": match_info["id"]}
+            if match_info["type"] == "invoice"
+            else {"matched_bill_id": match_info["id"]}
         )
+        match_updates.append(
+            db.banktransaction.update(
+                where={"id": txn_id, "tenant_id": tenant_id},
+                data=update_data,
+            )
+        )
+    if match_updates:
+        await asyncio.gather(*match_updates)
 
     await db.reconciliationrun.create(data={
         "tenant_id": tenant_id,
