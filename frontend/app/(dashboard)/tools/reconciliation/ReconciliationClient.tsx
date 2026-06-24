@@ -262,24 +262,17 @@ export function ReconciliationClient() {
     if (!deployed?.id || running) return
     setRunError(null)
     setRunning(true)
-    console.log('[reconciliation] handleRun start', { apiUrl: API, toolId: deployed.id, periodStart, periodEnd })
     try {
       const token = await getToken()
-      console.log('[reconciliation] token acquired', { hasToken: !!token })
       const configAccountIds = (deployed.config_json as Record<string, unknown> | null)?.account_ids
       const runAccountIds = Array.isArray(configAccountIds) && configAccountIds.length > 0 ? configAccountIds as string[] : null
-      const url = `${API}/v1/reconciliation/run`
-      const payload = { period_start: periodStart, period_end: periodEnd, tool_id: deployed.id, account_ids: runAccountIds }
-      console.log('[reconciliation] POST', url, payload)
-      const res = await fetch(url, {
+      const res = await fetch(`${API}/v1/reconciliation/run`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({ period_start: periodStart, period_end: periodEnd, tool_id: deployed.id, account_ids: runAccountIds }),
       })
-      console.log('[reconciliation] response', { status: res.status, ok: res.ok, url: res.url })
       if (!res.ok) {
         const json = await res.json().catch(() => null)
-        console.log('[reconciliation] error body', json)
         setRunError(json?.detail ?? `Request failed (${res.status})`)
         setRunning(false)
         return
@@ -288,7 +281,6 @@ export function ReconciliationClient() {
       pollRunCountRef.current = runs.length
       setPolling(true)
     } catch (err) {
-      console.error('[reconciliation] fetch threw', err)
       setRunError(err instanceof Error ? err.message : 'Network error')
       setRunning(false)
     }
