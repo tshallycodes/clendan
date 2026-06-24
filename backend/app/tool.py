@@ -790,7 +790,7 @@ async def run_reconciliation_scheduled_check(_ctx: dict) -> None:
                 period_days = 7
             else:
                 idem_key = f"reconciliation:scheduled:{tool.id}:{date_key}:{current_hour}"
-                period_days = 1
+                period_days = 30
 
             await enqueue_orchestrator_event(
                 tenant_id=tool.tenant_id,

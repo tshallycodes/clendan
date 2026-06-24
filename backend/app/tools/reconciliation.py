@@ -114,48 +114,38 @@ _CLAUDE_SYSTEM_PROMPT = (
 )
 
 
-async def _call_claude(
-    unmatched_txns: list[_TransactionRecord],
-    unmatched_invs: list[_InvoiceRecord],
-    unmatched_bills: list[_BillRecord],
+_BATCH_SIZE = 40
+
+
+async def _call_claude_batch(
+    txns: list[_TransactionRecord],
+    invs: list[_InvoiceRecord],
+    bills: list[_BillRecord],
+    client: AsyncAnthropic,
     settings_obj,
 ) -> list[_ClaudeItemResult]:
-    import os
-    api_key = settings_obj.anthropic_api_key or os.environ.get("ANTHROPIC_API_KEY")
-    if not api_key:
-        raise RuntimeError(
-            "ANTHROPIC_API_KEY is not configured. "
-            "Set it as an environment variable on the worker service."
-        )
-    client = AsyncAnthropic(api_key=api_key)
-
-    # Cap items per batch to keep responses within token budget
-    _MAX_ITEMS = 40
-    txns_batch = unmatched_txns[:_MAX_ITEMS]
-    invs_batch = unmatched_invs[:_MAX_ITEMS]
-    bills_batch = unmatched_bills[:_MAX_ITEMS]
-
+    """Single Claude call for one batch of items."""
     payload = json.dumps(
         {
             "unmatched_transactions": [
                 {"item_id": t.id, "item_type": "transaction", "amount_minor": t.amount_minor,
                  "currency": t.currency, "merchant_name": t.merchant_name,
                  "description": t.description, "date": t.date.isoformat(), "status": t.status}
-                for t in txns_batch
+                for t in txns
             ],
             "unmatched_invoices": [
                 {"item_id": i.id, "item_type": "invoice", "outstanding_cents": i.outstanding_cents,
                  "total_cents": i.total_cents, "contact_name": i.contact_name,
                  "due_date": i.due_date.isoformat() if i.due_date else None,
                  "status": i.status, "source": i.source}
-                for i in invs_batch
+                for i in invs
             ],
             "unmatched_bills": [
                 {"item_id": b.id, "item_type": "bill", "outstanding_cents": b.outstanding_cents,
                  "total_cents": b.total_cents, "contact_name": b.contact_name,
                  "due_date": b.due_date.isoformat() if b.due_date else None,
                  "status": b.status, "source": b.source}
-                for b in bills_batch
+                for b in bills
             ],
         },
         default=str,
@@ -172,11 +162,10 @@ async def _call_claude(
             )
             if message.stop_reason == "max_tokens":
                 logger.warning("claude_response_truncated", extra={"chars": len(message.content[0].text)})
-                raise RuntimeError("Claude response was truncated (max_tokens hit). Reduce batch size.")
+                raise RuntimeError("Claude response was truncated (max_tokens hit).")
             raw_text = message.content[0].text.strip()
             if not raw_text:
                 return []
-            # Strip markdown code fences if present
             if raw_text.startswith("```"):
                 raw_text = raw_text.split("```")[1]
                 if raw_text.startswith("json"):
@@ -188,19 +177,53 @@ async def _call_claude(
             return [_ClaudeItemResult(**item) for item in parsed]
         except (APIStatusError, APIConnectionError) as exc:
             last_exc = exc
-            logger.error(
-                "claude_api_error",
-                extra={"attempt": attempt + 1, "error": str(exc)},
-            )
+            logger.error("claude_api_error", extra={"attempt": attempt + 1, "error": str(exc)})
             if attempt < settings_obj.max_agent_attempts - 1:
                 await asyncio.sleep(settings_obj.backoff_seconds * (attempt + 1))
         except (json.JSONDecodeError, ValueError, KeyError) as exc:
             raise RuntimeError(f"Claude returned unparseable response: {exc}") from exc
 
-    raise RuntimeError(
-        f"Claude API failed after {settings_obj.max_agent_attempts} attempts: {last_exc}"
-    )
+    raise RuntimeError(f"Claude API failed after {settings_obj.max_agent_attempts} attempts: {last_exc}")
 
+
+async def _call_claude(
+    unmatched_txns: list[_TransactionRecord],
+    unmatched_invs: list[_InvoiceRecord],
+    unmatched_bills: list[_BillRecord],
+    settings_obj,
+) -> list[_ClaudeItemResult]:
+    """Batch-processes all unmatched items through Claude, _BATCH_SIZE items per call."""
+    import os
+    api_key = settings_obj.anthropic_api_key or os.environ.get("ANTHROPIC_API_KEY")
+    if not api_key:
+        raise RuntimeError(
+            "ANTHROPIC_API_KEY is not configured. "
+            "Set it as an environment variable on the worker service."
+        )
+    client = AsyncAnthropic(api_key=api_key)
+    all_results: list[_ClaudeItemResult] = []
+
+    # Transactions: batch independently (usually the largest set)
+    for i in range(0, max(len(unmatched_txns), 1), _BATCH_SIZE):
+        batch_txns = unmatched_txns[i:i + _BATCH_SIZE]
+        if not batch_txns:
+            break
+        results = await _call_claude_batch(batch_txns, [], [], client, settings_obj)
+        all_results.extend(results)
+
+    # Invoices + bills: batch together (they're related)
+    inv_count = len(unmatched_invs)
+    bill_count = len(unmatched_bills)
+    if inv_count or bill_count:
+        for i in range(0, max(inv_count, bill_count, 1), _BATCH_SIZE):
+            batch_invs = unmatched_invs[i:i + _BATCH_SIZE]
+            batch_bills = unmatched_bills[i:i + _BATCH_SIZE]
+            if not batch_invs and not batch_bills:
+                break
+            results = await _call_claude_batch([], batch_invs, batch_bills, client, settings_obj)
+            all_results.extend(results)
+
+    return all_results
 
 
 async def _execute_reconciliation(

@@ -4,6 +4,7 @@ HTTP API, webhooks, sync jobs, cron triggers.
 Centralises execution record creation and queue dispatch.
 """
 from prisma import Prisma
+from prisma.errors import UniqueViolationError
 
 from app.core.logging import get_logger
 from app.orchestrator.orchestrator import EVENT_TO_WORKER
@@ -24,9 +25,10 @@ async def enqueue_orchestrator_event(
     Finds the active tool, creates an Execution record (status: queued),
     and enqueues run_orchestrator_job.
 
-    Returns the execution_id.
-    Returns None if no active tool is deployed for this event type.
-    Idempotent: if a non-failed execution with this key already exists, returns its id.
+    Returns the execution_id, or None if no active tool is deployed.
+    Idempotent: the DB unique constraint on (tenant_id, input_ref) ensures
+    only one execution is created even under concurrent worker instances.
+    Only the worker that wins the INSERT enqueues the job.
     """
     tool_type = EVENT_TO_WORKER.get(event_type)
     if tool_type is None:
@@ -43,20 +45,26 @@ async def enqueue_orchestrator_event(
         )
         return None
 
-    existing = await db.execution.find_first(
-        where={"tenant_id": tenant_id, "input_ref": idempotency_key}
-    )
-    if existing and existing.status != "failed":
-        return existing.id
-
-    execution = await db.execution.create(data={
-        "tenant_id": tenant_id,
-        "tool_id": tool.id,
-        "input_ref": idempotency_key,
-        "decision": "pending",
-        "confidence": 0.0,
-        "status": "queued",
-    })
+    try:
+        execution = await db.execution.create(data={
+            "tenant_id": tenant_id,
+            "tool_id": tool.id,
+            "input_ref": idempotency_key,
+            "decision": "pending",
+            "confidence": 0.0,
+            "status": "queued",
+        })
+    except UniqueViolationError:
+        # Another worker instance already created this execution — this worker loses the race.
+        # Return the existing execution ID without re-enqueueing the job.
+        existing = await db.execution.find_first(
+            where={"tenant_id": tenant_id, "input_ref": idempotency_key}
+        )
+        logger.info(
+            "orchestrator_event_deduplicated",
+            extra={"idempotency_key": idempotency_key, "event_type": event_type, "tenant_id": tenant_id},
+        )
+        return existing.id if existing else None
 
     pool = await get_queue_pool()
     await pool.enqueue_job(

@@ -146,6 +146,7 @@ model Execution {
   approval Approval?
   audit    AuditLog[]
 
+  @@unique([tenant_id, input_ref])
   @@index([tenant_id])
   @@index([tool_id])
 }
