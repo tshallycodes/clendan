@@ -1,194 +1,232 @@
-﻿import type { Metadata } from 'next'
+import type { Metadata } from 'next'
 import { CodeBlock } from '@/components/dashboard/api/CodeBlock'
 import { EndpointCard } from '@/components/dashboard/api/EndpointCard'
 
 export const metadata: Metadata = { title: 'API Docs' }
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'
+const BASE_URL = 'https://api-production-0d35.up.railway.app/v1'
+
+const TOOL_TYPES = [
+  'invoice_processing',
+  'receipt_processing',
+  'expense_control',
+  'collections',
+  'fraud_detection',
+  'treasury',
+  'compliance',
+  'reconciliation',
+  'revenue_recognition',
+  'ai_accountant',
+  'credit_underwriting',
+  'document_intelligence',
+  'spend_control',
+]
 
 export default function ApiDocsPage() {
   return (
     <div className="p-6 space-y-10 max-w-4xl">
 
-      {/* Header */}
       <div>
-        <h1 className="font-heading font-bold text-2xl text-brand-text">Docs</h1>
+        <h1 className="font-heading font-bold text-2xl text-brand-text">API Reference</h1>
         <p className="text-brand-muted text-xs font-mono mt-1">
-          Connect your systems to Clendan — trigger agents, respond to approvals, query audit trails.
+          Trigger tools, poll results, manage approvals, and query audit trails.
         </p>
       </div>
 
-      {/* Base URL */}
       <section className="space-y-3">
         <h2 className="font-heading font-semibold text-sm text-brand-text uppercase tracking-widest">Base URL</h2>
-        <CodeBlock code={`${BASE_URL}/v1`} lang="text" />
+        <CodeBlock code={BASE_URL} lang="text" />
         <p className="text-xs font-mono text-brand-muted">
           All endpoints are versioned under <code className="text-brand-text">/v1</code>.
-          Every response has the shape:
         </p>
-        <CodeBlock lang="json" code={`{
-  "data":      { ... },
-  "error":     null,
-  "trace_id":  "4c3879c5-7d59-...",
-  "timestamp": "2026-06-04T21:18:12.982Z"
-}`} />
       </section>
 
-      {/* Authentication */}
       <section className="space-y-4">
         <h2 className="font-heading font-semibold text-sm text-brand-text uppercase tracking-widest">Authentication</h2>
         <p className="text-xs font-mono text-brand-muted">
-          Dashboard endpoints use a short-lived Clerk JWT.
-          Agent execution endpoints use your <code className="text-brand-text">X-Tenant-ID</code> paired with an <code className="text-brand-text">Idempotency-Key</code>.
+          All API calls require an <code className="text-brand-text">Authorization</code> header with a bearer API key.
+          Generate keys from the <span className="text-brand-text">Developer</span> page.
         </p>
-        <CodeBlock lang="bash" code={`# Obtain a Clerk session token (browser / server SDK)
-TOKEN=$(clerk session token)
-
-# Pass it on every dashboard request
-curl -H "Authorization: Bearer $TOKEN" \\
-     ${BASE_URL}/v1/dashboard/stats`} />
+        <CodeBlock lang="bash" code={`curl ${BASE_URL}/execute \\
+  -H "Authorization: Bearer ck_live_..."`} />
       </section>
 
-      {/* Onboarding */}
+      <section className="space-y-3">
+        <h2 className="font-heading font-semibold text-sm text-brand-text uppercase tracking-widest">Standard Response Shape</h2>
+        <CodeBlock lang="json" code={`{
+  "data":      { },
+  "error":     null,
+  "trace_id":  "trc_4c3879c5-7d59-...",
+  "timestamp": "2026-06-24T10:00:00.000Z"
+}`} />
+      </section>
+
       <section className="space-y-4">
-        <h2 className="font-heading font-semibold text-sm text-brand-text uppercase tracking-widest">Onboarding</h2>
+        <h2 className="font-heading font-semibold text-sm text-brand-text uppercase tracking-widest">Idempotency</h2>
+        <p className="text-xs font-mono text-brand-muted">
+          All <code className="text-brand-text">POST</code> requests require an{' '}
+          <code className="text-brand-text">Idempotency-Key</code> header. Sending the same key twice returns the
+          original result without re-executing. Use a UUID per operation.
+        </p>
+      </section>
+
+      <section className="space-y-4">
+        <h2 className="font-heading font-semibold text-sm text-brand-text uppercase tracking-widest">Trigger a Tool</h2>
         <EndpointCard
-          method="POST" path="/v1/onboarding"
-          description="Create your tenant and user on first sign-in. Safe to call multiple times — idempotent."
-          headers={[{ name: 'Authorization', required: true, description: 'Bearer <clerk-token>' }]}
-          example={`curl -X POST ${BASE_URL}/v1/onboarding \\
-  -H "Authorization: Bearer $TOKEN" \\
+          method="POST"
+          path="/v1/execute"
+          description="Enqueue a tool execution. Returns immediately with an execution_id. Poll for the result."
+          headers={[
+            { name: 'Authorization',  required: true,  description: 'Bearer ck_live_...' },
+            { name: 'Idempotency-Key', required: true,  description: 'Unique key per operation (UUID recommended)' },
+            { name: 'Content-Type',   required: true,  description: 'application/json' },
+          ]}
+          example={`curl -X POST ${BASE_URL}/execute \\
+  -H "Authorization: Bearer ck_live_..." \\
+  -H "Idempotency-Key: $(uuidgen)" \\
   -H "Content-Type: application/json" \\
-  -d '{"tenant_name": "Acme Corp"}'`}
+  -d '{
+    "tool": "invoice_processing",
+    "payload": {}
+  }'`}
+        />
+        <CodeBlock lang="json" code={`{
+  "data": {
+    "execution_id": "exe_...",
+    "status":       "queued",
+    "decision":     "pending",
+    "idempotent":   false
+  },
+  "error":     null,
+  "trace_id":  "trc_...",
+  "timestamp": "2026-06-24T10:00:00.000Z"
+}`} />
+      </section>
+
+      <section className="space-y-4">
+        <h2 className="font-heading font-semibold text-sm text-brand-text uppercase tracking-widest">Poll Execution Result</h2>
+        <EndpointCard
+          method="GET"
+          path="/v1/execute/{execution_id}"
+          description="Fetch the current state of an execution. Poll until status is not queued or running."
+          headers={[
+            { name: 'Authorization', required: true, description: 'Bearer ck_live_...' },
+          ]}
+          example={`curl ${BASE_URL}/execute/<execution_id> \\
+  -H "Authorization: Bearer ck_live_..."`}
+        />
+        <CodeBlock lang="json" code={`{
+  "data": {
+    "execution_id":    "exe_...",
+    "status":          "completed",
+    "decision":        "auto_approved",
+    "confidence":      0.97,
+    "reasoning_trace": "...",
+    "duration_ms":     2340
+  },
+  "error":     null,
+  "trace_id":  "trc_...",
+  "timestamp": "2026-06-24T10:00:00.000Z"
+}`} />
+      </section>
+
+      <section className="space-y-4">
+        <h2 className="font-heading font-semibold text-sm text-brand-text uppercase tracking-widest">List Deployed Tools</h2>
+        <EndpointCard
+          method="GET"
+          path="/v1/execute/tools"
+          description="Returns all tools deployed for your tenant, including their type, autonomy level, and status."
+          headers={[
+            { name: 'Authorization', required: true, description: 'Bearer ck_live_...' },
+          ]}
+          example={`curl ${BASE_URL}/execute/tools \\
+  -H "Authorization: Bearer ck_live_..."`}
         />
       </section>
 
-      {/* Dashboard */}
       <section className="space-y-4">
-        <h2 className="font-heading font-semibold text-sm text-brand-text uppercase tracking-widest">Dashboard</h2>
+        <h2 className="font-heading font-semibold text-sm text-brand-text uppercase tracking-widest">Approvals</h2>
         <div className="space-y-3">
           <EndpointCard
-            method="GET" path="/v1/dashboard/stats"
-            description="Execution counts, pending approvals, active tools, invoices processed."
-            headers={[{ name: 'Authorization', required: true, description: 'Bearer <clerk-token>' }]}
-            example={`curl ${BASE_URL}/v1/dashboard/stats \\
-  -H "Authorization: Bearer $TOKEN"`}
+            method="GET"
+            path="/v1/execute/approvals"
+            description="List all pending approval requests awaiting a human decision."
+            headers={[
+              { name: 'Authorization', required: true, description: 'Bearer ck_live_...' },
+            ]}
+            example={`curl ${BASE_URL}/execute/approvals \\
+  -H "Authorization: Bearer ck_live_..."`}
           />
           <EndpointCard
-            method="GET" path="/v1/dashboard/executions"
-            description="Paginated list of agent executions for your tenant, newest first."
-            headers={[{ name: 'Authorization', required: true, description: 'Bearer <clerk-token>' }]}
-            example={`curl "${BASE_URL}/v1/dashboard/executions?limit=20&offset=0" \\
-  -H "Authorization: Bearer $TOKEN"`}
+            method="POST"
+            path="/v1/execute/approvals/{id}/approve"
+            description="Approve a pending action. Enforces expiry TTL — stale approvals are rejected."
+            headers={[
+              { name: 'Authorization',   required: true, description: 'Bearer ck_live_...' },
+              { name: 'Idempotency-Key', required: true, description: 'Unique key per operation' },
+            ]}
+            example={`curl -X POST ${BASE_URL}/execute/approvals/<id>/approve \\
+  -H "Authorization: Bearer ck_live_..." \\
+  -H "Idempotency-Key: $(uuidgen)"`}
           />
           <EndpointCard
-            method="GET" path="/v1/dashboard/approvals"
-            description="All pending human-approval requests awaiting a decision."
-            headers={[{ name: 'Authorization', required: true, description: 'Bearer <clerk-token>' }]}
-            example={`curl ${BASE_URL}/v1/dashboard/approvals \\
-  -H "Authorization: Bearer $TOKEN"`}
-          />
-          <EndpointCard
-            method="GET" path="/v1/dashboard/audit"
-            description="Immutable audit trail — append-only log of every agent action."
-            headers={[{ name: 'Authorization', required: true, description: 'Bearer <clerk-token>' }]}
-            example={`curl ${BASE_URL}/v1/dashboard/audit \\
-  -H "Authorization: Bearer $TOKEN"`}
+            method="POST"
+            path="/v1/execute/approvals/{id}/reject"
+            description="Reject a pending action. The execution is marked blocked and logged to the audit trail."
+            headers={[
+              { name: 'Authorization',   required: true, description: 'Bearer ck_live_...' },
+              { name: 'Idempotency-Key', required: true, description: 'Unique key per operation' },
+            ]}
+            example={`curl -X POST ${BASE_URL}/execute/approvals/<id>/reject \\
+  -H "Authorization: Bearer ck_live_..." \\
+  -H "Idempotency-Key: $(uuidgen)"`}
           />
         </div>
       </section>
 
-      {/* Agents */}
       <section className="space-y-4">
-        <h2 className="font-heading font-semibold text-sm text-brand-text uppercase tracking-widest">Agent Execution</h2>
+        <h2 className="font-heading font-semibold text-sm text-brand-text uppercase tracking-widest">Audit Log</h2>
+        <EndpointCard
+          method="GET"
+          path="/v1/execute/audit"
+          description="Immutable append-only audit trail of every agent action taken for your tenant."
+          headers={[
+            { name: 'Authorization', required: true, description: 'Bearer ck_live_...' },
+          ]}
+          example={`curl "${BASE_URL}/execute/audit?limit=20&offset=0" \\
+  -H "Authorization: Bearer ck_live_..."`}
+        />
+      </section>
+
+      <section className="space-y-4">
+        <h2 className="font-heading font-semibold text-sm text-brand-text uppercase tracking-widest">Transactions</h2>
+        <EndpointCard
+          method="GET"
+          path="/v1/execute/transactions"
+          description="Paginated list of financial transactions synced and processed by your deployed tools."
+          headers={[
+            { name: 'Authorization', required: true, description: 'Bearer ck_live_...' },
+          ]}
+          example={`curl "${BASE_URL}/execute/transactions?limit=20&offset=0" \\
+  -H "Authorization: Bearer ck_live_..."`}
+        />
+      </section>
+
+      <section className="space-y-4">
+        <h2 className="font-heading font-semibold text-sm text-brand-text uppercase tracking-widest">Available Tool Types</h2>
         <p className="text-xs font-mono text-brand-muted">
-          Trigger a tool with a document. Use the same <code className="text-brand-text">Idempotency-Key</code> to safely retry — duplicate requests return the existing execution record.
+          Pass one of these values as <code className="text-brand-text">tool</code> in the execute body.
         </p>
-        <EndpointCard
-          method="POST" path="/v1/agents/{tool_id}/run"
-          description="Enqueue a document for processing by a specific tool. Returns immediately with execution_id."
-          headers={[
-            { name: 'X-Tenant-ID',      required: true, description: 'Your tenant ID' },
-            { name: 'Idempotency-Key',  required: true, description: 'Unique key per operation (UUID recommended)' },
-          ]}
-          example={`# Encode document as base64, then submit
-FILE_B64=$(base64 -w0 invoice.pdf)
-
-curl -X POST ${BASE_URL}/v1/agents/<tool_id>/run \\
-  -H "X-Tenant-ID: <your-tenant-id>" \\
-  -H "Idempotency-Key: $(uuidgen)" \\
-  -H "Content-Type: application/json" \\
-  -d "{
-    \\"file_bytes_b64\\": \\"$FILE_B64\\",
-    \\"content_type\\": \\"application/pdf\\"
-  }"`}
-        />
-      </section>
-
-      {/* Approvals */}
-      <section className="space-y-4">
-        <h2 className="font-heading font-semibold text-sm text-brand-text uppercase tracking-widest">Approvals</h2>
-        <EndpointCard
-          method="POST" path="/v1/approvals/{approval_id}/respond"
-          description="Approve or reject a pending action. Enforces expiry TTL — stale approvals are rejected with 410."
-          headers={[
-            { name: 'X-Tenant-ID', required: true, description: 'Your tenant ID' },
-          ]}
-          example={`curl -X POST ${BASE_URL}/v1/approvals/<approval_id>/respond \\
-  -H "X-Tenant-ID: <your-tenant-id>" \\
-  -H "Content-Type: application/json" \\
-  -d '{"action": "approve", "responder_id": "<your-user-id>"}'
-
-# To reject:
-# -d '{"action": "reject", "responder_id": "<your-user-id>"}'`}
-        />
-      </section>
-
-      {/* Python SDK example */}
-      <section className="space-y-4">
-        <h2 className="font-heading font-semibold text-sm text-brand-text uppercase tracking-widest">Python example</h2>
-        <CodeBlock lang="python" code={`import base64, uuid, httpx
-
-BASE = "${BASE_URL}/v1"
-TENANT_ID = "<your-tenant-id>"
-WORKER_ID = "<your-tool-id>"
-
-with open("invoice.pdf", "rb") as f:
-    b64 = base64.b64encode(f.read()).decode()
-
-resp = httpx.post(
-    f"{BASE}/agents/{WORKER_ID}/run",
-    headers={
-        "X-Tenant-ID":     TENANT_ID,
-        "Idempotency-Key": str(uuid.uuid4()),
-    },
-    json={"file_bytes_b64": b64, "content_type": "application/pdf"},
-)
-print(resp.json()["data"])  # {"execution_id": "...", "status": "queued"}`} />
-      </section>
-
-      {/* TypeScript SDK example */}
-      <section className="space-y-4">
-        <h2 className="font-heading font-semibold text-sm text-brand-text uppercase tracking-widest">TypeScript example</h2>
-        <CodeBlock lang="typescript" code={`const BASE = "${BASE_URL}/v1"
-const TENANT_ID = "<your-tenant-id>"
-const WORKER_ID = "<your-tool-id>"
-
-const fileBytes = await fs.readFile("invoice.pdf")
-const b64 = fileBytes.toString("base64")
-
-const res = await fetch(\`\${BASE}/agents/\${WORKER_ID}/run\`, {
-  method: "POST",
-  headers: {
-    "X-Tenant-ID":     TENANT_ID,
-    "Idempotency-Key": crypto.randomUUID(),
-    "Content-Type":    "application/json",
-  },
-  body: JSON.stringify({ file_bytes_b64: b64, content_type: "application/pdf" }),
-})
-
-const { data } = await res.json()
-console.log(data.execution_id, data.status) // "queued"`} />
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+          {TOOL_TYPES.map((t) => (
+            <div
+              key={t}
+              className="bg-brand-bg border border-brand-border rounded-sm px-3 py-2 text-xs font-mono text-brand-text"
+            >
+              {t}
+            </div>
+          ))}
+        </div>
       </section>
 
     </div>

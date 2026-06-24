@@ -1,8 +1,9 @@
-﻿import hashlib
-from datetime import datetime, timezone
+import asyncio
+import hashlib
+from datetime import datetime, timezone, UTC
 from typing import Any
 
-from fastapi import APIRouter, Header, HTTPException
+from fastapi import APIRouter, Header, HTTPException, Query
 from pydantic import BaseModel
 
 from app.core.db import get_db
@@ -46,6 +47,25 @@ class ExecuteRequest(BaseModel):
     payload: dict[str, Any] = {}
 
 
+async def _resolve_api_key(authorization: str) -> tuple[str, str]:
+    """Validate API key and return (tenant_id, api_key_id), or raise 401."""
+    if not authorization.startswith("Bearer ck_live_"):
+        raise HTTPException(status_code=401, detail="Invalid API key format")
+    raw_key = authorization.removeprefix("Bearer ")
+    key_hash = hashlib.sha256(raw_key.encode()).hexdigest()
+    db = get_db()
+    api_key = await db.apikey.find_first(where={"key_hash": key_hash, "status": "active"})
+    if not api_key:
+        raise HTTPException(status_code=401, detail="Invalid or revoked API key")
+    if api_key.expires_at is not None:
+        expires_at = api_key.expires_at
+        if expires_at.tzinfo is None:
+            expires_at = expires_at.replace(tzinfo=timezone.utc)
+        if datetime.now(tz=timezone.utc) > expires_at:
+            raise HTTPException(status_code=401, detail="API key has expired")
+    return api_key.tenant_id, api_key.id
+
+
 @router.post("")
 async def execute(
     body: ExecuteRequest,
@@ -57,31 +77,8 @@ async def execute(
     Authenticates via API key (Bearer ck_live_...), enqueues the requested tool.
     Same Idempotency-Key + tenant + tool returns the existing execution record.
     """
-    # --- Auth: extract and validate API key format ---
-    if not authorization.startswith("Bearer ck_live_"):
-        raise HTTPException(status_code=401, detail="Invalid API key format")
-
-    raw_key = authorization.removeprefix("Bearer ")
-    key_hash = hashlib.sha256(raw_key.encode()).hexdigest()
-
+    tenant_id, api_key_id = await _resolve_api_key(authorization)
     db = get_db()
-
-    # --- Look up API key record ---
-    api_key = await db.apikey.find_first(
-        where={"key_hash": key_hash, "status": "active"}
-    )
-    if not api_key:
-        raise HTTPException(status_code=401, detail="Invalid or revoked API key")
-
-    # --- Check expiry ---
-    if api_key.expires_at is not None:
-        expires_at = api_key.expires_at
-        if expires_at.tzinfo is None:
-            expires_at = expires_at.replace(tzinfo=timezone.utc)
-        if datetime.now(tz=timezone.utc) > expires_at:
-            raise HTTPException(status_code=401, detail="API key has expired")
-
-    tenant_id: str = api_key.tenant_id
 
     # --- Validate tool type ---
     if body.tool not in TOOL_TYPE_TO_EVENT:
@@ -156,13 +153,13 @@ async def execute(
     # --- Fire-and-forget: update last_used_at (non-critical) ---
     try:
         await db.apikey.update(
-            where={"id": api_key.id},
+            where={"id": api_key_id},
             data={"last_used_at": datetime.now(tz=timezone.utc)},
         )
     except Exception:
         _logger.warning(
             "api_key_last_used_update_failed",
-            extra={"api_key_id": api_key.id},
+            extra={"api_key_id": api_key_id},
         )
 
     return standard_response(
@@ -175,12 +172,241 @@ async def execute(
     )
 
 
-def _auth_api_key(authorization: str):
-    """Extract and return (raw_key, key_hash) or raise 401."""
-    if not authorization.startswith("Bearer ck_live_"):
-        raise HTTPException(status_code=401, detail="Invalid API key format")
-    raw_key = authorization.removeprefix("Bearer ")
-    return hashlib.sha256(raw_key.encode()).hexdigest()
+@router.get("/tools")
+async def list_tools(
+    authorization: str = Header(..., alias="Authorization"),
+):
+    """List active deployed tools for the authenticated tenant."""
+    tenant_id, _ = await _resolve_api_key(authorization)
+    db = get_db()
+
+    tools = await db.tool.find_many(
+        where={"tenant_id": tenant_id, "status": "active"},
+        order={"type": "asc"},
+    )
+
+    return standard_response(
+        data={
+            "tools": [
+                {
+                    "id": t.id,
+                    "type": t.type,
+                    "autonomy_level": t.autonomy_level,
+                    "status": t.status,
+                    "version": t.version,
+                }
+                for t in tools
+            ]
+        }
+    )
+
+
+@router.get("/approvals")
+async def list_approvals(
+    authorization: str = Header(..., alias="Authorization"),
+    limit: int = Query(20, le=200),
+    offset: int = Query(0, ge=0),
+):
+    """List pending approvals for the authenticated tenant."""
+    tenant_id, _ = await _resolve_api_key(authorization)
+    db = get_db()
+
+    approvals = await db.approval.find_many(
+        where={"tenant_id": tenant_id, "status": "pending"},
+        order={"requested_at": "asc"},
+        take=limit,
+        skip=offset,
+        include={"execution": {"include": {"tool": True}}},
+    )
+
+    return standard_response(
+        data={
+            "approvals": [
+                {
+                    "id": a.id,
+                    "tool_id": a.execution.tool_id if a.execution else None,
+                    "tool_type": a.execution.tool.type if (a.execution and a.execution.tool) else None,
+                    "decision": a.execution.decision if a.execution else None,
+                    "confidence": a.execution.confidence if a.execution else None,
+                    "reasoning": None,
+                    "created_at": a.requested_at.isoformat(),
+                    "expires_at": a.expires_at.isoformat(),
+                }
+                for a in approvals
+            ]
+        }
+    )
+
+
+@router.post("/approvals/{approval_id}/approve")
+async def approve_action(
+    approval_id: str,
+    authorization: str = Header(..., alias="Authorization"),
+):
+    """Approve a pending action. Enforces tenant isolation and expiry TTL."""
+    tenant_id, _ = await _resolve_api_key(authorization)
+    db = get_db()
+
+    approval = await db.approval.find_first(
+        where={"id": approval_id, "tenant_id": tenant_id}
+    )
+    if not approval:
+        raise HTTPException(status_code=404, detail="Approval not found")
+
+    if approval.status != "pending":
+        raise HTTPException(
+            status_code=409,
+            detail=f"Approval is already '{approval.status}' and cannot be acted on",
+        )
+
+    now = datetime.now(UTC)
+    expires_at = approval.expires_at
+    if expires_at.tzinfo is None:
+        expires_at = expires_at.replace(tzinfo=UTC)
+    if now > expires_at:
+        raise HTTPException(status_code=410, detail="Approval has expired")
+
+    await db.approval.update(
+        where={"id": approval_id},
+        data={"status": "approved", "responded_at": now},
+    )
+    await db.execution.update(
+        where={"id": approval.execution_id},
+        data={"decision": "approved"},
+    )
+
+    _logger.info(
+        "approval_approved_via_api_key",
+        extra={"approval_id": approval_id, "tenant_id": tenant_id},
+    )
+
+    return standard_response(data={"approval_id": approval_id, "status": "approved"})
+
+
+@router.post("/approvals/{approval_id}/reject")
+async def reject_action(
+    approval_id: str,
+    authorization: str = Header(..., alias="Authorization"),
+):
+    """Reject a pending action. Enforces tenant isolation and expiry TTL."""
+    tenant_id, _ = await _resolve_api_key(authorization)
+    db = get_db()
+
+    approval = await db.approval.find_first(
+        where={"id": approval_id, "tenant_id": tenant_id}
+    )
+    if not approval:
+        raise HTTPException(status_code=404, detail="Approval not found")
+
+    if approval.status != "pending":
+        raise HTTPException(
+            status_code=409,
+            detail=f"Approval is already '{approval.status}' and cannot be acted on",
+        )
+
+    now = datetime.now(UTC)
+    expires_at = approval.expires_at
+    if expires_at.tzinfo is None:
+        expires_at = expires_at.replace(tzinfo=UTC)
+    if now > expires_at:
+        raise HTTPException(status_code=410, detail="Approval has expired")
+
+    await db.approval.update(
+        where={"id": approval_id},
+        data={"status": "rejected", "responded_at": now},
+    )
+    await db.execution.update(
+        where={"id": approval.execution_id},
+        data={"decision": "rejected"},
+    )
+
+    _logger.info(
+        "approval_rejected_via_api_key",
+        extra={"approval_id": approval_id, "tenant_id": tenant_id},
+    )
+
+    return standard_response(data={"approval_id": approval_id, "status": "rejected"})
+
+
+@router.get("/audit")
+async def list_audit(
+    authorization: str = Header(..., alias="Authorization"),
+    limit: int = Query(20, le=200),
+    offset: int = Query(0, ge=0),
+):
+    """Query the audit log for the authenticated tenant."""
+    tenant_id, _ = await _resolve_api_key(authorization)
+    db = get_db()
+
+    entries, total = await asyncio.gather(
+        db.auditlog.find_many(
+            where={"tenant_id": tenant_id},
+            order={"created_at": "desc"},
+            take=limit,
+            skip=offset,
+        ),
+        db.auditlog.count(where={"tenant_id": tenant_id}),
+    )
+
+    return standard_response(
+        data={
+            "entries": [
+                {
+                    "id": e.id,
+                    "actor": e.actor,
+                    "action": e.action,
+                    "model_version": e.model_version,
+                    "created_at": e.created_at.isoformat(),
+                    "execution_id": e.execution_id,
+                    "reasoning_trace_json": e.reasoning_trace_json,
+                }
+                for e in entries
+            ],
+            "total": total,
+        }
+    )
+
+
+@router.get("/transactions")
+async def list_transactions(
+    authorization: str = Header(..., alias="Authorization"),
+    limit: int = Query(20, le=200),
+    offset: int = Query(0, ge=0),
+):
+    """List bank transactions for the authenticated tenant."""
+    tenant_id, _ = await _resolve_api_key(authorization)
+    db = get_db()
+
+    transactions, total = await asyncio.gather(
+        db.banktransaction.find_many(
+            where={"tenant_id": tenant_id},
+            order={"date": "desc"},
+            take=limit,
+            skip=offset,
+        ),
+        db.banktransaction.count(where={"tenant_id": tenant_id}),
+    )
+
+    return standard_response(
+        data={
+            "transactions": [
+                {
+                    "id": t.id,
+                    "source": t.source,
+                    "amount_minor": t.amount_minor,
+                    "currency": t.currency,
+                    "merchant_name": t.merchant_name,
+                    "description": t.description,
+                    "date": t.date.isoformat(),
+                    "ai_category": t.ai_category,
+                    "status": t.status,
+                    "account_id": t.account_id,
+                }
+                for t in transactions
+            ],
+            "total": total,
+        }
+    )
 
 
 @router.get("/{execution_id}")
@@ -193,23 +419,8 @@ async def get_execution(
     Authenticated via API key (same as POST /execute).
     Returns status, decision, confidence, reasoning trace, and timing.
     """
-    key_hash = _auth_api_key(authorization)
+    tenant_id, _ = await _resolve_api_key(authorization)
     db = get_db()
-
-    api_key = await db.apikey.find_first(
-        where={"key_hash": key_hash, "status": "active"}
-    )
-    if not api_key:
-        raise HTTPException(status_code=401, detail="Invalid or revoked API key")
-
-    if api_key.expires_at is not None:
-        expires_at = api_key.expires_at
-        if expires_at.tzinfo is None:
-            expires_at = expires_at.replace(tzinfo=timezone.utc)
-        if datetime.now(tz=timezone.utc) > expires_at:
-            raise HTTPException(status_code=401, detail="API key has expired")
-
-    tenant_id: str = api_key.tenant_id
 
     execution = await db.execution.find_first(
         where={"id": execution_id, "tenant_id": tenant_id},

@@ -6,6 +6,7 @@ import { Copy, Check, ArrowSquareOut, Plus, X, Lightning, GitBranch, ShieldCheck
 import { useToast } from '@/components/Providers'
 import { motion } from 'framer-motion'
 import { CodeBlock } from '@/components/dashboard/api/CodeBlock'
+import { ApiPlayground } from './ApiPlayground'
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 const BASE_URL = 'https://api.clendan.com/v1'
@@ -77,14 +78,14 @@ const CAPABILITIES = [
 ]
 
 const ENDPOINTS = [
-  { method: 'POST', path: '/execute', desc: 'Run any deployed tool' },
-  { method: 'GET',  path: '/tools',   desc: 'List all deployed tools' },
-  { method: 'GET',  path: '/approvals', desc: 'List pending approvals' },
-  { method: 'POST', path: '/approvals/{id}/approve', desc: 'Approve an agent action' },
-  { method: 'POST', path: '/approvals/{id}/reject',  desc: 'Reject an agent action' },
-  { method: 'GET',  path: '/audit',   desc: 'Query immutable audit log' },
-  { method: 'GET',  path: '/transactions', desc: 'List synced transactions' },
-  { method: 'POST', path: '/webhooks', desc: 'Register a webhook endpoint' },
+  { method: 'POST', path: '/execute',                        desc: 'Trigger any deployed tool' },
+  { method: 'GET',  path: '/execute/{execution_id}',         desc: 'Poll execution result' },
+  { method: 'GET',  path: '/execute/tools',                  desc: 'List deployed tools' },
+  { method: 'GET',  path: '/execute/approvals',              desc: 'List pending approvals' },
+  { method: 'POST', path: '/execute/approvals/{id}/approve', desc: 'Approve an agent action' },
+  { method: 'POST', path: '/execute/approvals/{id}/reject',  desc: 'Reject an agent action' },
+  { method: 'GET',  path: '/execute/audit',                  desc: 'Query immutable audit log' },
+  { method: 'GET',  path: '/execute/transactions',           desc: 'List synced transactions' },
 ]
 
 const WEBHOOK_EVENTS = [
@@ -311,6 +312,11 @@ export function DeveloperPageClient() {
               ))}
             </div>
             <CodeBlock code={SNIPPETS[lang]} lang={lang} />
+          </motion.div>
+
+          {/* Playground */}
+          <motion.div variants={fadeUp}>
+            <ApiPlayground />
           </motion.div>
 
         </div>
