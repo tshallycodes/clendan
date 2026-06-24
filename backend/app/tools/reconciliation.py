@@ -115,15 +115,23 @@ _CLAUDE_SYSTEM_PROMPT = (
 
 
 _BATCH_SIZE = 40
-_AUTO_OK_THRESHOLD_MINOR = 1500  # items below £15/€15/$15 auto-classified without Claude
+_AUTO_OK_THRESHOLD_MINOR = 1500   # < £15: always auto-ok
+_MAX_CLAUDE_TXN_ITEMS = 40        # cap: only top-N by amount go to Claude, rest auto-ok
 
 
 def _pre_classify(
     txns: list[_TransactionRecord],
 ) -> tuple[list[_TransactionRecord], list[_ClaudeItemResult]]:
-    """Fast-path: classify tiny transactions as ok locally, send the rest to Claude."""
-    needs_claude: list[_TransactionRecord] = []
+    """Fast-path classification before Claude.
+
+    1. Transactions below £15 → auto ok (clearly routine).
+    2. Of the remainder, only the top _MAX_CLAUDE_TXN_ITEMS by |amount| go to Claude.
+       Everything else → auto ok (lower-risk tail).
+    This guarantees at most one Claude transaction batch regardless of dataset size.
+    """
     auto: list[_ClaudeItemResult] = []
+    above_threshold = []
+
     for txn in txns:
         if abs(txn.amount_minor) < _AUTO_OK_THRESHOLD_MINOR:
             auto.append(_ClaudeItemResult(
@@ -134,7 +142,22 @@ def _pre_classify(
                 reasoning=f"Auto-classified: amount {abs(txn.amount_minor) / 100:.2f} below review threshold.",
             ))
         else:
-            needs_claude.append(txn)
+            above_threshold.append(txn)
+
+    # Sort by amount descending — highest risk first
+    above_threshold.sort(key=lambda t: abs(t.amount_minor), reverse=True)
+    needs_claude = above_threshold[:_MAX_CLAUDE_TXN_ITEMS]
+    low_priority = above_threshold[_MAX_CLAUDE_TXN_ITEMS:]
+
+    for txn in low_priority:
+        auto.append(_ClaudeItemResult(
+            item_id=txn.id,
+            item_type="transaction",
+            severity="low",
+            action="ok",
+            reasoning=f"Auto-classified: amount {abs(txn.amount_minor) / 100:.2f} below top-{_MAX_CLAUDE_TXN_ITEMS} review threshold.",
+        ))
+
     return needs_claude, auto
 
 
