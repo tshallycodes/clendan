@@ -102,6 +102,19 @@ const AUTONOMY_BADGE: Record<string, { label: string; className: string }> = {
   suggest: { label: 'Suggest', className: 'bg-brand-surface text-brand-muted border border-brand-border' },
 }
 
+const AUTONOMY_DESC: Record<string, string> = {
+  auto:    'Executes automatically — no approval required before acting.',
+  approve: 'Every decision is routed to you for review before the agent acts.',
+  suggest: 'Agent suggests actions but you must sign off on each one.',
+}
+
+const HOW_IT_WORKS = [
+  { step: '01', label: 'Trigger',       desc: 'Tool activates on a schedule or incoming event. Data is pulled from connected integrations.' },
+  { step: '02', label: 'Execute',       desc: 'Agent processes the data using your configured rules and AI reasoning.' },
+  { step: '03', label: 'Policy check',  desc: 'Every output is validated by the policy engine before any action is taken. Cannot be skipped.' },
+  { step: '04', label: 'Audit',         desc: 'Full decision and reasoning trace written to the immutable audit log before returning.' },
+]
+
 export function ReconciliationClient() {
   const { getToken } = useAuth()
   const canConfigure = useCanConfigure()
@@ -355,7 +368,7 @@ export function ReconciliationClient() {
           transition={{ duration: 0.2, ease: 'easeOut' }}
         >
           {activeTab === 'overview' && (
-            <>
+            <div className="space-y-4">
               <OverviewTab
                 periodStart={periodStart} periodEnd={periodEnd}
                 toolId={deployed?.id ?? null} running={running}
@@ -364,20 +377,66 @@ export function ReconciliationClient() {
                 onRun={handleRun}
                 onSelectRun={(r) => { setSelectedRun(r); fetchItems(r.id); setModalOpen(true) }}
               />
-              <motion.ul
-                variants={capabilityVariants}
-                initial="hidden"
-                animate="show"
-                className="bg-brand-surface border border-brand-border rounded-sm divide-y divide-brand-border mt-5"
-              >
-                {RECONCILIATION_CAPABILITIES.map(cap => (
-                  <motion.li key={cap} variants={capItemVariants} className="flex items-start gap-3 px-4 py-3">
-                    <span className="text-brand-muted font-mono text-[10px] mt-0.5 shrink-0">→</span>
-                    <span className="text-xs font-mono text-brand-secondary">{cap}</span>
-                  </motion.li>
-                ))}
-              </motion.ul>
-            </>
+
+              {/* How it works */}
+              <div className="bg-brand-surface border border-brand-border rounded-sm overflow-hidden">
+                <div className="px-4 py-3 border-b border-brand-border">
+                  <p className="text-[10px] font-mono uppercase tracking-widest text-brand-muted">How it works</p>
+                  <p className="text-[10px] font-mono text-brand-muted mt-0.5">Every run follows this fixed execution flow — no step can be skipped</p>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-4 divide-x divide-brand-border">
+                  {HOW_IT_WORKS.map(({ step, label, desc }) => (
+                    <div key={step} className="px-4 py-4 space-y-1.5">
+                      <p className="text-[10px] font-mono text-brand-muted">{step}</p>
+                      <p className="text-xs font-mono font-medium text-brand-text">{label}</p>
+                      <p className="text-[10px] font-mono text-brand-muted leading-relaxed">{desc}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Configuration */}
+              {deployed && (
+                <div className="bg-brand-surface border border-brand-border rounded-sm overflow-hidden">
+                  <div className="px-4 py-3 border-b border-brand-border">
+                    <p className="text-[10px] font-mono uppercase tracking-widest text-brand-muted">Configuration</p>
+                  </div>
+                  <div className="px-4 py-4 grid grid-cols-3 gap-6">
+                    <div className="space-y-1.5">
+                      <p className="text-[10px] font-mono text-brand-muted uppercase tracking-widest">Autonomy</p>
+                      {badge && <span className={`text-[10px] font-mono px-2 py-0.5 rounded-sm inline-block ${badge.className}`}>{badge.label}</span>}
+                      <p className="text-[10px] font-mono text-brand-muted leading-relaxed">{AUTONOMY_DESC[deployed.autonomy_level] ?? ''}</p>
+                    </div>
+                    <div className="space-y-1.5">
+                      <p className="text-[10px] font-mono text-brand-muted uppercase tracking-widest">Version</p>
+                      <p className="text-xs font-mono text-brand-text">v{deployed.version}</p>
+                      <p className="text-[10px] font-mono text-brand-muted">Increments on every config change</p>
+                    </div>
+                    <div className="space-y-1.5">
+                      <p className="text-[10px] font-mono text-brand-muted uppercase tracking-widest">Status</p>
+                      <p className="text-xs font-mono text-brand-text">{deployed.status === 'active' ? 'Running' : 'Paused'}</p>
+                      <p className="text-[10px] font-mono text-brand-muted">{deployed.status === 'active' ? 'Agent is live and processing' : 'Agent is paused — no runs will fire'}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Capabilities */}
+              <div className="bg-brand-surface border border-brand-border rounded-sm overflow-hidden">
+                <div className="px-4 py-3 border-b border-brand-border">
+                  <p className="text-[10px] font-mono uppercase tracking-widest text-brand-muted">Capabilities</p>
+                  <p className="text-[10px] font-mono text-brand-muted mt-0.5">What this agent does once deployed and connected to your data</p>
+                </div>
+                <motion.ul variants={capabilityVariants} initial="hidden" animate="show" className="divide-y divide-brand-border">
+                  {RECONCILIATION_CAPABILITIES.map(cap => (
+                    <motion.li key={cap} variants={capItemVariants} className="flex items-start gap-3 px-4 py-3">
+                      <span className="text-brand-muted font-mono text-[10px] mt-0.5 shrink-0">→</span>
+                      <span className="text-xs font-mono text-brand-secondary">{cap}</span>
+                    </motion.li>
+                  ))}
+                </motion.ul>
+              </div>
+            </div>
           )}
           {activeTab === 'executions' && <ToolExecutionsTab toolId={deployed?.id ?? null} />}
           {activeTab === 'approvals' && <ToolApprovalsTab toolId={deployed?.id ?? null} />}
