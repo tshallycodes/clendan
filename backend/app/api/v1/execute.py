@@ -16,25 +16,28 @@ router = APIRouter(prefix="/execute", tags=["agents"])
 
 TOOL_TYPE_TO_EVENT: dict[str, str] = {
     # Pre-consolidation names — kept for backwards compatibility
-    "invoice_processing":  "invoice_received",
-    "receipt_processing":  "receipt_received",
-    "expense_control":     "expense_submitted",
-    "collections":         "collection_triggered",
-    "fraud_detection":     "fraud_check_requested",
-    "treasury":            "treasury_run",
-    "compliance":          "compliance_check_requested",
-    "compliance_check":    "compliance_check_requested",
+    "invoice_processing":    "invoice_received",
+    "receipt_processing":    "receipt_received",
+    "expense_control":       "expense_control_run",
+    "collections":           "collection_triggered",
+    "fraud_detection":       "fraud_check_requested",
+    "treasury":              "treasury_run",
+    "compliance":            "compliance_check_requested",
+    "compliance_check":      "compliance_check_requested",
     # Current names
-    "reconciliation":      "reconciliation_run",
-    "revenue_recognition": "revenue_recognition_run",
-    "ai_accountant":       "transaction_posted",
-    "credit_underwriting": "credit_assessment_run",
+    "reconciliation":        "reconciliation_run",
+    "revenue_recognition":   "revenue_recognition_run",
+    "ai_accountant":         "transaction_posted",
+    "credit_underwriting":   "credit_assessment_run",
     "document_intelligence": "document_received",
-    "spend_control":       "spend_control_run",
-    "ar_collections":      "ar_collections_run",
-    "risk_compliance":     "risk_compliance_run",
-    "treasury_cash":       "treasury_cash_run",
-    "tax_compliance":      "tax_compliance_run",
+    "spend_control":         "spend_control_run",
+    "ar_collections":        "ar_collections_run",
+    "risk_compliance":       "risk_compliance_run",
+    "treasury_cash":         "treasury_cash_run",
+    "tax_compliance":        "tax_compliance_run",
+    "financial_reporting":   "financial_report_run",
+    "payment_run":           "payment_run_requested",
+    "budgeting":             "budget_check_run",
 }
 
 
@@ -168,5 +171,69 @@ async def execute(
             "status": "queued",
             "decision": "pending",
             "idempotent": False,
+        }
+    )
+
+
+def _auth_api_key(authorization: str):
+    """Extract and return (raw_key, key_hash) or raise 401."""
+    if not authorization.startswith("Bearer ck_live_"):
+        raise HTTPException(status_code=401, detail="Invalid API key format")
+    raw_key = authorization.removeprefix("Bearer ")
+    return hashlib.sha256(raw_key.encode()).hexdigest()
+
+
+@router.get("/{execution_id}")
+async def get_execution(
+    execution_id: str,
+    authorization: str = Header(..., alias="Authorization"),
+):
+    """
+    Poll for execution result.
+    Authenticated via API key (same as POST /execute).
+    Returns status, decision, confidence, reasoning trace, and timing.
+    """
+    key_hash = _auth_api_key(authorization)
+    db = get_db()
+
+    api_key = await db.apikey.find_first(
+        where={"key_hash": key_hash, "status": "active"}
+    )
+    if not api_key:
+        raise HTTPException(status_code=401, detail="Invalid or revoked API key")
+
+    if api_key.expires_at is not None:
+        expires_at = api_key.expires_at
+        if expires_at.tzinfo is None:
+            expires_at = expires_at.replace(tzinfo=timezone.utc)
+        if datetime.now(tz=timezone.utc) > expires_at:
+            raise HTTPException(status_code=401, detail="API key has expired")
+
+    tenant_id: str = api_key.tenant_id
+
+    execution = await db.execution.find_first(
+        where={"id": execution_id, "tenant_id": tenant_id},
+        include={"tool": True},
+    )
+    if not execution:
+        raise HTTPException(status_code=404, detail="Execution not found")
+
+    # Fetch reasoning from the most recent audit log for this execution
+    audit = await db.auditlog.find_first(
+        where={"execution_id": execution_id, "tenant_id": tenant_id},
+        order={"created_at": "desc"},
+    )
+
+    return standard_response(
+        data={
+            "execution_id": execution.id,
+            "tool": execution.tool.type if execution.tool else None,
+            "status": execution.status,
+            "decision": execution.decision,
+            "confidence": execution.confidence,
+            "duration_ms": execution.duration_ms,
+            "error": execution.error_message,
+            "reasoning_trace": audit.reasoning_trace_json if audit else None,
+            "created_at": execution.created_at.isoformat(),
         }
     )
