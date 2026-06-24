@@ -106,14 +106,80 @@ function ReconciliationTrace({ trace }: { trace: Record<string, unknown> }) {
   )
 }
 
+const DECISION_CONFIG: Record<string, { label: string; color: string; bg: string; border: string }> = {
+  routed:            { label: 'Routed to tool',      color: 'text-[#00a8cc]', bg: 'bg-[rgba(0,168,204,0.08)]',  border: 'border-[rgba(0,168,204,0.2)]' },
+  auto_approved:     { label: 'Auto-approved',        color: 'text-[#00C853]', bg: 'bg-[rgba(0,200,83,0.08)]',   border: 'border-[rgba(0,200,83,0.2)]' },
+  approval_required: { label: 'Approval required',    color: 'text-[#00a8cc]', bg: 'bg-[rgba(0,168,204,0.08)]',  border: 'border-[rgba(0,168,204,0.2)]' },
+  blocked:           { label: 'Blocked',              color: 'text-[#ff4d6d]', bg: 'bg-[rgba(255,77,109,0.08)]', border: 'border-[rgba(255,77,109,0.2)]' },
+  flagged:           { label: 'Flagged',              color: 'text-[#ff4d6d]', bg: 'bg-[rgba(255,77,109,0.08)]', border: 'border-[rgba(255,77,109,0.2)]' },
+}
+
+function OrchestratorTrace({ trace }: { trace: Record<string, unknown> }) {
+  const decision = (trace.decision as string) || 'routed'
+  const reasoning = trace.reasoning as string
+  const confidence = trace.confidence as number
+  const eventType = trace.event_type as string
+  const durationMs = trace.duration_ms as number
+  const payloadKeys = (trace.payload_keys as string[]) || []
+  const dc = DECISION_CONFIG[decision] ?? DECISION_CONFIG.routed
+
+  return (
+    <div className="space-y-4 pt-2">
+      <div className={`inline-flex px-3 py-1.5 rounded-sm border ${dc.bg} ${dc.border}`}>
+        <span className={`text-xs font-mono font-medium ${dc.color}`}>{dc.label}</span>
+      </div>
+
+      <div className="grid grid-cols-3 gap-2">
+        <div className="bg-brand-bg border border-brand-border rounded-sm p-3">
+          <p className="text-[10px] font-mono text-brand-muted uppercase tracking-widest">Event type</p>
+          <p className="text-xs font-mono text-brand-text mt-1">{eventType ?? '—'}</p>
+        </div>
+        <div className="bg-brand-bg border border-brand-border rounded-sm p-3">
+          <p className="text-[10px] font-mono text-brand-muted uppercase tracking-widest">Confidence</p>
+          <p className={`text-xl font-heading font-bold mt-1 ${(confidence ?? 0) >= 0.9 ? 'text-[#00C853]' : 'text-brand-text'}`}>
+            {confidence != null ? `${Math.round(confidence * 100)}%` : '—'}
+          </p>
+        </div>
+        <div className="bg-brand-bg border border-brand-border rounded-sm p-3">
+          <p className="text-[10px] font-mono text-brand-muted uppercase tracking-widest">Duration</p>
+          <p className="text-xl font-heading font-bold text-brand-text mt-1">
+            {durationMs != null ? `${durationMs}ms` : '—'}
+          </p>
+        </div>
+      </div>
+
+      {reasoning && (
+        <div className="bg-brand-bg border border-brand-border rounded-sm px-3 py-2.5">
+          <p className="text-[10px] font-mono text-brand-muted uppercase tracking-widest mb-1.5">Reasoning</p>
+          <p className="text-[11px] font-mono text-brand-secondary leading-relaxed">{reasoning}</p>
+        </div>
+      )}
+
+      {payloadKeys.length > 0 && (
+        <div>
+          <p className="text-[10px] font-mono text-brand-muted uppercase tracking-widest mb-1.5">Payload fields</p>
+          <div className="flex flex-wrap gap-1.5">
+            {payloadKeys.map(k => (
+              <span key={k} className="text-[10px] font-mono text-brand-secondary bg-brand-bg border border-brand-border rounded-sm px-2 py-0.5">{k}</span>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 function TraceView({ entry }: { entry: AuditEntry }) {
   const [showRaw, setShowRaw] = useState(false)
   const trace = typeof entry.reasoning_trace_json === 'object' ? entry.reasoning_trace_json : null
   const isReconciliation = entry.action?.startsWith('reconciliation:') && trace && 'overall_decision' in trace
+  const isOrchestrator = !isReconciliation && trace && 'decision' in trace
+
+  const hasFormatted = isReconciliation || isOrchestrator
 
   return (
     <div className="space-y-2">
-      {isReconciliation && (
+      {hasFormatted && (
         <div className="flex justify-end">
           <button
             type="button"
@@ -124,8 +190,10 @@ function TraceView({ entry }: { entry: AuditEntry }) {
           </button>
         </div>
       )}
-      {isReconciliation && !showRaw ? (
-        <ReconciliationTrace trace={trace!} />
+      {hasFormatted && !showRaw ? (
+        isReconciliation
+          ? <ReconciliationTrace trace={trace!} />
+          : <OrchestratorTrace trace={trace!} />
       ) : (
         entry.reasoning_trace_json && (
           <pre className="text-[10px] font-mono text-brand-secondary whitespace-pre-wrap bg-brand-bg border border-brand-border rounded-sm p-3 overflow-x-auto max-h-64">
