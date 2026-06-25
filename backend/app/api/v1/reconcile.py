@@ -200,16 +200,17 @@ async def list_reconciliation_integrations(current_user: RequireOrgAuth) -> dict
     db = get_db()
     tenant_id = current_user.tenant_id
 
-    accounts, invs, bills = await asyncio.gather(
+    _ACCOUNTING_TYPES = {"xero", "quickbooks", "freshbooks", "sage"}
+
+    accounts, connected = await asyncio.gather(
         db.bankaccount.find_many(where={"tenant_id": tenant_id}),
-        db.accountinginvoice.find_many(where={"tenant_id": tenant_id}, take=200),
-        db.accountingbill.find_many(where={"tenant_id": tenant_id}, take=200),
+        db.integration.find_many(
+            where={"tenant_id": tenant_id, "status": {"not": "disconnected"}}
+        ),
     )
 
     bank_sources = sorted({a.source for a in accounts if a.source})
-    accounting_sources = sorted(
-        {i.source for i in invs if i.source} | {b.source for b in bills if b.source}
-    )
+    accounting_sources = sorted({i.type for i in connected if i.type in _ACCOUNTING_TYPES})
 
     return standard_response(data={
         "bank_sources": bank_sources,

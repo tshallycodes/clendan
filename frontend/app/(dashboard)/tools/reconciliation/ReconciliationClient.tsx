@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
-import { X } from '@phosphor-icons/react'
 import { useAuth } from '@clerk/nextjs'
 import { useCanConfigure } from '@/lib/auth-client'
 import { useCurrency } from '@/components/Providers'
@@ -221,11 +220,12 @@ export function ReconciliationClient() {
         fetch(`${API}/v1/tools`, { headers: { Authorization: `Bearer ${token}` } }),
         fetch(`${API}/v1/reconciliation/integrations`, { headers: { Authorization: `Bearer ${token}` } }),
       ])
+      let deployedTool: Tool | null = null
       if (toolsRes.ok) {
         const toolsJson = await toolsRes.json()
         const tools: Tool[] = toolsJson.data?.tools ?? toolsJson.data ?? []
-        const rec = tools.find((w) => w.type === 'reconciliation')
-        if (rec) setDeployed(rec)
+        deployedTool = tools.find((w) => w.type === 'reconciliation') ?? null
+        if (deployedTool) setDeployed(deployedTool)
       }
       if (intRes.ok) {
         const intJson = await intRes.json()
@@ -233,7 +233,9 @@ export function ReconciliationClient() {
         const acct: string[] = intJson.data?.accounting_sources ?? []
         setBankSources(bank)
         setAccountingSources(acct)
-        setSelectedSources([...bank, ...acct])
+        const savedSources = (deployedTool?.config_json as Record<string, unknown> | null)?.integration_sources
+        const defaultAcct = Array.isArray(savedSources) ? (savedSources as string[]) : acct
+        setSelectedSources([...bank, ...defaultAcct])
       }
       setRunsLoading(true)
       const list = await fetchRuns()
@@ -526,7 +528,7 @@ export function ReconciliationClient() {
                   onClick={() => setModalOpen(false)}
                   className="text-brand-muted hover:text-brand-text transition-colors"
                 >
-                  <X className="w-4 h-4" />
+                  <span className="text-lg leading-none">✕</span>
                 </button>
               </div>
               <ReconciliationTable items={items} loading={itemsLoading} runId={selectedRun.id} onExport={handleExport} />

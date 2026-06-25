@@ -13,6 +13,13 @@ interface BankAccount {
   source: string
 }
 
+const SOURCE_NAMES: Record<string, string> = {
+  xero: 'Xero',
+  quickbooks: 'QuickBooks',
+  freshbooks: 'FreshBooks',
+  sage: 'Sage',
+}
+
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
 function formatType(type: string): string {
@@ -39,28 +46,43 @@ export function ConfigDrawer({ tool, toolType, onClose, onSaved }: Props) {
   const [saved, setSaved] = useState(false)
   const [accounts, setAccounts] = useState<BankAccount[]>([])
   const [accountsLoading, setAccountsLoading] = useState(toolType === 'reconciliation')
+  const [accountingSources, setAccountingSources] = useState<string[]>([])
   const [selectedAccountIds, setSelectedAccountIds] = useState<string[]>(() => {
     const existing = (tool?.config_json as Record<string, unknown> | null)?.account_ids
+    return Array.isArray(existing) ? (existing as string[]) : []
+  })
+  const [selectedIntegrationSources, setSelectedIntegrationSources] = useState<string[]>(() => {
+    const existing = (tool?.config_json as Record<string, unknown> | null)?.integration_sources
     return Array.isArray(existing) ? (existing as string[]) : []
   })
 
   useEffect(() => {
     if (toolType !== 'reconciliation') return
-    async function fetchAccounts() {
+    async function fetchReconciliationData() {
       try {
         const token = await getToken()
-        const res = await fetch(`${API}/v1/reconciliation/accounts`, {
-          headers: { Authorization: `Bearer ${token}` },
-        })
-        if (res.ok) {
-          const json = await res.json()
+        const [accountsRes, intRes] = await Promise.all([
+          fetch(`${API}/v1/reconciliation/accounts`, { headers: { Authorization: `Bearer ${token}` } }),
+          fetch(`${API}/v1/reconciliation/integrations`, { headers: { Authorization: `Bearer ${token}` } }),
+        ])
+        if (accountsRes.ok) {
+          const json = await accountsRes.json()
           setAccounts(json.data?.accounts ?? [])
+        }
+        if (intRes.ok) {
+          const json = await intRes.json()
+          const acct: string[] = json.data?.accounting_sources ?? []
+          setAccountingSources(acct)
+          // Default: all selected if none saved yet
+          setSelectedIntegrationSources(prev =>
+            prev.length === 0 ? acct : prev
+          )
         }
       } finally {
         setAccountsLoading(false)
       }
     }
-    fetchAccounts()
+    fetchReconciliationData()
   }, [toolType, getToken])
 
   async function handleSave() {
@@ -69,7 +91,7 @@ export function ConfigDrawer({ tool, toolType, onClose, onSaved }: Props) {
     try {
       const token = await getToken()
       const fullConfig = toolType === 'reconciliation'
-        ? { ...config, account_ids: selectedAccountIds }
+        ? { ...config, account_ids: selectedAccountIds, integration_sources: selectedIntegrationSources }
         : config
       const res = tool
         ? await fetch(`${API}/v1/tools/${tool.id}`, {
@@ -185,6 +207,42 @@ export function ConfigDrawer({ tool, toolType, onClose, onSaved }: Props) {
                     </p>
                   )}
                 </>
+              )}
+            </div>
+          )}
+
+          {toolType === 'reconciliation' && accountingSources.length > 0 && (
+            <div className="space-y-2">
+              <label className={labelClass}>Accounting Integrations</label>
+              <p className="text-[10px] font-mono text-brand-muted">Uncheck integrations to exclude their invoices and bills from reconciliation.</p>
+              <div className="bg-brand-bg border border-brand-border rounded-sm divide-y divide-brand-border">
+                {accountingSources.map((source) => {
+                  const checked = selectedIntegrationSources.length === 0 || selectedIntegrationSources.includes(source)
+                  return (
+                    <label key={source} className="flex items-center gap-3 px-3 py-2.5 cursor-pointer hover:bg-brand-elevated transition-colors">
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            const next = [...selectedIntegrationSources, source]
+                            setSelectedIntegrationSources(next.length === accountingSources.length ? [] : next)
+                          } else {
+                            const next = (selectedIntegrationSources.length === 0 ? accountingSources : selectedIntegrationSources).filter(s => s !== source)
+                            setSelectedIntegrationSources(next)
+                          }
+                        }}
+                        className="accent-[#00C853] w-3.5 h-3.5 shrink-0"
+                      />
+                      <p className="text-xs font-mono text-brand-text">{SOURCE_NAMES[source] ?? source}</p>
+                    </label>
+                  )
+                })}
+              </div>
+              {selectedIntegrationSources.length > 0 && selectedIntegrationSources.length < accountingSources.length && (
+                <p className="text-[10px] font-mono text-[#f5a623]">
+                  {selectedIntegrationSources.length} of {accountingSources.length} integrations selected
+                </p>
               )}
             </div>
           )}
