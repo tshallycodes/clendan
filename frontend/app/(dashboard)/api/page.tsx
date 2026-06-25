@@ -121,13 +121,75 @@ export default function ApiDocsPage() {
     "status":          "completed",
     "decision":        "auto_approved",
     "confidence":      0.97,
-    "reasoning_trace": "...",
+    "reasoning_trace": { },
     "duration_ms":     2340
   },
   "error":     null,
   "trace_id":  "trc_...",
   "timestamp": "2026-06-24T10:00:00.000Z"
 }`} />
+
+        <div className="space-y-3">
+          <p className="text-[10px] font-mono uppercase tracking-widest text-brand-muted">reasoning_trace shape — reconciliation</p>
+          <CodeBlock lang="json" code={`{
+  "overall_decision":      "flagged",
+  "period_start":          "2026-05-01T00:00:00+00:00",
+  "period_end":            "2026-05-31T00:00:00+00:00",
+  "transaction_count":     136,
+  "invoice_count":         12,
+  "bill_count":            6,
+  "matched_transactions":  121,
+  "matched_invoices":      10,
+  "matched_bills":         5,
+  "unmatched_transactions": 15,
+  "unmatched_invoices":    2,
+  "unmatched_bills":       1,
+  "unmatched_pct":         0.1103,
+  "policy_breach":         false,
+  "policy": {
+    "unmatched_pct_threshold":    0.2,
+    "match_amount_tolerance_pct": 0.01,
+    "match_date_window_days":     30
+  },
+  "claude_assessments": [
+    {
+      "item_id":   "txn_...",
+      "item_type": "transaction",
+      "action":    "flag",
+      "severity":  "high",
+      "reasoning": "Large amount (£1,400) with unprocessed status."
+    }
+  ]
+}`} />
+          <p className="text-xs font-mono text-brand-muted">
+            <code className="text-brand-text">claude_assessments</code> is a flat array — pipe it directly into a table or CSV.
+            Each row has <code className="text-brand-text">item_id</code>, <code className="text-brand-text">item_type</code>,{' '}
+            <code className="text-brand-text">action</code> (<code className="text-[#00C853]">ok</code> /{' '}
+            <code className="text-[#f5a623]">review</code> / <code className="text-[#ff4d6d]">flag</code>),{' '}
+            <code className="text-brand-text">severity</code>, and <code className="text-brand-text">reasoning</code>.
+          </p>
+          <CodeBlock lang="python" code={`import csv, json, requests, uuid
+
+res = requests.post(
+    "${BASE_URL}/execute",
+    headers={"Authorization": "ck_live_...", "Idempotency-Key": str(uuid.uuid4()), "Content-Type": "application/json"},
+    json={"tool": "reconciliation", "payload": {"period_start": "2026-05-01", "period_end": "2026-05-31"}},
+)
+execution_id = res.json()["data"]["execution_id"]
+
+# poll until complete ...
+result = requests.get(f"${BASE_URL}/execute/{'{'}execution_id{'}'}", headers={"Authorization": "ck_live_..."}).json()
+trace  = result["data"]["reasoning_trace"]
+
+# Summary row
+print(trace["overall_decision"], trace["unmatched_pct"], trace["policy_breach"])
+
+# Assessments → CSV
+with open("assessments.csv", "w", newline="") as f:
+    writer = csv.DictWriter(f, fieldnames=["item_id", "item_type", "action", "severity", "reasoning"])
+    writer.writeheader()
+    writer.writerows(trace["claude_assessments"])`} />
+        </div>
       </section>
 
       <section className="space-y-4">
