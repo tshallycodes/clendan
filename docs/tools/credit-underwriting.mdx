@@ -1,12 +1,50 @@
 ---
 title: Credit Underwriting
-description: Assess credit risk and generate automated underwriting decisions.
+description: Evaluate credit applications against hard rules and AI risk assessment, returning approve, refer, or decline.
 ---
 
 # Credit Underwriting
 
-The Credit Underwriting tool evaluates applicants against configurable credit score, DTI, LTV, and employment criteria. Decisions above the auto-approve threshold are issued instantly; borderline applications are routed for human review with a full reasoning trace and automatic adverse action notice generation where required.
+Credit Underwriting applies hard decisioning rules before calling Claude for risk assessment. Hard rules block immediately on credit score, DTI, employment status, or LTV violations. Claude assigns a risk grade (A–E), identifies risk and mitigating factors, and recommends an amount and interest rate. Interest rates are clamped to the grade's configured band. ECOA-compliant adverse action notices are generated automatically on decline.
 
-<Note>
-This page is coming soon. Full content will be added shortly.
-</Note>
+## What it does
+
+- Computes front-end and back-end debt-to-income (DTI) ratios from declared income and debt payments
+- Hard rules block on: credit score below minimum, DTI above maximum, unemployed status, LTV above maximum
+- Claude assigns a risk grade A–E and a recommended interest rate in basis points
+- Interest rate is clamped to the band for the assigned grade (e.g. Grade A: 250–400 bps)
+- `referred` from Claude maps to `approval_required`; `approved` maps to `auto_approved`; `declined` maps to `blocked`
+- Auto-generates an ECOA §202.9-compliant adverse action notice for all `blocked` decisions
+
+## Decisions
+
+| Decision | When |
+|---|---|
+| `auto_approved` | Claude grades `approved` (credit score >= 720, back-end DTI <= 0.30, stable income) |
+| `approval_required` | Claude grades `referred` (borderline credit score 650–699 or DTI 0.30–0.43) |
+| `blocked` | Hard rule fires, or Claude grades `declined` (Grade E or unstable bank transactions) |
+
+## Policy fields
+
+| Field | Default | Description |
+|---|---|---|
+| `min_credit_score` | `650` | Hard block below this score |
+| `max_dti_ratio` | `0.43` | Hard block above this back-end DTI |
+| `auto_approve_score_min` | `720` | Score threshold for auto-approval path |
+| `max_ltv_ratio` | `0.80` | Maximum loan-to-value for secured loans |
+| `min_employment_months` | `6` | Minimum employment history required |
+| `max_loan_amount` | `50000000` | Maximum loan amount in minor units |
+| `adverse_action_notice_auto` | `true` | Auto-generate ECOA notice on decline |
+
+## Output data
+
+Key fields in `output_data`:
+
+- `application_id`: applicant reference
+- `credit_score` / `front_end_dti` / `back_end_dti`: computed values
+- `risk_grade`: `A`, `B`, `C`, `D`, or `E`
+- `risk_factors` / `mitigating_factors`: arrays of strings
+- `approved_amount_minor`: approved loan amount or null
+- `interest_rate_bps`: approved rate in basis points, clamped to grade band
+- `conditions`: specific conditions applicant must meet
+- `adverse_action_notice`: ECOA notice with reasons (on decline only)

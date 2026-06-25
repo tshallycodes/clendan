@@ -1,12 +1,46 @@
 ---
 title: Treasury & Cash
-description: Monitor cash positions, forecast liquidity, track FX exposure, and monitor budget vs. actuals.
+description: Monitor cash position, compute burn rate, forecast runway, and alert when balances fall below thresholds.
 ---
 
 # Treasury & Cash
 
-Treasury & Cash aggregates multi-bank balances, generates rolling 30/60/90-day cash flow forecasts, monitors unhedged FX exposures, and tracks actuals against budget — all in one treasury layer. Runway alerts, payroll reserve enforcement, and bank counterparty limits are configurable per tenant.
+Treasury & Cash aggregates balances across all connected bank accounts, computes 30-day and 90-day burn rates using integer arithmetic, and forecasts cash runway. Claude validates the burn rate calculation, identifies the top 3 anomalous spend categories, and recommends a cash management action. An approval record is created whenever any alert condition fires.
 
-<Note>
-This page is coming soon. Full content will be added shortly.
-</Note>
+## What it does
+
+- Aggregates current balances across all bank accounts for the tenant
+- Computes daily burn rate and runway days over 30-day and 90-day windows using outflow transactions only
+- Triggers a balance alert when total balance falls below `min_balance_alert`
+- Triggers a runway alert when the 30-day runway falls below `cash_runway_warning_days`
+- Claude identifies the top 3 anomalous spend categories and chooses one of four recommended actions: `monitor`, `sweep`, `alert_cfo`, or `emergency`
+- Confidence is derived from runway length — shorter runway produces lower confidence
+
+## Decisions
+
+| Decision | When |
+|---|---|
+| `auto_approved` | Total balance above threshold, runway above warning level, no Claude alerts |
+| `approval_required` | Balance below `min_balance_alert`, or runway below `cash_runway_warning_days`, or Claude flags anomalies |
+
+## Policy fields
+
+| Field | Default | Description |
+|---|---|---|
+| `min_balance_alert` | `1000000` | Alert threshold in minor units (pence/cents) |
+| `cash_runway_warning_days` | `90` | Runway days below which an alert fires |
+| `forecast_horizon_days` | `30` | Transaction window sent to Claude for analysis |
+| `cash_sweep_enabled` | `false` | Whether cash sweeps can be recommended |
+| `cash_sweep_threshold` | `50000000` | Trigger level for sweep recommendation |
+| `bank_counterparty_limit` | `25000000` | Maximum exposure per bank counterparty |
+
+## Output data
+
+Key fields in `output_data`:
+
+- `total_balance_minor`: sum of all bank account balances
+- `burn_rate_daily_minor_30d` / `burn_rate_daily_minor_90d`: computed daily outflows
+- `runway_days_30d` / `runway_days_90d`: days of cash remaining at current burn rate
+- `forecast_runway_days`: Claude's runway estimate
+- `recommended_action`: `monitor`, `sweep`, `alert_cfo`, or `emergency`
+- `claude_alerts`: array of anomalous spend category alerts

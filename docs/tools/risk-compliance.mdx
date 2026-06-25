@@ -1,12 +1,42 @@
 ---
 title: Risk & Compliance
-description: Detect fraud, monitor regulatory obligations, and maintain audit-ready records year-round.
+description: Check transactions against AML, KYC, and GDPR frameworks and surface violations.
 ---
 
 # Risk & Compliance
 
-Risk & Compliance consolidates fraud detection, regulatory monitoring, and audit preparation into one always-on risk layer. The fraud engine scores every transaction in real-time; the compliance engine enforces AML, KYC, and GDPR rules; and the audit module maintains evidence packs and PBC lists so the organisation is always audit-ready.
+Risk & Compliance checks a batch of transactions against the compliance frameworks enabled in your tool configuration. Hard rules fire deterministically (AML threshold breaches, missing counterparty identity, PII in transaction descriptions, structuring patterns) before Claude is called. Claude then performs a deeper pattern analysis and produces a violation list and compliance summary.
 
-<Note>
-This page is coming soon. Full content will be added shortly.
-</Note>
+## What it does
+
+- Detects AML threshold breaches — transactions above the configured reporting amount trigger a SAR action
+- Detects potential structuring — multiple sub-threshold transactions collectively summing past the AML threshold
+- Flags KYC violations when a transaction has no merchant name (unknown counterparty)
+- Detects GDPR violations when a transaction description contains a name or email address
+- Claude assesses remaining transactions for unusual payment patterns, layering, and high-risk jurisdiction indicators
+- Deduplicates violations by transaction ID and rule before producing the final report
+
+## Decisions
+
+| Decision | When |
+|---|---|
+| `auto_approved` | No violations detected across all active frameworks |
+| `approval_required` | One or more medium-severity violations found |
+| `blocked` | One or more high-severity violations found |
+
+## Policy fields (from `_ToolConfig` in `compliance_policy.py`)
+
+| Field | Description |
+|---|---|
+| `frameworks` | Comma-separated list of active frameworks: `AML`, `KYC`, `GDPR` |
+| `report_above_minor` | AML reporting threshold in minor currency units |
+
+## Output data
+
+Key fields in `output_data`:
+
+- `violations`: array — `transaction_id`, `framework`, `severity`, `rule_triggered`, `description`, `required_action`
+- `overall_status`: `compliant` or `violations_found`
+- `summary`: Claude's one-paragraph compliance assessment
+- `frameworks_checked`: frameworks evaluated in this run
+- `transaction_count`: number of transactions assessed

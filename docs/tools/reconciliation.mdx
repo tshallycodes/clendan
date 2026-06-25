@@ -1,10 +1,47 @@
 ---
-title: Reconciliation Tool
-description: Match accounts across multiple systems and surface discrepancies.
+title: Reconciliation
+description: Match bank transactions to invoices and bills, and flag unmatched items for review.
 ---
 
-# Reconciliation Tool
+# Reconciliation
 
-<Note>
-This page is coming soon. Content will be added as the feature is released.
-</Note>
+Reconciliation matches bank transactions against open AR invoices (credits) and AP bills (debits) using amount tolerance and a date window. Unmatched items are assessed by Claude, with a Redis cache preventing redundant assessments across daily runs. A policy breach fires when the unmatched percentage exceeds the configured threshold.
+
+## What it does
+
+- Fetches bank transactions and open invoices and bills for a configurable period (default 90 days)
+- Matches credits against invoices and debits against bills using amount tolerance (default 1%) and date window (default 30 days)
+- Pre-classifies unmatched transactions: amounts below £15 auto-ok; only the top 40 by amount go to Claude
+- Claude assesses each unmatched item with a severity (`low`, `medium`, `high`) and action (`ok`, `review`, `flag`)
+- Per-item Claude results are cached in Redis for 48 hours — unchanged items bypass Claude on subsequent runs
+- Matched transactions are updated to `reconciled` status; a `ReconciliationRun` record is created
+- Creates an approval record when decision is `approval_required`
+
+## Decisions
+
+| Decision | When |
+|---|---|
+| `auto_approved` | All unmatched items assessed as `ok` and unmatched % within threshold |
+| `approval_required` | One or more items assessed as `review` by Claude |
+| `flagged` | One or more items assessed as `flag` by Claude, or unmatched % exceeds `unmatched_pct_threshold` |
+
+## Policy fields
+
+| Field | Default | Description |
+|---|---|---|
+| `unmatched_pct_threshold` | `0.20` | Unmatched transaction % above which a policy breach fires |
+| `match_amount_tolerance_pct` | `0.01` | Amount tolerance for a match (1%) |
+| `match_date_window_days` | `30` | Date window within which a match is valid |
+| `auto_match_confidence_min` | `0.95` | Minimum confidence for automatic matching |
+| `stale_open_item_days` | `90` | Open items older than this are flagged as stale |
+| `period_lock_respect` | `true` | Respect accounting period locks |
+
+## Output data
+
+Key fields in `output_data`:
+
+- `matched_transactions` / `matched_invoices` / `matched_bills`: counts
+- `unmatched_transactions` / `unmatched_invoices` / `unmatched_bills`: counts
+- `unmatched_pct`: proportion of transactions that could not be matched
+- `policy_breach`: whether the unmatched threshold was exceeded
+- `claude_assessments`: array — `item_id`, `item_type`, `severity`, `action`, `reasoning`

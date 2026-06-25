@@ -1,0 +1,46 @@
+---
+title: Payment Runs
+description: Classify outstanding bills, detect duplicates, identify early payment discounts, and route approvals.
+---
+
+# Payment Runs
+
+Payment Runs fetches all outstanding (unpaid, non-voided) bills and classifies each one using deterministic pre-checks and Claude. Duplicate detection runs before Claude is called — bills with the same contact and total within the configured window are pre-flagged. Early payment discounts are parsed from payment terms (e.g. `2/10 net 30`) and surfaced to prioritise same-day payment. The policy enforces an auto-pay ceiling; Claude cannot recommend `auto_pay` or `batch_pay` above `auto_pay_limit_cents`.
+
+## What it does
+
+- Fetches all bills with status not in `paid` or `void`, ordered by due date
+- Detects duplicate bills: same contact name and total within `duplicate_window_days`
+- Parses `payment_terms` for early payment discounts and computes the discount amount
+- Groups bills by supplier and recommends `batch_pay` when a supplier has multiple outstanding bills
+- Claude classifies each bill as `routine`, `suspicious`, `duplicate`, or `approval_required`
+- Claude flags bills missing a purchase order reference (`missing_po: true`)
+- Policy override: `auto_pay` or `batch_pay` above `auto_pay_limit_cents` is forced to `request_approval`
+
+## Decisions
+
+| Decision | When |
+|---|---|
+| `auto_approved` | All bills classified as `routine` with `auto_pay` or `batch_pay` within the auto-pay limit |
+| `duplicates_flagged` | One or more bills flagged as duplicate; no blocked or approval-required bills |
+| `approval_required` | One or more bills require approval (above threshold, unapproved, or missing PO) |
+| `blocked` | One or more bills classified as `suspicious` and recommended to `block` |
+
+## Policy fields
+
+| Field | Default | Description |
+|---|---|---|
+| `auto_pay_limit_cents` | `50000` | Maximum amount for autonomous payment ($500) |
+| `approval_threshold_cents` | `100000` | Bills above this amount always require approval ($1,000) |
+| `duplicate_window_days` | `30` | Window in which same-contact same-amount bills are flagged as duplicates |
+
+## Output data
+
+Key fields in `output_data`:
+
+- `bill_count`: number of bills assessed
+- `total_discount_available_minor`: total early payment savings available
+- `bills_with_discount_count`: number of bills with an active early payment discount
+- `bills_missing_po_count`: number of bills without a purchase order reference
+- `recommended_batch_payments`: array of supplier groups with bill IDs and totals
+- `per_bill`: array — `bill_id`, `classification`, `recommendation`, `reasoning`, `missing_po`, `is_duplicate`

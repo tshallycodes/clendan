@@ -1,12 +1,45 @@
 ---
 title: Spend Control
-description: Process bills, enforce spend policies, detect duplicates, and route payments for approval.
+description: Validate expense records against policy limits and flag or block out-of-policy spend.
 ---
 
 # Spend Control
 
-Spend Control merges accounts payable and expense enforcement into one outgoing spend layer. Bills from connected accounting sources are processed alongside employee expenses, with a unified policy engine enforcing per-transaction limits, category caps, and pre-approval routing before any payment is released.
+Spend Control fetches expense records from the last 30 days and validates each one against your configured policy. Hard rules fire deterministically (amount limits, unapproved expenses, invalid account codes, suspicious round numbers) before Claude is called. Claude provides a spend category summary and a burn-rate assessment for the remaining expenses.
 
-<Note>
-This page is coming soon. Full content will be added shortly.
-</Note>
+## What it does
+
+- Applies hard rules per expense: amount limit, approval requirement, chart-of-accounts validation, round-number detection
+- Passes expenses that clear hard rules to Claude for spend pattern analysis and category summarisation
+- Enforces an auto-approve ceiling — Claude cannot approve above `auto_approve_limit_cents` without a flag
+- Produces a per-expense decision (`approve`, `flag`, or `block`) and an overall batch decision
+- Writes the audit log before any DB update
+
+## Decisions
+
+| Decision | When |
+|---|---|
+| `auto_approved` | No expenses flagged or blocked |
+| `approval_required` | One or more expenses flagged (unapproved above threshold, suspicious amount, invalid account code) |
+| `blocked` | One or more expenses exceed `single_expense_limit_cents` |
+
+## Policy fields
+
+| Field | Default | Description |
+|---|---|---|
+| `single_expense_limit_cents` | `100000` | Hard block above this amount ($1,000) |
+| `approval_required_cents` | `50000` | Flag unapproved expenses above this amount ($500) |
+| `auto_approve_limit_cents` | `10000` | Maximum amount Claude may auto-approve ($100) |
+| `monthly_limit_per_employee` | `500000` | Monthly spend cap per employee ($5,000) |
+| `blocked_categories` | `[]` | Categories that are always blocked |
+| `receipt_required_above` | `2500` | Receipt required for expenses above this amount |
+| `lookback_days` | `30` | Expense window to analyse |
+
+## Output data
+
+Key fields in `output_data`:
+
+- `overall_decision`: batch-level decision
+- `expense_count`: number of expenses evaluated
+- `spend_category_summary`: Claude's summary of spend by category
+- `per_expense`: array — one entry per expense with `expense_id`, `action`, `flags`, `reasoning`, `hard_rule_applied`

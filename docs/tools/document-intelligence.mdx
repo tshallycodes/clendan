@@ -1,12 +1,43 @@
 ---
 title: Document Intelligence
-description: Extract, validate, and process invoices, receipts, and contracts using OCR and AI.
+description: Extract structured data from receipt images using OCR and AI.
 ---
 
 # Document Intelligence
 
-Document Intelligence combines invoice processing, receipt processing, and contract extraction into a single AI-powered document pipeline. All document types run through the same OCR and extraction engine, with type-specific validation and routing applied downstream.
+Document Intelligence parses receipt images using Claude's vision capabilities. It extracts merchant name, amount, currency, date, and expense category from the image and applies a policy check before writing an audit entry. The tool returns a structured `ParsedReceipt` object alongside the policy decision.
 
-<Note>
-This page is coming soon. Full content will be added shortly.
-</Note>
+## What it does
+
+- Extracts merchant name, total amount (in minor currency units), currency code, date, and category from receipt images
+- Validates extraction confidence — receipts below the minimum confidence threshold are rejected
+- Checks the extracted category against a configured allow-list; blocked categories return `blocked`
+- Supports VAT extraction and foreign currency conversion when configured
+- Writes an audit log entry before returning — the operation fails if the audit write fails
+
+## Decisions
+
+| Decision | When |
+|---|---|
+| `auto_approved` | Extraction confidence >= 0.50 and category is in the allow-list |
+| `blocked` | Extracted category is not in the configured `allowed_categories` list |
+
+## Policy fields
+
+| Field | Default | Description |
+|---|---|---|
+| `allowed_categories` | `[]` (all) | Category allow-list; empty list permits all categories |
+| `receipt_required_above` | `2500` | Receipts required for expenses above this amount (cents) |
+| `auto_approve_below` | `1000` | Expenses below this amount (cents) are auto-approved |
+| `ocr_confidence_min` | `0.82` | Minimum OCR confidence to accept extraction |
+| `duplicate_receipt_window_days` | `365` | Window for duplicate receipt detection |
+| `vat_extraction_enabled` | `true` | Extract VAT amount from receipt if present |
+
+## Output data
+
+Key fields returned:
+
+- `decision`: `auto_approved` or `blocked`
+- `reason`: plain-English reason for the decision
+- `parsed_receipt`: extracted fields — `merchant`, `amount_minor`, `currency`, `date`, `category`, `confidence`
+- `confidence`: extraction confidence score (0.0–1.0)

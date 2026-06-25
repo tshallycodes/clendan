@@ -1,10 +1,42 @@
 ---
-title: AI Accountant Tool
-description: Categorise transactions and keep the ledger current automatically.
+title: AI Accountant
+description: Categorise bank transactions and match them to open invoices automatically.
 ---
 
-# AI Accountant Tool
+# AI Accountant
 
-<Note>
-This page is coming soon. Content will be added as the feature is released.
-</Note>
+The AI Accountant processes batches of bank transactions, assigns each one a category from your chart of accounts, and attempts to match each transaction to an open invoice. Results are written back to the transaction record and an execution entry is created. The tool never writes categorisation results when the batch decision is `blocked`.
+
+## What it does
+
+- Categorises each transaction into one of 15 standard accounting categories
+- Matches transactions to open invoices within a 10% amount tolerance and similar vendor name
+- Assigns a per-transaction confidence score and an overall batch confidence score
+- Promotes transactions to `matched` status when an invoice match is found, otherwise `categorised`
+- Enforces category allow-list at policy check — invalid categories are blocked before any DB write
+
+## Decisions
+
+| Decision | When |
+|---|---|
+| `auto` | Overall batch confidence >= `auto_confidence_threshold` (default 0.85) |
+| `pending` | Overall batch confidence >= `approve_confidence_threshold` (default 0.50) |
+| `blocked` | Overall confidence below 0.50, or any category outside the allowed list, or confidence out of range |
+
+## Policy fields
+
+| Field | Default | Description |
+|---|---|---|
+| `auto_confidence_threshold` | `0.85` | Minimum confidence for autonomous categorisation |
+| `approve_confidence_threshold` | `0.50` | Minimum confidence to route for human review |
+| `max_batch_size` | `500` | Maximum transactions processed per run |
+| `lookback_days` | `30` | How far back to pull open invoices for matching |
+
+## Output data
+
+Key fields returned in `output_data` (via execution record):
+
+- `execution_id`: ID of the created execution record
+- `decision`: `auto`, `pending`, or `blocked`
+- `confidence`: average confidence score across all transactions in the batch
+- `transactions_processed`: count of transactions in the batch

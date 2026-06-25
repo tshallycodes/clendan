@@ -30,7 +30,6 @@ _ROUND_NUMBER_MODULUS: int = 10_000
 _ROUND_NUMBER_MIN_CENTS: int = 50_000
 
 
-
 class _ToolPolicy(BaseModel):
     single_expense_limit_cents: int = 100_000       # $1 000
     approval_required_cents: int = 50_000           # $500
@@ -40,6 +39,7 @@ class _ToolPolicy(BaseModel):
     monthly_limit_per_employee: int = 500_000
     blocked_categories: list[str] = []
     receipt_required_above: int = 2_500
+    lookback_days: int = 30
 
 
 class _ExpenseRecord(BaseModel):
@@ -65,6 +65,7 @@ class _ClaudeExpenseResult(BaseModel):
     recommended_action: Literal["approve", "flag", "block"]
     reasoning: str
     spend_category_summary: str | None = None
+    burn_rate_assessment: str | None = None
 
 
 class _ExpenseDecision(BaseModel):
@@ -76,7 +77,6 @@ class _ExpenseDecision(BaseModel):
     action: Literal["approve", "flag", "block"]
     reasoning: str
     hard_rule_applied: bool = False
-
 
 
 def _parse_policy(config_json: dict) -> _ToolPolicy:
@@ -114,12 +114,13 @@ def _apply_hard_rules(
     return (flags, worst) if flags else (flags, None)
 
 
-
 async def _call_claude(
     expenses: list[_ExpenseRecord],
     valid_accounts: list[_AccountRecord],
     policy: _ToolPolicy,
     settings_obj,
+    daily_burn_minor: int = 0,
+    projected_month_spend_minor: int = 0,
 ) -> list[_ClaudeExpenseResult]:
     client = AsyncAnthropic(api_key=settings_obj.anthropic_api_key)
     data = json.dumps({
@@ -141,12 +142,17 @@ async def _call_claude(
             "allowed_categories": policy.allowed_categories,
             "blocked_categories": policy.blocked_categories,
         },
+        "burn_rate_context": {"daily_burn_minor": daily_burn_minor,
+            "projected_month_spend_minor": projected_month_spend_minor,
+            "period_days": policy.lookback_days},
     }, indent=2)
     prompt = (
         "You are an expense compliance model. Review expenses against the policy and chart of accounts. "
         "Return a JSON array — one object per expense — with fields: "
         '"expense_id" (string), "recommended_action" ("approve"|"flag"|"block"), '
-        '"reasoning" (one sentence), "spend_category_summary" (brief spend summary on first item only, null elsewhere). '
+        '"reasoning" (one sentence), "spend_category_summary" (brief spend summary on first item only, null elsewhere), '
+        '"burn_rate_assessment" (string on first item only: is the current spending velocity sustainable? '
+        "any spending patterns that suggest budget overrun risk? null on all other items). "
         "block=clear violation; flag=unapproved/ambiguous/suspicious; approve=legitimate within policy. "
         f"NEVER approve amounts above {policy.auto_approve_limit_cents} without explicit approval. "
         f"Return ONLY a valid JSON array.\n\nData:\n{data}"
@@ -179,7 +185,6 @@ async def _call_claude(
     raise RuntimeError(
         f"Claude API failed after {settings_obj.max_agent_attempts} attempts: {last_exc}"
     )
-
 
 
 async def _execute_expense_control(
@@ -233,33 +238,31 @@ async def _execute_expense_control(
         }
 
     expenses = [
-        _ExpenseRecord(
-            id=e.id,
-            tenant_id=e.tenant_id,
-            amount_cents=e.amount_cents,
-            category=e.category,
-            account_code=e.account_code,
-            approved=e.approved,
-            expense_date=e.expense_date,
-            contact_name=e.contact_name,
-        )
+        _ExpenseRecord(id=e.id, tenant_id=e.tenant_id, amount_cents=e.amount_cents,
+            category=e.category, account_code=e.account_code, approved=e.approved,
+            expense_date=e.expense_date, contact_name=e.contact_name)
         for e in raw_expenses
     ]
 
+    # 1b. Period utilization — compute burn rate from fetched expenses
+    period_days: int = policy.lookback_days
+    if period_days > 0 and expenses:
+        total_spend = sum(e.amount_cents for e in expenses)
+        daily_burn_minor: int = total_spend // max(period_days, 1)
+        projected_month_spend_minor: int = daily_burn_minor * 30
+    else:
+        daily_burn_minor = 0
+        projected_month_spend_minor = 0
+
+    # Period-adjusted threshold: flag high burn rate (burning 10x auto-approve limit per day)
+    high_burn_rate: bool = daily_burn_minor > policy.auto_approve_limit_cents * 10
+
     # 2. Fetch EXPENSE-type accounts from chart of accounts
     raw_accounts = await db.accountingaccount.find_many(
-        where={
-            "tenant_id": tenant_id,
-            "account_type": "EXPENSE",
-        }
+        where={"tenant_id": tenant_id, "account_type": "EXPENSE"}
     )
     valid_accounts = [
-        _AccountRecord(
-            id=a.id,
-            code=a.code,
-            name=a.name,
-            account_type=a.account_type,
-        )
+        _AccountRecord(id=a.id, code=a.code, name=a.name, account_type=a.account_type)
         for a in raw_accounts
     ]
     valid_account_codes: set[str] = {a.code for a in valid_accounts}
@@ -287,12 +290,19 @@ async def _execute_expense_control(
     # 4. Ask Claude to review remaining expenses + summarize spend by category
     claude_map: dict[str, _ClaudeExpenseResult] = {}
     spend_summary: str | None = None
+    burn_rate_assessment: str | None = None
     if claude_candidates:
-        claude_results = await _call_claude(claude_candidates, valid_accounts, policy, settings_obj)
+        claude_results = await _call_claude(
+            claude_candidates, valid_accounts, policy, settings_obj,
+            daily_burn_minor=daily_burn_minor,
+            projected_month_spend_minor=projected_month_spend_minor,
+        )
         for r in claude_results:
             claude_map[r.expense_id] = r
             if r.spend_category_summary and spend_summary is None:
                 spend_summary = r.spend_category_summary
+            if r.burn_rate_assessment and burn_rate_assessment is None:
+                burn_rate_assessment = r.burn_rate_assessment
 
     # Merge decisions
     decisions: list[_ExpenseDecision] = list(hard_rule_decisions.values())
@@ -362,6 +372,11 @@ async def _execute_expense_control(
     reasoning_trace = {
         "overall_decision": overall_decision,
         "expense_count": len(decisions),
+        "period_days": period_days,
+        "daily_burn_minor": daily_burn_minor,
+        "projected_month_spend_minor": projected_month_spend_minor,
+        "high_burn_rate": high_burn_rate,
+        "burn_rate_assessment": burn_rate_assessment,
         "policy": policy.model_dump(),
         "spend_category_summary": spend_summary,
         "per_expense": [
@@ -407,7 +422,6 @@ async def _execute_expense_control(
         "actions_taken": actions_taken,
         "output_data": reasoning_trace,
     }
-
 
 
 async def run_expense_control_job(
@@ -458,7 +472,6 @@ async def run_expense_control_job(
                 error=str(exc),
             )
         raise
-
 
 
 class ExpenseControlTool(BaseTool):

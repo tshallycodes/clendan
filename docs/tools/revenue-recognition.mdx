@@ -1,10 +1,45 @@
 ---
-title: Revenue Recognition Tool
-description: Apply ASC 606 / IFRS 15 revenue recognition rules automatically.
+title: Revenue Recognition
+description: Apply ASC 606 / IFRS 15 five-step revenue recognition rules and generate journal entries.
 ---
 
-# Revenue Recognition Tool
+# Revenue Recognition
 
-<Note>
-This page is coming soon. Content will be added as the feature is released.
-</Note>
+Revenue Recognition applies the ASC 606 / IFRS 15 five-step model to a contract. Claude identifies performance obligations, allocates the transaction price proportionally by standalone selling price, applies the variable consideration constraint, and determines the recognition method. The tool then builds an integer-arithmetic recognition schedule and generates journal entries.
+
+## What it does
+
+- Accepts a contract with total value, currency, start and end date, and contract text
+- Claude follows all five ASC 606 steps: contract identification, performance obligations, transaction price, allocation, and recognition timing
+- Applies variable consideration constraint — only amounts with >= 90% confidence of not reversing are included
+- Allocates transaction price across multiple performance obligations proportionally by standalone selling price
+- Builds a monthly straight-line schedule for over-time recognition, or a single entry for at-point recognition
+- Generates journal entries (debit Accounts Receivable / Contract Asset; credit Revenue / Deferred Revenue)
+- Rejects results where Claude's confidence is below 0.40
+
+## Decisions
+
+| Decision | When |
+|---|---|
+| `revenue_scheduled` | Claude confidence >= 0.40 and recognition schedule successfully generated |
+
+## Policy fields
+
+| Field | Default | Description |
+|---|---|---|
+| `accounting_standard` | `ASC 606` | Accounting standard to apply |
+| `recognition_method` | `over-time` | Default method when contract does not specify |
+| `variable_consideration_constraint_enabled` | `true` | Enforce the ASC 606 variable consideration constraint |
+| `period_lock_enforcement` | `true` | Respect period locks when scheduling entries |
+| `auto_close_completed_obligations` | `true` | Close performance obligations when fully recognised |
+
+## Output data
+
+Key fields returned:
+
+- `recognition_method`: `at-point` or `over-time`
+- `performance_obligations`: array — `name`, `standalone_selling_price_minor`, `allocated_price_minor`
+- `variable_consideration_minor` / `constrained_variable_minor`: variable amounts identified vs included
+- `recognition_schedule`: array — `period` (YYYY-MM), `recognised_minor`, `deferred_minor`, `reasoning`
+- `journal_entries`: array — `period`, `debit_account`, `credit_account`, `amount_minor`, `description`
+- `num_periods`: total number of recognition periods in the schedule

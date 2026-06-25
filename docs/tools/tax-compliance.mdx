@@ -1,12 +1,43 @@
 ---
 title: Tax Compliance
-description: Compute VAT position, detect missing tax codes, and flag filing risks.
+description: Compute net VAT position, flag missing tax codes, and classify missing-tax records by risk.
 ---
 
 # Tax Compliance
 
-Tax Compliance pulls live invoice and expense data from connected accounting sources to compute net VAT position, detect missing or incorrect tax codes, and generate an AI-authored filing risk summary. Approval routing triggers automatically when the computed liability exceeds the configured threshold.
+Tax Compliance fetches invoices, bills, and expenses for a configurable lookback window and computes net VAT liability (collected minus input VAT). It detects records with zero tax where a balance exceeds the threshold, then calls Claude to classify each missing-tax item and assess overall filing risk. An approval record is created for `vat_alert` and `compliance_review` outcomes.
 
-<Note>
-This page is coming soon. Full content will be added shortly.
-</Note>
+## What it does
+
+- Computes VAT collected from invoices, input VAT from bills and expenses, and net liability
+- Flags records where `tax_cents == 0` and total exceeds `missing_tax_flag_threshold_cents`
+- Auto-detects the filing period (monthly, quarterly, or annual) from the lookback window
+- Claude classifies each missing-tax record as `exempt`, `zero_rated`, `missing_vat`, or `data_error`
+- Hard rule: triggers `vat_alert` immediately when net liability exceeds `vat_alert_threshold_cents`
+- Claude provides a VAT position assessment and up to 3 recommended actions
+
+## Decisions
+
+| Decision | When |
+|---|---|
+| `auto_approved` | Net VAT below threshold and no `missing_vat` classifications found |
+| `compliance_review` | One or more records classified as `missing_vat`, or total missing-tax amount exceeds threshold |
+| `vat_alert` | Net VAT liability exceeds `vat_alert_threshold_cents` (hard rule, takes priority) |
+
+## Policy fields
+
+| Field | Default | Description |
+|---|---|---|
+| `vat_alert_threshold_cents` | `1000000` | Net VAT liability above which a `vat_alert` fires ($10,000) |
+| `missing_tax_flag_threshold_cents` | `10000` | Minimum record total to flag as missing-tax ($100) |
+
+## Output data
+
+Key fields in `output_data`:
+
+- `vat_collected_cents` / `input_vat_cents` / `net_vat_liability_minor`: computed VAT figures
+- `filing_period`: `monthly`, `quarterly`, or `annual`
+- `period_label`: human-readable label (e.g. `Q2 2026`)
+- `missing_vat_items_count`: count of records classified as `missing_vat`
+- `exempt_items_count`: count of records correctly exempt
+- `claude_assessment.classified_missing_items`: per-record classification with reasoning

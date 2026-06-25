@@ -1,12 +1,43 @@
 ---
 title: AR & Collections
-description: Monitor outstanding invoices, classify urgency, and automate debtor follow-ups through to legal escalation.
+description: Analyse overdue invoices, classify urgency, and draft chase emails for the most critical debtors.
 ---
 
 # AR & Collections
 
-AR & Collections covers the full accounts receivable lifecycle — from real-time invoice monitoring and AI urgency classification, through tiered reminder cadences, to automatic legal escalation. Collections actions are gated by per-debtor communication limits and minimum balance thresholds.
+AR & Collections fetches all outstanding invoices with a balance greater than zero and classifies each one by urgency. Claude assigns a collections action (`send_reminder`, `escalate`, `legal_notice`, or `write_off`) and drafts up to 3 chase emails for the highest-urgency invoices. Write-off recommendations above the configured limit are automatically overridden to escalation.
 
-<Note>
-This page is coming soon. Full content will be added shortly.
-</Note>
+## What it does
+
+- Fetches all sent, viewed, partial, and overdue invoices with an outstanding balance
+- Classifies each invoice as `low`, `medium`, or `high` urgency based on days overdue
+- Recommends a per-invoice action: `send_reminder`, `escalate`, `legal_notice`, or `write_off`
+- Blocks write-off when outstanding balance exceeds `write_off_limit_cents` — overrides to `escalate`
+- Drafts up to 3 complete chase emails (subject + body) for the most urgent invoices
+- Detects early payment discount windows from payment terms (e.g. `2/10 net 30`)
+
+## Decisions
+
+| Decision | When |
+|---|---|
+| `auto_approved` | No high or medium urgency invoices |
+| `reminders_required` | One or more medium-urgency invoices (15–30 days overdue) |
+| `escalation_required` | One or more high-urgency invoices (30+ days overdue) — creates an approval record |
+
+## Policy fields
+
+| Field | Default | Description |
+|---|---|---|
+| `auto_reminder_days` | `7` | Days overdue before first reminder is triggered |
+| `escalate_days` | `30` | Days overdue before escalation action is recommended |
+| `write_off_limit_cents` | `100000` | Write-off blocked for balances above this amount ($1,000) |
+| `max_chase_attempts` | `3` | Maximum collection attempts before escalation |
+
+## Output data
+
+Key fields in `output_data`:
+
+- `invoice_count`: number of outstanding invoices assessed
+- `assessments`: array — `invoice_id`, `urgency`, `action`, `reasoning` per invoice
+- `top_chase_emails`: array of up to 3 draft emails — `invoice_id`, `subject`, `body`
+- `policy_overrides`: list of write-off blocks applied

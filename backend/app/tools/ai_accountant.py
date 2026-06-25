@@ -6,8 +6,9 @@ Follows mandatory execution flow: receive → classify → execute → policy ch
 import asyncio
 import json
 import time
+from collections import Counter
 from dataclasses import dataclass
-from datetime import datetime, UTC
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import anthropic
@@ -31,6 +32,7 @@ class _ToolPolicy(BaseModel):
     auto_confidence_threshold: float = 0.85
     approve_confidence_threshold: float = 0.50
     max_batch_size: int = 500
+    lookback_days: int = 30
 
 
 def _parse_policy(raw: dict[str, Any]) -> _ToolPolicy:
@@ -95,8 +97,43 @@ class AIAccountantTool:
             order={"created_at": "desc"},
         )
 
+        # STEP 2b: Fetch prior-period transactions for category drift detection
+        lookback_days = policy.lookback_days
+        lookback_cutoff = datetime.now(UTC) - timedelta(days=lookback_days)
+        prior_cutoff = lookback_cutoff - timedelta(days=lookback_days)
+        prior_transactions = await db.banktransaction.find_many(
+            where={
+                "tenant_id": tenant_id,
+                "date": {"gte": prior_cutoff, "lt": lookback_cutoff},
+                "category": {"not": None},
+            }
+        )
+        prior_category_dist: Counter[str] = Counter(
+            t.category for t in prior_transactions
+        )
+
         # STEP 3: Execute — call Claude with retry
-        results, reasoning_trace = await self._call_claude(transactions, invoices, policy)
+        results, reasoning_trace = await self._call_claude(
+            transactions, invoices, policy, prior_category_dist
+        )
+
+        # STEP 3b: Category drift detection
+        current_category_dist: Counter[str] = Counter(
+            r.ai_category for r in results
+        )
+        significant_shifts: list[dict] = []
+        for cat, current_count in current_category_dist.items():
+            prior_count = prior_category_dist.get(cat, 0)
+            if prior_count > 0:
+                change_pct = (current_count - prior_count) / prior_count * 100
+                if abs(change_pct) > 50:
+                    significant_shifts.append({
+                        "category": cat,
+                        "change_pct": round(change_pct, 1),
+                        "current": current_count,
+                        "prior": prior_count,
+                    })
+        has_significant_shifts = bool(significant_shifts)
 
         # STEP 4: Policy check — validate every result
         policy_violations: list[str] = []
@@ -110,6 +147,7 @@ class AIAccountantTool:
                     f"Confidence {r.confidence} out of range for txn {r.transaction_id}"
                 )
 
+        significant_shift_penalty_applied = False
         if policy_violations:
             logger.warning("ai_accountant_policy_violations: %s", policy_violations)
             overall_decision = "blocked"
@@ -117,6 +155,12 @@ class AIAccountantTool:
         else:
             confidences = [r.confidence for r in results]
             overall_confidence = sum(confidences) / len(confidences) if confidences else 0.0
+            # Reduce confidence when shifts exceed 100% — unusual pattern warrants scrutiny
+            if has_significant_shifts and any(
+                abs(s["change_pct"]) > 100 for s in significant_shifts
+            ):
+                overall_confidence = max(0.0, overall_confidence - 0.05)
+                significant_shift_penalty_applied = True
             if overall_confidence >= policy.auto_confidence_threshold:
                 overall_decision = "auto"
             elif overall_confidence >= policy.approve_confidence_threshold:
@@ -172,6 +216,11 @@ class AIAccountantTool:
                         for r in results
                     ],
                     "policy_violations": policy_violations,
+                    "category_distribution": dict(current_category_dist),
+                    "prior_period_category_distribution": dict(prior_category_dist),
+                    "category_shifts": significant_shifts,
+                    "has_significant_shifts": has_significant_shifts,
+                    "significant_shift_penalty": significant_shift_penalty_applied,
                 },
                 "model_version": get_settings().claude_model,
             }
@@ -201,6 +250,7 @@ class AIAccountantTool:
         transactions: list,
         invoices: list,
         policy: _ToolPolicy,
+        prior_category_dist: Counter[str] | None = None,
     ) -> tuple[list[TransactionResult], str]:
         settings = get_settings()
         client = anthropic.AsyncAnthropic(api_key=settings.anthropic_api_key)
@@ -229,6 +279,30 @@ class AIAccountantTool:
             for i in invoices
         ]
 
+        drift_note = ""
+        if prior_category_dist:
+            current_dist: Counter[str] = Counter(
+                t.get("plaid_category") for t in txn_list if t.get("plaid_category")
+            )
+            shifts_preview: list[dict] = []
+            for cat, cur in current_dist.items():
+                prior = prior_category_dist.get(cat, 0)
+                if prior > 0:
+                    change_pct = (cur - prior) / prior * 100
+                    if abs(change_pct) > 50:
+                        shifts_preview.append({
+                            "category": cat,
+                            "change_pct": round(change_pct, 1),
+                            "current": cur,
+                            "prior": prior,
+                        })
+            if shifts_preview:
+                drift_note = (
+                    f"\nNOTE: The following spend categories have shifted significantly "
+                    f"vs the prior period: {json.dumps(shifts_preview)}. "
+                    f"Flag any that seem anomalous in your reasoning.\n"
+                )
+
         prompt = f"""You are an AI accountant. Categorise each bank transaction and match it to an invoice if one exists.
 
 TRANSACTIONS:
@@ -238,7 +312,7 @@ OPEN INVOICES:
 {json.dumps(invoice_list, indent=2)}
 
 ALLOWED CATEGORIES: {", ".join(sorted(ALLOWED_CATEGORIES))}
-
+{drift_note}
 For each transaction, return a JSON array with this exact shape:
 [
   {{

@@ -1,6 +1,6 @@
 ---
 title: AI Tools Overview
-description: Clendan's 10 AI financial tools — each one a sub-agent with a defined role.
+description: Clendan's 13 AI financial tools — each one a sub-agent with a defined role.
 ---
 
 # AI Tools
@@ -45,16 +45,39 @@ Every tool is configured with one of three autonomy levels:
 
 | Tool | Purpose |
 |---|---|
-| **Document Intelligence** | OCR and AI extraction for invoices, receipts, and contracts |
-| **AI Accountant** | Transaction categorisation, month-end close, payroll reconciliation |
-| **Spend Control** | AP processing, expense policy enforcement, duplicate detection |
-| **AR & Collections** | Invoice monitoring, urgency classification, debtor follow-ups |
-| **Risk & Compliance** | Fraud detection, AML/KYC monitoring, audit preparation |
-| **Treasury & Cash** | Cash positions, liquidity forecasting, FX exposure, budget vs. actuals |
-| **Reconciliation** | Bank-to-invoice matching, anomaly detection |
-| **Revenue Recognition** | ASC 606 / IFRS 15 schedule generation |
-| **Credit Underwriting** | Credit risk assessment and automated decisions |
-| **Tax Compliance** | VAT computation, missing tax code detection, filing risk |
+| **Document Intelligence** | OCR and AI extraction for receipts using vision |
+| **AI Accountant** | Transaction categorisation and invoice matching |
+| **Spend Control** | Expense policy enforcement, hard rules, and burn-rate analysis |
+| **AR & Collections** | Invoice urgency classification and chase email drafting |
+| **Risk & Compliance** | AML/KYC/GDPR violation detection and structuring analysis |
+| **Treasury & Cash** | Cash position monitoring, burn rate, and runway forecasting |
+| **Reconciliation** | Bank-to-invoice and bank-to-bill matching with anomaly detection |
+| **Revenue Recognition** | ASC 606 / IFRS 15 five-step schedule and journal generation |
+| **Credit Underwriting** | Credit risk grading, DTI/LTV enforcement, and adverse action notices |
+| **Tax Compliance** | VAT position computation and missing-tax classification |
+| **Financial Reporting** | P&L, balance sheet, and cash flow summary with anomaly detection |
+| **Payment Runs** | AP bill classification, duplicate detection, and payment routing |
+| **Budgeting** | Budget vs. actuals variance analysis and run-rate projections |
+
+## Decision Types
+
+Every tool returns one of the following decision values. The decision type determines whether an approval record is created and what actions are available in the dashboard.
+
+| Tool | Autonomous path | Requires human approval |
+|---|---|---|
+| Document Intelligence | `auto_approved` | `blocked` (no approval flow — resubmit required) |
+| AI Accountant | `auto` | `pending` |
+| Spend Control | `auto_approved` | `approval_required`, `blocked` |
+| AR & Collections | `auto_approved`, `reminders_required` | `escalation_required` |
+| Risk & Compliance | `auto_approved` | `approval_required`, `blocked` |
+| Treasury & Cash | `auto_approved` | `approval_required` |
+| Reconciliation | `auto_approved` | `approval_required`, `flagged` |
+| Revenue Recognition | `revenue_scheduled` | — (confidence gate only) |
+| Credit Underwriting | `auto_approved` | `approval_required`, `blocked` |
+| Tax Compliance | `auto_approved` | `compliance_review`, `vat_alert` |
+| Financial Reporting | `auto_approved` | `approval_required` |
+| Payment Runs | `auto_approved`, `duplicates_flagged` | `approval_required`, `blocked` |
+| Budgeting | `auto_approved` | `approval_required` |
 
 ## Policy Engine
 

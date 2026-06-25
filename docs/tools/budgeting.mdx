@@ -1,0 +1,45 @@
+---
+title: Budgeting
+description: Compare actual spend against active budget lines, project run-rate, and flag over-budget categories.
+---
+
+# Budgeting
+
+Budgeting finds the active budget for the current period and computes actual spend against each budget line from expenses and bills. It calculates period utilisation (how far through the budget period you are), projects end-of-period spend at the current run rate, and calls Claude for variance analysis and spending pattern classification. The decision is period-adjusted — early-period overspend triggers approval even before a hard breach.
+
+## What it does
+
+- Finds the active budget record for the current date (one budget active at a time)
+- Computes actual spend per category from expenses and bills within the budget period
+- Calculates variance (actual minus budget) and variance % per budget line
+- Projects end-of-period spend using current run rate and days remaining
+- Marks lines as `on_track`, `over_budget`, or `critical` based on variance thresholds
+- Rolls up actuals and budgets by category for Claude's analysis
+- Claude classifies the spending pattern (`seasonal_spike`, `trending_up`, `trending_down`, `steady`) and identifies at-risk categories
+
+## Decisions
+
+| Decision | When |
+|---|---|
+| `auto_approved` | Period > 80% elapsed and all lines within 5% of budget; or no over-budget lines and no projected breaches |
+| `approval_required` | Critical overspend (>= 25%), over-budget lines, projected breaches, or early-period spend approaching budget (>= 90% consumed before 50% of period elapsed) |
+
+## Policy fields
+
+| Field | Default | Description |
+|---|---|---|
+| `over_budget_alert_pct` | `0.10` | Variance % threshold for `over_budget` status (10%) |
+| `critical_overspend_pct` | `0.25` | Variance % threshold for `critical` status (25%) |
+
+## Output data
+
+Key fields in `output_data`:
+
+- `budget_id` / `budget_name`: active budget reference
+- `period_utilization_pct`: percentage of the budget period elapsed
+- `days_remaining`: days left in the budget period
+- `variances`: array — `budget_line_id`, `department`, `category`, `budget_cents`, `actual_cents`, `variance_cents`, `variance_pct`, `projected_spend_cents`, `status`
+- `category_rollup`: budget and actual totals grouped by category
+- `spending_pattern`: `seasonal_spike`, `trending_up`, `trending_down`, or `steady`
+- `at_risk_categories`: up to 3 categories at highest overspend risk
+- `top_recommendation`: Claude's single most actionable recommendation
