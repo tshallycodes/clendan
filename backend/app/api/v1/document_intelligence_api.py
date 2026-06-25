@@ -155,6 +155,35 @@ async def upload_document(
     })
 
 
+@router.post("/{tool_id}/documents/{document_id}/abort")
+async def abort_document(
+    tool_id: str,
+    document_id: str,
+    current_user: RequireOrgAuth,
+    db: Annotated[Prisma, Depends(get_db_dep)],
+) -> dict:
+    """Mark a processing document as aborted. Does not cancel the arq job if already running,
+    but the job's result will land on a record already marked failed."""
+    tenant_id = current_user.tenant_id
+
+    doc = await db.document.find_unique(where={"id": document_id})
+    if not doc or doc.tenant_id != tenant_id or doc.tool_id != tool_id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
+    if doc.status != "processing":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Document is not processing (current status: {doc.status})",
+        )
+
+    await db.document.update(
+        where={"id": document_id},
+        data={"status": "failed", "reason": "Aborted by user"},
+    )
+
+    logger.info("document_aborted", extra={"tenant_id": tenant_id, "document_id": document_id})
+    return standard_response(data={"document_id": document_id, "status": "failed"})
+
+
 @router.get("/{tool_id}/documents")
 async def list_documents(
     tool_id: str,

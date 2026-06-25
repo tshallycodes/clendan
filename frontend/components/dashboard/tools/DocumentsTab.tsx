@@ -70,9 +70,35 @@ function ExtractedFields({ extracted }: { extracted: Record<string, unknown> }) 
   )
 }
 
-function DocumentRow({ doc }: { doc: ProcessedDocument }) {
+function DocumentRow({ doc, toolId, onAbort }: { doc: ProcessedDocument; toolId: string; onAbort: (id: string) => void }) {
   const [expanded, setExpanded] = useState(false)
+  const [aborting, setAborting] = useState(false)
+  const { getToken } = useAuth()
+  const { toast } = useToast()
   const dc = doc.decision ? (DECISION_CONFIG[doc.decision] ?? null) : null
+
+  async function handleAbort(e: React.MouseEvent) {
+    e.stopPropagation()
+    setAborting(true)
+    try {
+      const token = await getToken()
+      const res = await fetch(
+        `${API}/v1/document-intelligence/${toolId}/documents/${doc.id}/abort`,
+        { method: 'POST', headers: { Authorization: `Bearer ${token}` } },
+      )
+      if (res.ok) {
+        toast('Document aborted', 'success')
+        onAbort(doc.id)
+      } else {
+        const json = await res.json().catch(() => ({}))
+        toast((json as { detail?: string }).detail ?? 'Failed to abort', 'error')
+      }
+    } catch {
+      toast('Network error', 'error')
+    } finally {
+      setAborting(false)
+    }
+  }
   const uploader = doc.uploaded_by ? doc.uploaded_by.split('@')[0] : null
   const date = new Date(doc.created_at).toLocaleString('en-GB', {
     day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit',
@@ -120,9 +146,19 @@ function DocumentRow({ doc }: { doc: ProcessedDocument }) {
             </div>
             <div className="shrink-0 flex items-center gap-2">
               {doc.status === 'processing' && (
-                <span className="text-[10px] font-mono text-[#f5a623] bg-[rgba(245,166,35,0.08)] border border-[rgba(245,166,35,0.2)] rounded-sm px-2 py-0.5">
-                  Processing…
-                </span>
+                <>
+                  <span className="text-[10px] font-mono text-[#f5a623] bg-[rgba(245,166,35,0.08)] border border-[rgba(245,166,35,0.2)] rounded-sm px-2 py-0.5">
+                    Processing…
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleAbort}
+                    disabled={aborting}
+                    className="text-[10px] font-mono text-[#ff4d6d] bg-[rgba(255,77,109,0.06)] border border-[rgba(255,77,109,0.3)] hover:bg-[rgba(255,77,109,0.12)] rounded-sm px-2 py-0.5 transition-colors disabled:opacity-50"
+                  >
+                    {aborting ? 'Aborting…' : 'Abort'}
+                  </button>
+                </>
               )}
               {doc.status === 'failed' && (
                 <span className="text-[10px] font-mono text-[#ff4d6d] bg-[rgba(255,77,109,0.08)] border border-[rgba(255,77,109,0.2)] rounded-sm px-2 py-0.5">
@@ -358,6 +394,10 @@ export function DocumentsTab({ toolId }: { toolId: string | null }) {
     setTotal(t => t + 1)
   }
 
+  function handleAborted(docId: string) {
+    setDocuments(prev => prev.map(d => d.id === docId ? { ...d, status: 'failed' as DocumentStatus, reason: 'Aborted by user' } : d))
+  }
+
   if (!toolId) {
     return (
       <div className="bg-brand-surface border border-brand-border rounded-sm p-8 text-center">
@@ -396,7 +436,7 @@ export function DocumentsTab({ toolId }: { toolId: string | null }) {
           <>
             <div className="bg-brand-surface border border-brand-border rounded-sm overflow-hidden">
               {documents.map(doc => (
-                <DocumentRow key={doc.id} doc={doc} />
+                <DocumentRow key={doc.id} doc={doc} toolId={toolId} onAbort={handleAborted} />
               ))}
             </div>
 
