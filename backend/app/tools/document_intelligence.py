@@ -125,7 +125,7 @@ async def _call_claude_vision(
     max_tokens: int = 1024,
 ) -> dict[str, Any]:
     settings = get_settings()
-    client = anthropic.AsyncAnthropic(api_key=settings.anthropic_api_key)
+    client = anthropic.AsyncAnthropic(api_key=settings.anthropic_api_key, timeout=60.0)
 
     if content_type == "application/pdf":
         images = _pdf_to_images(file_bytes)
@@ -551,15 +551,18 @@ async def run_document_intelligence_job(
 
         return result
 
-    except Exception as exc:
+    except BaseException as exc:
         _logger.error(
             "document_intelligence_job_failed",
-            extra={"execution_id": execution_id, "error": str(exc)},
+            extra={"execution_id": execution_id, "error": str(exc), "type": type(exc).__name__},
         )
-        await db.execution.update(
-            where={"id": execution_id},
-            data={"status": "failed", "decision": "failed"},
-        )
+        try:
+            await db.execution.update(
+                where={"id": execution_id},
+                data={"status": "failed", "decision": "failed"},
+            )
+        except Exception:
+            pass
         if document_id:
             try:
                 await db.document.update(
@@ -568,11 +571,12 @@ async def run_document_intelligence_job(
                 )
             except Exception:
                 pass
-        job_try = ctx.get("job_try", 1)
-        if job_try >= 3:
-            await push_to_dlq(
-                job_id=str(ctx.get("job_id", "unknown")),
-                function_name="run_document_intelligence_job",
-                error=str(exc),
-            )
+        if isinstance(exc, Exception):
+            job_try = ctx.get("job_try", 1)
+            if job_try >= 3:
+                await push_to_dlq(
+                    job_id=str(ctx.get("job_id", "unknown")),
+                    function_name="run_document_intelligence_job",
+                    error=str(exc),
+                )
         raise
