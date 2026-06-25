@@ -17,6 +17,7 @@ from app.tools.document_intelligence import (
     _ALLOWED_CONTENT_TYPES,
     _MAX_FILE_BYTES,
     _generate_thumbnail,
+    _quick_classify,
 )
 
 logger = get_logger(__name__)
@@ -89,6 +90,13 @@ async def upload_document(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Tool is not of type document_intelligence",
+        )
+
+    detected_type = await _quick_classify(file_bytes, content_type)
+    if detected_type and detected_type != document_type:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Wrong document type — this looks like a {detected_type}, not a {document_type}. Please select the correct type and re-upload.",
         )
 
     thumbnail_b64 = _generate_thumbnail(file_bytes, content_type)

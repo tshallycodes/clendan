@@ -162,6 +162,44 @@ async def _call_claude_vision(
     ) from last_exc
 
 
+async def _quick_classify(file_bytes: bytes, content_type: str) -> str | None:
+    """
+    Single-attempt, first-page-only classification.
+    Returns 'invoice', 'receipt', or 'contract', or None if uncertain / Claude unavailable.
+    Failure is non-fatal — caller should allow the upload to proceed if None is returned.
+    """
+    settings = get_settings()
+    client = anthropic.AsyncAnthropic(api_key=settings.anthropic_api_key, timeout=30.0)
+
+    try:
+        if content_type == "application/pdf":
+            pages = _pdf_to_images(file_bytes)
+            img_bytes = pages[0] if pages else file_bytes
+            media_type = "image/png"
+        else:
+            img_bytes = file_bytes
+            media_type = content_type
+
+        b64 = base64.standard_b64encode(img_bytes).decode()
+        response = await client.messages.create(
+            model=settings.claude_model,
+            max_tokens=10,
+            messages=[{
+                "role": "user",
+                "content": [
+                    {"type": "image", "source": {"type": "base64", "media_type": media_type, "data": b64}},
+                    {"type": "text", "text": "Is this document an invoice, receipt, or contract? Reply with exactly one word: invoice, receipt, or contract."},
+                ],
+            }],
+        )
+        word = response.content[0].text.strip().lower().rstrip(".")
+        if word in ("invoice", "receipt", "contract"):
+            return word
+    except Exception as exc:
+        _logger.warning("doc_intel_quick_classify_failed", extra={"error": str(exc)})
+    return None
+
+
 async def _check_duplicate_invoice(tenant_id: str, invoice_number: str, window_days: int) -> bool:
     db = get_db()
     cutoff = datetime.now(UTC) - timedelta(days=window_days)
@@ -220,7 +258,6 @@ async def _process_invoice(
     content_type: str,
     policy: _ToolPolicy,
     tenant_id: str,
-    execution_id: str,
 ) -> dict[str, Any]:
     data = await _call_claude_vision(file_bytes, content_type, _INVOICE_PROMPT, max_tokens=1024)
 
@@ -446,7 +483,7 @@ async def execute_document_intelligence_tool(
     elif document_type == "contract":
         result = await _process_contract(file_bytes, content_type, policy)
     else:
-        result = await _process_invoice(file_bytes, content_type, policy, tenant_id, execution_id)
+        result = await _process_invoice(file_bytes, content_type, policy, tenant_id)
 
     # Accounting write for auto-approved invoices — before audit so outcome is in the trace
     accounting_status = "skipped"
@@ -460,6 +497,7 @@ async def execute_document_intelligence_tool(
         )
 
     reasoning_trace: dict[str, Any] = {
+        "tool_id": tool_id,
         "document_type": document_type,
         "decision": result["decision"],
         "confidence": result["confidence"],
