@@ -3,11 +3,10 @@ Document Intelligence API — file upload and document list endpoints.
 POST /v1/document-intelligence/{tool_id}/upload
 GET  /v1/document-intelligence/{tool_id}/documents
 """
-import base64
-from datetime import UTC, datetime
+from typing import Annotated
 
-from fastapi import APIRouter, HTTPException, UploadFile, status
-from pydantic import BaseModel
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, status
+from prisma import Prisma
 
 from app.core.db import get_db_dep
 from app.core.logging import get_logger
@@ -26,25 +25,24 @@ router = APIRouter(prefix="/document-intelligence", tags=["document-intelligence
 _VALID_DOCUMENT_TYPES = {"invoice", "receipt", "contract"}
 
 
-def _serialize_document(doc: object) -> dict:
-    d = doc.__dict__ if not isinstance(doc, dict) else doc
+def _serialize_document(doc) -> dict:
     return {
-        "id": d.get("id"),
-        "document_type": d.get("document_type"),
-        "filename": d.get("filename"),
-        "content_type": d.get("content_type"),
-        "file_size_bytes": d.get("file_size_bytes"),
-        "uploaded_by": d.get("uploaded_by"),
-        "status": d.get("status"),
-        "decision": d.get("decision"),
-        "confidence": d.get("confidence"),
-        "rule_triggered": d.get("rule_triggered"),
-        "reason": d.get("reason"),
-        "flags_json": d.get("flags_json"),
-        "extracted_json": d.get("extracted_json"),
-        "thumbnail_b64": d.get("thumbnail_b64"),
-        "accounting_write_status": d.get("accounting_write_status"),
-        "created_at": d.get("created_at").isoformat() if d.get("created_at") else None,
+        "id": doc.id,
+        "document_type": doc.document_type,
+        "filename": doc.filename,
+        "content_type": doc.content_type,
+        "file_size_bytes": doc.file_size_bytes,
+        "uploaded_by": doc.uploaded_by,
+        "status": doc.status,
+        "decision": doc.decision,
+        "confidence": doc.confidence,
+        "rule_triggered": doc.rule_triggered,
+        "reason": doc.reason,
+        "flags_json": doc.flags_json,
+        "extracted_json": doc.extracted_json,
+        "thumbnail_b64": doc.thumbnail_b64,
+        "accounting_write_status": doc.accounting_write_status,
+        "created_at": doc.created_at.isoformat() if doc.created_at else None,
     }
 
 
@@ -54,7 +52,7 @@ async def upload_document(
     document_type: str,
     file: UploadFile,
     current_user: RequireOrgAuth,
-    db=get_db_dep,
+    db: Annotated[Prisma, Depends(get_db_dep)],
 ) -> dict:
     """
     Accept a document upload, generate a thumbnail, create a Document record,
@@ -161,7 +159,7 @@ async def upload_document(
 async def list_documents(
     tool_id: str,
     current_user: RequireOrgAuth,
-    db=get_db_dep,
+    db: Annotated[Prisma, Depends(get_db_dep)],
     limit: int = 50,
     offset: int = 0,
 ) -> dict:
