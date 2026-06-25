@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useAuth } from '@clerk/nextjs'
 import { useCanConfigure } from '@/lib/auth-client'
-import { useCurrency } from '@/components/Providers'
+import { useCurrency, useToast } from '@/components/Providers'
 import { ConfigDrawer } from '@/components/dashboard/tools/ConfigDrawer'
 import type { Tool } from '@/components/dashboard/tools/ToolCard'
 import { ReconciliationRun, ReconciliationItem } from './types'
@@ -41,7 +41,6 @@ interface OverviewProps {
   periodEnd: string
   toolId: string | null
   running: boolean
-  runError: string | null
   runs: ReconciliationRun[]
   runsLoading: boolean
   selectedId: string | null
@@ -52,7 +51,7 @@ interface OverviewProps {
 }
 
 function OverviewTab({
-  periodStart, periodEnd, toolId, running, runError,
+  periodStart, periodEnd, toolId, running,
   runs, runsLoading, selectedId,
   onPeriodStartChange, onPeriodEndChange, onRun, onSelectRun,
 }: OverviewProps) {
@@ -67,9 +66,6 @@ function OverviewTab({
         onPeriodEndChange={onPeriodEndChange}
         onRun={onRun}
       />
-      {runError && (
-        <p className="mt-2 text-xs font-mono text-[#ff4d6d]">Run failed: {runError}</p>
-      )}
       <div className="space-y-2 mt-5">
         <p className="text-[10px] font-mono uppercase tracking-widest text-brand-muted">Run History</p>
         <RunHistory runs={runs} loading={runsLoading} selectedId={selectedId} onSelect={onSelectRun} />
@@ -122,6 +118,7 @@ export function ReconciliationClient() {
   const { getToken } = useAuth()
   const canConfigure = useCanConfigure()
   const { currency } = useCurrency()
+  const { toast } = useToast()
   const [activeTab, setActiveTab] = useState<Tab>('overview')
   const [runs, setRuns] = useState<ReconciliationRun[]>([])
   const [runsLoading, setRunsLoading] = useState(true)
@@ -137,7 +134,6 @@ export function ReconciliationClient() {
   const [deploying, setDeploying] = useState(false)
   const [modalOpen, setModalOpen] = useState(false)
   const [polling, setPolling] = useState(false)
-  const [runError, setRunError] = useState<string | null>(null)
   const pollRunCountRef = useRef(0)
 
   const fetchDeployed = useCallback(async () => {
@@ -259,7 +255,6 @@ export function ReconciliationClient() {
 
   async function handleRun() {
     if (!deployed?.id || running) return
-    setRunError(null)
     setRunning(true)
     try {
       const token = await getToken()
@@ -275,15 +270,14 @@ export function ReconciliationClient() {
       })
       if (!res.ok) {
         const json = await res.json().catch(() => null)
-        setRunError(json?.detail ?? `Request failed (${res.status})`)
+        toast(json?.detail ?? `Run failed (${res.status})`, 'error')
         setRunning(false)
         return
       }
-      // Run is queued in the worker — keep button disabled and poll for it to appear
       pollRunCountRef.current = runs.length
       setPolling(true)
     } catch (err) {
-      setRunError(err instanceof Error ? err.message : 'Network error')
+      toast(err instanceof Error ? err.message : 'Network error', 'error')
       setRunning(false)
     }
   }
@@ -295,7 +289,7 @@ export function ReconciliationClient() {
     const res = await fetch(`${API}/v1/reconciliation/runs/${runId}/export?${params}`, {
       headers: { Authorization: `Bearer ${token}` },
     })
-    if (!res.ok) return
+    if (!res.ok) { toast('Export failed — please try again', 'error'); return }
     const blob = await res.blob()
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
@@ -385,7 +379,7 @@ export function ReconciliationClient() {
             <div className="space-y-4">
               <OverviewTab
                 periodStart={periodStart} periodEnd={periodEnd}
-                toolId={deployed?.id ?? null} running={running} runError={runError}
+                toolId={deployed?.id ?? null} running={running}
                 runs={runs} runsLoading={runsLoading} selectedId={selectedRun?.id ?? null}
                 onPeriodStartChange={setPeriodStart} onPeriodEndChange={setPeriodEnd}
                 onRun={handleRun}

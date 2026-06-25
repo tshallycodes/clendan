@@ -5,6 +5,7 @@ import { useAuth } from '@clerk/nextjs'
 import { Select } from '@/components/ui/Select'
 import { ToolConfigFields, getDefaultConfig } from './ToolConfigFields'
 import type { Tool } from './ToolCard'
+import { useToast } from '@/components/Providers'
 
 interface BankAccount {
   id: string
@@ -35,6 +36,7 @@ interface Props {
 
 export function ConfigDrawer({ tool, toolType, onClose, onSaved }: Props) {
   const { getToken } = useAuth()
+  const { toast } = useToast()
   const [autonomy, setAutonomy] = useState<string>(tool?.autonomy_level ?? 'approve')
   const [config, setConfig] = useState<Record<string, unknown>>(() => {
     const defaults = getDefaultConfig(toolType)
@@ -42,7 +44,6 @@ export function ConfigDrawer({ tool, toolType, onClose, onSaved }: Props) {
     return existing ? { ...defaults, ...existing } : defaults
   })
   const [saving, setSaving] = useState(false)
-  const [error, setError] = useState<string | null>(null)
   const [saved, setSaved] = useState(false)
   const [accounts, setAccounts] = useState<BankAccount[]>([])
   const [accountsLoading, setAccountsLoading] = useState(toolType === 'reconciliation')
@@ -104,7 +105,6 @@ export function ConfigDrawer({ tool, toolType, onClose, onSaved }: Props) {
 
   async function handleSave() {
     setSaving(true)
-    setError(null)
     try {
       const token = await getToken()
       const fullConfig = toolType === 'reconciliation'
@@ -124,13 +124,14 @@ export function ConfigDrawer({ tool, toolType, onClose, onSaved }: Props) {
 
       if (!res.ok) {
         const json = await res.json().catch(() => ({}))
-        setError((json as { error?: string }).error ?? 'Failed to save.')
+        toast((json as { error?: string }).error ?? 'Failed to save.', 'error')
         return
       }
       setSaved(true)
+      toast('Configuration saved', 'success')
       setTimeout(() => { setSaved(false); onSaved() }, 800)
     } catch {
-      setError('Unable to connect to server.')
+      toast('Unable to connect to server.', 'error')
     } finally {
       setSaving(false)
     }
@@ -276,8 +277,6 @@ export function ConfigDrawer({ tool, toolType, onClose, onSaved }: Props) {
               )}
             </div>
           )}
-
-          {error && <p className="text-xs font-mono text-[#ff4d6d]">{error}</p>}
 
           <button
             type="button"

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useAuth } from '@clerk/nextjs'
 import { cn } from '@/lib/utils'
+import { useToast } from '@/components/Providers'
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
@@ -27,6 +28,7 @@ const FILTERS: { key: Filter; label: string }[] = [
 
 export function ToolApprovalsTab({ toolId }: { toolId: string | null }) {
   const { getToken } = useAuth()
+  const { toast } = useToast()
   const [approvals, setApprovals] = useState<Approval[]>([])
   const [loading, setLoading] = useState(false)
   const [acting, setActing] = useState<string | null>(null)
@@ -56,13 +58,20 @@ export function ToolApprovalsTab({ toolId }: { toolId: string | null }) {
     setActing(approvalId)
     try {
       const token = await getToken()
-      await fetch(`${API}/v1/approvals/${approvalId}/respond`, {
+      const res = await fetch(`${API}/v1/approvals/${approvalId}/respond`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ action }),
       })
+      if (!res.ok) {
+        toast(`Failed to ${action} — please try again`, 'error')
+        return
+      }
       const newStatus = action === 'approve' ? 'approved' : 'rejected'
       setApprovals(prev => prev.map(a => a.id === approvalId ? { ...a, status: newStatus } : a))
+      toast(action === 'approve' ? 'Execution approved' : 'Execution rejected', 'success')
+    } catch {
+      toast(`Failed to ${action} — network error`, 'error')
     } finally {
       setActing(null)
     }

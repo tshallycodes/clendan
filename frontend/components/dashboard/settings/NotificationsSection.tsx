@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useToast } from '@/components/Providers'
 
 interface ToggleRow {
   id: string
@@ -28,6 +29,7 @@ function loadFromStorage(): Record<string, boolean> {
 }
 
 export function NotificationsSection() {
+  const { toast } = useToast()
   const [values, setValues] = useState<Record<string, boolean>>(loadFromStorage)
 
   function toggle(id: string) {
@@ -38,6 +40,8 @@ export function NotificationsSection() {
       } catch {
         // storage unavailable — state still updated in memory
       }
+      const row = ROWS.find(r => r.id === id)
+      if (row) toast(`${row.label} ${next[id] ? 'enabled' : 'disabled'}`, 'success')
       return next
     })
   }
@@ -67,7 +71,6 @@ export function NotificationsSection() {
           </button>
         </div>
       ))}
-      <p className="text-[10px] font-mono text-brand-muted pt-2">Preferences saved in this browser.</p>
     </div>
   )
 }
