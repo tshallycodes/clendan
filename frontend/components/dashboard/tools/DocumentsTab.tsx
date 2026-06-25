@@ -395,7 +395,8 @@ export function DocumentsTab({ toolId }: { toolId: string | null }) {
   }
 
   function handleAborted(docId: string) {
-    setDocuments(prev => prev.map(d => d.id === docId ? { ...d, status: 'failed' as DocumentStatus, reason: 'Aborted by user' } : d))
+    setDocuments(prev => prev.filter(d => d.id !== docId))
+    setTotal(t => t - 1)
   }
 
   if (!toolId) {

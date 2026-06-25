@@ -175,13 +175,10 @@ async def abort_document(
             detail=f"Document is not processing (current status: {doc.status})",
         )
 
-    await db.document.update(
-        where={"id": document_id},
-        data={"status": "failed", "reason": "Aborted by user"},
-    )
+    await db.document.delete(where={"id": document_id})
 
     logger.info("document_aborted", extra={"tenant_id": tenant_id, "document_id": document_id})
-    return standard_response(data={"document_id": document_id, "status": "failed"})
+    return standard_response(data={"document_id": document_id, "deleted": True})
 
 
 @router.get("/{tool_id}/documents")
