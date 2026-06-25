@@ -169,15 +169,9 @@ async def abort_document(
     doc = await db.document.find_unique(where={"id": document_id})
     if not doc or doc.tenant_id != tenant_id or doc.tool_id != tool_id:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
-    if doc.status != "processing":
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Document is not processing (current status: {doc.status})",
-        )
-
     await db.document.delete(where={"id": document_id})
 
-    logger.info("document_aborted", extra={"tenant_id": tenant_id, "document_id": document_id})
+    logger.info("document_deleted", extra={"tenant_id": tenant_id, "document_id": document_id, "prior_status": doc.status})
     return standard_response(data={"document_id": document_id, "deleted": True})
 
 

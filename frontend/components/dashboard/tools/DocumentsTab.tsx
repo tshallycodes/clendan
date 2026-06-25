@@ -77,7 +77,7 @@ function DocumentRow({ doc, toolId, onAbort }: { doc: ProcessedDocument; toolId:
   const { toast } = useToast()
   const dc = doc.decision ? (DECISION_CONFIG[doc.decision] ?? null) : null
 
-  async function handleAbort(e: React.MouseEvent) {
+  async function handleDelete(e: React.MouseEvent, label: string) {
     e.stopPropagation()
     setAborting(true)
     try {
@@ -87,11 +87,11 @@ function DocumentRow({ doc, toolId, onAbort }: { doc: ProcessedDocument; toolId:
         { method: 'POST', headers: { Authorization: `Bearer ${token}` } },
       )
       if (res.ok) {
-        toast('Document aborted', 'success')
+        toast(`Document ${label.toLowerCase()}`, 'success')
         onAbort(doc.id)
       } else {
         const json = await res.json().catch(() => ({}))
-        toast((json as { detail?: string }).detail ?? 'Failed to abort', 'error')
+        toast((json as { detail?: string }).detail ?? 'Failed', 'error')
       }
     } catch {
       toast('Network error', 'error')
@@ -152,7 +152,7 @@ function DocumentRow({ doc, toolId, onAbort }: { doc: ProcessedDocument; toolId:
                   </span>
                   <button
                     type="button"
-                    onClick={handleAbort}
+                    onClick={e => handleDelete(e, 'Aborted')}
                     disabled={aborting}
                     className="text-[10px] font-mono text-[#ff4d6d] bg-[rgba(255,77,109,0.06)] border border-[rgba(255,77,109,0.3)] hover:bg-[rgba(255,77,109,0.12)] rounded-sm px-2 py-0.5 transition-colors disabled:opacity-50"
                   >
@@ -161,9 +161,19 @@ function DocumentRow({ doc, toolId, onAbort }: { doc: ProcessedDocument; toolId:
                 </>
               )}
               {doc.status === 'failed' && (
-                <span className="text-[10px] font-mono text-[#ff4d6d] bg-[rgba(255,77,109,0.08)] border border-[rgba(255,77,109,0.2)] rounded-sm px-2 py-0.5">
-                  Failed
-                </span>
+                <>
+                  <span className="text-[10px] font-mono text-[#ff4d6d] bg-[rgba(255,77,109,0.08)] border border-[rgba(255,77,109,0.2)] rounded-sm px-2 py-0.5">
+                    Failed
+                  </span>
+                  <button
+                    type="button"
+                    onClick={e => handleDelete(e, 'Deleted')}
+                    disabled={aborting}
+                    className="text-[10px] font-mono text-[#ff4d6d] bg-[rgba(255,77,109,0.06)] border border-[rgba(255,77,109,0.3)] hover:bg-[rgba(255,77,109,0.12)] rounded-sm px-2 py-0.5 transition-colors disabled:opacity-50"
+                  >
+                    {aborting ? 'Deleting…' : 'Delete'}
+                  </button>
+                </>
               )}
               {dc && (
                 <span className={`text-[10px] font-mono px-2 py-0.5 rounded-sm border ${dc.bg} ${dc.border} ${dc.color}`}>
