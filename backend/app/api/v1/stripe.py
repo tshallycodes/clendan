@@ -4,8 +4,8 @@ from datetime import datetime, UTC
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi.responses import RedirectResponse
 from app.core.config import get_settings
-from app.core.oauth_html import connected_page
 from prisma import Prisma
 
 from app.core.db import get_db_dep
@@ -119,7 +119,7 @@ async def stripe_callback(
     frontend_url = get_settings().frontend_url.rstrip("/")
     redirect_url = f"{frontend_url}/dashboard/integrations?connected=stripe"
     logger.info("stripe_callback_redirecting url=%s", redirect_url)
-    return connected_page("Stripe", redirect_url)
+    return RedirectResponse(url=redirect_url)
 
 
 @router.get("/integrations/stripe/status")

@@ -6,7 +6,6 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import RedirectResponse
 
-from app.core.oauth_html import connected_page
 from prisma import Prisma
 
 from app.core.bank_cleanup import cleanup_integration_data
@@ -96,7 +95,7 @@ async def mono_callback(
     )
 
     await enqueue_mono_sync(integration.id, tenant_id)
-    return connected_page("Mono", f"{frontend_integrations}?connected=mono")
+    return RedirectResponse(url=f"{frontend_integrations}?connected=mono")
 
 
 @router.get("/integrations/mono/status")

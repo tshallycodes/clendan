@@ -6,7 +6,6 @@ from typing import Annotated
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, status
 from fastapi.responses import RedirectResponse
 
-from app.core.oauth_html import connected_page
 from prisma import Prisma
 
 from app.core.bank_cleanup import cleanup_integration_data
@@ -105,7 +104,7 @@ async def truelayer_callback(
     background_tasks.add_task(sync_truelayer_connection, {}, integration.id, tenant_id)
     display_name = institution_name or "TrueLayer"
     name_param = urllib.parse.quote(display_name)
-    return connected_page(display_name, f"{frontend_integrations}?connected=truelayer&name={name_param}")
+    return RedirectResponse(url=f"{frontend_integrations}?connected=truelayer&name={name_param}")
 
 
 @router.get("/integrations/truelayer/status")

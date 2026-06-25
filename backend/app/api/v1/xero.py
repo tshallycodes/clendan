@@ -9,7 +9,6 @@ from typing import Annotated
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, status
 from fastapi.responses import RedirectResponse
 
-from app.core.oauth_html import connected_page
 from pydantic import BaseModel
 from prisma import Prisma
 
@@ -127,7 +126,7 @@ async def xero_callback(
             )
 
         background_tasks.add_task(sync_xero_connection, {}, integration.id, tenant_id)
-        return connected_page("Xero", f"{frontend_integrations}?connected=xero")
+        return RedirectResponse(url=f"{frontend_integrations}?connected=xero")
 
     else:
         pending_creds = {

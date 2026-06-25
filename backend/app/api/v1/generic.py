@@ -21,7 +21,6 @@ import httpx
 from fastapi import APIRouter, Body, Depends, HTTPException, Query, status
 from fastapi.responses import RedirectResponse
 
-from app.core.oauth_html import connected_page
 from prisma import Prisma
 
 from app.core.config import get_settings
@@ -152,7 +151,7 @@ async def generic_oauth_callback(
 
     logger.info("%s_connected tenant=%s integration=%s", slug, tenant_id, integration.id)
     frontend_url = get_settings().frontend_url.rstrip("/")
-    return connected_page(slug.replace("-", " ").title(), f"{frontend_url}/dashboard/integrations?connected={slug}")
+    return RedirectResponse(url=f"{frontend_url}/dashboard/integrations?connected={slug}")
 
 
 # ---------------------------------------------------------------------------

@@ -8,7 +8,7 @@ from datetime import datetime, UTC
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from app.core.oauth_html import connected_page
+from fastapi.responses import RedirectResponse
 from prisma import Prisma
 
 from app.core.config import get_settings
@@ -101,7 +101,7 @@ async def sage_callback(
         logger.warning("sage_enqueue_sync_failed: %s", type(exc).__name__)
 
     frontend_url = get_settings().frontend_url.rstrip("/")
-    return connected_page("Sage", f"{frontend_url}/dashboard/integrations?connected=sage")
+    return RedirectResponse(url=f"{frontend_url}/dashboard/integrations?connected=sage")
 
 
 @router.get("/integrations/sage/status")

@@ -8,7 +8,7 @@ from datetime import datetime, UTC
 from typing import Annotated
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, status
-from app.core.oauth_html import connected_page
+from fastapi.responses import RedirectResponse
 from prisma import Prisma
 
 from app.core.config import get_settings
@@ -116,7 +116,7 @@ async def freshbooks_callback(
     background_tasks.add_task(sync_freshbooks_connection, {}, integration.id, tenant_id)
 
     frontend_url = get_settings().frontend_url.rstrip("/")
-    return connected_page("FreshBooks", f"{frontend_url}/dashboard/integrations?connected=freshbooks")
+    return RedirectResponse(url=f"{frontend_url}/dashboard/integrations?connected=freshbooks")
 
 
 @router.get("/integrations/freshbooks/status")

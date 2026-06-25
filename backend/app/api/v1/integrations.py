@@ -5,7 +5,6 @@ from typing import Annotated
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, status
 from fastapi.responses import RedirectResponse
 
-from app.core.oauth_html import connected_page
 from prisma import Prisma
 from pydantic import BaseModel
 
@@ -121,7 +120,7 @@ async def quickbooks_callback(
     from app.integrations.quickbooks.sync import sync_quickbooks_connection
     background_tasks.add_task(sync_quickbooks_connection, {}, integration.id, tenant_id)
 
-    return connected_page("QuickBooks", f"{_frontend_url}/dashboard/integrations?connected=quickbooks")
+    return RedirectResponse(url=f"{_frontend_url}/dashboard/integrations?connected=quickbooks")
 
 
 @router.get("/integrations/quickbooks/status")
@@ -287,7 +286,7 @@ async def xero_callback(
     from app.integrations.xero.sync import sync_xero_connection
     background_tasks.add_task(sync_xero_connection, {}, integration.id, tenant_id)
 
-    return connected_page("Xero", f"{_frontend_url}/dashboard/integrations?connected=xero")
+    return RedirectResponse(url=f"{_frontend_url}/dashboard/integrations?connected=xero")
 
 
 @router.get("/integrations/xero/status")
