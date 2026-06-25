@@ -3,6 +3,7 @@ Unmatched items are reviewed by Claude. Policy flags runs where unmatched % exce
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import json
 import time
 from datetime import UTC, datetime, timedelta
@@ -120,6 +121,105 @@ _CLAUDE_SYSTEM_PROMPT = (
 _BATCH_SIZE = 40
 _AUTO_OK_THRESHOLD_MINOR = 1500   # < £15: always auto-ok
 _MAX_CLAUDE_TXN_ITEMS = 40        # cap: only top-N by amount go to Claude, rest auto-ok
+
+_CACHE_TTL_SECONDS = 172800       # 48 hours — covers daily and weekly run cadences
+_CACHE_KEY_PREFIX = "recon:assess:v1"
+
+
+def _item_fingerprint(*parts: str | None) -> str:
+    payload = ":".join(str(p or "") for p in parts)
+    return hashlib.sha256(payload.encode()).hexdigest()[:16]
+
+
+async def _call_claude_with_cache(
+    tenant_id: str,
+    unmatched_txns: list[_TransactionRecord],
+    unmatched_invs: list[_InvoiceRecord],
+    unmatched_bills: list[_BillRecord],
+    settings_obj,
+) -> list[_ClaudeItemResult]:
+    """
+    Claude assessment with Redis-backed per-item caching.
+
+    Items whose data hasn't changed since the last run return cached results and
+    bypass Claude entirely. Fingerprint is derived from the item's mutable fields;
+    any data change causes a cache miss and a fresh Claude assessment.
+
+    Falls back silently to a full uncached Claude call if Redis is unavailable.
+    """
+    txn_fps = {
+        t.id: _item_fingerprint(str(t.amount_minor), t.status, t.merchant_name, t.description)
+        for t in unmatched_txns
+    }
+    inv_fps = {
+        i.id: _item_fingerprint(
+            str(i.outstanding_cents), i.status,
+            i.due_date.isoformat() if i.due_date else None, i.contact_name,
+        )
+        for i in unmatched_invs
+    }
+    bill_fps = {
+        b.id: _item_fingerprint(
+            str(b.outstanding_cents), b.status,
+            b.due_date.isoformat() if b.due_date else None, b.contact_name,
+        )
+        for b in unmatched_bills
+    }
+    fingerprint_map = {**txn_fps, **inv_fps, **bill_fps}
+    all_ids = list(fingerprint_map.keys())
+
+    try:
+        import redis.asyncio as aioredis
+        redis_client = aioredis.from_url(
+            settings_obj.redis_public_url,
+            socket_connect_timeout=1,
+            socket_timeout=1,
+            retry_on_timeout=False,
+        )
+        async with redis_client:
+            keys = [f"{_CACHE_KEY_PREFIX}:{tenant_id}:{item_id}:{fingerprint_map[item_id]}" for item_id in all_ids]
+            values = await redis_client.mget(*keys) if keys else []
+
+            cached_results: list[_ClaudeItemResult] = []
+            uncached_ids: set[str] = set()
+            for item_id, raw in zip(all_ids, values):
+                if raw:
+                    try:
+                        cached_results.append(_ClaudeItemResult(**json.loads(raw)))
+                    except Exception:
+                        uncached_ids.add(item_id)
+                else:
+                    uncached_ids.add(item_id)
+
+            logger.info("recon_cache_check", extra={
+                "tenant_id": tenant_id,
+                "cached": len(cached_results),
+                "uncached": len(uncached_ids),
+            })
+
+            if not uncached_ids:
+                return cached_results
+
+            txns_nc = [t for t in unmatched_txns if t.id in uncached_ids]
+            invs_nc  = [i for i in unmatched_invs  if i.id in uncached_ids]
+            bills_nc = [b for b in unmatched_bills  if b.id in uncached_ids]
+
+            new_results = await _call_claude(txns_nc, invs_nc, bills_nc, settings_obj)
+
+            if new_results:
+                pipe = redis_client.pipeline()
+                for result in new_results:
+                    fp = fingerprint_map.get(result.item_id)
+                    if fp:
+                        key = f"{_CACHE_KEY_PREFIX}:{tenant_id}:{result.item_id}:{fp}"
+                        pipe.set(key, json.dumps(result.model_dump()), ex=_CACHE_TTL_SECONDS)
+                await pipe.execute()
+
+            return cached_results + new_results
+
+    except Exception as exc:
+        logger.warning("recon_cache_unavailable", extra={"error": str(exc)})
+        return await _call_claude(unmatched_txns, unmatched_invs, unmatched_bills, settings_obj)
 
 
 def _pre_classify(
@@ -411,8 +511,8 @@ async def _execute_reconciliation(
     txns_for_claude, auto_results = _pre_classify(unmatched_txns)
     claude_results: list[_ClaudeItemResult] = list(auto_results)
     if txns_for_claude or unmatched_invs or unmatched_bills:
-        claude_results.extend(await _call_claude(
-            txns_for_claude, unmatched_invs, unmatched_bills, settings_obj
+        claude_results.extend(await _call_claude_with_cache(
+            tenant_id, txns_for_claude, unmatched_invs, unmatched_bills, settings_obj
         ))
 
     has_flag = any(r.action == "flag" for r in claude_results) or policy_breach
