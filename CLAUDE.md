@@ -444,7 +444,16 @@ Clendan is sharp-edged — infrastructure product aesthetic. Default: `sm`. Max:
 
 **Tool Card:** `bg-brand-surface border border-brand-border`. Active: `border-l-[3px] border-l-[#00C853]`. Approval-required: `border-l-[3px] border-l-[#00a8cc]`. Blocked: `border-l-[3px] border-l-[#ff4d6d]`. Inactive: no accent border.
 
-**Checkbox (Circular):** Never use native `<input type="checkbox">`. Always use a custom `<button>` with a circular indicator. Checked: `bg-[#00C853] border-[#00C853]` with SVG tick. Unchecked: `bg-brand-bg border-brand-border`. Group rows in a `divide-y divide-brand-border` container.
+**Checkbox — when to use circular vs square:**
+
+| Shape    | Class          | Use                                                               |
+|----------|----------------|-------------------------------------------------------------------|
+| Circular | `rounded-full` | Selection lists inside drawers and config panels (`ConfigDrawer`) |
+| Square   | `rounded-sm`   | Tool config multiselect fields rendered by `ToolConfigFields`     |
+
+Never use native `<input type="checkbox">` — it is always square and cannot be styled consistently. Always use the custom `<button>` + `<span>` pattern below.
+
+**Checkbox (Circular):** Used in `ConfigDrawer` for bank account and accounting integration selection lists. Group rows in a `divide-y divide-brand-border` container.
 
 ```tsx
 <button type="button" onClick={...} className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-brand-elevated transition-colors text-left">
@@ -461,7 +470,32 @@ Clendan is sharp-edged — infrastructure product aesthetic. Default: `sm`. Max:
 </button>
 ```
 
-**Multiselect Config Field (`ToolConfigFields`):** For tool config keys that accept multiple values from a fixed list. Field definition: `type: 'multiselect'`, `options: string[]`, `default: []`. Value stored as `string[]` in `config_json`. Renders as a list of circular checkbox buttons in a `space-y-1` wrapper. Use for any config that previously would have been a `select` with a "none" option — replace "none" with an empty array default instead.
+**Multiselect Config Field (`ToolConfigFields`):** For tool config keys that accept multiple values from a fixed list. Field definition: `type: 'multiselect'`, `options: string[]`, `default: []`. Value stored as `string[]` in `config_json`. Renders as stacked square checkbox buttons in a `space-y-1` wrapper. Use for any config that previously would have been a `select` with a "none" option — replace "none" with an empty array default instead.
+
+```tsx
+<button key={opt} type="button"
+  onClick={() => {
+    const next = isChecked ? selected.filter(v => v !== opt) : [...selected, opt]
+    onChange(field.key, next)
+  }}
+  className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-sm border text-left transition-colors ${
+    isChecked ? 'bg-brand-elevated border-brand-border' : 'bg-brand-bg border-brand-border hover:bg-brand-elevated'
+  }`}
+>
+  <span className={`w-3.5 h-3.5 rounded-sm border flex items-center justify-center shrink-0 transition-colors ${
+    isChecked ? 'bg-[#00C853] border-[#00C853]' : 'bg-brand-bg border-brand-border'
+  }`}>
+    {isChecked && (
+      <svg width="8" height="6" viewBox="0 0 8 6" fill="none">
+        <path d="M1 3L3 5L7 1" stroke="black" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+      </svg>
+    )}
+  </span>
+  <span className="text-[11px] font-mono text-brand-text">{opt}</span>
+</button>
+```
+
+Pass `dynamicOptions?: Record<string, string[]>` to `ToolConfigFields` when options must come from the server (e.g. only connected integrations). The renderer uses `dynamicOptions[field.key]` over `field.options` when present. If the resolved list is empty, renders "No connected integrations. Connect one via Integrations first." in place of the buttons.
 
 ### Motion Rules
 
