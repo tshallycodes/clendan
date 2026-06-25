@@ -304,7 +304,7 @@ async def _call_claude_batch(
         try:
             message = await client.messages.create(
                 model="claude-haiku-4-5-20251001",
-                max_tokens=8096,
+                max_tokens=2048,
                 messages=[{"role": "user", "content": prompt}],
             )
             if message.stop_reason == "max_tokens":
@@ -389,6 +389,7 @@ async def _execute_reconciliation(
 ) -> dict:
     settings_obj = get_settings()
     db = get_db()
+    _t0 = time.time()
 
     if period_end is None:
         period_end = datetime.now(UTC)
@@ -423,6 +424,11 @@ async def _execute_reconciliation(
             where={"tenant_id": tenant_id, "status": {"not_in": ["paid", "void"]}}
         ),
     )
+    _t_db = time.time()
+    logger.info("recon_phase_db", extra={
+        "tenant_id": tenant_id, "ms": int((_t_db - _t0) * 1000),
+        "txns": len(raw_txns), "invs": len(raw_invs), "bills": len(raw_bills),
+    })
 
     transactions = [
         _TransactionRecord(
@@ -508,12 +514,29 @@ async def _execute_reconciliation(
     unmatched_pct = len(unmatched_txns) / total_txns if total_txns > 0 else 0.0
     policy_breach = unmatched_pct > policy.unmatched_pct_threshold
 
+    _t_match = time.time()
+    logger.info("recon_phase_matching", extra={
+        "tenant_id": tenant_id, "ms": int((_t_match - _t_db) * 1000),
+        "matched_txns": len(matched_txn_ids),
+        "unmatched_txns": len(unmatched_txns),
+        "unmatched_invs": len(unmatched_invs),
+        "unmatched_bills": len(unmatched_bills),
+    })
+
     txns_for_claude, auto_results = _pre_classify(unmatched_txns)
     claude_results: list[_ClaudeItemResult] = list(auto_results)
     if txns_for_claude or unmatched_invs or unmatched_bills:
         claude_results.extend(await _call_claude_with_cache(
             tenant_id, txns_for_claude, unmatched_invs, unmatched_bills, settings_obj
         ))
+
+    _t_claude = time.time()
+    logger.info("recon_phase_claude", extra={
+        "tenant_id": tenant_id, "ms": int((_t_claude - _t_match) * 1000),
+        "claude_txns_in": len(txns_for_claude),
+        "auto_ok": len(auto_results),
+        "total_assessments": len(claude_results),
+    })
 
     has_flag = any(r.action == "flag" for r in claude_results) or policy_breach
     has_review = any(r.action == "review" for r in claude_results)
@@ -620,6 +643,12 @@ async def _execute_reconciliation(
         )
     if not actions_taken:
         actions_taken.append("no pending items found — nothing to reconcile")
+
+    logger.info("recon_phase_total", extra={
+        "tenant_id": tenant_id,
+        "total_ms": int((time.time() - _t0) * 1000),
+        "decision": overall_decision,
+    })
 
     return {
         "decision": overall_decision,
