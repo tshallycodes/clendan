@@ -229,6 +229,105 @@ export default function ApiDocsPage() {
         </div>
       </section>
 
+      <section className="space-y-4">
+        <h2 className="font-heading font-semibold text-sm text-brand-text uppercase tracking-widest">Payload Reference</h2>
+        <p className="text-xs font-mono text-brand-muted">
+          Each tool accepts a <code className="text-brand-text">payload</code> object. Fields are optional — omitted fields
+          fall back to what is configured in the tool&apos;s settings drawer.
+        </p>
+
+        {/* Reconciliation */}
+        <div className="space-y-2">
+          <p className="text-xs font-mono text-brand-text font-medium">reconciliation</p>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs font-mono border border-brand-border rounded-sm">
+              <thead>
+                <tr className="border-b border-brand-border bg-brand-elevated">
+                  <th className="text-left px-3 py-2 text-brand-muted font-medium">Field</th>
+                  <th className="text-left px-3 py-2 text-brand-muted font-medium">Type</th>
+                  <th className="text-left px-3 py-2 text-brand-muted font-medium">Default</th>
+                  <th className="text-left px-3 py-2 text-brand-muted font-medium">Description</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-brand-border">
+                {[
+                  ['period_start', 'string (ISO date)', 'now − period_days', 'Start of the reconciliation window'],
+                  ['period_end',   'string (ISO date)', 'now',               'End of the reconciliation window'],
+                  ['period_days',  'integer',           '30',                'Window size when period_start is omitted'],
+                  ['policy.unmatched_pct_threshold',    'float 0–1', '0.20', 'Fraction of unmatched items that triggers a policy breach'],
+                  ['policy.match_amount_tolerance_pct', 'float 0–1', '0.01', 'Allowed % difference when matching amounts'],
+                  ['policy.match_date_window_days',     'integer',   '30',   'Days either side of due date to still count as a match'],
+                  ['policy.auto_match_confidence_min',  'float 0–1', '0.95', 'Minimum confidence for an auto-approved match'],
+                  ['policy.stale_open_item_days',       'integer',   '90',   'Days before an unmatched item is flagged as stale'],
+                  ['policy.include_reconciled',         'boolean',   'false','Include already-reconciled transactions in the run'],
+                  ['policy.partial_match_enabled',      'boolean',   'true', 'Allow partial amount matches'],
+                  ['policy.period_lock_respect',        'boolean',   'true', 'Reject edits to locked accounting periods'],
+                ].map(([field, type, def, desc]) => (
+                  <tr key={field} className="hover:bg-brand-elevated">
+                    <td className="px-3 py-2 text-[#00C853]">{field}</td>
+                    <td className="px-3 py-2 text-brand-muted">{type}</td>
+                    <td className="px-3 py-2 text-brand-muted">{def}</td>
+                    <td className="px-3 py-2 text-brand-secondary">{desc}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <CodeBlock lang="json" code={`{
+  "tool": "reconciliation",
+  "payload": {
+    "period_start": "2026-05-01",
+    "period_end":   "2026-05-31",
+    "policy": {
+      "unmatched_pct_threshold":    0.3,
+      "match_date_window_days":     60,
+      "match_amount_tolerance_pct": 0.02,
+      "include_reconciled":         false
+    }
+  }
+}`} />
+        </div>
+
+        {/* Other tools */}
+        <div className="space-y-2">
+          <p className="text-xs font-mono text-brand-text font-medium">invoice_processing · receipt_processing · fraud_detection · expense_control · spend_control</p>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs font-mono border border-brand-border rounded-sm">
+              <thead>
+                <tr className="border-b border-brand-border bg-brand-elevated">
+                  <th className="text-left px-3 py-2 text-brand-muted font-medium">Field</th>
+                  <th className="text-left px-3 py-2 text-brand-muted font-medium">Type</th>
+                  <th className="text-left px-3 py-2 text-brand-muted font-medium">Description</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-brand-border">
+                {[
+                  ['invoice_id / receipt_id', 'string', 'ID of the document to process'],
+                  ['amount_minor',  'integer', 'Amount in minor units (pence/cents) — no decimals'],
+                  ['currency',      'string',  'ISO 4217 currency code (GBP, USD, EUR)'],
+                  ['vendor / merchant', 'string', 'Counterparty name'],
+                  ['transaction_id', 'string', 'Bank transaction ID (fraud_detection, expense_control)'],
+                  ['employee_id',   'string',  'Employee reference (expense_control, spend_control)'],
+                  ['category',      'string',  'Expense category (travel, software, meals, etc.)'],
+                ].map(([field, type, desc]) => (
+                  <tr key={field} className="hover:bg-brand-elevated">
+                    <td className="px-3 py-2 text-[#00C853]">{field}</td>
+                    <td className="px-3 py-2 text-brand-muted">{type}</td>
+                    <td className="px-3 py-2 text-brand-secondary">{desc}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <p className="text-xs font-mono text-brand-muted">
+          All payload fields are optional. Use the{' '}
+          <span className="text-brand-text">API Playground</span> on the Developer page to see pre-filled
+          examples for every tool type.
+        </p>
+      </section>
+
     </div>
   )
 }
