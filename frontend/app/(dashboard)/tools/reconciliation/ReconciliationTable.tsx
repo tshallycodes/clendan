@@ -150,7 +150,7 @@ export function ReconciliationTable({ items, loading, runId, onExport }: Reconci
           <table className="w-full text-xs font-mono">
             <thead>
               <tr className="border-b border-brand-border">
-                {['Date', 'Account', 'Description', 'Amount', 'Status', 'Invoice #', 'Vendor', 'Agent Reasoning'].map(
+                {['Date', 'Account', 'Description', 'Amount', 'Status', 'Invoice #', 'Vendor', 'Source', 'Agent Reasoning'].map(
                   (h) => (
                     <th key={h} className="px-3 py-2 text-left text-[10px] uppercase tracking-widest text-brand-muted font-mono whitespace-nowrap">
                       {h}
@@ -189,6 +189,11 @@ export function ReconciliationTable({ items, loading, runId, onExport }: Reconci
                       <td className="px-3 py-2 text-brand-secondary max-w-[120px] truncate" title={item.matched_vendor ?? ''}>
                         {item.matched_vendor ?? '—'}
                       </td>
+                      <td className="px-3 py-2">
+                        {item.matched_source
+                          ? <span className="px-2 py-0.5 rounded-sm text-[10px] font-mono bg-brand-elevated text-brand-secondary border border-brand-border capitalize">{item.matched_source}</span>
+                          : <span className="text-brand-muted">—</span>}
+                      </td>
                       <td className="px-3 py-2 text-brand-muted max-w-[200px] truncate" title={item.reasoning}>
                         {item.reasoning
                           ? <span className="text-brand-muted">{item.reasoning.slice(0, 55)}{item.reasoning.length > 55 ? '… ↓' : ''}</span>
@@ -197,7 +202,7 @@ export function ReconciliationTable({ items, loading, runId, onExport }: Reconci
                     </tr>
                     {isExpanded && item.reasoning && (
                       <tr className="border-b border-brand-border bg-brand-elevated">
-                        <td colSpan={8} className="px-4 py-3">
+                        <td colSpan={9} className="px-4 py-3">
                           <p className={`text-[11px] font-mono leading-relaxed ${item.ai_action === 'flag' ? 'text-[#ff4d6d]' : item.ai_action === 'review' ? 'text-[#00a8cc]' : 'text-brand-secondary'}`}>
                             {item.reasoning}
                           </p>

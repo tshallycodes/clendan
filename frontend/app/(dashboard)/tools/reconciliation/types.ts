@@ -26,5 +26,6 @@ export interface ReconciliationItem {
   ai_severity: 'high' | 'medium' | 'low' | null
   matched_invoice_number: string | null
   matched_vendor: string | null
+  matched_source: string | null
   reasoning: string
 }

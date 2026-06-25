@@ -376,6 +376,9 @@ async def _call_claude(
     return all_results
 
 
+_BANK_SOURCES = {"plaid", "truelayer", "mono", "stripe", "paypal"}
+
+
 async def _execute_reconciliation(
     tenant_id: str,
     tool_id: str,
@@ -384,6 +387,7 @@ async def _execute_reconciliation(
     period_start: datetime | None = None,
     period_end: datetime | None = None,
     account_ids: list[str] | None = None,
+    integration_sources: list[str] | None = None,
     triggered_by_email: str | None = None,
     policy_overrides: dict | None = None,
 ) -> dict:
@@ -415,14 +419,22 @@ async def _execute_reconciliation(
     if account_ids:
         txn_where["account_id"] = {"in": account_ids}
 
+    bank_sources = [s for s in (integration_sources or []) if s in _BANK_SOURCES]
+    acct_sources = [s for s in (integration_sources or []) if s not in _BANK_SOURCES]
+
+    if bank_sources:
+        txn_where["source"] = {"in": bank_sources}
+
+    inv_where: dict = {"tenant_id": tenant_id, "status": {"in": ["sent", "viewed", "partial"]}}
+    bill_where: dict = {"tenant_id": tenant_id, "status": {"not_in": ["paid", "void"]}}
+    if acct_sources:
+        inv_where["source"] = {"in": acct_sources}
+        bill_where["source"] = {"in": acct_sources}
+
     raw_txns, raw_invs, raw_bills = await asyncio.gather(
         db.banktransaction.find_many(where=txn_where),
-        db.accountinginvoice.find_many(
-            where={"tenant_id": tenant_id, "status": {"in": ["sent", "viewed", "partial"]}}
-        ),
-        db.accountingbill.find_many(
-            where={"tenant_id": tenant_id, "status": {"not_in": ["paid", "void"]}}
-        ),
+        db.accountinginvoice.find_many(where=inv_where),
+        db.accountingbill.find_many(where=bill_where),
     )
     _t_db = time.time()
     logger.info("recon_phase_db", extra={
@@ -670,6 +682,7 @@ async def run_reconciliation_job(
     period_start: datetime | None = None,
     period_end: datetime | None = None,
     account_ids: list[str] | None = None,
+    integration_sources: list[str] | None = None,
     triggered_by_email: str | None = None,
 ) -> dict:
     db = get_db()
@@ -686,6 +699,7 @@ async def run_reconciliation_job(
             tenant_id, tool_id, execution_id, period_days,
             period_start=period_start, period_end=period_end,
             account_ids=account_ids,
+            integration_sources=integration_sources,
             triggered_by_email=triggered_by_email,
         )
         duration_ms = int(time.time() * 1000) - start_ms

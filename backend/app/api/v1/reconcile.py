@@ -5,6 +5,7 @@ All queries scoped to current_user.tenant_id (no cross-tenant access).
 """
 from __future__ import annotations
 
+import asyncio
 import csv
 import io
 import uuid
@@ -33,6 +34,7 @@ class TriggerRunRequest(BaseModel):
     period_end: str     # ISO datetime string
     tool_id: str
     account_ids: Optional[list[str]] = None
+    integration_sources: Optional[list[str]] = None
 
 
 # ---------------------------------------------------------------------------
@@ -149,6 +151,10 @@ async def get_run_items(
                 t.matched_invoice.vendor if t.matched_invoice
                 else (t.matched_bill.contact_name if t.matched_bill else None)
             ),
+            "matched_source": (
+                t.matched_invoice.source if t.matched_invoice
+                else (t.matched_bill.source if t.matched_bill else None)
+            ),
             "reasoning": reasoning_lookup.get(t.id, ""),
         }
         for t in txns
@@ -180,6 +186,34 @@ async def list_reconciliation_accounts(current_user: RequireOrgAuth) -> dict:
             }
             for a in accounts
         ]
+    })
+
+
+# ---------------------------------------------------------------------------
+# GET /v1/reconciliation/integrations
+# ---------------------------------------------------------------------------
+
+
+@router.get("/reconciliation/integrations")
+async def list_reconciliation_integrations(current_user: RequireOrgAuth) -> dict:
+    """Returns distinct integration sources that have data for this tenant."""
+    db = get_db()
+    tenant_id = current_user.tenant_id
+
+    accounts, invs, bills = await asyncio.gather(
+        db.bankaccount.find_many(where={"tenant_id": tenant_id}),
+        db.accountinginvoice.find_many(where={"tenant_id": tenant_id}, take=200),
+        db.accountingbill.find_many(where={"tenant_id": tenant_id}, take=200),
+    )
+
+    bank_sources = sorted({a.source for a in accounts if a.source})
+    accounting_sources = sorted(
+        {i.source for i in invs if i.source} | {b.source for b in bills if b.source}
+    )
+
+    return standard_response(data={
+        "bank_sources": bank_sources,
+        "accounting_sources": accounting_sources,
     })
 
 
@@ -245,6 +279,7 @@ async def trigger_reconciliation_run(
         period_start=period_start,
         period_end=period_end,
         account_ids=body.account_ids,
+        integration_sources=body.integration_sources,
         triggered_by_email=current_user.email,
     )
 
