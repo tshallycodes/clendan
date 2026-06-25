@@ -2,6 +2,7 @@
 Redis sliding-window rate limiter middleware.
 Applied globally — parse endpoints get a tighter limit than general API.
 """
+import hashlib
 import time
 from typing import Callable
 
@@ -19,11 +20,12 @@ _EXEMPT = {"/health", "/ready"}
 # Path prefixes also exempt
 _EXEMPT_PREFIXES = ("/v1/integrations", "/v1/webhooks")
 
-# (requests, window_seconds) per path prefix
+# (requests, window_seconds) per path prefix — first match wins
 _LIMITS: list[tuple[str, int, int]] = [
-    ("/v1/parse/", 20, 60),    # 20 req/min — Claude vision is expensive
-    ("/v1/agents/", 30, 60),   # 30 req/min — queue submissions
-    ("/v1/", 200, 60),         # 200 req/min — all other v1 endpoints
+    ("/v1/parse/",   20,  60),   # 20 req/min  — Claude vision is expensive
+    ("/v1/agents/",  30,  60),   # 30 req/min  — queue submissions
+    ("/v1/execute",  60,  60),   # 60 req/min  — agent executions (each triggers a job)
+    ("/v1/",        200,  60),   # 200 req/min — all other v1 endpoints
 ]
 
 
@@ -47,10 +49,14 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         if path in _EXEMPT or path.startswith(_EXEMPT_PREFIXES):
             return await call_next(request)
 
-        identifier = (
-            request.headers.get("X-Tenant-ID")
-            or (request.client.host if request.client else "unknown")
-        )
+        auth = request.headers.get("Authorization", "")
+        if auth.startswith("ck_live_"):
+            identifier = f"apikey:{hashlib.sha256(auth.encode()).hexdigest()[:16]}"
+        else:
+            identifier = (
+                request.headers.get("X-Tenant-ID")
+                or (request.client.host if request.client else "unknown")
+            )
 
         limit, window = _get_limit(path)
         bucket = path.split("/")[2] if len(path.split("/")) > 2 else "root"

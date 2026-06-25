@@ -2,7 +2,7 @@
 
 ## Base URL
 
-```
+```text
 https://api-production-0d35.up.railway.app/v1
 ```
 
@@ -28,7 +28,15 @@ Two authentication schemes are used depending on the endpoint type:
 
 Generate API keys from the Developer page. Keys are shown only once on creation — copy immediately. To revoke, use the Revoke button in the Developer page.
 
-Rate limit: 120 requests per minute.
+Rate limits (per API key, sliding 60s window):
+
+| Endpoint | Limit |
+| --- | --- |
+| `POST /v1/execute`, `GET /v1/execute/*` | 60 req/min |
+| `/v1/parse/*` | 20 req/min |
+| All other `/v1/*` | 200 req/min |
+
+Exceeded limits return `429` with a `Retry-After` header.
 
 ## Agent Execution Endpoints
 

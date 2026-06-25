@@ -273,7 +273,7 @@ export function DeveloperPageClient() {
         </div>
         <div className="bg-brand-surface border border-brand-border rounded-sm p-4 space-y-1">
           <p className="text-[10px] font-mono uppercase tracking-widest text-brand-muted">Rate Limit</p>
-          <code className="text-xs font-mono text-brand-text">120 req / min</code>
+          <code className="text-xs font-mono text-brand-text">60–200 req / min</code>
         </div>
         <div className="bg-brand-surface border border-brand-border rounded-sm p-4 space-y-1">
           <p className="text-[10px] font-mono uppercase tracking-widest text-brand-muted">Idempotency</p>

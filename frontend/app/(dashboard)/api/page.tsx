@@ -51,6 +51,37 @@ export default function ApiDocsPage() {
   -H "Authorization: ck_live_..."`} />
       </section>
 
+      <section className="space-y-4">
+        <h2 className="font-heading font-semibold text-sm text-brand-text uppercase tracking-widest">Rate Limits</h2>
+        <p className="text-xs font-mono text-brand-muted">
+          Limits are per API key, using a sliding 60-second window. Exceeded limits return{' '}
+          <code className="text-brand-text">429</code> with a{' '}
+          <code className="text-brand-text">Retry-After</code> header.
+        </p>
+        <div className="overflow-x-auto">
+          <table className="w-full text-xs font-mono border border-brand-border rounded-sm">
+            <thead>
+              <tr className="border-b border-brand-border bg-brand-elevated">
+                <th className="text-left px-3 py-2 text-brand-muted font-medium">Endpoint</th>
+                <th className="text-left px-3 py-2 text-brand-muted font-medium">Limit</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-brand-border">
+              {[
+                ['POST /v1/execute, GET /v1/execute/*', '60 req / min'],
+                ['/v1/parse/*',                         '20 req / min'],
+                ['All other /v1/* endpoints',           '200 req / min'],
+              ].map(([endpoint, limit]) => (
+                <tr key={endpoint} className="hover:bg-brand-elevated">
+                  <td className="px-3 py-2 text-brand-text">{endpoint}</td>
+                  <td className="px-3 py-2 text-brand-secondary">{limit}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
       <section className="space-y-3">
         <h2 className="font-heading font-semibold text-sm text-brand-text uppercase tracking-widest">Standard Response Shape</h2>
         <CodeBlock lang="json" code={`{
