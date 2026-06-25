@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useAuth } from '@clerk/nextjs'
 import { useCanConfigure } from '@/lib/auth-client'
+import { useToast } from '@/components/Providers'
 import { ROLE_COLORS, ROLE_LABEL, type Invitation } from './types'
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
@@ -15,17 +16,22 @@ interface Props {
 export function InvitationsTable({ invitations, onChanged }: Props) {
   const { getToken } = useAuth()
   const canConfigure = useCanConfigure()
+  const { toast } = useToast()
   const [revoking, setRevoking] = useState<string | null>(null)
 
   async function handleRevoke(id: string) {
     setRevoking(id)
     try {
       const token = await getToken()
-      await fetch(`${API}/v1/organisations/me/invitations/${id}`, {
+      const res = await fetch(`${API}/v1/organisations/me/invitations/${id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       })
+      if (!res.ok) { toast('Failed to revoke invitation', 'error'); return }
+      toast('Invitation revoked', 'success')
       onChanged()
+    } catch {
+      toast('Failed to revoke invitation', 'error')
     } finally {
       setRevoking(null)
     }

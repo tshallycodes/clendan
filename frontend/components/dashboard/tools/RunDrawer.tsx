@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { CheckCircle } from '@phosphor-icons/react'
 import { AnimatePresence, motion } from 'framer-motion'
 import type { Tool } from './ToolCard'
+import { useToast } from '@/components/Providers'
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
@@ -24,15 +25,14 @@ const labelClass = 'text-[10px] font-mono text-[#6e8c6e] uppercase tracking-wide
 
 export function RunDrawer({ tool, onClose, onQueued }: RunDrawerProps) {
   const { getToken } = useAuth()
+  const { toast } = useToast()
   const [payloadText, setPayloadText]   = useState('{}')
   const [submitting, setSubmitting]     = useState(false)
-  const [error, setError]               = useState<string | null>(null)
   const [payloadError, setPayloadError] = useState<string | null>(null)
   const [queuedId, setQueuedId]         = useState<string | null>(null)
 
   async function handleSubmit() {
     setPayloadError(null)
-    setError(null)
 
     let parsedPayload: Record<string, unknown>
     try {
@@ -58,20 +58,20 @@ export function RunDrawer({ tool, onClose, onQueued }: RunDrawerProps) {
       const json = await res.json().catch(() => ({})) as { data?: { execution_id?: string }; error?: string }
 
       if (!res.ok) {
-        setError(json.error ?? 'Failed to trigger execution.')
+        toast(json.error ?? 'Failed to trigger execution', 'error')
         return
       }
 
       const execId = json.data?.execution_id
       if (!execId) {
-        setError('Execution queued but no ID returned.')
+        toast('Execution queued but no ID returned', 'error')
         return
       }
 
       setQueuedId(execId)
       onQueued(execId)
     } catch {
-      setError('Unable to connect to server.')
+      toast('Unable to connect to server', 'error')
     } finally {
       setSubmitting(false)
     }
@@ -136,7 +136,6 @@ export function RunDrawer({ tool, onClose, onQueued }: RunDrawerProps) {
                   )}
                 </div>
 
-                {error && <p className="text-xs font-mono text-[#ff4d6d]">{error}</p>}
               </div>
 
               <div className="flex items-center gap-2 px-5 py-4 border-t border-brand-border">

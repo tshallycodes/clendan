@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useAuth } from '@clerk/nextjs'
 import { Copy, Check, Plus, X } from '@phosphor-icons/react'
 import { useCanConfigure } from '@/lib/auth-client'
+import { useToast } from '@/components/Providers'
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
@@ -15,6 +16,7 @@ interface ApiKey {
 export function ApiKeysSection() {
   const { getToken } = useAuth()
   const canConfigure = useCanConfigure()
+  const { toast } = useToast()
   const [keys, setKeys] = useState<ApiKey[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
@@ -48,28 +50,42 @@ export function ApiKeysSection() {
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: newName.trim() }),
       })
-      if (res.ok) {
-        const json = await res.json()
-        setRevealedKey(json.data.key)
-        setNewName('')
-        setShowForm(false)
-        await fetchKeys()
-      }
+      if (!res.ok) { toast('Failed to generate API key', 'error'); return }
+      const json = await res.json()
+      setRevealedKey(json.data.key)
+      setNewName('')
+      setShowForm(false)
+      toast('API key generated', 'success')
+      await fetchKeys()
+    } catch {
+      toast('Failed to generate API key', 'error')
     } finally {
       setCreating(false)
     }
   }
 
   async function handleRevoke(id: string) {
-    const token = await getToken()
-    await fetch(`${API}/v1/api-keys/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } })
-    await fetchKeys()
+    try {
+      const token = await getToken()
+      const res = await fetch(`${API}/v1/api-keys/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } })
+      if (!res.ok) { toast('Failed to revoke API key', 'error'); return }
+      toast('API key revoked', 'success')
+      await fetchKeys()
+    } catch {
+      toast('Failed to revoke API key', 'error')
+    }
   }
 
   async function handleDelete(id: string) {
-    const token = await getToken()
-    await fetch(`${API}/v1/api-keys/${id}/permanent`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } })
-    await fetchKeys()
+    try {
+      const token = await getToken()
+      const res = await fetch(`${API}/v1/api-keys/${id}/permanent`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } })
+      if (!res.ok) { toast('Failed to delete API key', 'error'); return }
+      toast('API key deleted', 'success')
+      await fetchKeys()
+    } catch {
+      toast('Failed to delete API key', 'error')
+    }
   }
 
   async function copyKey() {

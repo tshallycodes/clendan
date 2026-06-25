@@ -3,7 +3,7 @@
 import { useRef, useState, useEffect } from 'react'
 import { useAuth } from '@clerk/nextjs'
 import { cn } from '@/lib/utils'
-import { useCurrency } from '@/components/Providers'
+import { useCurrency, useToast } from '@/components/Providers'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
@@ -56,6 +56,7 @@ interface Props {
 export function TransactionRow({ transaction: t, onCategoryUpdate, categories }: Props) {
   const { getToken } = useAuth()
   const { convert } = useCurrency()
+  const { toast } = useToast()
   const [open, setOpen] = useState(false)
   const [saving, setSaving] = useState(false)
   const ref = useRef<HTMLTableCellElement>(null)
@@ -80,7 +81,9 @@ export function TransactionRow({ transaction: t, onCategoryUpdate, categories }:
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ category }),
       })
-      if (res.ok) onCategoryUpdate(t.id, category)
+      if (!res.ok) { toast('Failed to save category', 'error'); return }
+      onCategoryUpdate(t.id, category)
+      toast('Category saved', 'success')
     } finally {
       setSaving(false)
     }

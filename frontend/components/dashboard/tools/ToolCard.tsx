@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useAuth } from '@clerk/nextjs'
 import { RunDrawer } from './RunDrawer'
 import { useCanConfigure } from '@/lib/auth-client'
+import { useToast } from '@/components/Providers'
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
@@ -41,6 +42,7 @@ interface Props {
 export function ToolCard({ tool, onConfigure, onStatusChange }: Props) {
   const { getToken } = useAuth()
   const canConfigure = useCanConfigure()
+  const { toast } = useToast()
   const [toggling, setToggling]               = useState(false)
   const [confirmDelete, setConfirmDelete]     = useState(false)
   const [deleting, setDeleting]               = useState(false)
@@ -54,11 +56,15 @@ export function ToolCard({ tool, onConfigure, onStatusChange }: Props) {
     setToggling(true)
     try {
       const token = await getToken()
-      await fetch(`${API}/v1/tools/${tool.id}/pause`, {
+      const res = await fetch(`${API}/v1/tools/${tool.id}/pause`, {
         method: 'PATCH',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
       })
+      if (!res.ok) { toast('Failed to update tool status', 'error'); return }
+      toast(isActive ? 'Tool paused' : 'Tool resumed', 'success')
       onStatusChange()
+    } catch {
+      toast('Failed to update tool status', 'error')
     } finally {
       setToggling(false)
     }
@@ -68,11 +74,15 @@ export function ToolCard({ tool, onConfigure, onStatusChange }: Props) {
     setDeleting(true)
     try {
       const token = await getToken()
-      await fetch(`${API}/v1/tools/${tool.id}`, {
+      const res = await fetch(`${API}/v1/tools/${tool.id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       })
+      if (!res.ok) { toast('Failed to delete tool', 'error'); return }
+      toast('Tool deleted', 'success')
       onStatusChange()
+    } catch {
+      toast('Failed to delete tool', 'error')
     } finally {
       setDeleting(false)
       setConfirmDelete(false)

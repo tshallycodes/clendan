@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useAuth } from '@clerk/nextjs'
+import { useToast } from '@/components/Providers'
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
@@ -12,6 +13,7 @@ interface Props {
 
 export function DomainMatchingToggle({ initialEnabled, domain }: Props) {
   const { getToken } = useAuth()
+  const { toast } = useToast()
   const [enabled, setEnabled] = useState(initialEnabled)
   const [saving, setSaving] = useState(false)
 
@@ -25,7 +27,11 @@ export function DomainMatchingToggle({ initialEnabled, domain }: Props) {
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ domain_matching: next }),
       })
-      if (res.ok) setEnabled(next)
+      if (!res.ok) { toast('Failed to update domain matching', 'error'); return }
+      setEnabled(next)
+      toast(next ? 'Domain matching enabled' : 'Domain matching disabled', 'success')
+    } catch {
+      toast('Failed to update domain matching', 'error')
     } finally {
       setSaving(false)
     }

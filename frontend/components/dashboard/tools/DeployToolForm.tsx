@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useAuth } from '@clerk/nextjs'
 import { ToolConfigFields, getDefaultConfig } from './ToolConfigFields'
+import { useToast } from '@/components/Providers'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
@@ -41,12 +42,12 @@ interface DeployToolFormProps {
 
 export function DeployToolForm({ fixedType, onDeployed }: DeployToolFormProps) {
   const { getToken } = useAuth()
+  const { toast } = useToast()
   const defaultType: ToolType = (fixedType as ToolType | undefined) ?? 'invoice_processing'
   const [toolType, setToolType] = useState<ToolType>(defaultType)
   const [autonomyLevel, setAutonomyLevel] = useState<AutonomyLevel>('approve')
   const [config, setConfig] = useState<Record<string, unknown>>(getDefaultConfig(defaultType))
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
 
   function handleToolTypeChange(type: ToolType) {
     setToolType(type)
@@ -56,7 +57,6 @@ export function DeployToolForm({ fixedType, onDeployed }: DeployToolFormProps) {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setLoading(true)
-    setError(null)
     try {
       const token = await getToken()
       const res = await fetch(`${API_BASE}/v1/tools`, {
@@ -66,12 +66,13 @@ export function DeployToolForm({ fixedType, onDeployed }: DeployToolFormProps) {
       })
       if (!res.ok) {
         const json = await res.json().catch(() => ({}))
-        setError((json as { error?: string }).error ?? 'Failed to deploy tool.')
+        toast((json as { error?: string }).error ?? 'Failed to deploy tool', 'error')
         return
       }
+      toast('Tool deployed successfully', 'success')
       if (onDeployed) onDeployed()
     } catch {
-      setError('Unable to connect to server. Please try again.')
+      toast('Unable to connect to server', 'error')
     } finally {
       setLoading(false)
     }
@@ -103,8 +104,6 @@ export function DeployToolForm({ fixedType, onDeployed }: DeployToolFormProps) {
         config={config}
         onChange={(key, value) => setConfig(prev => ({ ...prev, [key]: value }))}
       />
-
-      {error && <p className="text-xs font-mono text-brand-danger">{error}</p>}
 
       <button
         type="submit"

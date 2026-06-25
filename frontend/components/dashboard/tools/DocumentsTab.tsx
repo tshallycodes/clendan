@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useAuth } from '@clerk/nextjs'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useToast } from '@/components/Providers'
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
@@ -210,14 +211,13 @@ function UploadArea({
   onUploaded: (doc: ProcessedDocument) => void
 }) {
   const { getToken } = useAuth()
+  const { toast } = useToast()
   const [dragOver, setDragOver] = useState(false)
   const [uploading, setUploading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
   const [docType, setDocType] = useState<DocumentType>('invoice')
   const inputRef = useRef<HTMLInputElement>(null)
 
   async function uploadFile(file: File) {
-    setError(null)
     setUploading(true)
     try {
       const token = await getToken()
@@ -229,9 +229,10 @@ function UploadArea({
       )
       const json = await res.json()
       if (!res.ok) {
-        setError(json.detail ?? 'Upload failed')
+        toast(json.detail ?? 'Upload failed', 'error')
         return
       }
+      toast('Document uploaded — processing started', 'success')
       onUploaded({
         id: json.data.document_id,
         document_type: docType,
@@ -251,7 +252,7 @@ function UploadArea({
         created_at: new Date().toISOString(),
       })
     } catch {
-      setError('Network error — please try again')
+      toast('Network error — please try again', 'error')
     } finally {
       setUploading(false)
     }
@@ -318,9 +319,6 @@ function UploadArea({
         )}
       </div>
 
-      {error && (
-        <p className="text-[10px] font-mono text-[#ff4d6d]">{error}</p>
-      )}
     </div>
   )
 }
