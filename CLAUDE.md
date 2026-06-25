@@ -444,6 +444,25 @@ Clendan is sharp-edged — infrastructure product aesthetic. Default: `sm`. Max:
 
 **Tool Card:** `bg-brand-surface border border-brand-border`. Active: `border-l-[3px] border-l-[#00C853]`. Approval-required: `border-l-[3px] border-l-[#00a8cc]`. Blocked: `border-l-[3px] border-l-[#ff4d6d]`. Inactive: no accent border.
 
+**Checkbox (Circular):** Never use native `<input type="checkbox">`. Always use a custom `<button>` with a circular indicator. Checked: `bg-[#00C853] border-[#00C853]` with SVG tick. Unchecked: `bg-brand-bg border-brand-border`. Group rows in a `divide-y divide-brand-border` container.
+
+```tsx
+<button type="button" onClick={...} className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-brand-elevated transition-colors text-left">
+  <span className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center shrink-0 transition-colors ${
+    checked ? 'bg-[#00C853] border-[#00C853]' : 'bg-brand-bg border-brand-border'
+  }`}>
+    {checked && (
+      <svg width="8" height="6" viewBox="0 0 8 6" fill="none">
+        <path d="M1 3L3 5L7 1" stroke="black" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+      </svg>
+    )}
+  </span>
+  <span className="text-xs font-mono text-brand-text">{label}</span>
+</button>
+```
+
+**Multiselect Config Field (`ToolConfigFields`):** For tool config keys that accept multiple values from a fixed list. Field definition: `type: 'multiselect'`, `options: string[]`, `default: []`. Value stored as `string[]` in `config_json`. Renders as a list of circular checkbox buttons in a `space-y-1` wrapper. Use for any config that previously would have been a `select` with a "none" option — replace "none" with an empty array default instead.
+
 ### Motion Rules
 
 - Every execution status change animates — no instant state jumps

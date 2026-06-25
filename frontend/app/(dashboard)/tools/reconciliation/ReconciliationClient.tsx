@@ -45,12 +45,8 @@ interface OverviewProps {
   runs: ReconciliationRun[]
   runsLoading: boolean
   selectedId: string | null
-  bankSources: string[]
-  accountingSources: string[]
-  selectedSources: string[]
   onPeriodStartChange: (v: string) => void
   onPeriodEndChange: (v: string) => void
-  onSourcesChange: (sources: string[]) => void
   onRun: () => void
   onSelectRun: (run: ReconciliationRun) => void
 }
@@ -58,8 +54,7 @@ interface OverviewProps {
 function OverviewTab({
   periodStart, periodEnd, toolId, running, runError,
   runs, runsLoading, selectedId,
-  bankSources, accountingSources, selectedSources,
-  onPeriodStartChange, onPeriodEndChange, onSourcesChange, onRun, onSelectRun,
+  onPeriodStartChange, onPeriodEndChange, onRun, onSelectRun,
 }: OverviewProps) {
   return (
     <>
@@ -68,12 +63,8 @@ function OverviewTab({
         periodEnd={periodEnd}
         toolReady={!!toolId}
         running={running}
-        bankSources={bankSources}
-        accountingSources={accountingSources}
-        selectedSources={selectedSources}
         onPeriodStartChange={onPeriodStartChange}
         onPeriodEndChange={onPeriodEndChange}
-        onSourcesChange={onSourcesChange}
         onRun={onRun}
       />
       {runError && (
@@ -147,9 +138,6 @@ export function ReconciliationClient() {
   const [modalOpen, setModalOpen] = useState(false)
   const [polling, setPolling] = useState(false)
   const [runError, setRunError] = useState<string | null>(null)
-  const [bankSources, setBankSources] = useState<string[]>([])
-  const [accountingSources, setAccountingSources] = useState<string[]>([])
-  const [selectedSources, setSelectedSources] = useState<string[]>([])
   const pollRunCountRef = useRef(0)
 
   const fetchDeployed = useCallback(async () => {
@@ -216,26 +204,12 @@ export function ReconciliationClient() {
   useEffect(() => {
     async function init() {
       const token = await getToken()
-      const [toolsRes, intRes] = await Promise.all([
-        fetch(`${API}/v1/tools`, { headers: { Authorization: `Bearer ${token}` } }),
-        fetch(`${API}/v1/reconciliation/integrations`, { headers: { Authorization: `Bearer ${token}` } }),
-      ])
-      let deployedTool: Tool | null = null
+      const toolsRes = await fetch(`${API}/v1/tools`, { headers: { Authorization: `Bearer ${token}` } })
       if (toolsRes.ok) {
         const toolsJson = await toolsRes.json()
         const tools: Tool[] = toolsJson.data?.tools ?? toolsJson.data ?? []
-        deployedTool = tools.find((w) => w.type === 'reconciliation') ?? null
+        const deployedTool = tools.find((w) => w.type === 'reconciliation') ?? null
         if (deployedTool) setDeployed(deployedTool)
-      }
-      if (intRes.ok) {
-        const intJson = await intRes.json()
-        const bank: string[] = intJson.data?.bank_sources ?? []
-        const acct: string[] = intJson.data?.accounting_sources ?? []
-        setBankSources(bank)
-        setAccountingSources(acct)
-        const savedSources = (deployedTool?.config_json as Record<string, unknown> | null)?.integration_sources
-        const defaultAcct = Array.isArray(savedSources) ? (savedSources as string[]) : acct
-        setSelectedSources([...bank, ...defaultAcct])
       }
       setRunsLoading(true)
       const list = await fetchRuns()
@@ -289,12 +263,15 @@ export function ReconciliationClient() {
     setRunning(true)
     try {
       const token = await getToken()
-      const configAccountIds = (deployed.config_json as Record<string, unknown> | null)?.account_ids
+      const cfg = (deployed.config_json as Record<string, unknown> | null)
+      const configAccountIds = cfg?.account_ids
       const runAccountIds = Array.isArray(configAccountIds) && configAccountIds.length > 0 ? configAccountIds as string[] : null
+      const configIntegrationSources = cfg?.integration_sources
+      const runIntegrationSources = Array.isArray(configIntegrationSources) && configIntegrationSources.length > 0 ? configIntegrationSources as string[] : null
       const res = await fetch(`${API}/v1/reconciliation/run`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ period_start: periodStart, period_end: periodEnd, tool_id: deployed.id, account_ids: runAccountIds, integration_sources: selectedSources.length > 0 ? selectedSources : null }),
+        body: JSON.stringify({ period_start: periodStart, period_end: periodEnd, tool_id: deployed.id, account_ids: runAccountIds, integration_sources: runIntegrationSources }),
       })
       if (!res.ok) {
         const json = await res.json().catch(() => null)
@@ -410,8 +387,6 @@ export function ReconciliationClient() {
                 periodStart={periodStart} periodEnd={periodEnd}
                 toolId={deployed?.id ?? null} running={running} runError={runError}
                 runs={runs} runsLoading={runsLoading} selectedId={selectedRun?.id ?? null}
-                bankSources={bankSources} accountingSources={accountingSources}
-                selectedSources={selectedSources} onSourcesChange={setSelectedSources}
                 onPeriodStartChange={setPeriodStart} onPeriodEndChange={setPeriodEnd}
                 onRun={handleRun}
                 onSelectRun={(r) => { setSelectedRun(r); fetchItems(r.id); setModalOpen(true) }}
