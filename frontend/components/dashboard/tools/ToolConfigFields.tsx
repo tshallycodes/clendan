@@ -13,11 +13,11 @@ const labelClass = 'text-[10px] font-mono text-brand-muted uppercase tracking-wi
 interface FieldDef {
   key: string
   label: string
-  type: 'number' | 'select' | 'text' | 'boolean'
+  type: 'number' | 'select' | 'text' | 'boolean' | 'multiselect'
   description?: string
   unit?: string
   placeholder?: string
-  default: number | string | boolean
+  default: number | string | boolean | string[]
   step?: number
   min?: number
   max?: number
@@ -79,9 +79,9 @@ const WORKER_FIELDS: Record<string, FieldDef[]> = {
       description: 'Receipts under this amount are approved automatically without a human reviewer.' },
     { key: 'contract_extraction_enabled', type: 'boolean', label: 'Contract extraction enabled', default: true,
       description: 'When on, the tool also extracts key clauses from contracts — payment terms, renewal dates, and obligations — alongside invoices.' },
-    { key: 'accounting_integration', type: 'select', label: 'Write approved invoices to', default: 'none',
-      options: ['none', 'quickbooks', 'xero', 'freshbooks'],
-      description: 'When an invoice is auto-approved, write it as a bill to this accounting integration. Receipts and contracts are never written automatically.' },
+    { key: 'accounting_integrations', type: 'multiselect', label: 'Write approved invoices to', default: [],
+      options: ['quickbooks', 'xero', 'freshbooks'],
+      description: 'When an invoice is auto-approved, write it as a bill to the selected integrations. Receipts and contracts are never written automatically.' },
   ],
   ai_accountant: [
     { key: 'auto_categorise_confidence_min', type: 'number', label: 'Auto-categorise min confidence', unit: '0–1', step: 0.01, min: 0, max: 1, default: 0.90,
@@ -355,6 +355,58 @@ export function ToolConfigFields({ toolType, config, onChange }: ToolConfigField
                   label: opt.replace(/[-_]/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
                 }))}
               />
+              {hintOpen && field.description && (
+                <p className="text-[10px] font-mono text-brand-secondary bg-brand-elevated border border-brand-border rounded-sm px-2.5 py-2 leading-relaxed">
+                  {field.description}
+                </p>
+              )}
+            </div>
+          )
+        }
+
+        if (field.type === 'multiselect') {
+          const selected = (Array.isArray(value) ? value : []) as string[]
+          return (
+            <div key={field.key} className="space-y-1.5">
+              <label className={`${labelClass} flex items-center`}>
+                {field.label}
+                {field.description && (
+                  <InfoIcon fieldKey={field.key} open={hintOpen} onToggle={toggleHint} />
+                )}
+              </label>
+              <div className="space-y-1">
+                {field.options!.map(opt => {
+                  const isChecked = selected.includes(opt)
+                  return (
+                    <button
+                      key={opt}
+                      type="button"
+                      onClick={() => {
+                        const next = isChecked
+                          ? selected.filter(v => v !== opt)
+                          : [...selected, opt]
+                        onChange(field.key, next)
+                      }}
+                      className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-sm border text-left transition-colors ${
+                        isChecked ? 'bg-brand-elevated border-brand-border' : 'bg-brand-bg border-brand-border hover:bg-brand-elevated'
+                      }`}
+                    >
+                      <span className={`w-3.5 h-3.5 rounded-sm border flex items-center justify-center shrink-0 transition-colors ${
+                        isChecked ? 'bg-[#00C853] border-[#00C853]' : 'bg-brand-bg border-brand-border'
+                      }`}>
+                        {isChecked && (
+                          <svg width="8" height="6" viewBox="0 0 8 6" fill="none">
+                            <path d="M1 3L3 5L7 1" stroke="black" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                          </svg>
+                        )}
+                      </span>
+                      <span className="text-[11px] font-mono text-brand-text">
+                        {opt.replace(/[-_]/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
+                      </span>
+                    </button>
+                  )
+                })}
+              </div>
               {hintOpen && field.description && (
                 <p className="text-[10px] font-mono text-brand-secondary bg-brand-elevated border border-brand-border rounded-sm px-2.5 py-2 leading-relaxed">
                   {field.description}

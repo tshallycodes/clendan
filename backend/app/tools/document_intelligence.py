@@ -46,7 +46,7 @@ class _ToolPolicy(BaseModel):
     duplicate_receipt_window_days: int = 365
     auto_approve_receipt_below: int = 1_000
     contract_extraction_enabled: bool = True
-    accounting_integration: str = "none"
+    accounting_integrations: list[str] = []
 
 
 def _parse_policy(raw: dict[str, Any]) -> _ToolPolicy:
@@ -174,37 +174,44 @@ async def _check_duplicate_invoice(tenant_id: str, invoice_number: str, window_d
 async def _write_to_accounting(
     tenant_id: str,
     execution_id: str,
-    accounting_integration: str,
+    accounting_integrations: list[str],
     document_type: str,
     extracted: dict[str, Any],
 ) -> str:
-    """Write auto-approved invoice to the configured accounting integration. Returns write status."""
-    if accounting_integration == "none" or document_type != "invoice":
+    """Write auto-approved invoice to each selected accounting integration. Returns aggregate write status."""
+    if not accounting_integrations or document_type != "invoice":
         return "skipped"
 
-    if accounting_integration == "quickbooks":
-        try:
-            from app.integrations.quickbooks.write import write_bill_to_quickbooks
-            await write_bill_to_quickbooks(
-                tenant_id=tenant_id,
-                execution_id=execution_id,
-                vendor=extracted.get("vendor", "unknown"),
-                invoice_number=extracted.get("invoice_number", "unknown"),
-                amount_minor=int(extracted.get("amount_minor", 0)),
-                currency=extracted.get("currency", "GBP"),
-                due_date=extracted.get("due_date"),
-                line_items=[],
+    statuses: list[str] = []
+    for integration in accounting_integrations:
+        if integration == "quickbooks":
+            try:
+                from app.integrations.quickbooks.write import write_bill_to_quickbooks
+                await write_bill_to_quickbooks(
+                    tenant_id=tenant_id,
+                    execution_id=execution_id,
+                    vendor=extracted.get("vendor", "unknown"),
+                    invoice_number=extracted.get("invoice_number", "unknown"),
+                    amount_minor=int(extracted.get("amount_minor", 0)),
+                    currency=extracted.get("currency", "GBP"),
+                    due_date=extracted.get("due_date"),
+                    line_items=[],
+                )
+                statuses.append("written")
+            except Exception as exc:
+                _logger.warning("doc_intel_qb_write_failed", extra={"tenant_id": tenant_id, "error": str(exc)})
+                statuses.append("failed")
+        else:
+            _logger.info(
+                "doc_intel_accounting_write_skipped",
+                extra={"integration": integration, "reason": "write_not_implemented"},
             )
-            return "written"
-        except Exception as exc:
-            _logger.warning("doc_intel_qb_write_failed", extra={"tenant_id": tenant_id, "error": str(exc)})
-            return "failed"
+            statuses.append("skipped")
 
-    # xero and freshbooks write support coming soon
-    _logger.info(
-        "doc_intel_accounting_write_skipped",
-        extra={"integration": accounting_integration, "reason": "write_not_implemented"},
-    )
+    if "written" in statuses:
+        return "written"
+    if "failed" in statuses:
+        return "failed"
     return "skipped"
 
 
@@ -447,7 +454,7 @@ async def execute_document_intelligence_tool(
         accounting_status = await _write_to_accounting(
             tenant_id=tenant_id,
             execution_id=execution_id,
-            accounting_integration=policy.accounting_integration,
+            accounting_integrations=policy.accounting_integrations,
             document_type=document_type,
             extracted=result.get("extracted", {}),
         )
