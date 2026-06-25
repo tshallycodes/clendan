@@ -118,7 +118,7 @@ _CLAUDE_SYSTEM_PROMPT = (
 )
 
 
-_BATCH_SIZE = 40
+_BATCH_SIZE = 20
 _AUTO_OK_THRESHOLD_MINOR = 1500   # < £15: always auto-ok
 _MAX_CLAUDE_TXN_ITEMS = 40        # cap: only top-N by amount go to Claude, rest auto-ok
 
@@ -304,7 +304,7 @@ async def _call_claude_batch(
         try:
             message = await client.messages.create(
                 model="claude-haiku-4-5-20251001",
-                max_tokens=2048,
+                max_tokens=4096,
                 messages=[{"role": "user", "content": prompt}],
             )
             if message.stop_reason == "max_tokens":

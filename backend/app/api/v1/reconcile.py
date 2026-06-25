@@ -196,7 +196,7 @@ async def list_reconciliation_accounts(current_user: RequireOrgAuth) -> dict:
 
 @router.get("/reconciliation/integrations")
 async def list_reconciliation_integrations(current_user: RequireOrgAuth) -> dict:
-    """Returns distinct integration sources that have data for this tenant."""
+    """Returns integration sources that are genuinely connected for this tenant."""
     db = get_db()
     tenant_id = current_user.tenant_id
 
@@ -205,7 +205,7 @@ async def list_reconciliation_integrations(current_user: RequireOrgAuth) -> dict
     accounts, connected = await asyncio.gather(
         db.bankaccount.find_many(where={"tenant_id": tenant_id}),
         db.integration.find_many(
-            where={"tenant_id": tenant_id, "status": {"not": "disconnected"}}
+            where={"tenant_id": tenant_id, "status": {"in": ["connected", "syncing"]}}
         ),
     )
 

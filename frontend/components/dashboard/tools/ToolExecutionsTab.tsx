@@ -1,6 +1,6 @@
 'use client'
 
-import { Fragment, useEffect, useState } from 'react'
+import { Fragment, useEffect, useRef, useState } from 'react'
 import { useAuth } from '@clerk/nextjs'
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
@@ -71,10 +71,12 @@ export function ToolExecutionsTab({ toolId }: { toolId: string | null }) {
   const [loadingMore, setLoadingMore] = useState(false)
   const [filter, setFilter] = useState<Filter>('all')
   const [expanded, setExpanded] = useState<string | null>(null)
+  // Tracks how many rows the user has loaded so silent polls refresh the full visible window
+  const loadedLimitRef = useRef(PAGE_SIZE)
 
-  async function fetchPage(offset: number, silent = false) {
+  async function fetchPage(offset: number, limit = PAGE_SIZE) {
     const token = await getToken()
-    const params = new URLSearchParams({ tool_id: toolId!, limit: String(PAGE_SIZE), offset: String(offset) })
+    const params = new URLSearchParams({ tool_id: toolId!, limit: String(limit), offset: String(offset) })
     if (filter !== 'all') params.set('status', filter)
     const res = await fetch(`${API}/v1/dashboard/executions?${params}`, {
       headers: { Authorization: `Bearer ${token}` },
@@ -86,20 +88,21 @@ export function ToolExecutionsTab({ toolId }: { toolId: string | null }) {
 
   useEffect(() => {
     if (!toolId) return
+    loadedLimitRef.current = PAGE_SIZE
     let pollId: ReturnType<typeof setTimeout> | null = null
 
-    async function load() {
-      setLoading(true)
+    async function load(silent = false) {
+      if (!silent) setLoading(true)
       try {
-        const data = await fetchPage(0)
+        const data = await fetchPage(0, loadedLimitRef.current)
         if (data) {
           setExecutions(data.executions)
           setTotal(data.total)
           const hasActive = data.executions.some(e => e.status === 'running' || e.status === 'queued')
-          if (hasActive) pollId = setTimeout(load, 3000)
+          if (hasActive) pollId = setTimeout(() => load(true), 3000)
         }
       } finally {
-        setLoading(false)
+        if (!silent) setLoading(false)
       }
     }
     load()
@@ -111,8 +114,10 @@ export function ToolExecutionsTab({ toolId }: { toolId: string | null }) {
     try {
       const data = await fetchPage(executions.length)
       if (data) {
-        setExecutions(prev => [...prev, ...data.executions])
+        const merged = [...executions, ...data.executions]
+        setExecutions(merged)
         setTotal(data.total)
+        loadedLimitRef.current = merged.length
       }
     } finally {
       setLoadingMore(false)
