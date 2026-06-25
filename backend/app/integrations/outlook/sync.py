@@ -143,21 +143,40 @@ async def sync_outlook_connection(ctx: dict, integration_id: str, tenant_id: str
             from app.orchestrator.events import enqueue_orchestrator_event
             for message in messages:
                 message_id = message.get("id", "")
-                if message_id:
-                    await enqueue_orchestrator_event(
-                        tenant_id=tenant_id,
-                        event_type="receipt_received",
-                        payload={
-                            "source": "outlook",
-                            "integration_id": integration_id,
-                            "message_id": message_id,
-                        },
-                        idempotency_key=f"outlook:receipt:{message_id}",
-                        db=db,
-                    )
+                if not message_id:
+                    continue
+                subject = (message.get("subject") or "").lower()
+                _doc_type = (
+                    "receipt" if "receipt" in subject else
+                    "contract" if "contract" in subject or "agreement" in subject else
+                    "invoice"
+                )
+                await enqueue_orchestrator_event(
+                    tenant_id=tenant_id,
+                    event_type="receipt_received",
+                    payload={
+                        "source": "outlook",
+                        "integration_id": integration_id,
+                        "message_id": message_id,
+                    },
+                    idempotency_key=f"outlook:receipt:{message_id}",
+                    db=db,
+                )
+                await enqueue_orchestrator_event(
+                    tenant_id=tenant_id,
+                    event_type="document_received",
+                    payload={
+                        "source": "outlook",
+                        "integration_id": integration_id,
+                        "message_id": message_id,
+                        "document_type": _doc_type,
+                    },
+                    idempotency_key=f"outlook:document:{message_id}",
+                    db=db,
+                )
         except Exception as exc:
             logger.error(
-                "outlook_receipt_event_failed integration_id=%s: %s",
+                "outlook_document_event_failed integration_id=%s: %s",
                 integration_id, type(exc).__name__,
             )
 

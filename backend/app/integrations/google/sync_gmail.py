@@ -71,7 +71,7 @@ async def sync_gmail_connection(ctx: dict, integration_id: str, tenant_id: str) 
     sync_status = "success"
     message_count = 0
     pdf_count = 0
-    pdf_attachments: list[tuple[str, str]] = []  # (message_id, attachment_id)
+    pdf_attachments: list[tuple[str, str, str]] = []  # (message_id, attachment_id, filename)
 
     try:
         # Set up Gmail watch if pubsub topic is configured
@@ -107,7 +107,7 @@ async def sync_gmail_connection(ctx: dict, integration_id: str, tenant_id: str) 
                         pdf_count += 1
                         attachment_id = (part.get("body") or {}).get("attachmentId", "")
                         if attachment_id:
-                            pdf_attachments.append((stub["id"], attachment_id))
+                            pdf_attachments.append((stub["id"], attachment_id, filename))
             except Exception as exc:
                 logger.warning(
                     "gmail_message_processing_failed message_id=%s: %s",
@@ -147,7 +147,13 @@ async def sync_gmail_connection(ctx: dict, integration_id: str, tenant_id: str) 
         if initial_status == "connected" and pdf_attachments:
             try:
                 from app.orchestrator.events import enqueue_orchestrator_event
-                for message_id, attachment_id in pdf_attachments:
+                for message_id, attachment_id, att_filename in pdf_attachments:
+                    name_lower = att_filename.lower()
+                    _doc_type = (
+                        "receipt" if "receipt" in name_lower else
+                        "contract" if "contract" in name_lower or "agreement" in name_lower else
+                        "invoice"
+                    )
                     await enqueue_orchestrator_event(
                         tenant_id=tenant_id,
                         event_type="receipt_received",
@@ -160,9 +166,23 @@ async def sync_gmail_connection(ctx: dict, integration_id: str, tenant_id: str) 
                         idempotency_key=f"gmail:receipt:{message_id}:{attachment_id}",
                         db=db,
                     )
+                    await enqueue_orchestrator_event(
+                        tenant_id=tenant_id,
+                        event_type="document_received",
+                        payload={
+                            "source": "gmail",
+                            "integration_id": integration_id,
+                            "message_id": message_id,
+                            "attachment_id": attachment_id,
+                            "document_type": _doc_type,
+                            "filename": att_filename,
+                        },
+                        idempotency_key=f"gmail:document:{message_id}:{attachment_id}",
+                        db=db,
+                    )
             except Exception as exc:
                 logger.error(
-                    "gmail_receipt_event_failed integration_id=%s: %s",
+                    "gmail_document_event_failed integration_id=%s: %s",
                     integration_id, type(exc).__name__,
                 )
         logger.info(

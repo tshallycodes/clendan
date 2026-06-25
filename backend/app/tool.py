@@ -287,30 +287,35 @@ async def run_orchestrator_job(
         elif event_type == "document_received":
             _tool_for_dispatch = await db.tool.find_unique(where={"id": tool_id})
             if _tool_for_dispatch and _tool_for_dispatch.type == "document_intelligence":
-                document_type = payload.get("document_type", "invoice")
                 raw_bytes = payload.get("file_bytes", b"")
                 if isinstance(raw_bytes, str):
-                    raw_bytes = base64.b64decode(raw_bytes)
-                content_type_val = payload.get("content_type", "application/pdf")
-                _policy_cfg = (
-                    _tool_for_dispatch.config_json
-                    if isinstance(_tool_for_dispatch.config_json, dict)
-                    else {}
-                )
-                pool = await get_queue_pool()
-                await pool.enqueue_job(
-                    "run_document_intelligence_job",
-                    execution_id=execution_id,
-                    tenant_id=tenant_id,
-                    tool_id=tool_id,
-                    document_type=document_type,
-                    file_bytes=raw_bytes,
-                    content_type=content_type_val,
-                    policy_config=_policy_cfg,
-                )
-                decision, confidence, reasoning = (
-                    "routed", 1.0, f"Routed {document_type} to Document Intelligence"
-                )
+                    raw_bytes = base64.b64decode(raw_bytes) if raw_bytes else b""
+                if raw_bytes:
+                    document_type = payload.get("document_type", "invoice")
+                    content_type_val = payload.get("content_type", "application/pdf")
+                    _policy_cfg = (
+                        _tool_for_dispatch.config_json
+                        if isinstance(_tool_for_dispatch.config_json, dict)
+                        else {}
+                    )
+                    pool = await get_queue_pool()
+                    await pool.enqueue_job(
+                        "run_document_intelligence_job",
+                        execution_id=execution_id,
+                        tenant_id=tenant_id,
+                        tool_id=tool_id,
+                        document_type=document_type,
+                        file_bytes=raw_bytes,
+                        content_type=content_type_val,
+                        policy_config=_policy_cfg,
+                    )
+                    decision, confidence, reasoning = (
+                        "routed", 1.0, f"Routed {document_type} to Document Intelligence"
+                    )
+                else:
+                    decision, confidence, reasoning = await _orchestrate_document_intelligence_received(
+                        payload, tenant_id, tool_id, execution_id
+                    )
             else:
                 document_type = payload.get("document_type", "invoice")
                 if document_type == "receipt":
@@ -734,6 +739,120 @@ async def _orchestrate_receipt_received(
         policy_config=policy_config,
     )
     return "routed", 1.0, f"Receipt fetched from {source} and queued for processing"
+
+
+async def _orchestrate_document_intelligence_received(
+    payload: dict, tenant_id: str, tool_id: str, execution_id: str
+) -> tuple[str, float, str]:
+    """Fetches document bytes from the source integration, creates a Document record,
+    and enqueues run_document_intelligence_job."""
+    from app.tools.document_intelligence import _ALLOWED_CONTENT_TYPES, _generate_thumbnail
+
+    source = payload.get("source", "")
+    integration_id = payload.get("integration_id", "")
+    document_type = payload.get("document_type", "invoice")
+    filename = payload.get("filename")
+
+    if not source or not integration_id:
+        return "blocked", 0.0, "Missing source or integration_id in document payload"
+
+    db = get_db()
+    integration = await db.integration.find_unique(where={"id": integration_id})
+    if not integration or integration.status != "connected":
+        return "blocked", 0.0, "Source integration not connected"
+    if integration.tenant_id != tenant_id:
+        return "blocked", 0.0, "Tenant mismatch on document source integration"
+
+    from app.integrations.encryption import decrypt_credentials
+    try:
+        creds = decrypt_credentials(integration.encrypted_credentials, tenant_id)
+    except Exception:
+        return "blocked", 0.0, "Failed to decrypt integration credentials"
+
+    access_token = creds.get("access_token", "")
+    if not access_token:
+        return "blocked", 0.0, "No access token in integration credentials"
+
+    file_bytes: bytes = b""
+    content_type = "application/pdf"
+
+    try:
+        if source == "gmail":
+            from app.integrations.google import client as google
+            message_id = payload.get("message_id", "")
+            attachment_id = payload.get("attachment_id", "")
+            if not message_id or not attachment_id:
+                return "blocked", 0.0, "Missing message_id or attachment_id for Gmail document"
+            file_bytes = await google.get_gmail_attachment_bytes(access_token, message_id, attachment_id)
+
+        elif source == "google_drive":
+            from app.integrations.google import client as google
+            file_id = payload.get("file_id", "")
+            if not file_id:
+                return "blocked", 0.0, "Missing file_id for Drive document"
+            file_bytes = await google.download_drive_file_bytes(access_token, file_id)
+
+        elif source == "outlook":
+            from app.integrations.outlook import client as outlook_client
+            message_id = payload.get("message_id", "")
+            if not message_id:
+                return "blocked", 0.0, "Missing message_id for Outlook document"
+            attachments = await outlook_client.get_message_attachments(access_token, message_id)
+            pdf_attachment = next(
+                (a for a in attachments if "pdf" in a.get("contentType", "").lower()
+                 or a.get("name", "").lower().endswith(".pdf")),
+                None,
+            )
+            if not pdf_attachment:
+                return "blocked", 0.0, "No PDF attachment found in Outlook message"
+            file_bytes, content_type = await outlook_client.get_attachment_bytes(
+                access_token, message_id, pdf_attachment["id"]
+            )
+            if not filename:
+                filename = pdf_attachment.get("name")
+
+        else:
+            return "blocked", 0.0, f"Unknown document source: {source}"
+
+    except Exception as exc:
+        return "blocked", 0.0, f"Failed to fetch document from {source}: {type(exc).__name__}"
+
+    if not file_bytes:
+        return "blocked", 0.0, "Empty document file returned from source"
+
+    if content_type not in _ALLOWED_CONTENT_TYPES:
+        content_type = "application/pdf"
+
+    tool = await db.tool.find_unique(where={"id": tool_id})
+    policy_config = tool.config_json if tool and isinstance(tool.config_json, dict) else {}
+
+    thumbnail_b64 = _generate_thumbnail(file_bytes, content_type)
+
+    doc_record = await db.document.create(data={
+        "tenant_id": tenant_id,
+        "tool_id": tool_id,
+        "execution_id": execution_id,
+        "document_type": document_type,
+        "filename": filename,
+        "content_type": content_type,
+        "file_size_bytes": len(file_bytes),
+        "status": "processing",
+        "thumbnail_b64": thumbnail_b64,
+    })
+
+    pool = await get_queue_pool()
+    await pool.enqueue_job(
+        "run_document_intelligence_job",
+        execution_id=execution_id,
+        tenant_id=tenant_id,
+        tool_id=tool_id,
+        document_type=document_type,
+        file_bytes=file_bytes,
+        content_type=content_type,
+        policy_config=policy_config,
+        document_id=doc_record.id,
+    )
+    return "routed", 1.0, f"Document fetched from {source} and queued for intelligence processing"
 
 
 async def run_revenue_recognition_monthly(ctx: dict) -> None:

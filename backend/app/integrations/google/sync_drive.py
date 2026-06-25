@@ -98,21 +98,42 @@ async def sync_drive_connection(ctx: dict, integration_id: str, tenant_id: str) 
                 from app.orchestrator.events import enqueue_orchestrator_event
                 for f in files:
                     file_id = f.get("id", "")
-                    if file_id:
-                        await enqueue_orchestrator_event(
-                            tenant_id=tenant_id,
-                            event_type="receipt_received",
-                            payload={
-                                "source": "google_drive",
-                                "integration_id": integration_id,
-                                "file_id": file_id,
-                            },
-                            idempotency_key=f"drive:receipt:{file_id}",
-                            db=db,
-                        )
+                    if not file_id:
+                        continue
+                    file_name = f.get("name", "")
+                    name_lower = file_name.lower()
+                    _doc_type = (
+                        "receipt" if "receipt" in name_lower else
+                        "contract" if "contract" in name_lower or "agreement" in name_lower else
+                        "invoice"
+                    )
+                    await enqueue_orchestrator_event(
+                        tenant_id=tenant_id,
+                        event_type="receipt_received",
+                        payload={
+                            "source": "google_drive",
+                            "integration_id": integration_id,
+                            "file_id": file_id,
+                        },
+                        idempotency_key=f"drive:receipt:{file_id}",
+                        db=db,
+                    )
+                    await enqueue_orchestrator_event(
+                        tenant_id=tenant_id,
+                        event_type="document_received",
+                        payload={
+                            "source": "google_drive",
+                            "integration_id": integration_id,
+                            "file_id": file_id,
+                            "document_type": _doc_type,
+                            "filename": file_name,
+                        },
+                        idempotency_key=f"drive:document:{file_id}",
+                        db=db,
+                    )
             except Exception as exc:
                 logger.error(
-                    "drive_receipt_event_failed integration_id=%s: %s",
+                    "drive_document_event_failed integration_id=%s: %s",
                     integration_id, type(exc).__name__,
                 )
         logger.info("drive_sync_ok tenant=%s files=%d", tenant_id, file_count)
