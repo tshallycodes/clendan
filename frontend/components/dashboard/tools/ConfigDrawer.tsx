@@ -178,26 +178,32 @@ export function ConfigDrawer({ tool, toolType, onClose, onSaved }: Props) {
                     {accounts.map((a) => {
                       const checked = selectedAccountIds.length === 0 || selectedAccountIds.includes(a.id)
                       return (
-                        <label key={a.id} className="flex items-center gap-3 px-3 py-2.5 cursor-pointer hover:bg-brand-elevated transition-colors">
-                          <input
-                            type="checkbox"
-                            checked={checked}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                const next = [...selectedAccountIds, a.id]
-                                setSelectedAccountIds(next.length === accounts.length ? [] : next)
-                              } else {
-                                const next = (selectedAccountIds.length === 0 ? accounts.map(x => x.id) : selectedAccountIds).filter(id => id !== a.id)
-                                setSelectedAccountIds(next)
-                              }
-                            }}
-                            className="accent-[#00C853] w-3.5 h-3.5 shrink-0"
-                          />
+                        <button
+                          key={a.id}
+                          type="button"
+                          onClick={() => {
+                            if (!checked) {
+                              const next = [...selectedAccountIds, a.id]
+                              setSelectedAccountIds(next.length === accounts.length ? [] : next)
+                            } else {
+                              const next = (selectedAccountIds.length === 0 ? accounts.map(x => x.id) : selectedAccountIds).filter(id => id !== a.id)
+                              setSelectedAccountIds(next)
+                            }
+                          }}
+                          className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-brand-elevated transition-colors text-left"
+                        >
+                          <span className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center shrink-0 transition-colors ${checked ? 'bg-[#00C853] border-[#00C853]' : 'bg-brand-bg border-brand-border'}`}>
+                            {checked && (
+                              <svg width="8" height="6" viewBox="0 0 8 6" fill="none">
+                                <path d="M1 3L3 5L7 1" stroke="black" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                              </svg>
+                            )}
+                          </span>
                           <div className="min-w-0">
                             <p className="text-xs font-mono text-brand-text truncate">{a.name}</p>
                             <p className="text-[10px] font-mono text-brand-muted">{a.source}{a.subtype ? ` · ${a.subtype}` : ''}</p>
                           </div>
-                        </label>
+                        </button>
                       )
                     })}
                   </div>
@@ -219,23 +225,29 @@ export function ConfigDrawer({ tool, toolType, onClose, onSaved }: Props) {
                 {accountingSources.map((source) => {
                   const checked = selectedIntegrationSources.length === 0 || selectedIntegrationSources.includes(source)
                   return (
-                    <label key={source} className="flex items-center gap-3 px-3 py-2.5 cursor-pointer hover:bg-brand-elevated transition-colors">
-                      <input
-                        type="checkbox"
-                        checked={checked}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            const next = [...selectedIntegrationSources, source]
-                            setSelectedIntegrationSources(next.length === accountingSources.length ? [] : next)
-                          } else {
-                            const next = (selectedIntegrationSources.length === 0 ? accountingSources : selectedIntegrationSources).filter(s => s !== source)
-                            setSelectedIntegrationSources(next)
-                          }
-                        }}
-                        className="accent-[#00C853] w-3.5 h-3.5 shrink-0"
-                      />
+                    <button
+                      key={source}
+                      type="button"
+                      onClick={() => {
+                        if (!checked) {
+                          const next = [...selectedIntegrationSources, source]
+                          setSelectedIntegrationSources(next.length === accountingSources.length ? [] : next)
+                        } else {
+                          const next = (selectedIntegrationSources.length === 0 ? accountingSources : selectedIntegrationSources).filter(s => s !== source)
+                          setSelectedIntegrationSources(next)
+                        }
+                      }}
+                      className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-brand-elevated transition-colors text-left"
+                    >
+                      <span className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center shrink-0 transition-colors ${checked ? 'bg-[#00C853] border-[#00C853]' : 'bg-brand-bg border-brand-border'}`}>
+                        {checked && (
+                          <svg width="8" height="6" viewBox="0 0 8 6" fill="none">
+                            <path d="M1 3L3 5L7 1" stroke="black" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                          </svg>
+                        )}
+                      </span>
                       <p className="text-xs font-mono text-brand-text">{SOURCE_NAMES[source] ?? source}</p>
-                    </label>
+                    </button>
                   )
                 })}
               </div>
