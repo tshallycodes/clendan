@@ -40,7 +40,7 @@ const DEFAULT_PAYLOADS: Record<ToolName, object> = {
   fraud_detection:       { transaction_id: 'txn_001', amount_minor: 99900, currency: 'GBP', merchant: 'Unknown Vendor', country: 'NG' },
   treasury:              { account_id: 'acc_001', balance_minor: 5000000, currency: 'GBP', forecast_days: 30 },
   compliance:            { entity_id: 'ent_001', entity_type: 'vendor', jurisdiction: 'GB' },
-  reconciliation:        { period_start: '2026-05-01', period_end: '2026-05-31' },
+  reconciliation:        { period_start: '2026-05-01', period_end: '2026-05-31', policy: { unmatched_pct_threshold: 0.2, match_date_window_days: 30, match_amount_tolerance_pct: 0.01, include_reconciled: false } },
   revenue_recognition:   { contract_id: 'con_001', amount_minor: 1200000, currency: 'GBP', start_date: '2026-01-01', end_date: '2026-12-31' },
   ai_accountant:         { query: 'Summarise outstanding liabilities for May 2026', context: 'month-end review' },
   credit_underwriting:   { applicant_id: 'app_001', requested_amount_minor: 5000000, currency: 'GBP', term_months: 12 },

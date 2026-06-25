@@ -181,6 +181,7 @@ async def run_orchestrator_job(
                 period_days=payload.get("period_days", 30),
                 period_start=_parse_dt(payload.get("period_start")),
                 period_end=_parse_dt(payload.get("period_end")),
+                policy_overrides=payload.get("policy") if isinstance(payload.get("policy"), dict) else None,
             )
             # _execute_reconciliation writes its own audit log and ReconciliationRun record.
             # Apply autonomy override then update execution directly — no second queue hop.

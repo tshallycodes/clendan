@@ -83,9 +83,12 @@ class _ClaudeItemResult(BaseModel):
 
 
 
-def _parse_policy(config_json: dict) -> _ToolPolicy:
+def _parse_policy(config_json: dict, overrides: dict | None = None) -> _ToolPolicy:
     raw = config_json.get("policy", config_json)
-    return _ToolPolicy.model_validate({k: v for k, v in raw.items() if k in _ToolPolicy.model_fields})
+    merged = {k: v for k, v in raw.items() if k in _ToolPolicy.model_fields}
+    if overrides:
+        merged.update({k: v for k, v in overrides.items() if k in _ToolPolicy.model_fields})
+    return _ToolPolicy.model_validate(merged)
 
 
 def _amounts_match(txn_amount: int, outstanding_cents: int, tolerance_pct: float) -> bool:
@@ -282,6 +285,7 @@ async def _execute_reconciliation(
     period_end: datetime | None = None,
     account_ids: list[str] | None = None,
     triggered_by_email: str | None = None,
+    policy_overrides: dict | None = None,
 ) -> dict:
     settings_obj = get_settings()
     db = get_db()
@@ -294,7 +298,10 @@ async def _execute_reconciliation(
     tool = await db.tool.find_first(where={"id": tool_id, "tenant_id": tenant_id})
     if tool is None:
         raise ValueError(f"Tool {tool_id} not found for tenant {tenant_id}")
-    policy = _parse_policy(tool.config_json if isinstance(tool.config_json, dict) else {})
+    policy = _parse_policy(
+        tool.config_json if isinstance(tool.config_json, dict) else {},
+        overrides=policy_overrides,
+    )
 
     txn_statuses = ["pending", "unprocessed", "categorised"]
     if policy.include_reconciled:
