@@ -269,6 +269,7 @@ interface ToolConfigFieldsProps {
   toolType: string
   config: Record<string, unknown>
   onChange: (key: string, value: unknown) => void
+  dynamicOptions?: Record<string, string[]>
 }
 
 function InfoIcon({ fieldKey, open, onToggle }: {
@@ -290,7 +291,7 @@ function InfoIcon({ fieldKey, open, onToggle }: {
   )
 }
 
-export function ToolConfigFields({ toolType, config, onChange }: ToolConfigFieldsProps) {
+export function ToolConfigFields({ toolType, config, onChange, dynamicOptions }: ToolConfigFieldsProps) {
   const fields = WORKER_FIELDS[toolType] ?? []
   const [openHint, setOpenHint] = useState<string | null>(null)
   const { currency } = useCurrency()
@@ -366,6 +367,7 @@ export function ToolConfigFields({ toolType, config, onChange }: ToolConfigField
 
         if (field.type === 'multiselect') {
           const selected = (Array.isArray(value) ? value : []) as string[]
+          const opts = dynamicOptions?.[field.key] ?? field.options ?? []
           return (
             <div key={field.key} className="space-y-1.5">
               <label className={`${labelClass} flex items-center`}>
@@ -374,8 +376,13 @@ export function ToolConfigFields({ toolType, config, onChange }: ToolConfigField
                   <InfoIcon fieldKey={field.key} open={hintOpen} onToggle={toggleHint} />
                 )}
               </label>
+              {opts.length === 0 ? (
+                <p className="text-[10px] font-mono text-brand-muted bg-brand-bg border border-brand-border rounded-sm px-3 py-2">
+                  No connected integrations. Connect one via Integrations first.
+                </p>
+              ) : (
               <div className="space-y-1">
-                {field.options!.map(opt => {
+                {opts.map(opt => {
                   const isChecked = selected.includes(opt)
                   return (
                     <button
@@ -407,6 +414,7 @@ export function ToolConfigFields({ toolType, config, onChange }: ToolConfigField
                   )
                 })}
               </div>
+              )}
               {hintOpen && field.description && (
                 <p className="text-[10px] font-mono text-brand-secondary bg-brand-elevated border border-brand-border rounded-sm px-2.5 py-2 leading-relaxed">
                   {field.description}
