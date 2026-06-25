@@ -490,11 +490,12 @@ async def run_orchestrator_job(
         logger.error(
             "orchestrator_job_failed",
             extra={"execution_id": execution_id, "event_type": event_type, "error": str(exc)},
+            exc_info=True,
         )
         try:
             await db.execution.update(
                 where={"id": execution_id},
-                data={"status": "failed", "decision": "failed"},
+                data={"status": "failed", "decision": "failed", "error_message": str(exc)[:2000]},
             )
         except Exception:
             pass
