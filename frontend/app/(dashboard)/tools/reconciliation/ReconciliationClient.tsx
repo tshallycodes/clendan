@@ -189,7 +189,7 @@ export function ReconciliationClient() {
         setPolling(false)
         setRunning(false)
       }
-    }, 6000)
+    }, 2000)
     const timeout = setTimeout(() => {
       active = false
       setPolling(false)
