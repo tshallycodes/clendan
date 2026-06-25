@@ -79,6 +79,9 @@ const WORKER_FIELDS: Record<string, FieldDef[]> = {
       description: 'Receipts under this amount are approved automatically without a human reviewer.' },
     { key: 'contract_extraction_enabled', type: 'boolean', label: 'Contract extraction enabled', default: true,
       description: 'When on, the tool also extracts key clauses from contracts — payment terms, renewal dates, and obligations — alongside invoices.' },
+    { key: 'accounting_integration', type: 'select', label: 'Write approved invoices to', default: 'none',
+      options: ['none', 'quickbooks', 'xero', 'freshbooks'],
+      description: 'When an invoice is auto-approved, write it as a bill to this accounting integration. Receipts and contracts are never written automatically.' },
   ],
   ai_accountant: [
     { key: 'auto_categorise_confidence_min', type: 'number', label: 'Auto-categorise min confidence', unit: '0–1', step: 0.01, min: 0, max: 1, default: 0.90,

@@ -47,6 +47,7 @@ model Tenant {
   accounting_tax_rates    AccountingTaxRate[]
   payment_runs            PaymentRun[]
   budgets                 Budget[]
+  documents               Document[]
 }
 
 model User {
@@ -640,6 +641,35 @@ model BudgetLine {
   budget Budget @relation(fields: [budget_id], references: [id], onDelete: Cascade)
 
   @@index([budget_id])
+}
+
+model Document {
+  id                      String   @id @default(cuid())
+  tenant_id               String
+  tool_id                 String?
+  execution_id            String?
+  document_type           String
+  filename                String?
+  content_type            String   @default("application/pdf")
+  file_size_bytes         Int?
+  uploaded_by             String?
+  status                  String   @default("processing")
+  decision                String?
+  confidence              Float?
+  rule_triggered          String?
+  reason                  String?
+  flags_json              Json?
+  extracted_json          Json?
+  thumbnail_b64           String?
+  accounting_write_status String?
+  created_at              DateTime @default(now())
+  updated_at              DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenant_id], references: [id])
+
+  @@index([tenant_id])
+  @@index([tool_id])
+  @@index([tenant_id, created_at])
 }
 
 model ExchangeRate {

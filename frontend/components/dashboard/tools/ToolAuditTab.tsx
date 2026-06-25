@@ -106,6 +106,92 @@ function ReconciliationTrace({ trace }: { trace: Record<string, unknown> }) {
   )
 }
 
+function DocumentIntelligenceTrace({ trace }: { trace: Record<string, unknown> }) {
+  const decision = (trace.decision as string) || 'approval_required'
+  const documentType = (trace.document_type as string) || 'invoice'
+  const confidence = trace.confidence as number
+  const flags = (trace.flags as string[]) || []
+  const reason = trace.reason as string
+  const extracted = (trace.extracted as Record<string, unknown>) || {}
+
+  const decisionConfig = {
+    auto_approved:     { label: 'Auto-approved',      color: 'text-[#00C853]', bg: 'bg-[rgba(0,200,83,0.08)]',   border: 'border-[rgba(0,200,83,0.2)]' },
+    approval_required: { label: 'Approval required',  color: 'text-[#00a8cc]', bg: 'bg-[rgba(0,168,204,0.08)]', border: 'border-[rgba(0,168,204,0.2)]' },
+    blocked:           { label: 'Blocked',            color: 'text-[#ff4d6d]', bg: 'bg-[rgba(255,77,109,0.08)]', border: 'border-[rgba(255,77,109,0.2)]' },
+  }
+  const dc = decisionConfig[decision as keyof typeof decisionConfig] ?? decisionConfig.approval_required
+
+  const extractedEntries = Object.entries(extracted).filter(
+    ([, v]) => v !== null && v !== undefined && v !== '' && !(Array.isArray(v) && v.length === 0)
+  )
+
+  return (
+    <div className="space-y-4 pt-2">
+      <div className="flex items-center gap-2">
+        <div className={`inline-flex px-3 py-1.5 rounded-sm border ${dc.bg} ${dc.border}`}>
+          <span className={`text-xs font-mono font-medium ${dc.color}`}>{dc.label}</span>
+        </div>
+        <span className="text-[10px] font-mono text-brand-muted uppercase tracking-widest border border-brand-border rounded-sm px-2 py-1">
+          {documentType}
+        </span>
+      </div>
+
+      <div className="grid grid-cols-3 gap-2">
+        <div className="bg-brand-bg border border-brand-border rounded-sm p-3">
+          <p className="text-[10px] font-mono text-brand-muted uppercase tracking-widest">Confidence</p>
+          <p className={`text-xl font-heading font-bold mt-1 ${(confidence ?? 0) >= 0.9 ? 'text-[#00C853]' : 'text-brand-text'}`}>
+            {confidence != null ? `${Math.round(confidence * 100)}%` : '—'}
+          </p>
+        </div>
+        <div className="bg-brand-bg border border-brand-border rounded-sm p-3">
+          <p className="text-[10px] font-mono text-brand-muted uppercase tracking-widest">Fields extracted</p>
+          <p className="text-xl font-heading font-bold text-brand-text mt-1">{extractedEntries.length}</p>
+        </div>
+        <div className="bg-brand-bg border border-brand-border rounded-sm p-3">
+          <p className="text-[10px] font-mono text-brand-muted uppercase tracking-widest">Policy flags</p>
+          <p className={`text-xl font-heading font-bold mt-1 ${flags.length > 0 ? 'text-[#f5a623]' : 'text-[#00C853]'}`}>
+            {flags.length}
+          </p>
+        </div>
+      </div>
+
+      {reason && (
+        <div className="bg-brand-bg border border-brand-border rounded-sm px-3 py-2.5">
+          <p className="text-[10px] font-mono text-brand-muted uppercase tracking-widest mb-1.5">Reason</p>
+          <p className="text-[11px] font-mono text-brand-secondary leading-relaxed">{reason}</p>
+        </div>
+      )}
+
+      {extractedEntries.length > 0 && (
+        <div>
+          <p className="text-[10px] font-mono text-brand-muted uppercase tracking-widest mb-1.5">Extracted fields</p>
+          <div className="bg-brand-bg border border-brand-border rounded-sm divide-y divide-brand-border">
+            {extractedEntries.map(([key, value]) => (
+              <div key={key} className="flex items-start justify-between px-3 py-2 gap-4">
+                <span className="text-[10px] font-mono text-brand-muted shrink-0">{key}</span>
+                <span className="text-[11px] font-mono text-brand-secondary text-right break-all">
+                  {Array.isArray(value) ? value.join(', ') : String(value)}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {flags.length > 0 && (
+        <div className="space-y-1.5">
+          <p className="text-[10px] font-mono uppercase tracking-widest text-[#f5a623]">Policy flags</p>
+          {flags.map((flag, i) => (
+            <div key={i} className="bg-[rgba(245,166,35,0.04)] border border-[rgba(245,166,35,0.2)] rounded-sm px-3 py-2.5">
+              <p className="text-[11px] font-mono text-brand-secondary leading-relaxed">{flag}</p>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 const DECISION_CONFIG: Record<string, { label: string; color: string; bg: string; border: string }> = {
   routed:            { label: 'Routed to tool',      color: 'text-[#00a8cc]', bg: 'bg-[rgba(0,168,204,0.08)]',  border: 'border-[rgba(0,168,204,0.2)]' },
   auto_approved:     { label: 'Auto-approved',        color: 'text-[#00C853]', bg: 'bg-[rgba(0,200,83,0.08)]',   border: 'border-[rgba(0,200,83,0.2)]' },
@@ -173,9 +259,10 @@ function TraceView({ entry }: { entry: AuditEntry }) {
   const [showRaw, setShowRaw] = useState(false)
   const trace = typeof entry.reasoning_trace_json === 'object' ? entry.reasoning_trace_json : null
   const isReconciliation = entry.action?.startsWith('reconciliation:') && trace && 'overall_decision' in trace
-  const isOrchestrator = !isReconciliation && trace && 'decision' in trace
+  const isDocumentIntelligence = !isReconciliation && entry.action?.startsWith('document_processed:') && trace && 'extracted' in trace
+  const isOrchestrator = !isReconciliation && !isDocumentIntelligence && trace && 'decision' in trace
 
-  const hasFormatted = isReconciliation || isOrchestrator
+  const hasFormatted = isReconciliation || isDocumentIntelligence || isOrchestrator
 
   return (
     <div className="space-y-2">
@@ -193,7 +280,9 @@ function TraceView({ entry }: { entry: AuditEntry }) {
       {hasFormatted && !showRaw ? (
         isReconciliation
           ? <ReconciliationTrace trace={trace!} />
-          : <OrchestratorTrace trace={trace!} />
+          : isDocumentIntelligence
+            ? <DocumentIntelligenceTrace trace={trace!} />
+            : <OrchestratorTrace trace={trace!} />
       ) : (
         entry.reasoning_trace_json && (
           <pre className="text-[10px] font-mono text-brand-secondary whitespace-pre-wrap bg-brand-bg border border-brand-border rounded-sm p-3 overflow-x-auto max-h-64">

@@ -2,6 +2,7 @@
 arq tool process — runs background jobs via Redis.
 Start with: python -m arq app.tool.ToolSettings
 """
+import base64
 import time
 from datetime import UTC, datetime, timedelta
 
@@ -55,6 +56,7 @@ from app.tools.tax_compliance import run_tax_compliance_job
 from app.tools.financial_reporting import run_financial_reporting_job
 from app.tools.payment_run import run_payment_run_job
 from app.tools.budgeting import run_budgeting_job
+from app.tools.document_intelligence import run_document_intelligence_job
 
 logger = get_logger(__name__)
 
@@ -283,15 +285,42 @@ async def run_orchestrator_job(
             decision, confidence, reasoning = "routed", 1.0, "Routed to Tax Compliance tool"
 
         elif event_type == "document_received":
-            document_type = payload.get("document_type", "invoice")
-            if document_type == "receipt":
-                decision, confidence, reasoning = await _orchestrate_receipt_received(
-                    payload, tenant_id, tool_id, execution_id
+            _tool_for_dispatch = await db.tool.find_unique(where={"id": tool_id})
+            if _tool_for_dispatch and _tool_for_dispatch.type == "document_intelligence":
+                document_type = payload.get("document_type", "invoice")
+                raw_bytes = payload.get("file_bytes", b"")
+                if isinstance(raw_bytes, str):
+                    raw_bytes = base64.b64decode(raw_bytes)
+                content_type_val = payload.get("content_type", "application/pdf")
+                _policy_cfg = (
+                    _tool_for_dispatch.config_json
+                    if isinstance(_tool_for_dispatch.config_json, dict)
+                    else {}
+                )
+                pool = await get_queue_pool()
+                await pool.enqueue_job(
+                    "run_document_intelligence_job",
+                    execution_id=execution_id,
+                    tenant_id=tenant_id,
+                    tool_id=tool_id,
+                    document_type=document_type,
+                    file_bytes=raw_bytes,
+                    content_type=content_type_val,
+                    policy_config=_policy_cfg,
+                )
+                decision, confidence, reasoning = (
+                    "routed", 1.0, f"Routed {document_type} to Document Intelligence"
                 )
             else:
-                decision, confidence, reasoning = await _orchestrate_invoice_received(
-                    payload, tenant_id, tool_id
-                )
+                document_type = payload.get("document_type", "invoice")
+                if document_type == "receipt":
+                    decision, confidence, reasoning = await _orchestrate_receipt_received(
+                        payload, tenant_id, tool_id, execution_id
+                    )
+                else:
+                    decision, confidence, reasoning = await _orchestrate_invoice_received(
+                        payload, tenant_id, tool_id
+                    )
 
         elif event_type == "spend_control_run":
             pool = await get_queue_pool()
@@ -889,6 +918,7 @@ class ToolSettings:
         run_financial_reporting_job,
         run_payment_run_job,
         run_budgeting_job,
+        run_document_intelligence_job,
         run_financial_reporting_monthly,
         run_payment_run_weekly,
         run_budget_check_weekly,

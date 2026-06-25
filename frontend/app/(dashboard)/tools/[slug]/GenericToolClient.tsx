@@ -7,6 +7,7 @@ import { ConfigDrawer } from '@/components/dashboard/tools/ConfigDrawer'
 import { ToolExecutionsTab } from '@/components/dashboard/tools/ToolExecutionsTab'
 import { ToolApprovalsTab } from '@/components/dashboard/tools/ToolApprovalsTab'
 import { ToolAuditTab } from '@/components/dashboard/tools/ToolAuditTab'
+import { DocumentsTab } from '@/components/dashboard/tools/DocumentsTab'
 import type { Tool } from '@/components/dashboard/tools/ToolCard'
 import type { ToolDef } from '../tools-data'
 import { useAuth } from '@clerk/nextjs'
@@ -20,9 +21,9 @@ interface Props {
   deployed: Tool | null
 }
 
-type ToolTab = 'overview' | 'executions' | 'approvals' | 'audit'
+type ToolTab = 'overview' | 'executions' | 'approvals' | 'audit' | 'documents'
 
-const TABS: { key: ToolTab; label: string }[] = [
+const BASE_TABS: { key: ToolTab; label: string }[] = [
   { key: 'overview', label: 'Overview' },
   { key: 'executions', label: 'Executions' },
   { key: 'approvals', label: 'Approvals' },
@@ -78,6 +79,9 @@ export function GenericToolClient({ tool, deployed }: Props) {
 
   const isActive = deployed?.status === 'active'
   const badge = deployed ? (AUTONOMY_BADGE[deployed.autonomy_level] ?? AUTONOMY_BADGE.suggest) : null
+  const tabs = tool.type === 'document_intelligence'
+    ? [...BASE_TABS, { key: 'documents' as ToolTab, label: 'Documents' }]
+    : BASE_TABS
 
   async function handleToggle() {
     if (!deployed) return
@@ -172,7 +176,7 @@ export function GenericToolClient({ tool, deployed }: Props) {
       </motion.div>
 
       <motion.div variants={sectionVariants} className="flex gap-1 border-b border-brand-border">
-        {TABS.map(t => (
+        {tabs.map(t => (
           <button key={t.key} type="button" onClick={() => setActiveTab(t.key)}
             className={`text-xs font-mono px-4 py-2.5 border-b-2 transition-colors -mb-px ${
               activeTab === t.key
@@ -260,6 +264,7 @@ export function GenericToolClient({ tool, deployed }: Props) {
           {activeTab === 'executions' && <ToolExecutionsTab toolId={deployed?.id ?? null} />}
           {activeTab === 'approvals' && <ToolApprovalsTab toolId={deployed?.id ?? null} />}
           {activeTab === 'audit' && <ToolAuditTab toolId={deployed?.id ?? null} />}
+          {activeTab === 'documents' && <DocumentsTab toolId={deployed?.id ?? null} />}
         </motion.div>
       </AnimatePresence>
 
