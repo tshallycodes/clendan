@@ -82,7 +82,7 @@ async def freshbooks_callback(
         logger.error("freshbooks_token_exchange_failed tenant=%s: %s", tenant_id, type(exc).__name__)
         raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail="FreshBooks token exchange failed")
 
-    # Resolve account_id eagerly — needed for all subsequent API calls
+    # Resolve account_id and user_id eagerly — needed for all subsequent API calls
     try:
         me = await fb.get_me(tokens["access_token"])
         account_id = fb.extract_account_id(me)
@@ -93,7 +93,9 @@ async def freshbooks_callback(
             detail="Connected to FreshBooks but failed to retrieve account details",
         )
 
-    creds = {**tokens, "account_id": account_id}
+    # user_id from /users/me is the staffid used when creating expenses
+    freshbooks_user_id = me.get("id")
+    creds = {**tokens, "account_id": account_id, "freshbooks_user_id": freshbooks_user_id}
     blob = encrypt_credentials(creds, tenant_id)
 
     existing = await db.integration.find_first(where={"tenant_id": tenant_id, "type": "freshbooks"})

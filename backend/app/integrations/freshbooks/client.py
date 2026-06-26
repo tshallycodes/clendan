@@ -140,13 +140,3 @@ async def get_expense_categories(access_token: str, account_id: str) -> list[dic
         resp = await http.get(url, headers=_auth_headers(access_token))
         resp.raise_for_status()
         return resp.json().get("response", {}).get("result", {}).get("categories", [])
-
-
-async def get_staff_id(access_token: str, account_id: str) -> int | None:
-    """Returns the staffid of the first staff member on the account (typically the owner)."""
-    url = f"{_BASE}/accounting/account/{account_id}/users/staffs"
-    async with httpx.AsyncClient(timeout=15) as http:
-        resp = await http.get(url, headers=_auth_headers(access_token))
-        resp.raise_for_status()
-        staffs = resp.json().get("response", {}).get("result", {}).get("staffs", [])
-        return int(staffs[0]["id"]) if staffs else None
