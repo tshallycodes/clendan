@@ -60,18 +60,27 @@ async def flag_document(
         )
 
     existing = await db.approval.find_first(
-        where={"execution_id": doc.execution_id, "status": "pending"}
+        where={"execution_id": doc.execution_id}
     )
     if existing:
-        return standard_response(data={"already_flagged": True})
+        if existing.status == "pending":
+            return standard_response(data={"already_flagged": True})
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"This document was already reviewed and {existing.status}. Re-upload to submit again.",
+        )
 
-    approval = await db.approval.create(
-        data={
-            "tenant_id": tenant_id,
-            "execution_id": doc.execution_id,
-            "expires_at": datetime.now(UTC) + timedelta(hours=72),
-        }
-    )
+    try:
+        approval = await db.approval.create(
+            data={
+                "tenant_id": tenant_id,
+                "execution_id": doc.execution_id,
+                "expires_at": datetime.now(UTC) + timedelta(hours=72),
+            }
+        )
+    except Exception as exc:
+        _logger.error("flag_document_create_approval_failed", extra={"document_id": document_id, "error": type(exc).__name__, "detail": str(exc)})
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to create approval — please try again") from exc
 
     await write_audit_log(
         tenant_id=tenant_id,
