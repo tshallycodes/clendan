@@ -34,6 +34,7 @@ const DECISION_CONFIG: Record<string, { label: string; color: string; bg: string
   auto_approved:     { label: 'Auto-approved',     color: 'text-[#00C853]', bg: 'bg-[rgba(0,200,83,0.08)]',   border: 'border-[rgba(0,200,83,0.2)]' },
   approval_required: { label: 'Approval required', color: 'text-[#00a8cc]', bg: 'bg-[rgba(0,168,204,0.08)]', border: 'border-[rgba(0,168,204,0.2)]' },
   blocked:           { label: 'Blocked',            color: 'text-[#ff4d6d]', bg: 'bg-[rgba(255,77,109,0.08)]', border: 'border-[rgba(255,77,109,0.2)]' },
+  rejected:          { label: 'Rejected',           color: 'text-[#ff4d6d]', bg: 'bg-[rgba(255,77,109,0.08)]', border: 'border-[rgba(255,77,109,0.2)]' },
 }
 
 const DOC_TYPE_LABEL: Record<DocumentType, string> = {

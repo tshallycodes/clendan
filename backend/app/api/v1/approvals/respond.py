@@ -79,15 +79,11 @@ async def respond_to_approval(
         data={"decision": new_decision},
     )
 
-    # If approved: trigger mock accounting write
-    if body.action == ApprovalAction.APPROVE:
-        _logger.info(
-            "mock_accounting_write_on_approval",
-            extra={
-                "tenant_id": tenant_id,
-                "approval_id": approval_id,
-                "execution_id": approval.execution_id,
-            },
+    # Cascade rejection to document so it shows Blocked instead of Approval required
+    if body.action == ApprovalAction.REJECT:
+        await db.document.update_many(
+            where={"execution_id": approval.execution_id, "tenant_id": tenant_id},
+            data={"decision": "blocked"},
         )
 
     # Audit log — must succeed for operation to complete
