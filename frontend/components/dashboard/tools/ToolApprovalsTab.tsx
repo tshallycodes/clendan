@@ -85,6 +85,7 @@ export function ToolApprovalsTab({ toolId }: { toolId: string | null }) {
       }
       const newStatus = action === 'approve' ? 'approved' : 'rejected'
       setApprovals(prev => prev.map(a => a.id === approvalId ? { ...a, status: newStatus } : a))
+      setFilter('all')
       toast(action === 'approve' ? 'Execution approved' : 'Execution rejected', 'success')
     } catch {
       toast(`Failed to ${action} — network error`, 'error')
