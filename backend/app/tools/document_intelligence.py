@@ -6,6 +6,7 @@ Flow: receive → classify doc type → extract → policy check → audit → s
 import asyncio
 import base64
 import json
+import time
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
@@ -599,6 +600,7 @@ async def run_document_intelligence_job(
 ) -> dict:
     """arq job entry point. Updates Execution record and creates Approval if needed."""
     db = get_db()
+    _start = time.monotonic()
     _logger.debug("doc_intel_job_start", extra={"execution_id": execution_id, "tenant_id": tenant_id, "tool_id": tool_id, "document_type": document_type, "document_id": document_id, "size_bytes": len(file_bytes), "job_try": ctx.get("job_try", 1)})
     try:
         result = await execute_document_intelligence_tool(
@@ -620,6 +622,7 @@ async def run_document_intelligence_job(
                 "status": "completed",
                 "decision": result["decision"],
                 "confidence": result["confidence"],
+                "duration_ms": int((time.monotonic() - _start) * 1000),
             },
         )
         _logger.debug("doc_intel_job_execution_record_updated", extra={"execution_id": execution_id})

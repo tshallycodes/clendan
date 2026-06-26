@@ -125,7 +125,10 @@ export function ToolExecutionsTab({ toolId }: { toolId: string | null }) {
   }
 
   const auto = executions.filter(e => e.status === 'auto' || e.status === 'auto_approved').length
-  const blocked = executions.filter(e => e.status === 'blocked' || e.status === 'flagged').length
+  const blocked = executions.filter(e =>
+    e.status === 'blocked' || e.status === 'flagged' ||
+    e.decision === 'blocked' || e.decision === 'flagged'
+  ).length
   const autoPercent = total ? Math.round((auto / total) * 100) : 0
 
   return (
