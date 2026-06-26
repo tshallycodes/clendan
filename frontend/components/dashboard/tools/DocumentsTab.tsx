@@ -83,7 +83,6 @@ interface QuickActionsProps {
 
 function QuickActions({ doc, toolId, connectedIntegrations, onAbort, onReupload, onOpenSummary, onUpdateDoc }: QuickActionsProps) {
   const [actionLoading, setActionLoading] = useState<string | null>(null)
-  const [selectedIntegration, setSelectedIntegration] = useState<string>(connectedIntegrations[0] ?? '')
   const { getToken } = useAuth()
   const { toast } = useToast()
 
@@ -115,20 +114,27 @@ function QuickActions({ doc, toolId, connectedIntegrations, onAbort, onReupload,
   }
 
   async function handlePushAccounting() {
-    if (!selectedIntegration) return
+    if (connectedIntegrations.length === 0) return
     setActionLoading('push')
     try {
       const token = await getToken()
-      const res = await fetch(`${API}/v1/documents/${doc.id}/push-integration`, {
-        method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ integration: selectedIntegration }),
-      })
-      if (res.ok) {
-        onUpdateDoc(doc.id, { accounting_write_status: `written:${selectedIntegration}` })
-        toast(`Pushed to ${selectedIntegration.charAt(0).toUpperCase() + selectedIntegration.slice(1)}`, 'success')
+      const failed: string[] = []
+      for (const integration of connectedIntegrations) {
+        const res = await fetch(`${API}/v1/documents/${doc.id}/push-integration`, {
+          method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ integration }),
+        })
+        if (!res.ok) {
+          const j = await res.json().catch(() => ({}))
+          failed.push((j as { detail?: string }).detail ?? integration)
+        }
+      }
+      if (failed.length === 0) {
+        const label = connectedIntegrations.map(i => i.charAt(0).toUpperCase() + i.slice(1)).join(' & ')
+        onUpdateDoc(doc.id, { accounting_write_status: `written:${connectedIntegrations[0]}` })
+        toast(`Pushed to ${label}`, 'success')
       } else {
-        const j = await res.json().catch(() => ({}))
-        toast((j as { detail?: string }).detail ?? 'Push failed', 'error')
+        toast(failed.join('; '), 'error')
       }
     } catch { toast('Network error', 'error') }
     finally { setActionLoading(null) }
@@ -160,25 +166,9 @@ function QuickActions({ doc, toolId, connectedIntegrations, onAbort, onReupload,
           </button>
         )}
         {connectedIntegrations.length > 0 && !doc.accounting_write_status?.includes(':') && doc.decision !== 'blocked' && (
-          <>
-            {connectedIntegrations.length > 1 && (
-              <div className="flex gap-1">
-                {connectedIntegrations.map(i => (
-                  <button key={i} type="button" onClick={() => setSelectedIntegration(i)}
-                    className={`text-[10px] font-mono px-2 py-0.5 rounded-sm border transition-colors ${
-                      selectedIntegration === i
-                        ? 'border-[#00C853] text-[#00C853] bg-[rgba(0,200,83,0.08)]'
-                        : 'border-brand-border text-brand-muted hover:text-brand-secondary'
-                    }`}>
-                    {i.charAt(0).toUpperCase() + i.slice(1)}
-                  </button>
-                ))}
-              </div>
-            )}
-            <button type="button" onClick={handlePushAccounting} disabled={actionLoading !== null} className={btn}>
-              {actionLoading === 'push' ? '…' : `Push to ${selectedIntegration.charAt(0).toUpperCase() + selectedIntegration.slice(1)}`}
-            </button>
-          </>
+          <button type="button" onClick={handlePushAccounting} disabled={actionLoading !== null} className={btn}>
+            {actionLoading === 'push' ? '…' : `Push to ${connectedIntegrations.map(i => i.charAt(0).toUpperCase() + i.slice(1)).join(' & ')}`}
+          </button>
         )}
         <button
           type="button" onClick={handleReupload} disabled={actionLoading !== null}
