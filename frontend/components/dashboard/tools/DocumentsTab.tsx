@@ -183,6 +183,16 @@ function DocumentRow({ doc, toolId, onAbort }: { doc: ProcessedDocument; toolId:
                   </button>
                 </>
               )}
+              {doc.status === 'completed' && doc.decision === 'blocked' && (
+                <button
+                  type="button"
+                  onClick={e => handleDelete(e, 'Deleted')}
+                  disabled={aborting}
+                  className="text-[10px] font-mono text-[#ff4d6d] bg-[rgba(255,77,109,0.06)] border border-[rgba(255,77,109,0.3)] hover:bg-[rgba(255,77,109,0.12)] rounded-sm px-2 py-0.5 transition-colors disabled:opacity-50"
+                >
+                  {aborting ? 'Deleting…' : 'Delete'}
+                </button>
+              )}
               {dc && (
                 <span className={`text-[10px] font-mono px-2 py-0.5 rounded-sm border ${dc.bg} ${dc.border} ${dc.color}`}>
                   {dc.label}
