@@ -133,6 +133,27 @@ async def get_expenses(access_token: str, account_id: str, page: int = 1, per_pa
         return resp.json().get("response", {}).get("result", {}).get("expenses", [])
 
 
+async def get_staff_id(access_token: str, account_id: str) -> int | None:
+    """
+    Returns the staffid of the first staff member on the account.
+    Logs the full response body on failure so we can diagnose endpoint issues.
+    """
+    import logging
+    _log = logging.getLogger(__name__)
+    url = f"{_BASE}/accounting/account/{account_id}/users/staffs"
+    async with httpx.AsyncClient(timeout=15) as http:
+        resp = await http.get(url, headers=_auth_headers(access_token))
+        _log.info(
+            "freshbooks_staffs_response",
+            extra={"status_code": resp.status_code, "body": resp.text[:500]},
+        )
+        resp.raise_for_status()
+        result = resp.json().get("response", {}).get("result", {})
+        # FreshBooks may return the key as "staffs" or "staff"
+        staffs = result.get("staffs") or result.get("staff") or []
+        return int(staffs[0]["id"]) if staffs else None
+
+
 async def get_expense_categories(access_token: str, account_id: str) -> list[dict]:
     """Returns all expense categories for the account. Used to pick a default category_id."""
     url = f"{_BASE}/accounting/account/{account_id}/expenses/categories"
