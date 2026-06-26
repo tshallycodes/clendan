@@ -354,6 +354,33 @@ export function DocumentsTab({ toolId }: { toolId: string | null }) {
 
   useEffect(() => { load(0) }, [toolId])
 
+  // Poll every 3 s while any real (non-temp) document is still processing
+  const hasProcessing = documents.some(d => d.status === 'processing' && !d.id.startsWith('temp-'))
+  useEffect(() => {
+    if (!hasProcessing || !toolId) return
+    const id = setInterval(async () => {
+      try {
+        const token = await getToken()
+        const res = await fetch(
+          `${API}/v1/document-intelligence/${toolId}/documents?limit=${limit}&offset=0`,
+          { headers: { Authorization: `Bearer ${token}` } },
+        )
+        if (!res.ok) return
+        const json = await res.json()
+        const fresh: ProcessedDocument[] = json.data.documents
+        setDocuments(prev => prev.map(d => {
+          if (d.id.startsWith('temp-')) return d
+          const updated = fresh.find(f => f.id === d.id)
+          return updated ?? d
+        }))
+        setTotal(json.data.total)
+      } catch {
+        // polling failure is non-fatal
+      }
+    }, 3000)
+    return () => clearInterval(id)
+  }, [hasProcessing, toolId, getToken])
+
   async function handleFiles(files: FileList) {
     if (!toolId) return
     const file = files[0]
