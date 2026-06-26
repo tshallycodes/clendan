@@ -107,22 +107,40 @@ async def list_approvals(
         order={"requested_at": "asc"},
         take=limit,
         skip=offset,
-        include={"execution": True},
+        include={"execution": {"include": {"tool": True}}},
     )
 
+    # Pull documents linked to these executions (document_intelligence only)
+    execution_ids = [a.execution_id for a in approvals]
+    documents = await db.document.find_many(
+        where={"execution_id": {"in": execution_ids}},
+    ) if execution_ids else []
+    doc_by_exec = {d.execution_id: d for d in documents if d.execution_id}
+
+    def _row(a) -> dict:
+        exec_ = a.execution
+        doc = doc_by_exec.get(a.execution_id)
+        triggered_by = None
+        if exec_ and exec_.triggered_by_email:
+            triggered_by = exec_.triggered_by_email.split("@")[0]
+        return {
+            "id": a.id,
+            "execution_id": a.execution_id,
+            "status": a.status,
+            "requested_at": a.requested_at.isoformat(),
+            "expires_at": a.expires_at.isoformat(),
+            "decision": exec_.decision if exec_ else None,
+            "confidence": exec_.confidence if exec_ else None,
+            "tool_type": exec_.tool.type if exec_ and exec_.tool else None,
+            "triggered_by": triggered_by,
+            "document_filename": doc.filename if doc else None,
+            "document_type": doc.document_type if doc else None,
+            "reason": doc.reason if doc else None,
+            "rule_triggered": doc.rule_triggered if doc else None,
+        }
+
     return standard_response(data={
-        "approvals": [
-            {
-                "id": a.id,
-                "execution_id": a.execution_id,
-                "status": a.status,
-                "requested_at": a.requested_at.isoformat(),
-                "expires_at": a.expires_at.isoformat(),
-                "decision": a.execution.decision if a.execution else None,
-                "confidence": a.execution.confidence if a.execution else None,
-            }
-            for a in approvals
-        ],
+        "approvals": [_row(a) for a in approvals],
         "limit": limit,
         "offset": offset,
     })

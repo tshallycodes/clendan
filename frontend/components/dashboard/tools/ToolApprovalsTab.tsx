@@ -15,6 +15,22 @@ interface Approval {
   expires_at: string
   decision: string | null
   confidence: number | null
+  tool_type: string | null
+  triggered_by: string | null
+  document_filename: string | null
+  document_type: string | null
+  reason: string | null
+  rule_triggered: string | null
+}
+
+function formatToolType(type: string | null): string {
+  if (!type) return 'Agent'
+  return type.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
+}
+
+function formatDocType(type: string | null): string {
+  if (!type) return ''
+  return type.charAt(0).toUpperCase() + type.slice(1)
 }
 
 type Filter = 'all' | 'pending' | 'approved' | 'rejected'
@@ -121,15 +137,26 @@ export function ToolApprovalsTab({ toolId }: { toolId: string | null }) {
               a.status === 'approved' ? 'border-l-[#00C853]' : 'border-l-[#ff4d6d]',
             )}>
               <div className="flex items-start justify-between gap-4">
-                <div className="space-y-1 min-w-0">
-                  <p className="text-xs font-mono text-brand-text truncate">{a.decision ?? 'Approval required'}</p>
+                <div className="space-y-1.5 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <p className="text-xs font-mono font-medium text-brand-text">
+                      {formatToolType(a.tool_type)}{a.document_type ? ` — ${formatDocType(a.document_type)}` : ''}
+                    </p>
+                    {a.confidence != null && (
+                      <span className="text-[10px] font-mono text-brand-muted">{Math.round(a.confidence * 100)}% confidence</span>
+                    )}
+                  </div>
+                  {a.document_filename && (
+                    <p className="text-[11px] font-mono text-brand-secondary truncate">{a.document_filename}</p>
+                  )}
+                  {a.reason && (
+                    <p className="text-[10px] font-mono text-brand-muted">{a.reason}</p>
+                  )}
                   <p className="text-[10px] font-mono text-brand-muted">
                     Requested {new Date(a.requested_at).toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
                     {' · '}Expires {new Date(a.expires_at).toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                    {a.triggered_by ? ` · by ${a.triggered_by}` : ''}
                   </p>
-                  {a.confidence != null && (
-                    <p className="text-[10px] font-mono text-brand-muted">Confidence {Math.round(a.confidence * 100)}%</p>
-                  )}
                 </div>
                 {a.status === 'pending' ? (
                   <div className="flex gap-2 shrink-0">
@@ -157,7 +184,7 @@ export function ToolApprovalsTab({ toolId }: { toolId: string | null }) {
                       ? 'text-[#00C853] border-[rgba(0,200,83,0.2)] bg-[rgba(0,200,83,0.08)]'
                       : 'text-[#ff4d6d] border-[rgba(255,77,109,0.2)] bg-[rgba(255,77,109,0.08)]',
                   )}>
-                    {a.status}
+                    {a.status.charAt(0).toUpperCase() + a.status.slice(1)}
                   </span>
                 )}
               </div>
