@@ -207,14 +207,6 @@ async def _quick_classify(file_bytes: bytes, content_type: str) -> str | None:
     return None
 
 
-async def _check_duplicate_invoice(tenant_id: str, invoice_number: str, window_days: int) -> bool:
-    db = get_db()
-    cutoff = datetime.now(UTC) - timedelta(days=window_days)
-    existing = await db.invoice.find_first(
-        where={"tenant_id": tenant_id, "invoice_number": invoice_number, "created_at": {"gte": cutoff}}
-    )
-    return existing is not None
-
 
 async def _write_to_accounting(
     tenant_id: str,
@@ -287,13 +279,6 @@ async def _process_invoice(
         rule_triggered = "low_ocr_confidence"
         flags.append(f"OCR confidence {confidence:.2f} below minimum {policy.ocr_confidence_min}")
 
-    is_duplicate = await _check_duplicate_invoice(tenant_id, invoice_number, policy.duplicate_window_days)
-    _logger.debug("doc_intel_invoice_duplicate_check", extra={"invoice_number": invoice_number, "is_duplicate": is_duplicate, "window_days": policy.duplicate_window_days})
-    if is_duplicate:
-        decision = Decision.BLOCKED.value
-        rule_triggered = rule_triggered or "duplicate_invoice"
-        flags.append(f"Duplicate invoice {invoice_number} within {policy.duplicate_window_days}-day window")
-
     if due_date_str and decision != Decision.BLOCKED.value:
         try:
             due_date_obj = datetime.fromisoformat(due_date_str).date()
@@ -325,23 +310,22 @@ async def _process_invoice(
             rule_triggered = rule_triggered or "above_auto_threshold"
             flags.append(f"Amount exceeds auto-approve threshold ({policy.auto_approve_threshold // 100} major units)")
 
-    if not is_duplicate:
-        db = get_db()
-        due_date_parsed = None
-        if due_date_str:
-            try:
-                due_date_parsed = datetime.fromisoformat(due_date_str)
-            except ValueError:
-                pass
-        await db.invoice.create(data={
-            "tenant_id": tenant_id,
-            "vendor": vendor,
-            "invoice_number": invoice_number,
-            "amount_minor": amount_minor,
-            "currency": currency,
-            "due_date": due_date_parsed,
-            "status": decision,
-        })
+    db = get_db()
+    due_date_parsed = None
+    if due_date_str:
+        try:
+            due_date_parsed = datetime.fromisoformat(due_date_str)
+        except ValueError:
+            pass
+    await db.invoice.create(data={
+        "tenant_id": tenant_id,
+        "vendor": vendor,
+        "invoice_number": invoice_number,
+        "amount_minor": amount_minor,
+        "currency": currency,
+        "due_date": due_date_parsed,
+        "status": decision,
+    })
 
     _logger.debug("doc_intel_invoice_final_decision", extra={"decision": decision, "rule_triggered": rule_triggered, "flags": flags, "confidence": confidence})
     extracted = {
