@@ -73,31 +73,22 @@ Every tool action is written to the immutable audit log before the response is r
 
 ### 2. Document Intelligence Tool (type: `document_intelligence`)
 
-**What it does:** Processes invoices, receipts, and contracts. Extracts data via OCR, validates against POs, checks for duplicates, routes through approval tiers, and posts to your accounting system.
+**What it does:** Users upload PDFs, images, or Word documents. Claude auto-classifies each upload as a receipt or a business document, then routes it to the appropriate processing flow.
+
+**Receipt flow:** Claude extracts merchant, amount, date, and category, then auto-pushes the data to all connected accounting integrations (Xero, QuickBooks, FreshBooks).
+
+**Document flow:** Claude generates a comprehensive analysis — summary, risks, loopholes, improvements, parties involved, and key dates. Users can ask follow-up questions via Ask Clen.
 
 **What it produces:**
-- Auto-approved payments (below threshold, all checks passed)
-- Approval requests (above threshold or policy triggered)
-- Rejected documents (duplicate, too old, low OCR confidence, new vendor flag)
-- Extracted contract terms (payment schedules, renewal dates, obligations)
+- `auto_pushed` — Receipt extracted and pushed to all configured accounting integrations
+- `push_failed` — Receipt extracted but push to accounting integrations failed (no integrations configured, or all failed)
+- `analysed` — Business document fully analysed with summary, risks, loopholes, and improvements
+- `classification_failed` — File could not be classified (blurry image, empty document, unrecognised content)
 
 **Configuration settings:**
-- `auto_approve_threshold` — Auto-approve invoices below this amount. Default £500.
-- `po_match_required` — Every invoice must have a matching PO. Default on.
-- `po_tolerance_pct` — Invoice can exceed PO by this % and still match. Default 3%.
-- `duplicate_window_days` — Look back this many days for duplicate invoices. Default 90 days.
-- `max_invoice_age_days` — Reject invoices older than this. Default 180 days.
-- `new_vendor_flag_enabled` — Flag invoices from previously unseen vendors. Default on.
-- `approval_tier_1_limit` — Route to Tier 1 approvers up to this amount. Default £1,000.
-- `approval_tier_2_limit` — Route to Tier 2 approvers up to this amount. Default £10,000.
-- `receipt_required_above` — Require a receipt for expenses above this. Default £25.
-- `submission_deadline_days` — Expense must be submitted within this many days. Default 30.
-- `ocr_confidence_min` — Minimum OCR confidence to accept extracted data. Default 82%.
-- `duplicate_receipt_window_days` — Look back this many days for duplicate receipts. Default 365 days.
-- `auto_approve_receipt_below` — Auto-approve receipts under this amount. Default £10.
-- `contract_extraction_enabled` — Also extract key contract clauses. Default on.
+- `accounting_integrations` — List of integrations to push receipts to. Options: xero, quickbooks, freshbooks.
 
-**What it cannot do:** It does not send payment — it approves and posts the entry. The actual bank transfer is handled by your payment integration.
+**What it cannot do:** It does not create income invoices or manage accounts receivable. It processes expense receipts and business documents only.
 
 ---
 

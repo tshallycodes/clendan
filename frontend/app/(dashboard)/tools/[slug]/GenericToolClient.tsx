@@ -42,7 +42,7 @@ const AUTONOMY_DESC: Record<string, string> = {
   suggest: 'Agent suggests actions but you must sign off on each one.',
 }
 
-const HOW_IT_WORKS = [
+const DEFAULT_HOW_IT_WORKS = [
   { step: '01', label: 'Trigger',       desc: 'Tool activates on a schedule or incoming event. Data is pulled from connected integrations.' },
   { step: '02', label: 'Execute',       desc: 'Agent processes the data using your configured rules and AI reasoning.' },
   { step: '03', label: 'Policy check',  desc: 'Every output is validated by the policy engine before any action is taken. Cannot be skipped.' },
@@ -202,10 +202,14 @@ export function GenericToolClient({ tool, deployed }: Props) {
               <div className="bg-brand-surface border border-brand-border rounded-sm overflow-hidden">
                 <div className="px-4 py-3 border-b border-brand-border">
                   <p className="text-[10px] font-mono uppercase tracking-widest text-brand-muted">How it works</p>
-                  <p className="text-[10px] font-mono text-brand-muted mt-0.5">Every run follows this fixed execution flow — no step can be skipped</p>
+                  <p className="text-[10px] font-mono text-brand-muted mt-0.5">
+                    {tool.howItWorks
+                      ? 'Every upload follows this fixed processing flow — no step can be skipped'
+                      : 'Every run follows this fixed execution flow — no step can be skipped'}
+                  </p>
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-4 divide-x divide-brand-border">
-                  {HOW_IT_WORKS.map(({ step, label, desc }) => (
+                  {(tool.howItWorks ?? DEFAULT_HOW_IT_WORKS).map(({ step, label, desc }) => (
                     <div key={step} className="px-4 py-4 space-y-1.5">
                       <p className="text-[10px] font-mono text-brand-muted">{step}</p>
                       <p className="text-xs font-mono font-medium text-brand-text">{label}</p>

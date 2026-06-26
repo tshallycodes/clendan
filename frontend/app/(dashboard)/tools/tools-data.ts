@@ -4,6 +4,7 @@ export interface ToolDef {
   name: string
   desc: string
   capabilities: string[]
+  howItWorks?: { step: string; label: string; desc: string }[]
 }
 
 export const TOOLS: ToolDef[] = [
@@ -24,16 +25,22 @@ export const TOOLS: ToolDef[] = [
     slug: 'document-intelligence',
     type: 'document_intelligence',
     name: 'Document Intelligence',
-    desc: 'Extract, validate and process invoices, receipts, and contracts using OCR and AI.',
+    desc: 'Upload receipts and documents. Clen classifies, extracts, and pushes receipts to your accounting integrations — and analyses any business document instantly.',
     capabilities: [
-      'OCR extraction from PDF, image, email attachments, and scanned receipts',
-      'Invoice PO matching with configurable tolerance thresholds',
-      'Contract term extraction — payment terms, renewal dates, penalty clauses',
-      'Auto-approve low-value documents below spend threshold',
-      'Multi-tier approval routing based on document value',
-      'Duplicate detection across invoices, receipts, and contracts',
-      'New vendor flagging and policy enforcement',
-      'Submission deadline and receipt-required threshold enforcement',
+      'Auto-classifies every upload as a receipt or business document',
+      'Receipts: extract merchant, amount, date, and category via AI',
+      'Auto-push extracted receipt data to connected accounting integrations (Xero, QuickBooks, FreshBooks)',
+      'Documents: AI-generated summary, risk analysis, loophole detection, and improvement suggestions',
+      'Supports PDF, Word (.docx), PNG, JPG, and WebP — up to 10 MB',
+      'Follow-up Q&A on any document via Ask Clen',
+      'Export extracted data as structured JSON',
+      'Full classification and push decisions written to the immutable audit log',
+    ],
+    howItWorks: [
+      { step: '01', label: 'Upload',    desc: 'Drop or browse for a PDF, image, or Word document. Multiple files can be uploaded at once.' },
+      { step: '02', label: 'Classify',  desc: 'Claude reads the file and classifies it as a receipt or a business document. Blurry or unreadable files are flagged with a specific reason.' },
+      { step: '03', label: 'Process',   desc: 'Receipts are extracted and auto-pushed to your connected accounting integrations. Documents receive full AI analysis — summary, risks, loopholes, and improvements.' },
+      { step: '04', label: 'Audit',     desc: 'Every classification, extraction, and push result is written to the immutable audit log before the response is returned.' },
     ],
   },
   {
