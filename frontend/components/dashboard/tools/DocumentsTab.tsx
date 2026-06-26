@@ -415,7 +415,7 @@ function DocumentRow({ doc, toolId, onAbort, onReupload, onAskClen }: DocumentRo
                     <>
                       <p className="text-[10px] font-mono text-brand-muted uppercase tracking-widest mb-2">
                         Analysis
-                        {doc.extracted_json?.document_subtype && (
+                        {!!doc.extracted_json?.document_subtype && (
                           <span className="ml-2 normal-case tracking-normal text-brand-secondary">
                             — {String(doc.extracted_json.document_subtype).replace(/_/g, ' ')}
                           </span>
