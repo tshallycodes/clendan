@@ -44,6 +44,7 @@ async def create_bill(
     invoice_number: str,
     amount_minor: int,
     currency: str,
+    expense_date: str | None = None,
 ) -> dict:
     """
     Creates an expense in FreshBooks for the given tenant.
@@ -104,10 +105,12 @@ async def create_bill(
         logger.warning("freshbooks_category_lookup_failed", extra={"tenant_id": tenant_id, "error": type(exc).__name__})
 
     amount_str = str(round(amount_minor / 100.0, 2))
+    from datetime import date as _date
     expense_payload: dict = {
         "amount": {"amount": amount_str, "code": currency.upper()},
         "vendor": vendor,
         "notes": f"Invoice {invoice_number} from {vendor}",
+        "date": expense_date or _date.today().isoformat(),
     }
     if category_id is not None:
         expense_payload["category_id"] = category_id

@@ -291,7 +291,7 @@ async def _process_receipt(
                 from app.integrations.freshbooks.write import create_bill as fb_create
                 await fb_create(
                     tenant_id=tenant_id, vendor=merchant, invoice_number=ref,
-                    amount_minor=amount_minor, currency=currency,
+                    amount_minor=amount_minor, currency=currency, expense_date=date_str,
                 )
             else:
                 _logger.warning("doc_intel_unknown_integration", extra={

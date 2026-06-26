@@ -75,18 +75,19 @@ async def create_bill(
 
     token_expiry_at = creds.get("token_expiry_at")
     if token_expiry_at:
-        try:
-            if datetime.fromisoformat(token_expiry_at) <= datetime.now(UTC):
-                logger.info("xero_write_token_expired_refreshing", extra={"tenant_id": tenant_id})
-                new_tokens = await refresh_xero_token(creds.get("refresh_token", ""))
-                creds = {**creds, **new_tokens}
-                access_token = new_tokens["access_token"]
-                await db.integration.update(
-                    where={"id": integration.id},
-                    data={"encrypted_credentials": encrypt_credentials(creds, tenant_id)},
-                )
-        except Exception as exc:
-            logger.error("xero_write_token_refresh_failed", extra={"tenant_id": tenant_id, "error": type(exc).__name__})
+        expiry_dt = datetime.fromisoformat(token_expiry_at)
+        # Make naive datetimes UTC-aware so the comparison never raises TypeError
+        if expiry_dt.tzinfo is None:
+            expiry_dt = expiry_dt.replace(tzinfo=UTC)
+        if expiry_dt <= datetime.now(UTC):
+            logger.info("xero_write_token_expired_refreshing", extra={"tenant_id": tenant_id})
+            new_tokens = await refresh_xero_token(creds.get("refresh_token", ""))
+            creds = {**creds, **new_tokens}
+            access_token = new_tokens["access_token"]
+            await db.integration.update(
+                where={"id": integration.id},
+                data={"encrypted_credentials": encrypt_credentials(creds, tenant_id)},
+            )
 
     logger.info("xero_credentials_check", extra={
         "tenant_id": tenant_id,
