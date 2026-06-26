@@ -59,7 +59,7 @@ async def upload_document(
     and enqueue the document_intelligence job for async processing.
     """
     tenant_id = current_user.tenant_id
-    logger.debug("doc_upload_start", extra={"tenant_id": tenant_id, "tool_id": tool_id, "document_type": document_type, "filename": file.filename, "content_type": file.content_type})
+    logger.debug("doc_upload_start", extra={"tenant_id": tenant_id, "tool_id": tool_id, "document_type": document_type, "file_name": file.filename, "content_type": file.content_type})
 
     if document_type not in _VALID_DOCUMENT_TYPES:
         logger.debug("doc_upload_invalid_type", extra={"document_type": document_type})
@@ -157,7 +157,7 @@ async def upload_document(
             "document_id": doc_record.id,
             "execution_id": execution.id,
             "document_type": document_type,
-            "filename": file.filename,
+            "file_name": file.filename,
             "size_bytes": len(file_bytes),
         },
     )
