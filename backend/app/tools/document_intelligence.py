@@ -478,12 +478,24 @@ async def execute_document_intelligence_tool(
             "flags": ["No document attached"],
             "extracted": {},
         }
-    elif document_type == "receipt":
-        result = await _process_receipt(file_bytes, content_type, policy)
-    elif document_type == "contract":
-        result = await _process_contract(file_bytes, content_type, policy)
     else:
-        result = await _process_invoice(file_bytes, content_type, policy, tenant_id)
+        detected = await _quick_classify(file_bytes, content_type)
+        if detected and detected != document_type:
+            result = {
+                "document_type": document_type,
+                "decision": Decision.BLOCKED.value,
+                "confidence": 1.0,
+                "rule_triggered": "document_type_mismatch",
+                "reason": f"Wrong document type — this looks like a {detected}, not a {document_type}. Delete this and re-upload with the correct type selected.",
+                "flags": [f"Expected {document_type}, detected {detected}"],
+                "extracted": {},
+            }
+        elif document_type == "receipt":
+            result = await _process_receipt(file_bytes, content_type, policy)
+        elif document_type == "contract":
+            result = await _process_contract(file_bytes, content_type, policy)
+        else:
+            result = await _process_invoice(file_bytes, content_type, policy, tenant_id)
 
     # Accounting write for auto-approved invoices — before audit so outcome is in the trace
     accounting_status = "skipped"
