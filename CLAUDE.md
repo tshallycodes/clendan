@@ -331,7 +331,7 @@ Always use Tailwind design token classes (`bg-brand-surface`, `text-brand-text`,
 | -------------- | ----------- | ---------- | ----- |
 | `bg-brand-bg` / `text-brand-bg` | `#f5f5f5` | `#0a0a0a` | Page background |
 | `bg-brand-surface` | `#ffffff` | `#111111` | Cards, panels, drawers, sidebars |
-| `bg-brand-elevated` | `#f0f0f0` | `#1a1a1a` | Modals, dropdowns, nested cards |
+| `bg-brand-elevated` | `#f4f6fb` | `#1a1a1a` | Modals, dropdowns, nested cards |
 | `border-brand-border` / `divide-brand-border` | `#e0e0e0` | `#2c2c2c` | Card borders, dividers |
 | `border-brand-border-subtle` | `#ebebeb` | `#222222` | Subtle separators |
 | `text-brand-text` | `#0d1117` | `#f0f0f0` | Primary text |
