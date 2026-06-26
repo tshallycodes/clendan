@@ -98,6 +98,7 @@ function QuickActions({ doc, toolId, connectedIntegrations, onAbort, onReupload,
       const a = document.createElement('a')
       a.href = url; a.download = `${doc.filename ?? doc.id}.json`; a.click()
       URL.revokeObjectURL(url)
+      toast('Export downloaded', 'success')
     } catch { toast('Network error', 'error') }
     finally { setActionLoading(null) }
   }
@@ -138,7 +139,7 @@ function QuickActions({ doc, toolId, connectedIntegrations, onAbort, onReupload,
     try {
       const token = await getToken()
       const res = await fetch(`${API}/v1/document-intelligence/${toolId}/documents/${doc.id}/abort`, { method: 'POST', headers: { Authorization: `Bearer ${token}` } })
-      if (res.ok) { onAbort(doc.id); onReupload() }
+      if (res.ok) { toast('Document removed — re-upload to reprocess', 'success'); onAbort(doc.id); onReupload() }
       else { const j = await res.json().catch(() => ({})); toast((j as { detail?: string }).detail ?? 'Failed', 'error') }
     } catch { toast('Network error', 'error') }
     finally { setActionLoading(null) }
