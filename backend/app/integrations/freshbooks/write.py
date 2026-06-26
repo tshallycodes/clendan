@@ -102,15 +102,18 @@ async def create_bill(
         })
         raise ValueError("FreshBooks credentials missing access_token or account_id")
 
+    logger.info("freshbooks_resolving_vendor", extra={"tenant_id": tenant_id, "vendor": vendor})
+    vendor_id = await fb.find_or_create_vendor(access_token, account_id, vendor)
+    logger.info("freshbooks_vendor_resolved", extra={"tenant_id": tenant_id, "vendor_id": vendor_id})
+
     amount_str = str(round(amount_minor / 100.0, 2))
     bill_payload: dict = {
-        "vendor_name": vendor,
-        "bill_number": invoice_number,
+        "vendorid": vendor_id,
         "currency_code": currency.upper(),
         "lines": [
             {
                 "description": f"Invoice {invoice_number} from {vendor}",
-                "quantity": 1,
+                "quantity": "1",
                 "unit_cost": {"amount": amount_str, "code": currency.upper()},
             }
         ],

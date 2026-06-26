@@ -131,3 +131,26 @@ async def get_expenses(access_token: str, account_id: str, page: int = 1, per_pa
         resp = await http.get(url, params={"page": page, "per_page": per_page}, headers=_auth_headers(access_token))
         resp.raise_for_status()
         return resp.json().get("response", {}).get("result", {}).get("expenses", [])
+
+
+async def find_or_create_vendor(access_token: str, account_id: str, vendor_name: str) -> int:
+    """Returns the numeric vendorid for the given vendor name, creating it if not found."""
+    url = f"{_BASE}/accounting/account/{account_id}/bills/vendors"
+    async with httpx.AsyncClient(timeout=15) as http:
+        resp = await http.get(
+            url,
+            params={"search[vendor_name]": vendor_name},
+            headers=_auth_headers(access_token),
+        )
+        resp.raise_for_status()
+        vendors = resp.json().get("response", {}).get("result", {}).get("vendors", [])
+        if vendors:
+            return int(vendors[0]["vendorid"])
+
+        create = await http.post(
+            url,
+            json={"vendor": {"vendor_name": vendor_name, "currency_code": "USD"}},
+            headers=_auth_headers(access_token),
+        )
+        create.raise_for_status()
+        return int(create.json()["response"]["result"]["vendor"]["vendorid"])
