@@ -148,16 +148,18 @@ function DocumentRow({ doc, toolId, onAbort }: { doc: ProcessedDocument; toolId:
               {doc.status === 'processing' && (
                 <>
                   <span className="text-[10px] font-mono text-[#f5a623] bg-[rgba(245,166,35,0.08)] border border-[rgba(245,166,35,0.2)] rounded-sm px-2 py-0.5">
-                    Processing…
+                    {doc.id.startsWith('temp-') ? 'Uploading…' : 'Processing…'}
                   </span>
-                  <button
-                    type="button"
-                    onClick={e => handleDelete(e, 'Aborted')}
-                    disabled={aborting}
-                    className="text-[10px] font-mono text-[#ff4d6d] bg-[rgba(255,77,109,0.06)] border border-[rgba(255,77,109,0.3)] hover:bg-[rgba(255,77,109,0.12)] rounded-sm px-2 py-0.5 transition-colors disabled:opacity-50"
-                  >
-                    {aborting ? 'Aborting…' : 'Abort'}
-                  </button>
+                  {!doc.id.startsWith('temp-') && (
+                    <button
+                      type="button"
+                      onClick={e => handleDelete(e, 'Aborted')}
+                      disabled={aborting}
+                      className="text-[10px] font-mono text-[#ff4d6d] bg-[rgba(255,77,109,0.06)] border border-[rgba(255,77,109,0.3)] hover:bg-[rgba(255,77,109,0.12)] rounded-sm px-2 py-0.5 transition-colors disabled:opacity-50"
+                    >
+                      {aborting ? 'Aborting…' : 'Abort'}
+                    </button>
+                  )}
                 </>
               )}
               {doc.status === 'failed' && (
@@ -251,10 +253,14 @@ function DocumentRow({ doc, toolId, onAbort }: { doc: ProcessedDocument; toolId:
 
 function UploadArea({
   toolId,
+  onPending,
   onUploaded,
+  onUploadFailed,
 }: {
   toolId: string
-  onUploaded: (doc: ProcessedDocument) => void
+  onPending: (tempId: string, doc: ProcessedDocument) => void
+  onUploaded: (doc: ProcessedDocument, tempId: string) => void
+  onUploadFailed: (tempId: string) => void
 }) {
   const { getToken } = useAuth()
   const { toast } = useToast()
@@ -264,6 +270,26 @@ function UploadArea({
   const inputRef = useRef<HTMLInputElement>(null)
 
   async function uploadFile(file: File) {
+    const tempId = `temp-${Date.now()}`
+    const now = new Date().toISOString()
+    onPending(tempId, {
+      id: tempId,
+      document_type: docType,
+      filename: file.name,
+      content_type: file.type,
+      file_size_bytes: file.size,
+      uploaded_by: null,
+      status: 'processing',
+      decision: null,
+      confidence: null,
+      rule_triggered: null,
+      reason: null,
+      flags_json: null,
+      extracted_json: null,
+      thumbnail_b64: null,
+      accounting_write_status: null,
+      created_at: now,
+    })
     setUploading(true)
     try {
       const token = await getToken()
@@ -276,6 +302,7 @@ function UploadArea({
       const json = await res.json()
       if (!res.ok) {
         toast(json.detail ?? 'Upload failed', 'error')
+        onUploadFailed(tempId)
         return
       }
       toast('Document uploaded — processing started', 'success')
@@ -295,10 +322,11 @@ function UploadArea({
         extracted_json: null,
         thumbnail_b64: json.data.thumbnail_b64 ?? null,
         accounting_write_status: null,
-        created_at: new Date().toISOString(),
-      })
+        created_at: now,
+      }, tempId)
     } catch {
       toast('Network error — please try again', 'error')
+      onUploadFailed(tempId)
     } finally {
       setUploading(false)
     }
@@ -399,9 +427,18 @@ export function DocumentsTab({ toolId }: { toolId: string | null }) {
 
   useEffect(() => { load(0) }, [toolId])
 
-  function handleUploaded(doc: ProcessedDocument) {
+  function handlePending(tempId: string, doc: ProcessedDocument) {
     setDocuments(prev => [doc, ...prev])
     setTotal(t => t + 1)
+  }
+
+  function handleUploaded(doc: ProcessedDocument, tempId: string) {
+    setDocuments(prev => prev.map(d => d.id === tempId ? doc : d))
+  }
+
+  function handleUploadFailed(tempId: string) {
+    setDocuments(prev => prev.filter(d => d.id !== tempId))
+    setTotal(t => t - 1)
   }
 
   function handleAborted(docId: string) {
@@ -419,7 +456,7 @@ export function DocumentsTab({ toolId }: { toolId: string | null }) {
 
   return (
     <div className="space-y-4">
-      <UploadArea toolId={toolId} onUploaded={handleUploaded} />
+      <UploadArea toolId={toolId} onPending={handlePending} onUploaded={handleUploaded} onUploadFailed={handleUploadFailed} />
 
       <div>
         <div className="flex items-center justify-between mb-2">

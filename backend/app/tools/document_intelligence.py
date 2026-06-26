@@ -169,7 +169,7 @@ async def _quick_classify(file_bytes: bytes, content_type: str) -> str | None:
     Failure is non-fatal — caller should allow the upload to proceed if None is returned.
     """
     settings = get_settings()
-    client = anthropic.AsyncAnthropic(api_key=settings.anthropic_api_key, timeout=30.0)
+    client = anthropic.AsyncAnthropic(api_key=settings.anthropic_api_key, timeout=8.0)
 
     try:
         if content_type == "application/pdf":
