@@ -59,8 +59,10 @@ async def upload_document(
     and enqueue the document_intelligence job for async processing.
     """
     tenant_id = current_user.tenant_id
+    logger.debug("doc_upload_start", extra={"tenant_id": tenant_id, "tool_id": tool_id, "document_type": document_type, "filename": file.filename, "content_type": file.content_type})
 
     if document_type not in _VALID_DOCUMENT_TYPES:
+        logger.debug("doc_upload_invalid_type", extra={"document_type": document_type})
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail=f"document_type must be one of: {', '.join(sorted(_VALID_DOCUMENT_TYPES))}",
@@ -68,30 +70,39 @@ async def upload_document(
 
     content_type = file.content_type or "application/pdf"
     if content_type not in _ALLOWED_CONTENT_TYPES:
+        logger.debug("doc_upload_unsupported_content_type", extra={"content_type": content_type})
         raise HTTPException(
             status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
             detail=f"Unsupported file type. Allowed: {', '.join(sorted(_ALLOWED_CONTENT_TYPES))}",
         )
 
     file_bytes = await file.read()
+    logger.debug("doc_upload_file_read", extra={"size_bytes": len(file_bytes), "content_type": content_type})
+
     if len(file_bytes) > _MAX_FILE_BYTES:
+        logger.debug("doc_upload_file_too_large", extra={"size_bytes": len(file_bytes)})
         raise HTTPException(
             status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
             detail="File exceeds 10 MB limit",
         )
     if not file_bytes:
+        logger.debug("doc_upload_empty_file")
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Empty file")
 
     tool = await db.tool.find_unique(where={"id": tool_id})
     if not tool or tool.tenant_id != tenant_id:
+        logger.debug("doc_upload_tool_not_found", extra={"tool_id": tool_id})
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Tool not found")
     if tool.type != "document_intelligence":
+        logger.debug("doc_upload_wrong_tool_type", extra={"tool_type": tool.type})
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Tool is not of type document_intelligence",
         )
+    logger.debug("doc_upload_tool_verified", extra={"tool_id": tool_id})
 
     thumbnail_b64 = _generate_thumbnail(file_bytes, content_type)
+    logger.debug("doc_upload_thumbnail_generated", extra={"has_thumbnail": thumbnail_b64 is not None})
 
     doc_record = await db.document.create(data={
         "tenant_id": tenant_id,
@@ -104,6 +115,7 @@ async def upload_document(
         "status": "processing",
         "thumbnail_b64": thumbnail_b64,
     })
+    logger.debug("doc_upload_record_created", extra={"document_id": doc_record.id})
 
     policy_config = tool.config_json if isinstance(tool.config_json, dict) else {}
 
@@ -117,11 +129,13 @@ async def upload_document(
         "status": "queued",
         "triggered_by_email": current_user.email,
     })
+    logger.debug("doc_upload_execution_created", extra={"execution_id": execution.id})
 
     await db.document.update(
         where={"id": doc_record.id},
         data={"execution_id": execution.id},
     )
+    logger.debug("doc_upload_execution_linked", extra={"document_id": doc_record.id, "execution_id": execution.id})
 
     pool = await get_queue_pool()
     await pool.enqueue_job(
@@ -135,15 +149,16 @@ async def upload_document(
         policy_config=policy_config,
         document_id=doc_record.id,
     )
-
     logger.info(
         "document_upload_queued",
         extra={
             "tenant_id": tenant_id,
             "tool_id": tool_id,
             "document_id": doc_record.id,
+            "execution_id": execution.id,
             "document_type": document_type,
             "filename": file.filename,
+            "size_bytes": len(file_bytes),
         },
     )
 

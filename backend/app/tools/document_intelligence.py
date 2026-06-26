@@ -170,17 +170,20 @@ async def _quick_classify(file_bytes: bytes, content_type: str) -> str | None:
     """
     settings = get_settings()
     client = anthropic.AsyncAnthropic(api_key=settings.anthropic_api_key, timeout=8.0)
+    _logger.debug("doc_intel_quick_classify_start", extra={"content_type": content_type, "size_bytes": len(file_bytes), "model": settings.claude_model})
 
     try:
         if content_type == "application/pdf":
             pages = _pdf_to_images(file_bytes)
             img_bytes = pages[0] if pages else file_bytes
             media_type = "image/png"
+            _logger.debug("doc_intel_quick_classify_pdf_pages", extra={"page_count": len(pages)})
         else:
             img_bytes = file_bytes
             media_type = content_type
 
         b64 = base64.standard_b64encode(img_bytes).decode()
+        _logger.debug("doc_intel_quick_classify_calling_claude", extra={"media_type": media_type, "img_size_bytes": len(img_bytes)})
         response = await client.messages.create(
             model=settings.claude_model,
             max_tokens=10,
@@ -193,10 +196,12 @@ async def _quick_classify(file_bytes: bytes, content_type: str) -> str | None:
             }],
         )
         word = response.content[0].text.strip().lower().rstrip(".")
+        _logger.debug("doc_intel_quick_classify_result", extra={"raw_response": response.content[0].text, "parsed_word": word, "valid": word in ("invoice", "receipt", "contract")})
         if word in ("invoice", "receipt", "contract"):
             return word
     except Exception as exc:
-        _logger.warning("doc_intel_quick_classify_failed", extra={"error": str(exc)})
+        _logger.warning("doc_intel_quick_classify_failed", extra={"error": str(exc), "error_type": type(exc).__name__})
+    _logger.debug("doc_intel_quick_classify_no_result")
     return None
 
 
@@ -259,6 +264,7 @@ async def _process_invoice(
     policy: _ToolPolicy,
     tenant_id: str,
 ) -> dict[str, Any]:
+    _logger.debug("doc_intel_process_invoice_start", extra={"size_bytes": len(file_bytes), "content_type": content_type})
     data = await _call_claude_vision(file_bytes, content_type, _INVOICE_PROMPT, max_tokens=1024)
 
     vendor = data.get("vendor", "unknown")
@@ -268,6 +274,7 @@ async def _process_invoice(
     confidence = float(data.get("confidence", 0.0))
     due_date_str = data.get("due_date")
     po_number = data.get("po_number")
+    _logger.debug("doc_intel_invoice_extracted", extra={"vendor": vendor, "invoice_number": invoice_number, "amount_minor": amount_minor, "currency": currency, "confidence": confidence, "due_date": due_date_str, "po_number": po_number})
 
     flags: list[str] = []
     decision = Decision.AUTO_APPROVED.value
@@ -279,6 +286,7 @@ async def _process_invoice(
         flags.append(f"OCR confidence {confidence:.2f} below minimum {policy.ocr_confidence_min}")
 
     is_duplicate = await _check_duplicate_invoice(tenant_id, invoice_number, policy.duplicate_window_days)
+    _logger.debug("doc_intel_invoice_duplicate_check", extra={"invoice_number": invoice_number, "is_duplicate": is_duplicate, "window_days": policy.duplicate_window_days})
     if is_duplicate:
         decision = Decision.BLOCKED.value
         rule_triggered = rule_triggered or "duplicate_invoice"
@@ -333,6 +341,7 @@ async def _process_invoice(
             "status": decision,
         })
 
+    _logger.debug("doc_intel_invoice_final_decision", extra={"decision": decision, "rule_triggered": rule_triggered, "flags": flags, "confidence": confidence})
     extracted = {
         "vendor": vendor,
         "invoice_number": invoice_number,
@@ -357,6 +366,7 @@ async def _process_receipt(
     content_type: str,
     policy: _ToolPolicy,
 ) -> dict[str, Any]:
+    _logger.debug("doc_intel_process_receipt_start", extra={"size_bytes": len(file_bytes), "content_type": content_type})
     data = await _call_claude_vision(file_bytes, content_type, _RECEIPT_PROMPT, max_tokens=512)
 
     merchant = data.get("merchant", "unknown")
@@ -365,6 +375,7 @@ async def _process_receipt(
     date_str = data.get("date")
     category = data.get("category", "other")
     confidence = float(data.get("confidence", 0.0))
+    _logger.debug("doc_intel_receipt_extracted", extra={"merchant": merchant, "amount_minor": amount_minor, "currency": currency, "date": date_str, "category": category, "confidence": confidence})
 
     flags: list[str] = []
     decision = Decision.AUTO_APPROVED.value
@@ -392,6 +403,7 @@ async def _process_receipt(
         except (ValueError, AttributeError):
             pass
 
+    _logger.debug("doc_intel_receipt_final_decision", extra={"decision": decision, "rule_triggered": rule_triggered, "flags": flags, "confidence": confidence})
     return {
         "document_type": "receipt",
         "decision": decision,
@@ -414,6 +426,7 @@ async def _process_contract(
     content_type: str,
     policy: _ToolPolicy,
 ) -> dict[str, Any]:
+    _logger.debug("doc_intel_process_contract_start", extra={"size_bytes": len(file_bytes), "content_type": content_type, "extraction_enabled": policy.contract_extraction_enabled})
     if not policy.contract_extraction_enabled:
         return {
             "document_type": "contract",
@@ -427,6 +440,7 @@ async def _process_contract(
 
     data = await _call_claude_vision(file_bytes, content_type, _CONTRACT_PROMPT, max_tokens=2048)
     confidence = float(data.get("confidence", 0.0))
+    _logger.debug("doc_intel_contract_extracted", extra={"confidence": confidence, "counterparty": data.get("counterparty"), "contract_type": data.get("contract_type"), "expiry_date": data.get("expiry_date")})
 
     return {
         "document_type": "contract",
@@ -467,8 +481,10 @@ async def execute_document_intelligence_tool(
     """
     policy = _parse_policy(policy_config)
     db = get_db()
+    _logger.debug("doc_intel_execute_start", extra={"execution_id": execution_id, "tool_id": tool_id, "tenant_id": tenant_id, "document_type": document_type, "document_id": document_id, "size_bytes": len(file_bytes), "content_type": content_type})
 
     if not file_bytes:
+        _logger.debug("doc_intel_execute_no_bytes")
         result: dict[str, Any] = {
             "document_type": document_type,
             "decision": Decision.APPROVAL_REQUIRED.value,
@@ -480,7 +496,9 @@ async def execute_document_intelligence_tool(
         }
     else:
         detected = await _quick_classify(file_bytes, content_type)
+        _logger.debug("doc_intel_execute_classify", extra={"detected": detected, "expected": document_type, "mismatch": bool(detected and detected != document_type)})
         if detected and detected != document_type:
+            _logger.debug("doc_intel_execute_type_mismatch", extra={"detected": detected, "expected": document_type})
             result = {
                 "document_type": document_type,
                 "decision": Decision.BLOCKED.value,
@@ -491,14 +509,20 @@ async def execute_document_intelligence_tool(
                 "extracted": {},
             }
         elif document_type == "receipt":
+            _logger.debug("doc_intel_execute_branch", extra={"branch": "receipt"})
             result = await _process_receipt(file_bytes, content_type, policy)
         elif document_type == "contract":
+            _logger.debug("doc_intel_execute_branch", extra={"branch": "contract"})
             result = await _process_contract(file_bytes, content_type, policy)
         else:
+            _logger.debug("doc_intel_execute_branch", extra={"branch": "invoice"})
             result = await _process_invoice(file_bytes, content_type, policy, tenant_id)
+
+    _logger.debug("doc_intel_execute_process_result", extra={"decision": result["decision"], "confidence": result["confidence"], "rule_triggered": result.get("rule_triggered"), "flags": result.get("flags", [])})
 
     # Accounting write for auto-approved invoices — before audit so outcome is in the trace
     accounting_status = "skipped"
+    _logger.debug("doc_intel_execute_accounting_check", extra={"decision": result["decision"], "will_write": result["decision"] == Decision.AUTO_APPROVED.value})
     if result["decision"] == Decision.AUTO_APPROVED.value:
         accounting_status = await _write_to_accounting(
             tenant_id=tenant_id,
@@ -507,6 +531,7 @@ async def execute_document_intelligence_tool(
             document_type=document_type,
             extracted=result.get("extracted", {}),
         )
+    _logger.debug("doc_intel_execute_accounting_done", extra={"accounting_status": accounting_status})
 
     reasoning_trace: dict[str, Any] = {
         "tool_id": tool_id,
@@ -522,6 +547,7 @@ async def execute_document_intelligence_tool(
     }
 
     # Audit FIRST — operation fails if audit cannot be recorded (hard requirement)
+    _logger.debug("doc_intel_execute_writing_audit", extra={"execution_id": execution_id, "decision": result["decision"]})
     await write_audit_log(
         tenant_id=tenant_id,
         actor=f"tool:{TOOL_TYPE}:v{WORKER_VERSION}",
@@ -530,6 +556,7 @@ async def execute_document_intelligence_tool(
         model_version=f"{TOOL_TYPE}-v{WORKER_VERSION}",
         execution_id=execution_id,
     )
+    _logger.debug("doc_intel_execute_audit_written", extra={"execution_id": execution_id})
 
     # Update Document record if one exists for this run
     if document_id:
@@ -549,8 +576,11 @@ async def execute_document_intelligence_tool(
             )
         except Exception as exc:
             _logger.warning("doc_intel_document_record_update_failed", extra={"document_id": document_id, "error": str(exc)})
+        else:
+            _logger.debug("doc_intel_execute_document_record_updated", extra={"document_id": document_id, "status": "completed", "decision": result["decision"]})
 
     result["accounting_write_status"] = accounting_status
+    _logger.debug("doc_intel_execute_complete", extra={"execution_id": execution_id, "decision": result["decision"], "confidence": result["confidence"], "accounting_status": accounting_status})
     return result
 
 
@@ -568,6 +598,7 @@ async def run_document_intelligence_job(
 ) -> dict:
     """arq job entry point. Updates Execution record and creates Approval if needed."""
     db = get_db()
+    _logger.debug("doc_intel_job_start", extra={"execution_id": execution_id, "tenant_id": tenant_id, "tool_id": tool_id, "document_type": document_type, "document_id": document_id, "size_bytes": len(file_bytes), "job_try": ctx.get("job_try", 1)})
     try:
         result = await execute_document_intelligence_tool(
             tool_id=tool_id,
@@ -580,6 +611,8 @@ async def run_document_intelligence_job(
             document_id=document_id,
         )
 
+        _logger.debug("doc_intel_job_execute_done", extra={"execution_id": execution_id, "decision": result["decision"], "confidence": result["confidence"]})
+
         await db.execution.update(
             where={"id": execution_id},
             data={
@@ -588,6 +621,7 @@ async def run_document_intelligence_job(
                 "confidence": result["confidence"],
             },
         )
+        _logger.debug("doc_intel_job_execution_record_updated", extra={"execution_id": execution_id})
 
         if result["decision"] == Decision.APPROVAL_REQUIRED.value:
             settings = get_settings()
@@ -598,13 +632,17 @@ async def run_document_intelligence_job(
                     "execution_id": execution_id,
                     "expires_at": datetime.now(UTC) + timedelta(seconds=settings.approval_ttl_seconds),
                 })
+                _logger.debug("doc_intel_job_approval_created", extra={"execution_id": execution_id, "ttl_seconds": settings.approval_ttl_seconds})
+            else:
+                _logger.debug("doc_intel_job_approval_already_exists", extra={"execution_id": execution_id})
 
+        _logger.info("doc_intel_job_completed", extra={"execution_id": execution_id, "document_id": document_id, "decision": result["decision"], "confidence": result["confidence"]})
         return result
 
     except BaseException as exc:
         _logger.error(
             "document_intelligence_job_failed",
-            extra={"execution_id": execution_id, "error": str(exc), "type": type(exc).__name__},
+            extra={"execution_id": execution_id, "document_id": document_id, "document_type": document_type, "error": str(exc), "type": type(exc).__name__, "job_try": ctx.get("job_try", 1)},
         )
         try:
             await db.execution.update(
