@@ -115,8 +115,6 @@ async def create_bill(
             }
         ],
     }
-    if due_date:
-        bill_payload["due_date"] = due_date
 
     async def _call():
         url = f"{FRESHBOOKS_API_BASE}/accounting/account/{account_id}/bills/bills"
