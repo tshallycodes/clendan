@@ -1,5 +1,7 @@
 import asyncio
 import random
+import time
+from datetime import UTC, datetime
 from urllib.parse import urlencode
 
 import httpx
@@ -60,11 +62,12 @@ async def exchange_code(code: str, realm_id: str) -> dict:
             return response.json()
 
     data = await _retry(_call)
+    expires_in = int(data.get("expires_in") or 3600)
     return {
         "access_token": data["access_token"],
         "refresh_token": data["refresh_token"],
         "realm_id": realm_id,
-        "expires_in": data.get("expires_in", 3600),
+        "token_expiry_at": datetime.fromtimestamp(time.time() + expires_in, UTC).isoformat(),
         "x_refresh_token_expires_in": data.get("x_refresh_token_expires_in", 8726400),
         "token_type": data.get("token_type", "bearer"),
     }
@@ -87,10 +90,11 @@ async def refresh_token(refresh_token_raw: str) -> dict:
             return response.json()
 
     data = await _retry(_call)
+    expires_in = int(data.get("expires_in") or 3600)
     return {
         "access_token": data["access_token"],
         "refresh_token": data.get("refresh_token", refresh_token_raw),
-        "expires_in": data.get("expires_in", 3600),
+        "token_expiry_at": datetime.fromtimestamp(time.time() + expires_in, UTC).isoformat(),
     }
 
 

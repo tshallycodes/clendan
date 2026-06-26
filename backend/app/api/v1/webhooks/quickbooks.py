@@ -13,6 +13,7 @@ from app.core.config import get_settings
 from app.core.db import get_db
 from app.core.logging import get_logger
 from app.core.responses import standard_response
+from app.integrations.encryption import decrypt_credentials
 from app.orchestrator.events import enqueue_orchestrator_event
 
 _logger = get_logger(__name__)
@@ -72,7 +73,7 @@ async def quickbooks_webhook(
         integration = next(
             (
                 i for i in integrations
-                if json.loads(i.encrypted_credentials).get("realm_id") == realm_id
+                if decrypt_credentials(i.encrypted_credentials, i.tenant_id).get("realm_id") == realm_id
             ),
             None,
         )

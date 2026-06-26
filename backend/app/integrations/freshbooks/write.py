@@ -20,7 +20,7 @@ BACKOFF_SECONDS = 1.0
 
 
 async def _retry(fn, *args, **kwargs):
-    last_exc = None
+    last_exc: Exception | None = None
     for attempt in range(MAX_ATTEMPTS):
         try:
             return await fn(*args, **kwargs)
@@ -33,6 +33,7 @@ async def _retry(fn, *args, **kwargs):
                     attempt + 1, MAX_ATTEMPTS, wait,
                 )
                 await asyncio.sleep(wait)
+    assert last_exc is not None
     raise last_exc
 
 
@@ -108,7 +109,6 @@ async def create_bill(
         "currency_code": currency.upper(),
         "lines": [
             {
-                "amount": {"amount": amount_str, "code": currency.upper()},
                 "description": f"Invoice {invoice_number} from {vendor}",
                 "quantity": 1,
                 "unit_cost": {"amount": amount_str, "code": currency.upper()},
