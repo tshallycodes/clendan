@@ -67,6 +67,7 @@ from app.clen.router import router as clen_router
 from app.api.v1.budgets import router as budgets_router
 from app.api.v1.currency import router as currency_router
 from app.api.v1.document_intelligence_api import router as document_intelligence_router
+from app.api.v1.document_actions import router as document_actions_router
 
 v1_router = APIRouter()
 v1_router.include_router(onboarding.router)
@@ -140,4 +141,5 @@ v1_router.include_router(wise_webhook_router)
 v1_router.include_router(truelayer_webhook_router)
 v1_router.include_router(adyen_webhook_router)
 v1_router.include_router(document_intelligence_router)
+v1_router.include_router(document_actions_router)
 v1_router.include_router(generic_router)  # must be last — uses {slug} path params

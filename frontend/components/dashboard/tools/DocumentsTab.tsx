@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useAuth } from '@clerk/nextjs'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useToast } from '@/components/Providers'
+import { ContractSummaryDrawer } from './ContractSummaryDrawer'
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
@@ -70,7 +71,119 @@ function ExtractedFields({ extracted }: { extracted: Record<string, unknown> }) 
   )
 }
 
-function DocumentRow({ doc, toolId, onAbort }: { doc: ProcessedDocument; toolId: string; onAbort: (id: string) => void }) {
+interface QuickActionsProps {
+  doc: ProcessedDocument
+  toolId: string
+  onAbort: (id: string) => void
+  onReupload: () => void
+  onOpenSummary: (docId: string, filename: string | null) => void
+  onUpdateDoc: (docId: string, patch: Partial<ProcessedDocument>) => void
+}
+
+function QuickActions({ doc, toolId, onAbort, onReupload, onOpenSummary, onUpdateDoc }: QuickActionsProps) {
+  const [actionLoading, setActionLoading] = useState<string | null>(null)
+  const { getToken } = useAuth()
+  const { toast } = useToast()
+
+  async function handleExport() {
+    setActionLoading('export')
+    try {
+      const token = await getToken()
+      const res = await fetch(`${API}/v1/documents/${doc.id}/export`, { headers: { Authorization: `Bearer ${token}` } })
+      if (!res.ok) { toast('Export failed', 'error'); return }
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url; a.download = `${doc.filename ?? doc.id}.json`; a.click()
+      URL.revokeObjectURL(url)
+    } catch { toast('Network error', 'error') }
+    finally { setActionLoading(null) }
+  }
+
+  async function handleFlag() {
+    setActionLoading('flag')
+    try {
+      const token = await getToken()
+      const res = await fetch(`${API}/v1/documents/${doc.id}/flag`, { method: 'POST', headers: { Authorization: `Bearer ${token}` } })
+      if (res.ok) { toast('Flagged for review', 'success') }
+      else { const j = await res.json().catch(() => ({})); toast((j as { detail?: string }).detail ?? 'Failed to flag', 'error') }
+    } catch { toast('Network error', 'error') }
+    finally { setActionLoading(null) }
+  }
+
+  async function handlePushAccounting() {
+    setActionLoading('push')
+    try {
+      const token = await getToken()
+      const res = await fetch(`${API}/v1/documents/${doc.id}/push-integration`, {
+        method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ integration: 'xero' }),
+      })
+      if (res.ok) { onUpdateDoc(doc.id, { accounting_write_status: 'written' }); toast('Pushed to accounting', 'success') }
+      else { const j = await res.json().catch(() => ({})); toast((j as { detail?: string }).detail ?? 'Push failed', 'error') }
+    } catch { toast('Network error', 'error') }
+    finally { setActionLoading(null) }
+  }
+
+  async function handleReupload() {
+    setActionLoading('reupload')
+    try {
+      const token = await getToken()
+      const res = await fetch(`${API}/v1/document-intelligence/${toolId}/documents/${doc.id}/abort`, { method: 'POST', headers: { Authorization: `Bearer ${token}` } })
+      if (res.ok) { onAbort(doc.id); onReupload() }
+      else { const j = await res.json().catch(() => ({})); toast((j as { detail?: string }).detail ?? 'Failed', 'error') }
+    } catch { toast('Network error', 'error') }
+    finally { setActionLoading(null) }
+  }
+
+  const btn = 'text-[10px] font-mono px-3 py-1.5 rounded-sm border border-brand-border text-brand-text bg-transparent hover:bg-brand-elevated transition-colors disabled:opacity-50'
+
+  return (
+    <div className="pt-3 border-t border-brand-border">
+      <p className="text-[10px] font-mono text-brand-muted uppercase tracking-widest mb-2">Quick actions</p>
+      <div className="flex flex-wrap gap-2">
+        <button type="button" onClick={handleExport} disabled={actionLoading !== null} className={btn}>
+          {actionLoading === 'export' ? '…' : 'Export JSON'}
+        </button>
+        {doc.decision !== 'approval_required' && (
+          <button type="button" onClick={handleFlag} disabled={actionLoading !== null} className={btn}>
+            {actionLoading === 'flag' ? '…' : 'Flag for review'}
+          </button>
+        )}
+        {doc.accounting_write_status !== 'written' && doc.decision !== 'blocked' && (
+          <button type="button" onClick={handlePushAccounting} disabled={actionLoading !== null} className={btn}>
+            {actionLoading === 'push' ? '…' : 'Push to accounting'}
+          </button>
+        )}
+        <button
+          type="button" onClick={handleReupload} disabled={actionLoading !== null}
+          className="text-[10px] font-mono px-3 py-1.5 rounded-sm border border-[#ff4d6d] text-[#ff4d6d] bg-[rgba(255,77,109,0.1)] hover:bg-[rgba(255,77,109,0.16)] transition-colors disabled:opacity-50"
+        >
+          {actionLoading === 'reupload' ? '…' : 'Re-upload'}
+        </button>
+        {doc.document_type === 'contract' && (
+          <button
+            type="button" onClick={() => onOpenSummary(doc.id, doc.filename)} disabled={actionLoading !== null}
+            className="text-[10px] font-mono px-3 py-1.5 rounded-sm bg-[#00C853] text-black hover:bg-[#00a844] active:scale-[0.97] transition-colors disabled:opacity-50"
+          >
+            Ask Clen
+          </button>
+        )}
+      </div>
+    </div>
+  )
+}
+
+interface DocumentRowProps {
+  doc: ProcessedDocument
+  toolId: string
+  onAbort: (id: string) => void
+  onReupload: () => void
+  onOpenSummary: (docId: string, filename: string | null) => void
+  onUpdateDoc: (docId: string, patch: Partial<ProcessedDocument>) => void
+}
+
+function DocumentRow({ doc, toolId, onAbort, onReupload, onOpenSummary, onUpdateDoc }: DocumentRowProps) {
   const [expanded, setExpanded] = useState(false)
   const [aborting, setAborting] = useState(false)
   const { getToken } = useAuth()
@@ -99,6 +212,7 @@ function DocumentRow({ doc, toolId, onAbort }: { doc: ProcessedDocument; toolId:
       setAborting(false)
     }
   }
+
   const uploader = doc.uploaded_by ? doc.uploaded_by.split('@')[0] : null
   const date = new Date(doc.created_at).toLocaleString('en-GB', {
     day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit',
@@ -259,6 +373,18 @@ function DocumentRow({ doc, toolId, onAbort }: { doc: ProcessedDocument; toolId:
                   </span>
                 </div>
               )}
+
+              {/* Quick actions — completed documents only */}
+              {doc.status === 'completed' && (
+                <QuickActions
+                  doc={doc}
+                  toolId={toolId}
+                  onAbort={onAbort}
+                  onReupload={onReupload}
+                  onOpenSummary={onOpenSummary}
+                  onUpdateDoc={onUpdateDoc}
+                />
+              )}
             </div>
           </motion.div>
         )}
@@ -346,6 +472,9 @@ export function DocumentsTab({ toolId }: { toolId: string | null }) {
   const [total, setTotal] = useState(0)
   const [offset, setOffset] = useState(0)
   const [docType, setDocType] = useState<DocumentType>('invoice')
+  const [summaryDocId, setSummaryDocId] = useState<string | null>(null)
+  const [summaryFilename, setSummaryFilename] = useState<string | null>(null)
+  const uploadRef = useRef<HTMLDivElement>(null)
   const limit = 20
 
   async function load(off = 0) {
@@ -473,6 +602,10 @@ export function DocumentsTab({ toolId }: { toolId: string | null }) {
     setTotal(t => t - 1)
   }
 
+  function handleUpdateDoc(docId: string, patch: Partial<ProcessedDocument>) {
+    setDocuments(prev => prev.map(d => d.id === docId ? { ...d, ...patch } : d))
+  }
+
   if (!toolId) {
     return (
       <div className="bg-brand-surface border border-brand-border rounded-sm p-8 text-center">
@@ -483,7 +616,9 @@ export function DocumentsTab({ toolId }: { toolId: string | null }) {
 
   return (
     <div className="space-y-4">
-      <UploadArea docType={docType} setDocType={setDocType} uploading={uploading} onFiles={handleFiles} />
+      <div ref={uploadRef}>
+        <UploadArea docType={docType} setDocType={setDocType} uploading={uploading} onFiles={handleFiles} />
+      </div>
 
       <div>
         <div className="flex items-center justify-between mb-2">
@@ -511,7 +646,15 @@ export function DocumentsTab({ toolId }: { toolId: string | null }) {
           <>
             <div className="bg-brand-surface border border-brand-border rounded-sm overflow-hidden">
               {documents.map(doc => (
-                <DocumentRow key={doc.id} doc={doc} toolId={toolId} onAbort={handleAborted} />
+                <DocumentRow
+                  key={doc.id}
+                  doc={doc}
+                  toolId={toolId}
+                  onAbort={handleAborted}
+                  onReupload={() => uploadRef.current?.scrollIntoView({ behavior: 'smooth' })}
+                  onOpenSummary={(id, filename) => { setSummaryDocId(id); setSummaryFilename(filename) }}
+                  onUpdateDoc={handleUpdateDoc}
+                />
               ))}
             </div>
 
@@ -528,6 +671,14 @@ export function DocumentsTab({ toolId }: { toolId: string | null }) {
           </>
         )}
       </div>
+
+      {summaryDocId !== null && (
+        <ContractSummaryDrawer
+          documentId={summaryDocId}
+          filename={summaryFilename}
+          onClose={() => { setSummaryDocId(null); setSummaryFilename(null) }}
+        />
+      )}
     </div>
   )
 }
