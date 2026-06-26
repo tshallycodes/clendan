@@ -3,12 +3,14 @@ FreshBooks bill write — creates a bill for a document pushed from Document Int
 """
 import asyncio
 import random
+from datetime import UTC, datetime
 
 import httpx
 
 from app.core.db import get_db
 from app.core.logging import get_logger
-from app.integrations.encryption import decrypt_credentials
+from app.integrations.encryption import decrypt_credentials, encrypt_credentials
+from app.integrations.freshbooks import client as fb
 
 logger = get_logger(__name__)
 
@@ -68,6 +70,21 @@ async def create_bill(
     creds = decrypt_credentials(integration.encrypted_credentials, tenant_id)
     access_token: str = creds.get("access_token", "")
     account_id: str = creds.get("account_id", "")
+
+    token_expiry_at = creds.get("token_expiry_at")
+    if token_expiry_at:
+        try:
+            if datetime.fromisoformat(token_expiry_at) <= datetime.now(UTC):
+                logger.info("freshbooks_write_token_expired_refreshing", extra={"tenant_id": tenant_id})
+                new_tokens = await fb.refresh_token(creds["refresh_token"])
+                creds = {**creds, **new_tokens}
+                access_token = creds["access_token"]
+                await db.integration.update(
+                    where={"id": integration.id},
+                    data={"encrypted_credentials": encrypt_credentials(creds, tenant_id)},
+                )
+        except Exception as exc:
+            logger.error("freshbooks_write_token_refresh_failed", extra={"tenant_id": tenant_id, "error": type(exc).__name__})
 
     logger.info("freshbooks_credentials_check", extra={
         "tenant_id": tenant_id,
