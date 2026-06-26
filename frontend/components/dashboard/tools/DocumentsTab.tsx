@@ -74,14 +74,16 @@ function ExtractedFields({ extracted }: { extracted: Record<string, unknown> }) 
 interface QuickActionsProps {
   doc: ProcessedDocument
   toolId: string
+  connectedIntegrations: string[]
   onAbort: (id: string) => void
   onReupload: () => void
   onOpenSummary: (docId: string, filename: string | null) => void
   onUpdateDoc: (docId: string, patch: Partial<ProcessedDocument>) => void
 }
 
-function QuickActions({ doc, toolId, onAbort, onReupload, onOpenSummary, onUpdateDoc }: QuickActionsProps) {
+function QuickActions({ doc, toolId, connectedIntegrations, onAbort, onReupload, onOpenSummary, onUpdateDoc }: QuickActionsProps) {
   const [actionLoading, setActionLoading] = useState<string | null>(null)
+  const [selectedIntegration, setSelectedIntegration] = useState<string>(connectedIntegrations[0] ?? '')
   const { getToken } = useAuth()
   const { toast } = useToast()
 
@@ -112,15 +114,21 @@ function QuickActions({ doc, toolId, onAbort, onReupload, onOpenSummary, onUpdat
   }
 
   async function handlePushAccounting() {
+    if (!selectedIntegration) return
     setActionLoading('push')
     try {
       const token = await getToken()
       const res = await fetch(`${API}/v1/documents/${doc.id}/push-integration`, {
         method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ integration: 'xero' }),
+        body: JSON.stringify({ integration: selectedIntegration }),
       })
-      if (res.ok) { onUpdateDoc(doc.id, { accounting_write_status: 'written' }); toast('Pushed to accounting', 'success') }
-      else { const j = await res.json().catch(() => ({})); toast((j as { detail?: string }).detail ?? 'Push failed', 'error') }
+      if (res.ok) {
+        onUpdateDoc(doc.id, { accounting_write_status: `written:${selectedIntegration}` })
+        toast(`Pushed to ${selectedIntegration.charAt(0).toUpperCase() + selectedIntegration.slice(1)}`, 'success')
+      } else {
+        const j = await res.json().catch(() => ({}))
+        toast((j as { detail?: string }).detail ?? 'Push failed', 'error')
+      }
     } catch { toast('Network error', 'error') }
     finally { setActionLoading(null) }
   }
@@ -150,10 +158,26 @@ function QuickActions({ doc, toolId, onAbort, onReupload, onOpenSummary, onUpdat
             {actionLoading === 'flag' ? '…' : 'Flag for review'}
           </button>
         )}
-        {doc.accounting_write_status !== 'written' && doc.decision !== 'blocked' && (
-          <button type="button" onClick={handlePushAccounting} disabled={actionLoading !== null} className={btn}>
-            {actionLoading === 'push' ? '…' : 'Push to accounting'}
-          </button>
+        {connectedIntegrations.length > 0 && !doc.accounting_write_status?.startsWith('written') && doc.decision !== 'blocked' && (
+          <>
+            {connectedIntegrations.length > 1 && (
+              <div className="flex gap-1">
+                {connectedIntegrations.map(i => (
+                  <button key={i} type="button" onClick={() => setSelectedIntegration(i)}
+                    className={`text-[10px] font-mono px-2 py-0.5 rounded-sm border transition-colors ${
+                      selectedIntegration === i
+                        ? 'border-[#00C853] text-[#00C853] bg-[rgba(0,200,83,0.08)]'
+                        : 'border-brand-border text-brand-muted hover:text-brand-secondary'
+                    }`}>
+                    {i.charAt(0).toUpperCase() + i.slice(1)}
+                  </button>
+                ))}
+              </div>
+            )}
+            <button type="button" onClick={handlePushAccounting} disabled={actionLoading !== null} className={btn}>
+              {actionLoading === 'push' ? '…' : `Push to ${selectedIntegration.charAt(0).toUpperCase() + selectedIntegration.slice(1)}`}
+            </button>
+          </>
         )}
         <button
           type="button" onClick={handleReupload} disabled={actionLoading !== null}
@@ -177,13 +201,14 @@ function QuickActions({ doc, toolId, onAbort, onReupload, onOpenSummary, onUpdat
 interface DocumentRowProps {
   doc: ProcessedDocument
   toolId: string
+  connectedIntegrations: string[]
   onAbort: (id: string) => void
   onReupload: () => void
   onOpenSummary: (docId: string, filename: string | null) => void
   onUpdateDoc: (docId: string, patch: Partial<ProcessedDocument>) => void
 }
 
-function DocumentRow({ doc, toolId, onAbort, onReupload, onOpenSummary, onUpdateDoc }: DocumentRowProps) {
+function DocumentRow({ doc, toolId, connectedIntegrations, onAbort, onReupload, onOpenSummary, onUpdateDoc }: DocumentRowProps) {
   const [expanded, setExpanded] = useState(false)
   const [aborting, setAborting] = useState(false)
   const { getToken } = useAuth()
@@ -362,23 +387,33 @@ function DocumentRow({ doc, toolId, onAbort, onReupload, onOpenSummary, onUpdate
               )}
 
               {/* Accounting write status */}
-              {doc.accounting_write_status && doc.accounting_write_status !== 'skipped' && (
-                <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-mono text-brand-muted uppercase tracking-widest">Accounting write</span>
-                  <span className={`text-[10px] font-mono ${
-                    doc.accounting_write_status === 'written' ? 'text-[#00C853]' :
-                    doc.accounting_write_status === 'failed' ? 'text-[#ff4d6d]' : 'text-brand-muted'
-                  }`}>
-                    {doc.accounting_write_status}
-                  </span>
-                </div>
-              )}
+              {doc.accounting_write_status && doc.accounting_write_status !== 'skipped' && (() => {
+                const isWritten = doc.accounting_write_status.startsWith('written')
+                const integration = doc.accounting_write_status.includes(':')
+                  ? doc.accounting_write_status.split(':')[1]
+                  : null
+                const label = isWritten
+                  ? `Pushed to ${integration ? integration.charAt(0).toUpperCase() + integration.slice(1) : 'accounting'} — already synced, re-push blocked`
+                  : doc.accounting_write_status
+                return (
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-mono text-brand-muted uppercase tracking-widest">Accounting write</span>
+                    <span className={`text-[10px] font-mono ${
+                      isWritten ? 'text-[#00C853]' :
+                      doc.accounting_write_status === 'failed' ? 'text-[#ff4d6d]' : 'text-brand-muted'
+                    }`}>
+                      {label}
+                    </span>
+                  </div>
+                )
+              })()}
 
               {/* Quick actions — completed documents only */}
               {doc.status === 'completed' && (
                 <QuickActions
                   doc={doc}
                   toolId={toolId}
+                  connectedIntegrations={connectedIntegrations}
                   onAbort={onAbort}
                   onReupload={onReupload}
                   onOpenSummary={onOpenSummary}
@@ -463,7 +498,7 @@ function UploadArea({
   )
 }
 
-export function DocumentsTab({ toolId }: { toolId: string | null }) {
+export function DocumentsTab({ toolId, connectedIntegrations = [] }: { toolId: string | null; connectedIntegrations?: string[] }) {
   const { getToken } = useAuth()
   const { toast } = useToast()
   const [documents, setDocuments] = useState<ProcessedDocument[]>([])
@@ -650,6 +685,7 @@ export function DocumentsTab({ toolId }: { toolId: string | null }) {
                   key={doc.id}
                   doc={doc}
                   toolId={toolId}
+                  connectedIntegrations={connectedIntegrations}
                   onAbort={handleAborted}
                   onReupload={() => uploadRef.current?.scrollIntoView({ behavior: 'smooth' })}
                   onOpenSummary={(id, filename) => { setSummaryDocId(id); setSummaryFilename(filename) }}

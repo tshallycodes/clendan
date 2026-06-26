@@ -259,7 +259,12 @@ export function GenericToolClient({ tool, deployed }: Props) {
           {activeTab === 'executions' && <ToolExecutionsTab toolId={deployed?.id ?? null} />}
           {activeTab === 'approvals' && <ToolApprovalsTab toolId={deployed?.id ?? null} />}
           {activeTab === 'audit' && <ToolAuditTab toolId={deployed?.id ?? null} />}
-          {activeTab === 'documents' && <DocumentsTab toolId={deployed?.id ?? null} />}
+          {activeTab === 'documents' && (
+            <DocumentsTab
+              toolId={deployed?.id ?? null}
+              connectedIntegrations={(deployed?.config_json as Record<string, unknown> | null)?.accounting_integrations as string[] ?? []}
+            />
+          )}
         </motion.div>
       </AnimatePresence>
 

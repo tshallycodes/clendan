@@ -158,12 +158,29 @@ async def push_document_to_integration(
             detail="Blocked documents cannot be pushed to integration",
         )
 
-    if doc.accounting_write_status == "written":
+    if doc.accounting_write_status and doc.accounting_write_status.startswith("written"):
         return standard_response(data={"already_written": True})
+
+    if not doc.tool_id:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Document has no associated tool",
+        )
+
+    tool = await db.tool.find_unique(where={"id": doc.tool_id})
+    configured: list[str] = []
+    if tool and isinstance(tool.config_json, dict):
+        configured = tool.config_json.get("accounting_integrations", []) or []
+
+    if body.integration not in configured:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"{body.integration.capitalize()} is not connected. Add it in the tool's Configure drawer first.",
+        )
 
     await db.document.update(
         where={"id": document_id},
-        data={"accounting_write_status": "written"},
+        data={"accounting_write_status": f"written:{body.integration}"},
     )
 
     await write_audit_log(
