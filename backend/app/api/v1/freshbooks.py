@@ -27,8 +27,7 @@ _AUTH_URL = "https://auth.freshbooks.com/oauth/authorize"
 _SCOPE = (
     "user:profile:read user:bills:read user:bills:write "
     "user:invoices:read user:invoices:write user:payments:read "
-    "user:clients:read user:expenses:read user:expenses:write "
-    "user:staff:read"
+    "user:clients:read user:expenses:read user:expenses:write"
 )
 
 
