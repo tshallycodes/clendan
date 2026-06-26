@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useAuth } from '@clerk/nextjs'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useToast } from '@/components/Providers'
@@ -252,93 +252,18 @@ function DocumentRow({ doc, toolId, onAbort }: { doc: ProcessedDocument; toolId:
 }
 
 function UploadArea({
-  toolId,
-  onPending,
-  onUploaded,
-  onUploadFailed,
+  docType,
+  setDocType,
+  uploading,
+  onFiles,
 }: {
-  toolId: string
-  onPending: (tempId: string, doc: ProcessedDocument) => void
-  onUploaded: (doc: ProcessedDocument, tempId: string) => void
-  onUploadFailed: (tempId: string) => void
+  docType: DocumentType
+  setDocType: (t: DocumentType) => void
+  uploading: boolean
+  onFiles: (files: FileList) => void
 }) {
-  const { getToken } = useAuth()
-  const { toast } = useToast()
   const [dragOver, setDragOver] = useState(false)
-  const [uploading, setUploading] = useState(false)
-  const [docType, setDocType] = useState<DocumentType>('invoice')
   const inputRef = useRef<HTMLInputElement>(null)
-
-  async function uploadFile(file: File) {
-    const tempId = `temp-${Date.now()}`
-    const now = new Date().toISOString()
-    onPending(tempId, {
-      id: tempId,
-      document_type: docType,
-      filename: file.name,
-      content_type: file.type,
-      file_size_bytes: file.size,
-      uploaded_by: null,
-      status: 'processing',
-      decision: null,
-      confidence: null,
-      rule_triggered: null,
-      reason: null,
-      flags_json: null,
-      extracted_json: null,
-      thumbnail_b64: null,
-      accounting_write_status: null,
-      created_at: now,
-    })
-    setUploading(true)
-    try {
-      const token = await getToken()
-      const form = new FormData()
-      form.append('file', file)
-      const res = await fetch(
-        `${API}/v1/document-intelligence/${toolId}/upload?document_type=${docType}`,
-        { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: form },
-      )
-      const json = await res.json()
-      if (!res.ok) {
-        toast(json.detail ?? 'Upload failed', 'error')
-        onUploadFailed(tempId)
-        return
-      }
-      toast('Document uploaded — processing started', 'success')
-      onUploaded({
-        id: json.data.document_id,
-        document_type: docType,
-        filename: file.name,
-        content_type: file.type,
-        file_size_bytes: file.size,
-        uploaded_by: null,
-        status: 'processing',
-        decision: null,
-        confidence: null,
-        rule_triggered: null,
-        reason: null,
-        flags_json: null,
-        extracted_json: null,
-        thumbnail_b64: json.data.thumbnail_b64 ?? null,
-        accounting_write_status: null,
-        created_at: now,
-      }, tempId)
-    } catch {
-      toast('Network error — please try again', 'error')
-      onUploadFailed(tempId)
-    } finally {
-      setUploading(false)
-    }
-  }
-
-  const handleFiles = useCallback(
-    (files: FileList | null) => {
-      if (!files || files.length === 0) return
-      uploadFile(files[0])
-    },
-    [docType, toolId],
-  )
 
   return (
     <div className="space-y-3">
@@ -363,7 +288,7 @@ function UploadArea({
       <div
         onDragOver={e => { e.preventDefault(); setDragOver(true) }}
         onDragLeave={() => setDragOver(false)}
-        onDrop={e => { e.preventDefault(); setDragOver(false); handleFiles(e.dataTransfer.files) }}
+        onDrop={e => { e.preventDefault(); setDragOver(false); if (e.dataTransfer.files.length) onFiles(e.dataTransfer.files) }}
         onClick={() => inputRef.current?.click()}
         className={`relative border-2 border-dashed rounded-sm p-8 text-center cursor-pointer transition-colors ${
           dragOver
@@ -376,7 +301,7 @@ function UploadArea({
           type="file"
           accept=".pdf,.png,.jpg,.jpeg,.webp"
           className="sr-only"
-          onChange={e => handleFiles(e.target.files)}
+          onChange={e => { if (e.target.files?.length) onFiles(e.target.files) }}
         />
         {uploading ? (
           <div className="space-y-1.5">
@@ -392,17 +317,19 @@ function UploadArea({
           </div>
         )}
       </div>
-
     </div>
   )
 }
 
 export function DocumentsTab({ toolId }: { toolId: string | null }) {
   const { getToken } = useAuth()
+  const { toast } = useToast()
   const [documents, setDocuments] = useState<ProcessedDocument[]>([])
   const [loading, setLoading] = useState(false)
+  const [uploading, setUploading] = useState(false)
   const [total, setTotal] = useState(0)
   const [offset, setOffset] = useState(0)
+  const [docType, setDocType] = useState<DocumentType>('invoice')
   const limit = 20
 
   async function load(off = 0) {
@@ -427,18 +354,75 @@ export function DocumentsTab({ toolId }: { toolId: string | null }) {
 
   useEffect(() => { load(0) }, [toolId])
 
-  function handlePending(tempId: string, doc: ProcessedDocument) {
-    setDocuments(prev => [doc, ...prev])
+  async function handleFiles(files: FileList) {
+    if (!toolId) return
+    const file = files[0]
+    const tempId = `temp-${Date.now()}`
+    const now = new Date().toISOString()
+
+    // Add placeholder immediately — state update in this component, no callback chain
+    setDocuments(prev => [{
+      id: tempId,
+      document_type: docType,
+      filename: file.name,
+      content_type: file.type,
+      file_size_bytes: file.size,
+      uploaded_by: null,
+      status: 'processing',
+      decision: null,
+      confidence: null,
+      rule_triggered: null,
+      reason: null,
+      flags_json: null,
+      extracted_json: null,
+      thumbnail_b64: null,
+      accounting_write_status: null,
+      created_at: now,
+    }, ...prev])
     setTotal(t => t + 1)
-  }
+    setUploading(true)
 
-  function handleUploaded(doc: ProcessedDocument, tempId: string) {
-    setDocuments(prev => prev.map(d => d.id === tempId ? doc : d))
-  }
-
-  function handleUploadFailed(tempId: string) {
-    setDocuments(prev => prev.filter(d => d.id !== tempId))
-    setTotal(t => t - 1)
+    try {
+      const token = await getToken()
+      const form = new FormData()
+      form.append('file', file)
+      const res = await fetch(
+        `${API}/v1/document-intelligence/${toolId}/upload?document_type=${docType}`,
+        { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: form },
+      )
+      const json = await res.json()
+      if (!res.ok) {
+        toast(json.detail ?? 'Upload failed', 'error')
+        setDocuments(prev => prev.filter(d => d.id !== tempId))
+        setTotal(t => t - 1)
+        return
+      }
+      toast('Document uploaded — processing started', 'success')
+      setDocuments(prev => prev.map(d => d.id === tempId ? {
+        id: json.data.document_id,
+        document_type: docType,
+        filename: file.name,
+        content_type: file.type,
+        file_size_bytes: file.size,
+        uploaded_by: null,
+        status: 'processing',
+        decision: null,
+        confidence: null,
+        rule_triggered: null,
+        reason: null,
+        flags_json: null,
+        extracted_json: null,
+        thumbnail_b64: json.data.thumbnail_b64 ?? null,
+        accounting_write_status: null,
+        created_at: now,
+      } : d))
+    } catch {
+      toast('Network error — please try again', 'error')
+      setDocuments(prev => prev.filter(d => d.id !== tempId))
+      setTotal(t => t - 1)
+    } finally {
+      setUploading(false)
+    }
   }
 
   function handleAborted(docId: string) {
@@ -456,7 +440,7 @@ export function DocumentsTab({ toolId }: { toolId: string | null }) {
 
   return (
     <div className="space-y-4">
-      <UploadArea toolId={toolId} onPending={handlePending} onUploaded={handleUploaded} onUploadFailed={handleUploadFailed} />
+      <UploadArea docType={docType} setDocType={setDocType} uploading={uploading} onFiles={handleFiles} />
 
       <div>
         <div className="flex items-center justify-between mb-2">
