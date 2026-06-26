@@ -103,6 +103,8 @@ function DocumentRow({ doc, toolId, onAbort }: { doc: ProcessedDocument; toolId:
   const date = new Date(doc.created_at).toLocaleString('en-GB', {
     day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit',
   })
+  const timedOut = doc.status === 'processing' && !doc.id.startsWith('temp-') &&
+    Date.now() - new Date(doc.created_at).getTime() > 10 * 60 * 1000
 
   return (
     <div className="border-b border-brand-border last:border-0">
@@ -147,17 +149,21 @@ function DocumentRow({ doc, toolId, onAbort }: { doc: ProcessedDocument; toolId:
             <div className="shrink-0 flex items-center gap-2">
               {doc.status === 'processing' && (
                 <>
-                  <span className="text-[10px] font-mono text-[#f5a623] bg-[rgba(245,166,35,0.08)] border border-[rgba(245,166,35,0.2)] rounded-sm px-2 py-0.5">
-                    {doc.id.startsWith('temp-') ? 'Uploading…' : 'Processing…'}
+                  <span className={`text-[10px] font-mono px-2 py-0.5 rounded-sm border ${
+                    timedOut
+                      ? 'text-[#ff4d6d] bg-[rgba(255,77,109,0.08)] border-[rgba(255,77,109,0.2)]'
+                      : 'text-[#f5a623] bg-[rgba(245,166,35,0.08)] border-[rgba(245,166,35,0.2)]'
+                  }`}>
+                    {doc.id.startsWith('temp-') ? 'Uploading…' : timedOut ? 'Timed out' : 'Processing…'}
                   </span>
                   {!doc.id.startsWith('temp-') && (
                     <button
                       type="button"
-                      onClick={e => handleDelete(e, 'Aborted')}
+                      onClick={e => handleDelete(e, timedOut ? 'Deleted' : 'Aborted')}
                       disabled={aborting}
                       className="text-[10px] font-mono text-[#ff4d6d] bg-[rgba(255,77,109,0.06)] border border-[rgba(255,77,109,0.3)] hover:bg-[rgba(255,77,109,0.12)] rounded-sm px-2 py-0.5 transition-colors disabled:opacity-50"
                     >
-                      {aborting ? 'Aborting…' : 'Abort'}
+                      {aborting ? 'Deleting…' : timedOut ? 'Delete' : 'Abort'}
                     </button>
                   )}
                 </>
