@@ -49,17 +49,40 @@ async def create_bill(
     Raises ValueError if no connected integration or credentials incomplete.
     """
     db = get_db()
+    logger.info("xero_create_bill_start", extra={
+        "tenant_id": tenant_id, "vendor": vendor,
+        "invoice_number": invoice_number, "amount_minor": amount_minor,
+        "currency": currency, "due_date": due_date,
+    })
+
     integration = await db.integration.find_first(
         where={"tenant_id": tenant_id, "type": "xero", "status": "connected"}
     )
     if not integration:
+        logger.error("xero_no_connected_integration", extra={"tenant_id": tenant_id})
         raise ValueError(f"No connected Xero integration for tenant {tenant_id}")
+
+    logger.info("xero_integration_found", extra={
+        "tenant_id": tenant_id, "integration_id": integration.id,
+    })
 
     creds = decrypt_credentials(integration.encrypted_credentials, tenant_id)
     access_token: str = creds.get("access_token", "")
     xero_tenant_id: str = creds.get("xero_tenant_id", "")
 
+    logger.info("xero_credentials_check", extra={
+        "tenant_id": tenant_id,
+        "has_access_token": bool(access_token),
+        "has_xero_tenant_id": bool(xero_tenant_id),
+        "cred_keys": list(creds.keys()),
+    })
+
     if not access_token or not xero_tenant_id:
+        logger.error("xero_credentials_incomplete", extra={
+            "tenant_id": tenant_id,
+            "has_access_token": bool(access_token),
+            "has_xero_tenant_id": bool(xero_tenant_id),
+        })
         raise ValueError("Xero credentials missing access_token or xero_tenant_id")
 
     amount_decimal = round(amount_minor / 100.0, 2)
@@ -82,6 +105,10 @@ async def create_bill(
         invoice_payload["DueDate"] = due_date
 
     async def _call():
+        logger.info("xero_http_request", extra={
+            "tenant_id": tenant_id, "invoice_number": invoice_number,
+            "url": f"{XERO_API_BASE}/Invoices",
+        })
         async with httpx.AsyncClient() as client:
             resp = await client.post(
                 f"{XERO_API_BASE}/Invoices",
@@ -94,6 +121,15 @@ async def create_bill(
                 json={"Invoices": [invoice_payload]},
                 timeout=15.0,
             )
+            logger.info("xero_http_response", extra={
+                "tenant_id": tenant_id, "invoice_number": invoice_number,
+                "status_code": resp.status_code,
+            })
+            if not resp.is_success:
+                logger.error("xero_http_error", extra={
+                    "tenant_id": tenant_id, "invoice_number": invoice_number,
+                    "status_code": resp.status_code, "response_body": resp.text,
+                })
             resp.raise_for_status()
             return resp.json()
 

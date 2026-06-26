@@ -48,17 +48,40 @@ async def create_bill(
     Raises ValueError if no connected integration or credentials incomplete.
     """
     db = get_db()
+    logger.info("freshbooks_create_bill_start", extra={
+        "tenant_id": tenant_id, "vendor": vendor,
+        "invoice_number": invoice_number, "amount_minor": amount_minor,
+        "currency": currency, "due_date": due_date,
+    })
+
     integration = await db.integration.find_first(
         where={"tenant_id": tenant_id, "type": "freshbooks", "status": "connected"}
     )
     if not integration:
+        logger.error("freshbooks_no_connected_integration", extra={"tenant_id": tenant_id})
         raise ValueError(f"No connected FreshBooks integration for tenant {tenant_id}")
+
+    logger.info("freshbooks_integration_found", extra={
+        "tenant_id": tenant_id, "integration_id": integration.id,
+    })
 
     creds = decrypt_credentials(integration.encrypted_credentials, tenant_id)
     access_token: str = creds.get("access_token", "")
     account_id: str = creds.get("account_id", "")
 
+    logger.info("freshbooks_credentials_check", extra={
+        "tenant_id": tenant_id,
+        "has_access_token": bool(access_token),
+        "has_account_id": bool(account_id),
+        "cred_keys": list(creds.keys()),
+    })
+
     if not access_token or not account_id:
+        logger.error("freshbooks_credentials_incomplete", extra={
+            "tenant_id": tenant_id,
+            "has_access_token": bool(access_token),
+            "has_account_id": bool(account_id),
+        })
         raise ValueError("FreshBooks credentials missing access_token or account_id")
 
     amount_str = str(round(amount_minor / 100.0, 2))
@@ -79,9 +102,13 @@ async def create_bill(
         bill_payload["due_date"] = due_date
 
     async def _call():
+        url = f"{FRESHBOOKS_API_BASE}/accounting/account/{account_id}/bills/bills"
+        logger.info("freshbooks_http_request", extra={
+            "tenant_id": tenant_id, "invoice_number": invoice_number, "url": url,
+        })
         async with httpx.AsyncClient() as client:
             resp = await client.post(
-                f"{FRESHBOOKS_API_BASE}/accounting/account/{account_id}/bills/bills",
+                url,
                 headers={
                     "Authorization": f"Bearer {access_token}",
                     "Accept": "application/json",
@@ -91,6 +118,15 @@ async def create_bill(
                 json={"bill": bill_payload},
                 timeout=15.0,
             )
+            logger.info("freshbooks_http_response", extra={
+                "tenant_id": tenant_id, "invoice_number": invoice_number,
+                "status_code": resp.status_code,
+            })
+            if not resp.is_success:
+                logger.error("freshbooks_http_error", extra={
+                    "tenant_id": tenant_id, "invoice_number": invoice_number,
+                    "status_code": resp.status_code, "response_body": resp.text,
+                })
             resp.raise_for_status()
             return resp.json()
 

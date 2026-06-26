@@ -245,7 +245,20 @@ async def _process_receipt(
         "category": category,
     }
 
+    _logger.info("doc_intel_push_start", extra={
+        "execution_id": execution_id,
+        "tenant_id": tenant_id,
+        "accounting_integrations": accounting_integrations,
+        "merchant": merchant,
+        "amount_minor": amount_minor,
+        "currency": currency,
+        "date": date_str,
+    })
+
     if not accounting_integrations:
+        _logger.warning("doc_intel_push_no_integrations", extra={
+            "execution_id": execution_id, "tenant_id": tenant_id,
+        })
         return {
             "decision": "push_failed",
             "confidence": confidence,
@@ -257,6 +270,9 @@ async def _process_receipt(
     ref = f"RCPT-{execution_id[:8].upper()}"
     write_results: list[str] = []
     for integration in accounting_integrations:
+        _logger.info("doc_intel_push_attempt", extra={
+            "execution_id": execution_id, "integration": integration, "ref": ref,
+        })
         try:
             if integration == "xero":
                 from app.integrations.xero.write import create_bill
@@ -278,14 +294,35 @@ async def _process_receipt(
                     amount_minor=amount_minor, currency=currency, due_date=date_str,
                 )
             else:
-                _logger.warning("doc_intel_unknown_integration", extra={"integration": integration})
+                _logger.warning("doc_intel_unknown_integration", extra={
+                    "execution_id": execution_id, "integration": integration,
+                })
                 write_results.append(f"unsupported:{integration}")
                 continue
+            _logger.info("doc_intel_push_ok", extra={
+                "execution_id": execution_id, "integration": integration,
+            })
             write_results.append(f"written:{integration}")
         except Exception as exc:
-            _logger.warning(
-                "doc_intel_receipt_push_failed",
-                extra={"integration": integration, "error": type(exc).__name__, "detail": str(exc)[:200]},
+            import httpx as _httpx
+            response_body: str | None = None
+            status_code: int | None = None
+            if isinstance(exc, _httpx.HTTPStatusError):
+                status_code = exc.response.status_code
+                try:
+                    response_body = exc.response.text
+                except Exception:
+                    response_body = "<unreadable>"
+            _logger.error(
+                "doc_intel_push_failed",
+                extra={
+                    "execution_id": execution_id,
+                    "integration": integration,
+                    "error_type": type(exc).__name__,
+                    "error": str(exc),
+                    "http_status": status_code,
+                    "response_body": response_body,
+                },
             )
             write_results.append(f"failed:{integration}")
 

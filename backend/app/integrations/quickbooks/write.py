@@ -35,30 +35,65 @@ async def write_bill_to_quickbooks(
     db = get_db()
     settings = get_settings()
 
+    logger.info("qb_write_bill_start", extra={
+        "tenant_id": tenant_id, "execution_id": execution_id,
+        "vendor": vendor, "invoice_number": invoice_number,
+        "amount_minor": amount_minor, "currency": currency, "due_date": due_date,
+    })
+
     integration = await db.integration.find_first(
         where={"tenant_id": tenant_id, "type": "quickbooks", "status": "connected"}
     )
     if not integration:
+        logger.error("qb_no_connected_integration", extra={"tenant_id": tenant_id})
         raise ValueError(f"No connected QuickBooks integration for tenant {tenant_id}")
 
+    logger.info("qb_integration_found", extra={
+        "tenant_id": tenant_id, "integration_id": integration.id,
+    })
+
     creds = decrypt_credentials(integration.encrypted_credentials, tenant_id)
-    encrypted_access = creds["access_token"]
-    realm_id = creds["realm_id"]
+    encrypted_access = creds.get("access_token", "")
+    realm_id = creds.get("realm_id", "")
     sandbox = settings.quickbooks_sandbox
 
+    logger.info("qb_credentials_check", extra={
+        "tenant_id": tenant_id,
+        "has_access_token": bool(encrypted_access),
+        "has_realm_id": bool(realm_id),
+        "sandbox": sandbox,
+        "cred_keys": list(creds.keys()),
+    })
+
+    if not encrypted_access or not realm_id:
+        logger.error("qb_credentials_incomplete", extra={
+            "tenant_id": tenant_id,
+            "has_access_token": bool(encrypted_access),
+            "has_realm_id": bool(realm_id),
+        })
+        raise ValueError("QuickBooks credentials missing access_token or realm_id")
+
+    logger.info("qb_finding_vendor", extra={"tenant_id": tenant_id, "vendor": vendor})
     vendor_id = await qb.find_or_create_vendor(
         encrypted_access=encrypted_access,
         realm_id=realm_id,
         vendor_name=vendor,
         sandbox=sandbox,
     )
+    logger.info("qb_vendor_resolved", extra={"tenant_id": tenant_id, "vendor_id": vendor_id})
 
+    logger.info("qb_resolving_expense_account", extra={"tenant_id": tenant_id})
     account_id = await qb.get_expense_account_id(
         encrypted_access=encrypted_access,
         realm_id=realm_id,
         sandbox=sandbox,
     )
+    logger.info("qb_expense_account_resolved", extra={"tenant_id": tenant_id, "account_id": account_id})
 
+    logger.info("qb_creating_bill", extra={
+        "tenant_id": tenant_id, "vendor_id": vendor_id,
+        "account_id": account_id, "invoice_number": invoice_number,
+    })
     result = await qb.create_bill(
         encrypted_access=encrypted_access,
         realm_id=realm_id,
