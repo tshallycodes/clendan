@@ -62,15 +62,16 @@ async def respond_to_approval(
     new_status = "approved" if body.action == ApprovalAction.APPROVE else "rejected"
     new_decision = "approved" if body.action == ApprovalAction.APPROVE else "rejected"
 
-    # Update approval record
-    await db.approval.update(
-        where={"id": approval_id},
-        data={
-            "status": new_status,
-            "responded_at": now,
-            "responder_id": clerk_user_id,
-        },
+    responder = await db.user.find_first(
+        where={"clerk_user_id": clerk_user_id, "tenant_id": tenant_id}
     )
+
+    approval_update: dict = {"status": new_status, "responded_at": now}
+    if responder:
+        approval_update["responder_id"] = responder.id
+
+    # Update approval record
+    await db.approval.update(where={"id": approval_id}, data=approval_update)  # type: ignore[arg-type]
 
     # Update execution decision
     await db.execution.update(
