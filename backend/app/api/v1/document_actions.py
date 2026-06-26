@@ -161,7 +161,12 @@ async def push_document_to_integration(
             detail="Blocked documents cannot be pushed to integration",
         )
 
-    if doc.accounting_write_status and ":" in doc.accounting_write_status:
+    already_written = [
+        part.split(":")[1]
+        for part in (doc.accounting_write_status or "").split(",")
+        if ":" in part
+    ]
+    if body.integration in already_written:
         return standard_response(data={"already_written": True})
 
     if not doc.tool_id:
@@ -246,9 +251,12 @@ async def push_document_to_integration(
             detail=f"Failed to write to {body.integration.capitalize()} — {type(exc).__name__}",
         ) from exc
 
+    existing_status = doc.accounting_write_status or ""
+    new_entry = f"written:{body.integration}"
+    new_status = f"{existing_status},{new_entry}" if existing_status else new_entry
     await db.document.update(
         where={"id": document_id},
-        data={"accounting_write_status": f"written:{body.integration}"},
+        data={"accounting_write_status": new_status},
     )
 
     await write_audit_log(

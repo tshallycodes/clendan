@@ -79,11 +79,16 @@ async def respond_to_approval(
         data={"decision": new_decision},
     )
 
-    # Cascade rejection to document so it shows Blocked instead of Approval required
+    # Cascade decision to document so the Documents tab reflects the outcome
     if body.action == ApprovalAction.REJECT:
         await db.document.update_many(
             where={"execution_id": approval.execution_id, "tenant_id": tenant_id},
             data={"decision": "blocked"},
+        )
+    else:
+        await db.document.update_many(
+            where={"execution_id": approval.execution_id, "tenant_id": tenant_id},
+            data={"decision": "auto_approved"},
         )
 
     # Audit log — must succeed for operation to complete

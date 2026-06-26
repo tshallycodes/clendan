@@ -108,8 +108,10 @@ function QuickActions({ doc, toolId, connectedIntegrations, onAbort, onReupload,
     try {
       const token = await getToken()
       const res = await fetch(`${API}/v1/documents/${doc.id}/flag`, { method: 'POST', headers: { Authorization: `Bearer ${token}` } })
-      if (res.ok) { toast('Flagged for review', 'success') }
-      else { const j = await res.json().catch(() => ({})); toast((j as { detail?: string }).detail ?? 'Failed to flag', 'error') }
+      if (res.ok) {
+        const j = await res.json().catch(() => ({}))
+        toast((j as { data?: { already_flagged?: boolean } }).data?.already_flagged ? 'Already flagged — pending review' : 'Flagged for review', 'success')
+      } else { const j = await res.json().catch(() => ({})); toast((j as { detail?: string }).detail ?? 'Failed to flag', 'error') }
     } catch { toast('Network error', 'error') }
     finally { setActionLoading(null) }
   }
@@ -130,9 +132,14 @@ function QuickActions({ doc, toolId, connectedIntegrations, onAbort, onReupload,
           failed.push((j as { detail?: string }).detail ?? integration)
         }
       }
+      const succeeded = connectedIntegrations.filter(i => !failed.some(f => f.includes(i)))
+      if (succeeded.length > 0) {
+        const newEntries = succeeded.map(i => `written:${i}`).join(',')
+        const existing = doc.accounting_write_status || ''
+        onUpdateDoc(doc.id, { accounting_write_status: existing ? `${existing},${newEntries}` : newEntries })
+      }
       if (failed.length === 0) {
         const label = connectedIntegrations.map(i => i.charAt(0).toUpperCase() + i.slice(1)).join(' & ')
-        onUpdateDoc(doc.id, { accounting_write_status: `written:${connectedIntegrations[0]}` })
         toast(`Pushed to ${label}`, 'success')
       } else {
         toast(failed.join('; '), 'error')
@@ -166,7 +173,7 @@ function QuickActions({ doc, toolId, connectedIntegrations, onAbort, onReupload,
             {actionLoading === 'flag' ? '…' : 'Flag for review'}
           </button>
         )}
-        {connectedIntegrations.length > 0 && !doc.accounting_write_status?.includes(':') && doc.decision !== 'blocked' && (
+        {connectedIntegrations.length > 0 && connectedIntegrations.some(i => !doc.accounting_write_status?.includes(`written:${i}`)) && doc.decision !== 'blocked' && (
           <button
             type="button"
             onClick={doc.decision === 'approval_required' ? () => toast('Approval required before pushing to integration', 'error') : handlePushAccounting}
@@ -385,14 +392,17 @@ function DocumentRow({ doc, toolId, connectedIntegrations, onAbort, onReupload, 
 
               {/* Accounting write status */}
               {doc.accounting_write_status && doc.accounting_write_status !== 'skipped' && (() => {
-                const hasIntegration = doc.accounting_write_status.includes(':')
-                const integration = hasIntegration ? doc.accounting_write_status.split(':')[1] : null
+                const writtenIntegrations = doc.accounting_write_status
+                  .split(',')
+                  .filter(p => p.includes(':'))
+                  .map(p => { const i = p.split(':')[1]; return i.charAt(0).toUpperCase() + i.slice(1) })
                 const isFailed = doc.accounting_write_status === 'failed'
+                const hasIntegration = writtenIntegrations.length > 0
                 const label = hasIntegration
-                  ? `Pushed to ${integration!.charAt(0).toUpperCase() + integration!.slice(1)} — already synced, re-push blocked`
+                  ? `Pushed to ${writtenIntegrations.join(' & ')} — re-push blocked`
                   : isFailed
                     ? 'Write failed'
-                    : 'Not synced — select an integration below to push'
+                    : 'Not synced'
                 return (
                   <div className="flex items-center gap-2">
                     <span className="text-[10px] font-mono text-brand-muted uppercase tracking-widest">Accounting write</span>
