@@ -2,11 +2,10 @@
 QuickBooks bill write — called by invoice_processing tool after AUTO_APPROVED decision.
 Audit log is always written before this runs (enforced in invoice_processing.py).
 """
-import json
-
 from app.core.config import get_settings
 from app.core.db import get_db
 from app.core.logging import get_logger
+from app.integrations.encryption import decrypt_credentials
 from app.integrations.quickbooks import client as qb
 
 logger = get_logger(__name__)
@@ -42,7 +41,7 @@ async def write_bill_to_quickbooks(
     if not integration:
         raise ValueError(f"No connected QuickBooks integration for tenant {tenant_id}")
 
-    creds = json.loads(integration.encrypted_credentials)
+    creds = decrypt_credentials(integration.encrypted_credentials, tenant_id)
     encrypted_access = creds["access_token"]
     realm_id = creds["realm_id"]
     sandbox = settings.quickbooks_sandbox
