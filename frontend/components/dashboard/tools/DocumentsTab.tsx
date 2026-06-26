@@ -564,11 +564,20 @@ export function DocumentsTab({ toolId }: { toolId: string | null }) {
         if (!res.ok) return
         const json = await res.json()
         const fresh: ProcessedDocument[] = json.data.documents
-        setDocuments(prev => prev.map(d => {
-          if (d.id.startsWith('temp-')) return d
-          const updated = fresh.find(f => f.id === d.id)
-          return updated ?? d
-        }))
+        setDocuments(prev => {
+          const next = prev.map(d => {
+            if (d.id.startsWith('temp-')) return d
+            const updated = fresh.find(f => f.id === d.id)
+            if (updated && d.status === 'processing' && updated.status === 'completed') {
+              const isSuccess = ['auto_pushed', 'analysed', 'auto_approved'].includes(updated.decision ?? '')
+              const label = DECISION_CONFIG[updated.decision ?? '']?.label ?? 'Processed'
+              const name = updated.filename ?? 'Document'
+              setTimeout(() => toast(`${name}: ${label}`, isSuccess ? 'success' : 'error'), 0)
+            }
+            return updated ?? d
+          })
+          return next
+        })
         setTotal(json.data.total)
       } catch {
         // polling failure is non-fatal
