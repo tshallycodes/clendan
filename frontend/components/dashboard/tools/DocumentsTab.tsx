@@ -159,7 +159,7 @@ function QuickActions({ doc, toolId, connectedIntegrations, onAbort, onReupload,
             {actionLoading === 'flag' ? '…' : 'Flag for review'}
           </button>
         )}
-        {connectedIntegrations.length > 0 && !doc.accounting_write_status?.startsWith('written') && doc.decision !== 'blocked' && (
+        {connectedIntegrations.length > 0 && !doc.accounting_write_status?.includes(':') && doc.decision !== 'blocked' && (
           <>
             {connectedIntegrations.length > 1 && (
               <div className="flex gap-1">
@@ -389,19 +389,20 @@ function DocumentRow({ doc, toolId, connectedIntegrations, onAbort, onReupload, 
 
               {/* Accounting write status */}
               {doc.accounting_write_status && doc.accounting_write_status !== 'skipped' && (() => {
-                const isWritten = doc.accounting_write_status.startsWith('written')
-                const integration = doc.accounting_write_status.includes(':')
-                  ? doc.accounting_write_status.split(':')[1]
-                  : null
-                const label = isWritten
-                  ? `Pushed to ${integration ? integration.charAt(0).toUpperCase() + integration.slice(1) : 'accounting'} — already synced, re-push blocked`
-                  : doc.accounting_write_status
+                const hasIntegration = doc.accounting_write_status.includes(':')
+                const integration = hasIntegration ? doc.accounting_write_status.split(':')[1] : null
+                const isFailed = doc.accounting_write_status === 'failed'
+                const label = hasIntegration
+                  ? `Pushed to ${integration!.charAt(0).toUpperCase() + integration!.slice(1)} — already synced, re-push blocked`
+                  : isFailed
+                    ? 'Write failed'
+                    : 'Not synced — select an integration below to push'
                 return (
                   <div className="flex items-center gap-2">
                     <span className="text-[10px] font-mono text-brand-muted uppercase tracking-widest">Accounting write</span>
                     <span className={`text-[10px] font-mono ${
-                      isWritten ? 'text-[#00C853]' :
-                      doc.accounting_write_status === 'failed' ? 'text-[#ff4d6d]' : 'text-brand-muted'
+                      hasIntegration ? 'text-[#00C853]' :
+                      isFailed ? 'text-[#ff4d6d]' : 'text-[#f5a623]'
                     }`}>
                       {label}
                     </span>

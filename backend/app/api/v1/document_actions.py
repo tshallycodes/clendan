@@ -158,7 +158,7 @@ async def push_document_to_integration(
             detail="Blocked documents cannot be pushed to integration",
         )
 
-    if doc.accounting_write_status and doc.accounting_write_status.startswith("written"):
+    if doc.accounting_write_status and ":" in doc.accounting_write_status:
         return standard_response(data={"already_written": True})
 
     if not doc.tool_id:
