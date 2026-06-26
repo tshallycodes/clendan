@@ -166,7 +166,12 @@ function QuickActions({ doc, toolId, connectedIntegrations, onAbort, onReupload,
           </button>
         )}
         {connectedIntegrations.length > 0 && !doc.accounting_write_status?.includes(':') && doc.decision !== 'blocked' && (
-          <button type="button" onClick={handlePushAccounting} disabled={actionLoading !== null} className={btn}>
+          <button
+            type="button"
+            onClick={doc.decision === 'approval_required' ? () => toast('Approval required before pushing to integration', 'error') : handlePushAccounting}
+            disabled={actionLoading !== null}
+            className={btn}
+          >
             {actionLoading === 'push' ? '…' : `Push to ${connectedIntegrations.map(i => i.charAt(0).toUpperCase() + i.slice(1)).join(' & ')}`}
           </button>
         )}

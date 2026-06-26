@@ -20,6 +20,9 @@ from app.core.db import get_db_dep
 from app.core.logging import get_logger
 from app.core.responses import standard_response
 from app.core.security import RequireOrgAuth
+from app.integrations.freshbooks import write as fb_write
+from app.integrations.quickbooks.write import write_bill_to_quickbooks
+from app.integrations.xero import write as xero_write
 
 _logger = get_logger(__name__)
 router = APIRouter(prefix="/documents", tags=["documents"])
@@ -178,6 +181,71 @@ async def push_document_to_integration(
             detail=f"{body.integration.capitalize()} is not connected. Add it in the tool's Configure drawer first.",
         )
 
+    extracted: dict = doc.extracted_json if isinstance(doc.extracted_json, dict) else {}
+    vendor = extracted.get("vendor") or extracted.get("merchant") or "Unknown Vendor"
+    invoice_number = extracted.get("invoice_number") or doc.id[:12]
+    amount_minor = int(extracted.get("amount_minor", 0))
+    currency: str = extracted.get("currency") or "GBP"
+    due_date: str | None = extracted.get("due_date") or extracted.get("date")
+    execution_id = doc.execution_id or doc.id
+
+    try:
+        if body.integration == "xero":
+            result = await xero_write.create_bill(
+                tenant_id=tenant_id,
+                vendor=vendor,
+                invoice_number=invoice_number,
+                amount_minor=amount_minor,
+                currency=currency,
+                due_date=due_date,
+            )
+        elif body.integration == "quickbooks":
+            result = await write_bill_to_quickbooks(
+                tenant_id=tenant_id,
+                execution_id=execution_id,
+                vendor=vendor,
+                invoice_number=invoice_number,
+                amount_minor=amount_minor,
+                currency=currency,
+                due_date=due_date,
+                line_items=[],
+            )
+        elif body.integration == "freshbooks":
+            result = await fb_write.create_bill(
+                tenant_id=tenant_id,
+                vendor=vendor,
+                invoice_number=invoice_number,
+                amount_minor=amount_minor,
+                currency=currency,
+                due_date=due_date,
+            )
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=f"{body.integration.capitalize()} write is not yet supported",
+            )
+    except HTTPException:
+        raise
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(exc),
+        ) from exc
+    except Exception as exc:
+        _logger.error(
+            "document_push_integration_failed",
+            extra={
+                "tenant_id": tenant_id,
+                "document_id": document_id,
+                "integration": body.integration,
+                "error": type(exc).__name__,
+            },
+        )
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=f"Failed to write to {body.integration.capitalize()} — {type(exc).__name__}",
+        ) from exc
+
     await db.document.update(
         where={"id": document_id},
         data={"accounting_write_status": f"written:{body.integration}"},
@@ -192,6 +260,7 @@ async def push_document_to_integration(
             "integration": body.integration,
             "document_type": doc.document_type,
             "filename": doc.filename,
+            "external_result": result,
         },
         model_version="human",
         execution_id=doc.execution_id,
@@ -205,7 +274,7 @@ async def push_document_to_integration(
             "integration": body.integration,
         },
     )
-    return standard_response(data={"integration": body.integration, "status": "written"})
+    return standard_response(data={"integration": body.integration, "status": "written", **result})
 
 
 @router.post("/{document_id}/summarise")

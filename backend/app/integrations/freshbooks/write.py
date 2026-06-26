@@ -1,0 +1,109 @@
+"""
+FreshBooks bill write — creates a bill for a document pushed from Document Intelligence.
+"""
+import asyncio
+import random
+
+import httpx
+
+from app.core.db import get_db
+from app.core.logging import get_logger
+from app.integrations.encryption import decrypt_credentials
+
+logger = get_logger(__name__)
+
+FRESHBOOKS_API_BASE = "https://api.freshbooks.com"
+MAX_ATTEMPTS = 3
+BACKOFF_SECONDS = 1.0
+
+
+async def _retry(fn, *args, **kwargs):
+    last_exc = None
+    for attempt in range(MAX_ATTEMPTS):
+        try:
+            return await fn(*args, **kwargs)
+        except (httpx.HTTPStatusError, httpx.TimeoutException, httpx.NetworkError) as exc:
+            last_exc = exc
+            if attempt < MAX_ATTEMPTS - 1:
+                wait = BACKOFF_SECONDS * (2 ** attempt) + random.uniform(0, 0.5)
+                logger.warning(
+                    "freshbooks_write_retry attempt=%d/%d retry_in=%.1fs",
+                    attempt + 1, MAX_ATTEMPTS, wait,
+                )
+                await asyncio.sleep(wait)
+    raise last_exc
+
+
+async def create_bill(
+    tenant_id: str,
+    vendor: str,
+    invoice_number: str,
+    amount_minor: int,
+    currency: str,
+    due_date: str | None,
+) -> dict:
+    """
+    Creates a bill in FreshBooks for the given tenant.
+    Decrypts credentials from DB. Returns {"freshbooks_bill_id": str}.
+    Raises ValueError if no connected integration or credentials incomplete.
+    """
+    db = get_db()
+    integration = await db.integration.find_first(
+        where={"tenant_id": tenant_id, "type": "freshbooks", "status": "connected"}
+    )
+    if not integration:
+        raise ValueError(f"No connected FreshBooks integration for tenant {tenant_id}")
+
+    creds = decrypt_credentials(integration.encrypted_credentials, tenant_id)
+    access_token: str = creds.get("access_token", "")
+    account_id: str = creds.get("account_id", "")
+
+    if not access_token or not account_id:
+        raise ValueError("FreshBooks credentials missing access_token or account_id")
+
+    amount_str = str(round(amount_minor / 100.0, 2))
+    bill_payload: dict = {
+        "vendor_name": vendor,
+        "bill_number": invoice_number,
+        "currency_code": currency.upper(),
+        "lines": [
+            {
+                "amount": {"amount": amount_str, "code": currency.upper()},
+                "description": f"Invoice {invoice_number} from {vendor}",
+                "quantity": 1,
+                "unit_cost": {"amount": amount_str, "code": currency.upper()},
+            }
+        ],
+    }
+    if due_date:
+        bill_payload["due_date"] = due_date
+
+    async def _call():
+        async with httpx.AsyncClient() as client:
+            resp = await client.post(
+                f"{FRESHBOOKS_API_BASE}/accounting/account/{account_id}/bills/bills",
+                headers={
+                    "Authorization": f"Bearer {access_token}",
+                    "Accept": "application/json",
+                    "Content-Type": "application/json",
+                    "Api-Version": "alpha",
+                },
+                json={"bill": bill_payload},
+                timeout=15.0,
+            )
+            resp.raise_for_status()
+            return resp.json()
+
+    raw = await _retry(_call)
+    bill_id = str(
+        raw.get("response", {}).get("result", {}).get("bill", {}).get("id", "")
+    )
+    logger.info(
+        "freshbooks_bill_created",
+        extra={
+            "tenant_id": tenant_id,
+            "freshbooks_bill_id": bill_id,
+            "invoice_number": invoice_number,
+        },
+    )
+    return {"freshbooks_bill_id": bill_id}
