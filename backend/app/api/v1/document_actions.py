@@ -121,11 +121,12 @@ async def export_document(
         "exported_at": datetime.now(UTC).isoformat(),
     }
 
-    filename = doc.filename or doc.id
+    raw_name = doc.filename or doc.id
+    base_name = raw_name.rsplit('.', 1)[0] if '.' in raw_name else raw_name
     return Response(
         content=json.dumps(payload, indent=2),
         media_type="application/json",
-        headers={"Content-Disposition": f'attachment; filename="{filename}.json"'},
+        headers={"Content-Disposition": f'attachment; filename="{base_name}.json"'},
     )
 
 
