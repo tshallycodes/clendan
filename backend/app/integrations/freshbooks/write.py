@@ -120,9 +120,11 @@ async def create_bill(
             "error": type(exc).__name__,
             "detail": str(exc),
         })
+        # membership_id (40456067) and user_id (14454304) are both rejected.
+        # Try business_id next — the numeric ID of the FreshBooks business entity.
         staff_id = (
-            creds.get("freshbooks_membership_id")
-            or creds.get("freshbooks_business_id")
+            creds.get("freshbooks_business_id")
+            or creds.get("freshbooks_membership_id")
             or creds.get("freshbooks_user_id")
         )
     logger.info("freshbooks_staff_id_resolved", extra={"tenant_id": tenant_id, "staff_id": staff_id})

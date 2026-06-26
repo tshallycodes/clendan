@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from 'react'
 import { useAuth } from '@clerk/nextjs'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useToast } from '@/components/Providers'
-import { AskClenDrawer } from './ContractSummaryDrawer'
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
@@ -171,10 +170,9 @@ interface QuickActionsProps {
   toolId: string
   onAbort: (id: string) => void
   onReupload: () => void
-  onAskClen: (docId: string, filename: string | null) => void
 }
 
-function QuickActions({ doc, toolId, onAbort, onReupload, onAskClen }: QuickActionsProps) {
+function QuickActions({ doc, toolId, onAbort, onReupload }: QuickActionsProps) {
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const { getToken } = useAuth()
   const { toast } = useToast()
@@ -219,16 +217,6 @@ function QuickActions({ doc, toolId, onAbort, onReupload, onAskClen }: QuickActi
         <button type="button" onClick={handleExport} disabled={actionLoading !== null} className={btn}>
           {actionLoading === 'export' ? '…' : 'Export JSON'}
         </button>
-        {doc.document_type === 'document' && (
-          <button
-            type="button"
-            onClick={() => onAskClen(doc.id, doc.filename)}
-            disabled={actionLoading !== null}
-            className="text-[10px] font-mono px-3 py-1.5 rounded-sm bg-[#00C853] text-black hover:bg-[#00a844] active:scale-[0.97] transition-colors disabled:opacity-50"
-          >
-            Ask Clen
-          </button>
-        )}
         <button
           type="button"
           onClick={handleReupload}
@@ -247,10 +235,9 @@ interface DocumentRowProps {
   toolId: string
   onAbort: (id: string) => void
   onReupload: () => void
-  onAskClen: (docId: string, filename: string | null) => void
 }
 
-function DocumentRow({ doc, toolId, onAbort, onReupload, onAskClen }: DocumentRowProps) {
+function DocumentRow({ doc, toolId, onAbort, onReupload }: DocumentRowProps) {
   const [expanded, setExpanded] = useState(false)
   const [aborting, setAborting] = useState(false)
   const { getToken } = useAuth()
@@ -461,7 +448,6 @@ function DocumentRow({ doc, toolId, onAbort, onReupload, onAskClen }: DocumentRo
                   toolId={toolId}
                   onAbort={onAbort}
                   onReupload={onReupload}
-                  onAskClen={onAskClen}
                 />
               )}
             </div>
@@ -524,8 +510,6 @@ export function DocumentsTab({ toolId }: { toolId: string | null }) {
   const [uploading, setUploading] = useState(false)
   const [total, setTotal] = useState(0)
   const [offset, setOffset] = useState(0)
-  const [askDocId, setAskDocId] = useState<string | null>(null)
-  const [askFilename, setAskFilename] = useState<string | null>(null)
   const uploadRef = useRef<HTMLDivElement>(null)
   const limit = 20
 
@@ -710,7 +694,6 @@ export function DocumentsTab({ toolId }: { toolId: string | null }) {
                   toolId={toolId}
                   onAbort={handleAborted}
                   onReupload={() => uploadRef.current?.scrollIntoView({ behavior: 'smooth' })}
-                  onAskClen={(id, filename) => { setAskDocId(id); setAskFilename(filename) }}
                 />
               ))}
             </div>
@@ -729,13 +712,6 @@ export function DocumentsTab({ toolId }: { toolId: string | null }) {
         )}
       </div>
 
-      {askDocId !== null && (
-        <AskClenDrawer
-          documentId={askDocId}
-          filename={askFilename}
-          onClose={() => { setAskDocId(null); setAskFilename(null) }}
-        />
-      )}
     </div>
   )
 }
