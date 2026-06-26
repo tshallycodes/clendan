@@ -33,13 +33,11 @@ const BASE_TABS: { key: ToolTab; label: string }[] = [
 const AUTONOMY_BADGE: Record<string, { label: string; className: string }> = {
   auto:    { label: 'Auto',    className: 'bg-[rgba(0,200,83,0.08)] text-[#00C853] border border-[rgba(0,200,83,0.2)]' },
   approve: { label: 'Approve', className: 'bg-[rgba(0,168,204,0.08)] text-[#00a8cc] border border-[rgba(0,168,204,0.2)]' },
-  suggest: { label: 'Suggest', className: 'bg-brand-surface text-brand-muted border border-brand-border' },
 }
 
 const AUTONOMY_DESC: Record<string, string> = {
   auto:    'Executes automatically — no approval required before acting.',
   approve: 'Every decision is routed to you for review before the agent acts.',
-  suggest: 'Agent suggests actions but you must sign off on each one.',
 }
 
 const DEFAULT_HOW_IT_WORKS = [
@@ -78,7 +76,7 @@ export function GenericToolClient({ tool, deployed }: Props) {
   const [activeTab, setActiveTab] = useState<ToolTab>('overview')
 
   const isActive = deployed?.status === 'active'
-  const badge = deployed ? (AUTONOMY_BADGE[deployed.autonomy_level] ?? AUTONOMY_BADGE.suggest) : null
+  const badge = deployed ? (AUTONOMY_BADGE[deployed.autonomy_level] ?? AUTONOMY_BADGE.approve) : null
   const tabs = tool.type === 'document_intelligence'
     ? [...BASE_TABS, { key: 'documents' as ToolTab, label: 'Documents' }]
     : BASE_TABS

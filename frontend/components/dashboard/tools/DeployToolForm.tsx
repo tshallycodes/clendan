@@ -29,7 +29,6 @@ const TOOL_TYPES = [
 const AUTONOMY_LEVELS = [
   { value: 'auto',    label: 'Auto',    description: 'Executes without human approval'         },
   { value: 'approve', label: 'Approve', description: 'Requires human approval above threshold' },
-  { value: 'suggest', label: 'Suggest', description: 'Suggests actions, never executes'        },
 ] as const
 
 type ToolType = typeof TOOL_TYPES[number]['value']

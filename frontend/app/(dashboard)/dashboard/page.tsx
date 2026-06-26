@@ -26,7 +26,7 @@ interface Stats {
 interface DeployedTool {
   id: string
   type: string
-  autonomy_level: 'auto' | 'approve' | 'suggest'
+  autonomy_level: 'auto' | 'approve'
   status: 'active' | 'inactive'
   version: number
 }

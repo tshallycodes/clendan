@@ -6,7 +6,7 @@ import { useAuth } from '@clerk/nextjs'
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
-type AutonomyLevel = 'auto' | 'approve' | 'suggest'
+type AutonomyLevel = 'auto' | 'approve'
 
 interface AutonomyOption {
   level: AutonomyLevel
@@ -17,7 +17,6 @@ interface AutonomyOption {
 const OPTIONS: AutonomyOption[] = [
   { level: 'auto', label: 'Auto', desc: 'Execute automatically. No human approval needed.' },
   { level: 'approve', label: 'Approve', desc: 'Requires human approval before execution.' },
-  { level: 'suggest', label: 'Suggest', desc: 'Suggests actions for manual review only.' },
 ]
 
 interface Step4Props {

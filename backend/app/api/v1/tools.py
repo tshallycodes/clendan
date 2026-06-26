@@ -20,7 +20,7 @@ VALID_TYPES = {
     "document_intelligence", "spend_control", "ar_collections",
     "risk_compliance", "treasury_cash", "tax_compliance",
 }
-VALID_AUTONOMY_LEVELS = {"auto", "approve", "suggest"}
+VALID_AUTONOMY_LEVELS = {"auto", "approve"}
 VALID_STATUSES = {"active", "inactive"}
 
 

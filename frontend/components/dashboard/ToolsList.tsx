@@ -36,7 +36,6 @@ const TOOL_NAMES: Record<string, string> = {
 const AUTONOMY_STYLES: Record<string, { bg: string; text: string; border: string; label: string }> = {
   auto:    { bg: 'bg-[rgba(0,200,83,0.08)]',  text: 'text-[#00C853]', border: 'border-[rgba(0,200,83,0.2)]',  label: 'AUTO' },
   approve: { bg: 'bg-[rgba(0,168,204,0.08)]', text: 'text-[#00a8cc]', border: 'border-[rgba(0,168,204,0.2)]', label: 'APPROVE' },
-  suggest: { bg: 'bg-[rgba(245,166,35,0.08)]',text: 'text-[#f5a623]', border: 'border-[rgba(245,166,35,0.2)]',label: 'SUGGEST' },
 }
 
 function toolDisplayName(type: string): string {
@@ -63,7 +62,7 @@ export function ToolsList({ tools }: { tools: DeployedTool[] }) {
         <motion.div variants={listVariants} initial="hidden" animate="show" className="divide-y divide-brand-border">
           {tools.map((tool) => {
             const isActive = tool.status === 'active'
-            const autonomy = AUTONOMY_STYLES[tool.autonomy_level] ?? AUTONOMY_STYLES.suggest
+            const autonomy = AUTONOMY_STYLES[tool.autonomy_level] ?? AUTONOMY_STYLES.approve
             return (
               <motion.div key={tool.id} variants={rowVariants} className="px-5 py-3 flex items-center gap-4 hover:bg-brand-elevated transition-colors">
                 <span className="relative flex h-2.5 w-2.5 shrink-0">

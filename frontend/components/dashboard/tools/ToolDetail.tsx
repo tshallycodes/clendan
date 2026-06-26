@@ -21,7 +21,6 @@ export interface Execution {
 const AUTONOMY_LABEL: Record<Tool['autonomy_level'], { label: string; className: string }> = {
   auto:    { label: 'Auto',    className: 'bg-[rgba(0,200,83,0.08)] text-[#00C853] border border-[rgba(0,200,83,0.2)]' },
   approve: { label: 'Approve', className: 'bg-[rgba(0,168,204,0.08)] text-[#00a8cc] border border-[rgba(0,168,204,0.2)]' },
-  suggest: { label: 'Suggest', className: 'bg-[#111111] text-brand-muted border border-brand-border' },
 }
 
 interface Props {

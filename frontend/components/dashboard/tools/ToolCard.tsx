@@ -12,7 +12,7 @@ const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 export interface Tool {
   id: string
   type: string
-  autonomy_level: 'auto' | 'approve' | 'suggest'
+  autonomy_level: 'auto' | 'approve'
   status: 'active' | 'inactive'
   version: number
   config_json?: Record<string, unknown>
@@ -30,7 +30,6 @@ function typeToSlug(type: string): string {
 const AUTONOMY_BADGE: Record<Tool['autonomy_level'], { label: string; className: string }> = {
   auto:    { label: 'Auto',    className: 'bg-[rgba(0,200,83,0.08)] text-brand-green border border-[rgba(0,200,83,0.2)]' },
   approve: { label: 'Approve', className: 'bg-[rgba(0,168,204,0.08)] text-[#00a8cc] border border-[rgba(0,168,204,0.2)]' },
-  suggest: { label: 'Suggest', className: 'bg-brand-surface text-brand-muted border border-brand-border' },
 }
 
 interface Props {

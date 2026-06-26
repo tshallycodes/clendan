@@ -547,14 +547,12 @@ These patterns apply to every tool, not just any one integration. Do not re-deri
 
 ### Autonomy Level Enforcement (`backend/app/tool.py`)
 
-Every tool has an `autonomy_level` field (`auto` / `approve` / `suggest`) that overrides the policy engine decision in `run_orchestrator_job`, after the decision is set but before the audit write. `blocked` is never overridden.
+Every tool has an `autonomy_level` field (`auto` / `approve`) that overrides the policy engine decision in `run_orchestrator_job`, after the decision is set but before the audit write. `blocked` is never overridden.
 
 ```python
 def _apply_autonomy_override(decision: str, autonomy_level: str) -> str:
     if autonomy_level == "auto" and decision == "approval_required":
         return "auto_approved"
-    if autonomy_level == "suggest" and decision == "auto_approved":
-        return "approval_required"
     return decision
 ```
 

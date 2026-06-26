@@ -13,7 +13,6 @@ const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 const AUTONOMY_BADGE: Record<Tool['autonomy_level'], string> = {
   auto:    'bg-[rgba(0,200,83,0.08)] text-[#00C853] border border-[rgba(0,200,83,0.2)]',
   approve: 'bg-[rgba(0,168,204,0.08)] text-[#00a8cc] border border-[rgba(0,168,204,0.2)]',
-  suggest: 'bg-brand-surface text-brand-muted border border-brand-border',
 }
 
 export function PolicySection() {

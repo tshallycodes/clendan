@@ -167,7 +167,6 @@ export function ConfigDrawer({ tool, toolType, onClose, onSaved }: Props) {
               options={[
                 { value: 'auto', label: 'Auto — executes without approval' },
                 { value: 'approve', label: 'Approve — requires human approval above threshold' },
-                { value: 'suggest', label: 'Suggest — recommends actions only' },
               ]}
             />
           </div>
