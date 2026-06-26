@@ -11,6 +11,7 @@ from typing import Any
 
 import anthropic
 import fitz  # PyMuPDF
+from prisma import Json as PrismaJson
 from pydantic import BaseModel
 
 from app.audit.logger import write_audit_log
@@ -569,8 +570,8 @@ async def execute_document_intelligence_tool(
                     "confidence": result["confidence"],
                     "rule_triggered": result.get("rule_triggered"),
                     "reason": result["reason"],
-                    "flags_json": result.get("flags", []),
-                    "extracted_json": result.get("extracted", {}),
+                    "flags_json": PrismaJson(result.get("flags", [])),
+                    "extracted_json": PrismaJson(result.get("extracted", {})),
                     "accounting_write_status": accounting_status,
                 },
             )
