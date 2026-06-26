@@ -109,8 +109,14 @@ async def create_bill(
         except Exception as exc:
             logger.warning("freshbooks_category_lookup_failed", extra={"tenant_id": tenant_id, "error": type(exc).__name__})
 
-    # staffid: use freshbooks_user_id stored at OAuth time (the logged-in user's global ID)
-    staff_id: int | None = creds.get("freshbooks_user_id")
+    # staffid is account-scoped — try membership_id, then business_id, then user_id.
+    # The global user_id (freshbooks_user_id) is rejected by FreshBooks as invalid.
+    staff_id: int | None = (
+        creds.get("freshbooks_membership_id")
+        or creds.get("freshbooks_business_id")
+        or creds.get("freshbooks_user_id")
+    )
+    logger.info("freshbooks_staff_id_resolved", extra={"tenant_id": tenant_id, "staff_id": staff_id})
 
     amount_str = str(round(amount_minor / 100.0, 2))
     from datetime import date as _date

@@ -93,9 +93,20 @@ async def freshbooks_callback(
             detail="Connected to FreshBooks but failed to retrieve account details",
         )
 
-    # user_id from /users/me is the staffid used when creating expenses
+    # Extract staff ID candidates from the me response.
+    # The account-scoped staffid is NOT the global user id — it comes from the business membership.
+    memberships = me.get("business_memberships", [])
     freshbooks_user_id = me.get("id")
-    creds = {**tokens, "account_id": account_id, "freshbooks_user_id": freshbooks_user_id}
+    freshbooks_membership_id = memberships[0].get("id") if memberships else None
+    freshbooks_business_id = memberships[0].get("business", {}).get("id") if memberships else None
+
+    creds = {
+        **tokens,
+        "account_id": account_id,
+        "freshbooks_user_id": freshbooks_user_id,
+        "freshbooks_membership_id": freshbooks_membership_id,
+        "freshbooks_business_id": freshbooks_business_id,
+    }
     blob = encrypt_credentials(creds, tenant_id)
 
     existing = await db.integration.find_first(where={"tenant_id": tenant_id, "type": "freshbooks"})
