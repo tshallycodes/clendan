@@ -93,16 +93,37 @@ async def create_bill(
         })
         raise ValueError("FreshBooks credentials missing access_token or account_id")
 
-    # Resolve a default expense category_id (required by FreshBooks Expenses API)
-    category_id: int | None = None
-    try:
-        categories = await fb.get_expense_categories(access_token, account_id)
-        if categories:
-            # Prefer "Other" category; fall back to first available
-            other = next((c for c in categories if "other" in c.get("name", "").lower()), None)
-            category_id = int((other or categories[0])["id"])
-    except Exception as exc:
-        logger.warning("freshbooks_category_lookup_failed", extra={"tenant_id": tenant_id, "error": type(exc).__name__})
+    # Resolve category_id and staffid — both required by FreshBooks Expenses API.
+    # Cache them in credentials to avoid repeated lookups.
+    category_id: int | None = creds.get("default_category_id")
+    staff_id: int | None = creds.get("staff_id")
+    creds_updated = False
+
+    if category_id is None:
+        try:
+            categories = await fb.get_expense_categories(access_token, account_id)
+            if categories:
+                other = next((c for c in categories if "other" in c.get("name", "").lower()), None)
+                category_id = int((other or categories[0])["id"])
+                creds["default_category_id"] = category_id
+                creds_updated = True
+        except Exception as exc:
+            logger.warning("freshbooks_category_lookup_failed", extra={"tenant_id": tenant_id, "error": type(exc).__name__})
+
+    if staff_id is None:
+        try:
+            staff_id = await fb.get_staff_id(access_token, account_id)
+            if staff_id is not None:
+                creds["staff_id"] = staff_id
+                creds_updated = True
+        except Exception as exc:
+            logger.warning("freshbooks_staff_lookup_failed", extra={"tenant_id": tenant_id, "error": type(exc).__name__})
+
+    if creds_updated:
+        await db.integration.update(
+            where={"id": integration.id},
+            data={"encrypted_credentials": encrypt_credentials(creds, tenant_id)},
+        )
 
     amount_str = str(round(amount_minor / 100.0, 2))
     from datetime import date as _date
@@ -114,6 +135,8 @@ async def create_bill(
     }
     if category_id is not None:
         expense_payload["category_id"] = category_id
+    if staff_id is not None:
+        expense_payload["staffid"] = staff_id
 
     async def _call():
         url = f"{FRESHBOOKS_API_BASE}/accounting/account/{account_id}/expenses/expenses"
