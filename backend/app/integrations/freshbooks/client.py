@@ -135,23 +135,42 @@ async def get_expenses(access_token: str, account_id: str, page: int = 1, per_pa
 
 async def get_staff_id(access_token: str, account_id: str) -> int | None:
     """
-    Returns the staffid of the first staff member on the account.
-    Logs the full response body on failure so we can diagnose endpoint issues.
+    Returns the staffid for the current user on this FreshBooks account.
+    Tries /accounting/account/{id}/users/me first (account-scoped user record).
+    Falls back to reading the staffid from an existing expense.
     """
-    import logging
-    _log = logging.getLogger(__name__)
-    url = f"{_BASE}/accounting/account/{account_id}/users/staffs"
     async with httpx.AsyncClient(timeout=15) as http:
-        resp = await http.get(url, headers=_auth_headers(access_token))
-        _log.info(
-            "freshbooks_staffs_response",
-            extra={"status_code": resp.status_code, "body": resp.text[:500]},
-        )
-        resp.raise_for_status()
-        result = resp.json().get("response", {}).get("result", {})
-        # FreshBooks may return the key as "staffs" or "staff"
-        staffs = result.get("staffs") or result.get("staff") or []
-        return int(staffs[0]["id"]) if staffs else None
+        # Strategy 1: account-scoped /users/me returns the current user's staff record
+        try:
+            resp = await http.get(
+                f"{_BASE}/accounting/account/{account_id}/users/me",
+                headers=_auth_headers(access_token),
+            )
+            if resp.is_success:
+                result = resp.json().get("response", {}).get("result", {})
+                staff = result.get("staff") or result.get("staffs")
+                if staff:
+                    sid = staff[0].get("id") if isinstance(staff, list) else staff.get("id")
+                    if sid:
+                        return int(sid)
+        except Exception:
+            pass
+
+        # Strategy 2: extract staffid from an existing expense (requires user:expenses:read)
+        try:
+            resp = await http.get(
+                f"{_BASE}/accounting/account/{account_id}/expenses/expenses",
+                params={"per_page": 1},
+                headers=_auth_headers(access_token),
+            )
+            if resp.is_success:
+                expenses = resp.json().get("response", {}).get("result", {}).get("expenses", [])
+                if expenses and expenses[0].get("staffid"):
+                    return int(expenses[0]["staffid"])
+        except Exception:
+            pass
+
+    return None
 
 
 async def get_expense_categories(access_token: str, account_id: str) -> list[dict]:

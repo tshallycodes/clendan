@@ -109,24 +109,9 @@ async def create_bill(
         except Exception as exc:
             logger.warning("freshbooks_category_lookup_failed", extra={"tenant_id": tenant_id, "error": type(exc).__name__})
 
-    # staffid is a small integer scoped to the FreshBooks accounting account.
-    # Try the staffs endpoint first; fall back to stored IDs (none confirmed correct yet).
-    staff_id: int | None = None
-    try:
-        staff_id = await fb.get_staff_id(access_token, account_id)
-    except Exception as exc:
-        logger.warning("freshbooks_staff_lookup_failed", extra={
-            "tenant_id": tenant_id,
-            "error": type(exc).__name__,
-            "detail": str(exc),
-        })
-        # membership_id (40456067) and user_id (14454304) are both rejected.
-        # Try business_id next — the numeric ID of the FreshBooks business entity.
-        staff_id = (
-            creds.get("freshbooks_business_id")
-            or creds.get("freshbooks_membership_id")
-            or creds.get("freshbooks_user_id")
-        )
+    # staffid is a small integer from FreshBooks accounting — not derivable from OAuth me response.
+    # get_staff_id tries /accounting/account/{id}/users/me then falls back to existing expenses.
+    staff_id: int | None = await fb.get_staff_id(access_token, account_id)
     logger.info("freshbooks_staff_id_resolved", extra={"tenant_id": tenant_id, "staff_id": staff_id})
 
     amount_str = str(round(amount_minor / 100.0, 2))
