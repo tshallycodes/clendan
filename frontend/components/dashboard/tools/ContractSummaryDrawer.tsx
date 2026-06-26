@@ -1,11 +1,16 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useRef, useState } from 'react'
 import { useAuth } from '@clerk/nextjs'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useToast } from '@/components/Providers'
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+
+interface Message {
+  question: string
+  answer: string
+}
 
 interface Props {
   documentId: string
@@ -13,82 +18,53 @@ interface Props {
   onClose: () => void
 }
 
-function SummaryBody({ summary }: { summary: string }) {
-  const lines = summary.split('\n')
-  return (
-    <div className="space-y-0.5">
-      {lines.map((line, i) => {
-        if (line.startsWith('## ')) {
-          return (
-            <p
-              key={i}
-              className="text-xs font-mono font-semibold text-brand-text uppercase tracking-widest mt-4 mb-1"
-            >
-              {line.replace(/^## /, '')}
-            </p>
-          )
-        }
-        if (line.startsWith('- ') || line.startsWith('• ')) {
-          return (
-            <div key={i} className="flex gap-2">
-              <span className="text-[10px] font-mono text-brand-muted shrink-0 mt-0.5">→</span>
-              <p className="text-xs font-mono text-brand-secondary leading-relaxed">
-                {line.replace(/^[-•] /, '')}
-              </p>
-            </div>
-          )
-        }
-        if (line.trim() === '') return null
-        return (
-          <p key={i} className="text-xs font-mono text-brand-secondary leading-relaxed">
-            {line}
-          </p>
-        )
-      })}
-    </div>
-  )
-}
-
-export function ContractSummaryDrawer({ documentId, filename, onClose }: Props) {
+export function AskClenDrawer({ documentId, filename, onClose }: Props) {
   const { getToken } = useAuth()
   const { toast } = useToast()
-  const [summary, setSummary] = useState<string | null>(null)
-  const [loadingState, setLoadingState] = useState<'loading' | 'error' | 'done'>('loading')
-  const [errorMsg, setErrorMsg] = useState<string | null>(null)
+  const [messages, setMessages] = useState<Message[]>([])
+  const [question, setQuestion] = useState('')
+  const [loading, setLoading] = useState(false)
+  const inputRef = useRef<HTMLTextAreaElement>(null)
 
-  async function fetchSummary() {
-    setLoadingState('loading')
-    setErrorMsg(null)
+  async function handleAsk() {
+    const q = question.trim()
+    if (!q || loading) return
+    setLoading(true)
+    setQuestion('')
     try {
       const token = await getToken()
-      const res = await fetch(`${API}/v1/documents/${documentId}/summarise`, {
+      const res = await fetch(`${API}/v1/documents/${documentId}/ask`, {
         method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ question: q }),
       })
       const json = await res.json().catch(() => ({}))
       if (!res.ok) {
-        const msg = (json as { detail?: string }).detail ?? 'Failed to summarise document'
-        setErrorMsg(msg)
-        setLoadingState('error')
+        toast((json as { detail?: string }).detail ?? 'Failed to get answer', 'error')
+        setQuestion(q)
         return
       }
-      setSummary((json as { data?: { summary?: string }; summary?: string }).data?.summary ?? (json as { summary?: string }).summary ?? '')
-      setLoadingState('done')
+      const answer = (json as { data?: { answer?: string } }).data?.answer ?? ''
+      setMessages(prev => [...prev, { question: q, answer }])
+      setTimeout(() => inputRef.current?.focus(), 50)
     } catch {
-      setErrorMsg('Network error — could not reach the server')
-      setLoadingState('error')
-      toast('Failed to load contract summary', 'error')
+      toast('Network error — could not reach the server', 'error')
+      setQuestion(q)
+    } finally {
+      setLoading(false)
     }
   }
 
-  useEffect(() => {
-    fetchSummary()
-  }, [documentId])
+  function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      handleAsk()
+    }
+  }
 
   return (
     <AnimatePresence>
       <>
-        {/* Backdrop */}
         <motion.div
           key="backdrop"
           initial={{ opacity: 0 }}
@@ -99,7 +75,6 @@ export function ContractSummaryDrawer({ documentId, filename, onClose }: Props) 
           onClick={onClose}
         />
 
-        {/* Drawer */}
         <motion.div
           key="drawer"
           initial={{ x: '100%' }}
@@ -108,11 +83,10 @@ export function ContractSummaryDrawer({ documentId, filename, onClose }: Props) 
           transition={{ duration: 0.25, ease: 'easeOut' }}
           className="fixed inset-y-0 right-0 w-[480px] bg-brand-surface border-l border-brand-border z-50 flex flex-col"
         >
-          {/* Header */}
           <div className="flex items-start justify-between px-5 py-4 border-b border-brand-border shrink-0">
             <div className="min-w-0 pr-4">
               <p className="text-[10px] font-mono text-brand-muted uppercase tracking-widest mb-1">
-                Contract Summary
+                Ask Clen
               </p>
               <p className="text-sm font-mono text-brand-text truncate">
                 {filename ?? 'Untitled document'}
@@ -128,31 +102,57 @@ export function ContractSummaryDrawer({ documentId, filename, onClose }: Props) 
             </button>
           </div>
 
-          {/* Body */}
-          <div className="flex-1 overflow-y-auto px-5 py-4">
-            {loadingState === 'loading' && (
-              <div className="flex flex-col items-center justify-center gap-3 mt-16">
-                <div className="w-5 h-5 border-2 border-[#00C853] border-t-transparent rounded-full animate-spin" />
-                <p className="text-xs font-mono text-brand-muted">Clen is reading the contract…</p>
+          <div className="flex-1 overflow-y-auto px-5 py-4 space-y-5">
+            {messages.length === 0 && !loading && (
+              <p className="text-xs font-mono text-brand-muted mt-4">
+                Ask Clen anything about this document — risks, clauses, obligations, summaries.
+              </p>
+            )}
+            {messages.map((msg, i) => (
+              <div key={i} className="space-y-2">
+                <div className="flex gap-2">
+                  <span className="text-[10px] font-mono text-brand-muted shrink-0 mt-0.5">You</span>
+                  <p className="text-xs font-mono text-brand-secondary">{msg.question}</p>
+                </div>
+                <div className="flex gap-2">
+                  <span className="text-[10px] font-mono text-[#00C853] shrink-0 mt-0.5">Clen</span>
+                  <p className="text-xs font-mono text-brand-text leading-relaxed whitespace-pre-wrap">{msg.answer}</p>
+                </div>
+              </div>
+            ))}
+            {loading && (
+              <div className="flex gap-2 items-center">
+                <span className="text-[10px] font-mono text-[#00C853] shrink-0">Clen</span>
+                <div className="flex gap-1">
+                  {[0, 1, 2].map(i => (
+                    <div key={i} className="w-1.5 h-1.5 rounded-full bg-[#00C853] animate-bounce" style={{ animationDelay: `${i * 120}ms` }} />
+                  ))}
+                </div>
               </div>
             )}
+          </div>
 
-            {loadingState === 'error' && (
-              <div className="mt-6 space-y-3">
-                <p className="text-xs font-mono text-[#ff4d6d]">{errorMsg}</p>
-                <button
-                  type="button"
-                  onClick={fetchSummary}
-                  className="text-[10px] font-mono px-3 py-1.5 rounded-sm border border-brand-border text-brand-text hover:bg-brand-elevated transition-colors"
-                >
-                  Retry
-                </button>
-              </div>
-            )}
-
-            {loadingState === 'done' && summary !== null && (
-              <SummaryBody summary={summary} />
-            )}
+          <div className="px-5 py-4 border-t border-brand-border shrink-0">
+            <div className="flex gap-2 items-end">
+              <textarea
+                ref={inputRef}
+                value={question}
+                onChange={e => setQuestion(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder="Ask a question… (Enter to send)"
+                rows={2}
+                className="flex-1 bg-brand-bg border border-brand-border focus:border-[#00C853] text-brand-text placeholder:text-brand-muted rounded-sm px-3 py-2 text-xs font-mono resize-none outline-none transition-colors"
+              />
+              <button
+                type="button"
+                onClick={handleAsk}
+                disabled={!question.trim() || loading}
+                className="shrink-0 text-[10px] font-mono px-4 py-2 rounded-sm bg-[#00C853] text-black hover:bg-[#00a844] active:scale-[0.97] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                {loading ? '…' : 'Ask'}
+              </button>
+            </div>
+            <p className="text-[10px] font-mono text-brand-muted mt-1.5">Shift+Enter for new line</p>
           </div>
         </motion.div>
       </>

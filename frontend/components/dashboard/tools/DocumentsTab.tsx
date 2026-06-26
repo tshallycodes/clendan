@@ -4,11 +4,11 @@ import { useEffect, useRef, useState } from 'react'
 import { useAuth } from '@clerk/nextjs'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useToast } from '@/components/Providers'
-import { ContractSummaryDrawer } from './ContractSummaryDrawer'
+import { AskClenDrawer } from './ContractSummaryDrawer'
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
-type DocumentType = 'invoice' | 'receipt' | 'contract'
+type DocumentType = 'receipt' | 'document' | 'pending'
 type DocumentStatus = 'processing' | 'completed' | 'failed'
 
 interface ProcessedDocument {
@@ -31,16 +31,19 @@ interface ProcessedDocument {
 }
 
 const DECISION_CONFIG: Record<string, { label: string; color: string; bg: string; border: string }> = {
-  auto_approved:     { label: 'Auto-approved',     color: 'text-[#00C853]', bg: 'bg-[rgba(0,200,83,0.08)]',   border: 'border-[rgba(0,200,83,0.2)]' },
-  approval_required: { label: 'Approval required', color: 'text-[#00a8cc]', bg: 'bg-[rgba(0,168,204,0.08)]', border: 'border-[rgba(0,168,204,0.2)]' },
-  blocked:           { label: 'Blocked',            color: 'text-[#ff4d6d]', bg: 'bg-[rgba(255,77,109,0.08)]', border: 'border-[rgba(255,77,109,0.2)]' },
-  rejected:          { label: 'Rejected',           color: 'text-[#ff4d6d]', bg: 'bg-[rgba(255,77,109,0.08)]', border: 'border-[rgba(255,77,109,0.2)]' },
+  auto_pushed:           { label: 'Pushed',              color: 'text-[#00C853]',  bg: 'bg-[rgba(0,200,83,0.08)]',   border: 'border-[rgba(0,200,83,0.2)]' },
+  analysed:              { label: 'Analysed',            color: 'text-[#00C853]',  bg: 'bg-[rgba(0,200,83,0.08)]',   border: 'border-[rgba(0,200,83,0.2)]' },
+  push_failed:           { label: 'Push failed',         color: 'text-[#ff4d6d]',  bg: 'bg-[rgba(255,77,109,0.08)]', border: 'border-[rgba(255,77,109,0.2)]' },
+  classification_failed: { label: 'Could not classify',  color: 'text-[#ff4d6d]',  bg: 'bg-[rgba(255,77,109,0.08)]', border: 'border-[rgba(255,77,109,0.2)]' },
+  blocked:               { label: 'Blocked',             color: 'text-[#ff4d6d]',  bg: 'bg-[rgba(255,77,109,0.08)]', border: 'border-[rgba(255,77,109,0.2)]' },
+  auto_approved:         { label: 'Auto-approved',       color: 'text-[#00C853]',  bg: 'bg-[rgba(0,200,83,0.08)]',   border: 'border-[rgba(0,200,83,0.2)]' },
+  approval_required:     { label: 'Needs review',        color: 'text-[#00a8cc]',  bg: 'bg-[rgba(0,168,204,0.08)]',  border: 'border-[rgba(0,168,204,0.2)]' },
 }
 
-const DOC_TYPE_LABEL: Record<DocumentType, string> = {
-  invoice: 'Invoice',
-  receipt: 'Receipt',
-  contract: 'Contract',
+const DOC_TYPE_LABEL: Record<string, string> = {
+  receipt:  'Receipt',
+  document: 'Document',
+  pending:  'Classifying…',
 }
 
 function formatBytes(bytes: number): string {
@@ -49,25 +52,116 @@ function formatBytes(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }
 
-function ExtractedFields({ extracted }: { extracted: Record<string, unknown> }) {
-  const entries = Object.entries(extracted).filter(
-    ([, v]) => v !== null && v !== undefined && v !== '' && !(Array.isArray(v) && v.length === 0)
-  )
-  if (entries.length === 0) return null
+function formatCurrency(amount_minor: number, currency: string): string {
+  const symbols: Record<string, string> = { GBP: '£', USD: '$', EUR: '€' }
+  const symbol = symbols[currency?.toUpperCase()] ?? currency ?? ''
+  return `${symbol}${(amount_minor / 100).toFixed(2)}`
+}
+
+function ReceiptFields({ extracted }: { extracted: Record<string, unknown> }) {
+  const amount_minor = extracted.amount_minor as number | undefined
+  const currency = extracted.currency as string | undefined
+  const merchant = extracted.merchant as string | undefined
+  const date = extracted.date as string | undefined
+  const category = extracted.category as string | undefined
+
+  const fields = [
+    { label: 'Merchant', value: merchant },
+    { label: 'Amount',   value: amount_minor != null && currency ? formatCurrency(amount_minor, currency) : undefined },
+    { label: 'Date',     value: date },
+    { label: 'Category', value: category?.replace(/_/g, ' ') },
+  ].filter(f => f.value)
+
   return (
-    <div className="mt-3 space-y-1">
-      {entries.map(([key, value]) => (
-        <div key={key} className="flex items-start gap-3">
-          <span className="text-[10px] font-mono text-brand-muted min-w-[110px] shrink-0">{key}</span>
-          <span className="text-[10px] font-mono text-brand-secondary break-all">
-            {Array.isArray(value)
-              ? value.join(' · ')
-              : typeof value === 'object'
-                ? JSON.stringify(value)
-                : String(value)}
-          </span>
+    <div className="grid grid-cols-2 gap-x-6 gap-y-2 mt-1">
+      {fields.map(({ label, value }) => (
+        <div key={label}>
+          <p className="text-[10px] font-mono text-brand-muted">{label}</p>
+          <p className="text-xs font-mono text-brand-text">{value}</p>
         </div>
       ))}
+    </div>
+  )
+}
+
+function AccordionSection({ title, items, color = 'text-brand-secondary' }: { title: string; items: string[]; color?: string }) {
+  const [open, setOpen] = useState(false)
+  if (!items?.length) return null
+  return (
+    <div className="border border-brand-border rounded-sm overflow-hidden">
+      <button
+        type="button"
+        onClick={() => setOpen(v => !v)}
+        className="w-full flex items-center justify-between px-3 py-2 hover:bg-brand-elevated transition-colors text-left"
+      >
+        <span className="text-[10px] font-mono text-brand-muted uppercase tracking-widest">
+          {title} <span className="text-brand-secondary normal-case tracking-normal">({items.length})</span>
+        </span>
+        <span className="text-[10px] font-mono text-brand-muted">{open ? '▲' : '▼'}</span>
+      </button>
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ height: 0 }}
+            animate={{ height: 'auto' }}
+            exit={{ height: 0 }}
+            transition={{ duration: 0.15 }}
+            className="overflow-hidden"
+          >
+            <div className="border-t border-brand-border divide-y divide-brand-border-subtle">
+              {items.map((item, i) => (
+                <div key={i} className="flex gap-2 px-3 py-2">
+                  <span className="text-[10px] font-mono text-brand-muted shrink-0 mt-0.5">→</span>
+                  <p className={`text-[11px] font-mono leading-relaxed ${color}`}>{item}</p>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  )
+}
+
+function DocumentAnalysis({ extracted }: { extracted: Record<string, unknown> }) {
+  const summary = extracted.summary as string | undefined
+  const risks = extracted.risks as string[] | undefined
+  const loopholes = extracted.loopholes as string[] | undefined
+  const improvements = extracted.improvements as string[] | undefined
+  const parties = extracted.parties as string[] | undefined
+  const keyDates = extracted.key_dates as string[] | undefined
+
+  return (
+    <div className="space-y-3 mt-1">
+      {summary && (
+        <div>
+          <p className="text-[10px] font-mono text-brand-muted uppercase tracking-widest mb-1.5">Summary</p>
+          <p className="text-xs font-mono text-brand-secondary leading-relaxed">{summary}</p>
+        </div>
+      )}
+      {(parties?.length || keyDates?.length) ? (
+        <div className="grid grid-cols-2 gap-x-6 gap-y-2">
+          {parties?.length ? (
+            <div>
+              <p className="text-[10px] font-mono text-brand-muted mb-1">Parties</p>
+              <div className="space-y-0.5">
+                {parties.map((p, i) => <p key={i} className="text-[11px] font-mono text-brand-secondary">{p}</p>)}
+              </div>
+            </div>
+          ) : null}
+          {keyDates?.length ? (
+            <div>
+              <p className="text-[10px] font-mono text-brand-muted mb-1">Key dates</p>
+              <div className="space-y-0.5">
+                {keyDates.map((d, i) => <p key={i} className="text-[11px] font-mono text-brand-secondary">{d}</p>)}
+              </div>
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+      <AccordionSection title="Risks" items={risks ?? []} color="text-[#ff4d6d]" />
+      <AccordionSection title="Loopholes" items={loopholes ?? []} color="text-[#f5a623]" />
+      <AccordionSection title="Improvements" items={improvements ?? []} />
     </div>
   )
 }
@@ -75,14 +169,12 @@ function ExtractedFields({ extracted }: { extracted: Record<string, unknown> }) 
 interface QuickActionsProps {
   doc: ProcessedDocument
   toolId: string
-  connectedIntegrations: string[]
   onAbort: (id: string) => void
   onReupload: () => void
-  onOpenSummary: (docId: string, filename: string | null) => void
-  onUpdateDoc: (docId: string, patch: Partial<ProcessedDocument>) => void
+  onAskClen: (docId: string, filename: string | null) => void
 }
 
-function QuickActions({ doc, toolId, connectedIntegrations, onAbort, onReupload, onOpenSummary, onUpdateDoc }: QuickActionsProps) {
+function QuickActions({ doc, toolId, onAbort, onReupload, onAskClen }: QuickActionsProps) {
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const { getToken } = useAuth()
   const { toast } = useToast()
@@ -96,54 +188,13 @@ function QuickActions({ doc, toolId, connectedIntegrations, onAbort, onReupload,
       const blob = await res.blob()
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
-      a.href = url; a.download = `${doc.filename ?? doc.id}.json`; a.click()
+      a.href = url
+      const raw = doc.filename ?? doc.id
+      const base = raw.includes('.') ? raw.substring(0, raw.lastIndexOf('.')) : raw
+      a.download = `${base}.json`
+      a.click()
       URL.revokeObjectURL(url)
       toast('Export downloaded', 'success')
-    } catch { toast('Network error', 'error') }
-    finally { setActionLoading(null) }
-  }
-
-  async function handleFlag() {
-    setActionLoading('flag')
-    try {
-      const token = await getToken()
-      const res = await fetch(`${API}/v1/documents/${doc.id}/flag`, { method: 'POST', headers: { Authorization: `Bearer ${token}` } })
-      if (res.ok) {
-        const j = await res.json().catch(() => ({}))
-        toast((j as { data?: { already_flagged?: boolean } }).data?.already_flagged ? 'Already flagged — pending review' : 'Flagged for review', 'success')
-      } else { const j = await res.json().catch(() => ({})); toast((j as { detail?: string }).detail ?? 'Failed to flag', 'error') }
-    } catch { toast('Network error', 'error') }
-    finally { setActionLoading(null) }
-  }
-
-  async function handlePushAccounting() {
-    if (connectedIntegrations.length === 0) return
-    setActionLoading('push')
-    try {
-      const token = await getToken()
-      const failed: string[] = []
-      for (const integration of connectedIntegrations) {
-        const res = await fetch(`${API}/v1/documents/${doc.id}/push-integration`, {
-          method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ integration }),
-        })
-        if (!res.ok) {
-          const j = await res.json().catch(() => ({}))
-          failed.push((j as { detail?: string }).detail ?? integration)
-        }
-      }
-      const succeeded = connectedIntegrations.filter(i => !failed.some(f => f.includes(i)))
-      if (succeeded.length > 0) {
-        const newEntries = succeeded.map(i => `written:${i}`).join(',')
-        const existing = doc.accounting_write_status || ''
-        onUpdateDoc(doc.id, { accounting_write_status: existing ? `${existing},${newEntries}` : newEntries })
-      }
-      if (failed.length === 0) {
-        const label = connectedIntegrations.map(i => i.charAt(0).toUpperCase() + i.slice(1)).join(' & ')
-        toast(`Pushed to ${label}`, 'success')
-      } else {
-        toast(failed.join('; '), 'error')
-      }
     } catch { toast('Network error', 'error') }
     finally { setActionLoading(null) }
   }
@@ -168,35 +219,24 @@ function QuickActions({ doc, toolId, connectedIntegrations, onAbort, onReupload,
         <button type="button" onClick={handleExport} disabled={actionLoading !== null} className={btn}>
           {actionLoading === 'export' ? '…' : 'Export JSON'}
         </button>
-        {doc.decision !== 'approval_required' && (
-          <button type="button" onClick={handleFlag} disabled={actionLoading !== null} className={btn}>
-            {actionLoading === 'flag' ? '…' : 'Flag for review'}
-          </button>
-        )}
-        {connectedIntegrations.length > 0 && connectedIntegrations.some(i => !doc.accounting_write_status?.includes(`written:${i}`)) && doc.decision !== 'blocked' && (
+        {doc.document_type === 'document' && (
           <button
             type="button"
-            onClick={doc.decision === 'approval_required' ? () => toast('Approval required before pushing to integration', 'error') : handlePushAccounting}
+            onClick={() => onAskClen(doc.id, doc.filename)}
             disabled={actionLoading !== null}
-            className={btn}
-          >
-            {actionLoading === 'push' ? '…' : `Push to ${connectedIntegrations.map(i => i.charAt(0).toUpperCase() + i.slice(1)).join(' & ')}`}
-          </button>
-        )}
-        <button
-          type="button" onClick={handleReupload} disabled={actionLoading !== null}
-          className="text-[10px] font-mono px-3 py-1.5 rounded-sm border border-[#ff4d6d] text-[#ff4d6d] bg-[rgba(255,77,109,0.1)] hover:bg-[rgba(255,77,109,0.16)] transition-colors disabled:opacity-50"
-        >
-          {actionLoading === 'reupload' ? '…' : 'Re-upload'}
-        </button>
-        {doc.document_type === 'contract' && (
-          <button
-            type="button" onClick={() => onOpenSummary(doc.id, doc.filename)} disabled={actionLoading !== null}
             className="text-[10px] font-mono px-3 py-1.5 rounded-sm bg-[#00C853] text-black hover:bg-[#00a844] active:scale-[0.97] transition-colors disabled:opacity-50"
           >
             Ask Clen
           </button>
         )}
+        <button
+          type="button"
+          onClick={handleReupload}
+          disabled={actionLoading !== null}
+          className="text-[10px] font-mono px-3 py-1.5 rounded-sm border border-[#ff4d6d] text-[#ff4d6d] bg-[rgba(255,77,109,0.1)] hover:bg-[rgba(255,77,109,0.16)] transition-colors disabled:opacity-50"
+        >
+          {actionLoading === 'reupload' ? '…' : 'Re-upload'}
+        </button>
       </div>
     </div>
   )
@@ -205,14 +245,12 @@ function QuickActions({ doc, toolId, connectedIntegrations, onAbort, onReupload,
 interface DocumentRowProps {
   doc: ProcessedDocument
   toolId: string
-  connectedIntegrations: string[]
   onAbort: (id: string) => void
   onReupload: () => void
-  onOpenSummary: (docId: string, filename: string | null) => void
-  onUpdateDoc: (docId: string, patch: Partial<ProcessedDocument>) => void
+  onAskClen: (docId: string, filename: string | null) => void
 }
 
-function DocumentRow({ doc, toolId, connectedIntegrations, onAbort, onReupload, onOpenSummary, onUpdateDoc }: DocumentRowProps) {
+function DocumentRow({ doc, toolId, onAbort, onReupload, onAskClen }: DocumentRowProps) {
   const [expanded, setExpanded] = useState(false)
   const [aborting, setAborting] = useState(false)
   const { getToken } = useAuth()
@@ -249,6 +287,9 @@ function DocumentRow({ doc, toolId, connectedIntegrations, onAbort, onReupload, 
   const timedOut = doc.status === 'processing' && !doc.id.startsWith('temp-') &&
     Date.now() - new Date(doc.created_at).getTime() > 10 * 60 * 1000
 
+  const showAnalysis = doc.status === 'completed' && doc.extracted_json && Object.keys(doc.extracted_json).length > 0
+  const accountingStatus = doc.accounting_write_status
+
   return (
     <div className="border-b border-brand-border last:border-0">
       <button
@@ -259,13 +300,11 @@ function DocumentRow({ doc, toolId, connectedIntegrations, onAbort, onReupload, 
         {/* Thumbnail */}
         <div className="shrink-0 w-[52px] h-[72px] bg-brand-bg border border-brand-border rounded-sm overflow-hidden flex items-center justify-center">
           {doc.thumbnail_b64 ? (
-            <img
-              src={`data:image/png;base64,${doc.thumbnail_b64}`}
-              alt="doc"
-              className="w-full h-full object-cover"
-            />
+            <img src={`data:image/png;base64,${doc.thumbnail_b64}`} alt="doc" className="w-full h-full object-cover" />
           ) : (
-            <span className="text-[10px] font-mono text-brand-muted">PDF</span>
+            <span className="text-[10px] font-mono text-brand-muted">
+              {doc.content_type?.includes('word') ? 'DOC' : 'PDF'}
+            </span>
           )}
         </div>
 
@@ -278,14 +317,12 @@ function DocumentRow({ doc, toolId, connectedIntegrations, onAbort, onReupload, 
               </p>
               <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                 <span className="text-[10px] font-mono text-brand-muted uppercase tracking-widest">
-                  {DOC_TYPE_LABEL[doc.document_type]}
+                  {DOC_TYPE_LABEL[doc.document_type] ?? doc.document_type}
                 </span>
                 {doc.file_size_bytes != null && (
                   <span className="text-[10px] font-mono text-brand-muted">{formatBytes(doc.file_size_bytes)}</span>
                 )}
-                {uploader && (
-                  <span className="text-[10px] font-mono text-brand-muted">{uploader}</span>
-                )}
+                {uploader && <span className="text-[10px] font-mono text-brand-muted">{uploader}</span>}
                 <span className="text-[10px] font-mono text-brand-muted">{date}</span>
               </div>
             </div>
@@ -326,7 +363,7 @@ function DocumentRow({ doc, toolId, connectedIntegrations, onAbort, onReupload, 
                   </button>
                 </>
               )}
-              {doc.status === 'completed' && doc.decision === 'blocked' && (
+              {doc.status === 'completed' && (dc?.color === 'text-[#ff4d6d]') && (
                 <button
                   type="button"
                   onClick={e => handleDelete(e, 'Deleted')}
@@ -365,67 +402,66 @@ function DocumentRow({ doc, toolId, connectedIntegrations, onAbort, onReupload, 
             transition={{ duration: 0.18, ease: 'easeOut' }}
             className="overflow-hidden"
           >
-            <div className="px-4 pb-4 border-t border-brand-border space-y-3">
-              {/* Extracted fields */}
-              {doc.extracted_json && Object.keys(doc.extracted_json).length > 0 && (
-                <div>
-                  <p className="text-[10px] font-mono text-brand-muted uppercase tracking-widest mt-3 mb-1.5">
-                    Extracted fields
-                  </p>
-                  <ExtractedFields extracted={doc.extracted_json} />
+            <div className="px-4 pb-4 border-t border-brand-border space-y-4">
+              {showAnalysis && (
+                <div className="mt-3">
+                  {doc.document_type === 'receipt' && (
+                    <>
+                      <p className="text-[10px] font-mono text-brand-muted uppercase tracking-widest mb-2">Receipt details</p>
+                      <ReceiptFields extracted={doc.extracted_json!} />
+                    </>
+                  )}
+                  {doc.document_type === 'document' && (
+                    <>
+                      <p className="text-[10px] font-mono text-brand-muted uppercase tracking-widest mb-2">
+                        Analysis
+                        {doc.extracted_json?.document_subtype && (
+                          <span className="ml-2 normal-case tracking-normal text-brand-secondary">
+                            — {String(doc.extracted_json.document_subtype).replace(/_/g, ' ')}
+                          </span>
+                        )}
+                      </p>
+                      <DocumentAnalysis extracted={doc.extracted_json!} />
+                    </>
+                  )}
                 </div>
               )}
 
-              {/* Policy flags */}
-              {doc.flags_json && doc.flags_json.length > 0 && (
-                <div>
-                  <p className="text-[10px] font-mono text-brand-muted uppercase tracking-widest mb-1.5">Policy flags</p>
-                  <div className="space-y-1">
-                    {doc.flags_json.map((flag, i) => (
-                      <div key={i} className="bg-[rgba(245,166,35,0.04)] border border-[rgba(245,166,35,0.2)] rounded-sm px-3 py-2">
-                        <p className="text-[11px] font-mono text-brand-secondary">{flag}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Accounting write status */}
-              {doc.accounting_write_status && doc.accounting_write_status !== 'skipped' && (() => {
-                const writtenIntegrations = doc.accounting_write_status
-                  .split(',')
-                  .filter(p => p.includes(':'))
-                  .map(p => { const i = p.split(':')[1]; return i.charAt(0).toUpperCase() + i.slice(1) })
-                const isFailed = doc.accounting_write_status === 'failed'
-                const hasIntegration = writtenIntegrations.length > 0
-                const label = hasIntegration
-                  ? `Pushed to ${writtenIntegrations.join(' & ')} — re-push blocked`
-                  : isFailed
-                    ? 'Write failed'
-                    : 'Not synced'
+              {/* Accounting write status (receipts) */}
+              {accountingStatus && (() => {
+                const parts = accountingStatus.split(',').filter(p => p.includes(':'))
+                const written = parts.filter(p => p.startsWith('written:')).map(p => p.split(':')[1])
+                const failed = parts.filter(p => p.startsWith('failed:')).map(p => p.split(':')[1])
+                if (!written.length && !failed.length) return null
                 return (
-                  <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-mono text-brand-muted uppercase tracking-widest">Accounting write</span>
-                    <span className={`text-[10px] font-mono ${
-                      hasIntegration ? 'text-[#00C853]' :
-                      isFailed ? 'text-[#ff4d6d]' : 'text-[#f5a623]'
-                    }`}>
-                      {label}
-                    </span>
+                  <div className="space-y-1">
+                    {written.length > 0 && (
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-mono text-brand-muted uppercase tracking-widest">Pushed to</span>
+                        <span className="text-[10px] font-mono text-[#00C853]">
+                          {written.map(i => i.charAt(0).toUpperCase() + i.slice(1)).join(', ')}
+                        </span>
+                      </div>
+                    )}
+                    {failed.length > 0 && (
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-mono text-brand-muted uppercase tracking-widest">Push failed</span>
+                        <span className="text-[10px] font-mono text-[#ff4d6d]">
+                          {failed.map(i => i.charAt(0).toUpperCase() + i.slice(1)).join(', ')}
+                        </span>
+                      </div>
+                    )}
                   </div>
                 )
               })()}
 
-              {/* Quick actions — completed documents only */}
               {doc.status === 'completed' && (
                 <QuickActions
                   doc={doc}
                   toolId={toolId}
-                  connectedIntegrations={connectedIntegrations}
                   onAbort={onAbort}
                   onReupload={onReupload}
-                  onOpenSummary={onOpenSummary}
-                  onUpdateDoc={onUpdateDoc}
+                  onAskClen={onAskClen}
                 />
               )}
             </div>
@@ -436,77 +472,51 @@ function DocumentRow({ doc, toolId, connectedIntegrations, onAbort, onReupload, 
   )
 }
 
-function UploadArea({
-  docType,
-  setDocType,
-  uploading,
-  onFiles,
-}: {
-  docType: DocumentType
-  setDocType: (t: DocumentType) => void
-  uploading: boolean
-  onFiles: (files: FileList) => void
-}) {
+function UploadArea({ uploading, onFiles }: { uploading: boolean; onFiles: (files: FileList) => void }) {
   const [dragOver, setDragOver] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
 
   return (
-    <div className="space-y-3">
-      <div className="flex items-center gap-2">
-        <span className="text-[10px] font-mono text-brand-muted uppercase tracking-widest">Document type</span>
-        {(['invoice', 'receipt', 'contract'] as DocumentType[]).map(t => (
-          <button
-            key={t}
-            type="button"
-            onClick={() => setDocType(t)}
-            className={`text-[10px] font-mono px-2.5 py-1 rounded-sm border transition-colors ${
-              docType === t
-                ? 'border-[#00C853] text-[#00C853] bg-[rgba(0,200,83,0.08)]'
-                : 'border-brand-border text-brand-muted hover:text-brand-secondary'
-            }`}
-          >
-            {DOC_TYPE_LABEL[t]}
-          </button>
-        ))}
-      </div>
-
-      <div
-        onDragOver={e => { e.preventDefault(); setDragOver(true) }}
-        onDragLeave={() => setDragOver(false)}
-        onDrop={e => { e.preventDefault(); setDragOver(false); if (e.dataTransfer.files.length) onFiles(e.dataTransfer.files) }}
-        onClick={() => inputRef.current?.click()}
-        className={`relative border-2 border-dashed rounded-sm p-8 text-center cursor-pointer transition-colors ${
-          dragOver
-            ? 'border-[#00C853] bg-[rgba(0,200,83,0.04)]'
-            : 'border-brand-border hover:border-brand-secondary'
-        }`}
-      >
-        <input
-          ref={inputRef}
-          type="file"
-          accept=".pdf,.png,.jpg,.jpeg,.webp"
-          className="sr-only"
-          onChange={e => { if (e.target.files?.length) onFiles(e.target.files) }}
-        />
-        {uploading ? (
-          <div className="space-y-1.5">
-            <div className="w-5 h-5 border-2 border-[#00C853] border-t-transparent rounded-full animate-spin mx-auto" />
-            <p className="text-xs font-mono text-brand-muted">Uploading…</p>
-          </div>
-        ) : (
-          <div className="space-y-1.5">
-            <p className="text-xs font-mono text-brand-secondary">
-              Drop a {DOC_TYPE_LABEL[docType].toLowerCase()} here or click to browse
-            </p>
-            <p className="text-[10px] font-mono text-brand-muted">PDF · PNG · JPG · WebP · max 10 MB</p>
-          </div>
-        )}
-      </div>
+    <div
+      onDragOver={e => { e.preventDefault(); setDragOver(true) }}
+      onDragLeave={() => setDragOver(false)}
+      onDrop={e => { e.preventDefault(); setDragOver(false); if (e.dataTransfer.files.length) onFiles(e.dataTransfer.files) }}
+      onClick={() => inputRef.current?.click()}
+      className={`relative border-2 border-dashed rounded-sm p-8 text-center cursor-pointer transition-colors ${
+        dragOver ? 'border-[#00C853] bg-[rgba(0,200,83,0.04)]' : 'border-brand-border hover:border-brand-secondary'
+      }`}
+    >
+      <input
+        ref={inputRef}
+        type="file"
+        accept=".pdf,.doc,.docx,.png,.jpg,.jpeg,.webp"
+        multiple
+        className="sr-only"
+        onChange={e => { if (e.target.files?.length) onFiles(e.target.files) }}
+      />
+      {uploading ? (
+        <div className="space-y-1.5">
+          <div className="w-5 h-5 border-2 border-[#00C853] border-t-transparent rounded-full animate-spin mx-auto" />
+          <p className="text-xs font-mono text-brand-muted">Uploading…</p>
+        </div>
+      ) : (
+        <div className="space-y-1.5">
+          <p className="text-xs font-mono text-brand-secondary">
+            Drop files here or click to browse
+          </p>
+          <p className="text-[10px] font-mono text-brand-muted">
+            PDF · Word · PNG · JPG · WebP · max 10 MB
+          </p>
+          <p className="text-[10px] font-mono text-brand-muted mt-1">
+            Clen auto-classifies as receipt or document
+          </p>
+        </div>
+      )}
     </div>
   )
 }
 
-export function DocumentsTab({ toolId, connectedIntegrations = [] }: { toolId: string | null; connectedIntegrations?: string[] }) {
+export function DocumentsTab({ toolId }: { toolId: string | null }) {
   const { getToken } = useAuth()
   const { toast } = useToast()
   const [documents, setDocuments] = useState<ProcessedDocument[]>([])
@@ -514,9 +524,8 @@ export function DocumentsTab({ toolId, connectedIntegrations = [] }: { toolId: s
   const [uploading, setUploading] = useState(false)
   const [total, setTotal] = useState(0)
   const [offset, setOffset] = useState(0)
-  const [docType, setDocType] = useState<DocumentType>('invoice')
-  const [summaryDocId, setSummaryDocId] = useState<string | null>(null)
-  const [summaryFilename, setSummaryFilename] = useState<string | null>(null)
+  const [askDocId, setAskDocId] = useState<string | null>(null)
+  const [askFilename, setAskFilename] = useState<string | null>(null)
   const uploadRef = useRef<HTMLDivElement>(null)
   const limit = 20
 
@@ -542,7 +551,6 @@ export function DocumentsTab({ toolId, connectedIntegrations = [] }: { toolId: s
 
   useEffect(() => { load(0) }, [toolId])
 
-  // Poll every 3 s while any real (non-temp) document is still processing
   const hasProcessing = documents.some(d => d.status === 'processing' && !d.id.startsWith('temp-'))
   useEffect(() => {
     if (!hasProcessing || !toolId) return
@@ -571,51 +579,15 @@ export function DocumentsTab({ toolId, connectedIntegrations = [] }: { toolId: s
 
   async function handleFiles(files: FileList) {
     if (!toolId) return
-    const file = files[0]
-    const tempId = `temp-${Date.now()}`
-    const now = new Date().toISOString()
 
-    // Add placeholder immediately — state update in this component, no callback chain
-    setDocuments(prev => [{
-      id: tempId,
-      document_type: docType,
-      filename: file.name,
-      content_type: file.type,
-      file_size_bytes: file.size,
-      uploaded_by: null,
-      status: 'processing',
-      decision: null,
-      confidence: null,
-      rule_triggered: null,
-      reason: null,
-      flags_json: null,
-      extracted_json: null,
-      thumbnail_b64: null,
-      accounting_write_status: null,
-      created_at: now,
-    }, ...prev])
-    setTotal(t => t + 1)
-    setUploading(true)
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i]
+      const tempId = `temp-${Date.now()}-${i}`
+      const now = new Date().toISOString()
 
-    try {
-      const token = await getToken()
-      const form = new FormData()
-      form.append('file', file)
-      const res = await fetch(
-        `${API}/v1/document-intelligence/${toolId}/upload?document_type=${docType}`,
-        { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: form },
-      )
-      const json = await res.json()
-      if (!res.ok) {
-        toast(json.detail ?? 'Upload failed', 'error')
-        setDocuments(prev => prev.filter(d => d.id !== tempId))
-        setTotal(t => t - 1)
-        return
-      }
-      toast('Document uploaded — processing started', 'success')
-      setDocuments(prev => prev.map(d => d.id === tempId ? {
-        id: json.data.document_id,
-        document_type: docType,
+      setDocuments(prev => [{
+        id: tempId,
+        document_type: 'pending',
         filename: file.name,
         content_type: file.type,
         file_size_bytes: file.size,
@@ -627,26 +599,60 @@ export function DocumentsTab({ toolId, connectedIntegrations = [] }: { toolId: s
         reason: null,
         flags_json: null,
         extracted_json: null,
-        thumbnail_b64: json.data.thumbnail_b64 ?? null,
+        thumbnail_b64: null,
         accounting_write_status: null,
         created_at: now,
-      } : d))
-    } catch {
-      toast('Network error — please try again', 'error')
-      setDocuments(prev => prev.filter(d => d.id !== tempId))
-      setTotal(t => t - 1)
-    } finally {
-      setUploading(false)
+      }, ...prev])
+      setTotal(t => t + 1)
+      setUploading(true)
+
+      try {
+        const token = await getToken()
+        const form = new FormData()
+        form.append('file', file)
+        const res = await fetch(
+          `${API}/v1/document-intelligence/${toolId}/upload`,
+          { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: form },
+        )
+        const json = await res.json()
+        if (!res.ok) {
+          toast(json.detail ?? 'Upload failed', 'error')
+          setDocuments(prev => prev.filter(d => d.id !== tempId))
+          setTotal(t => t - 1)
+          continue
+        }
+        toast(`${file.name} uploaded — classifying…`, 'success')
+        setDocuments(prev => prev.map(d => d.id === tempId ? {
+          id: json.data.document_id,
+          document_type: 'pending' as DocumentType,
+          filename: file.name,
+          content_type: file.type,
+          file_size_bytes: file.size,
+          uploaded_by: null,
+          status: 'processing' as DocumentStatus,
+          decision: null,
+          confidence: null,
+          rule_triggered: null,
+          reason: null,
+          flags_json: null,
+          extracted_json: null,
+          thumbnail_b64: json.data.thumbnail_b64 ?? null,
+          accounting_write_status: null,
+          created_at: now,
+        } : d))
+      } catch {
+        toast('Network error — please try again', 'error')
+        setDocuments(prev => prev.filter(d => d.id !== tempId))
+        setTotal(t => t - 1)
+      } finally {
+        setUploading(false)
+      }
     }
   }
 
   function handleAborted(docId: string) {
     setDocuments(prev => prev.filter(d => d.id !== docId))
     setTotal(t => t - 1)
-  }
-
-  function handleUpdateDoc(docId: string, patch: Partial<ProcessedDocument>) {
-    setDocuments(prev => prev.map(d => d.id === docId ? { ...d, ...patch } : d))
   }
 
   if (!toolId) {
@@ -660,7 +666,7 @@ export function DocumentsTab({ toolId, connectedIntegrations = [] }: { toolId: s
   return (
     <div className="space-y-4">
       <div ref={uploadRef}>
-        <UploadArea docType={docType} setDocType={setDocType} uploading={uploading} onFiles={handleFiles} />
+        <UploadArea uploading={uploading} onFiles={handleFiles} />
       </div>
 
       <div>
@@ -693,11 +699,9 @@ export function DocumentsTab({ toolId, connectedIntegrations = [] }: { toolId: s
                   key={doc.id}
                   doc={doc}
                   toolId={toolId}
-                  connectedIntegrations={connectedIntegrations}
                   onAbort={handleAborted}
                   onReupload={() => uploadRef.current?.scrollIntoView({ behavior: 'smooth' })}
-                  onOpenSummary={(id, filename) => { setSummaryDocId(id); setSummaryFilename(filename) }}
-                  onUpdateDoc={handleUpdateDoc}
+                  onAskClen={(id, filename) => { setAskDocId(id); setAskFilename(filename) }}
                 />
               ))}
             </div>
@@ -716,11 +720,11 @@ export function DocumentsTab({ toolId, connectedIntegrations = [] }: { toolId: s
         )}
       </div>
 
-      {summaryDocId !== null && (
-        <ContractSummaryDrawer
-          documentId={summaryDocId}
-          filename={summaryFilename}
-          onClose={() => { setSummaryDocId(null); setSummaryFilename(null) }}
+      {askDocId !== null && (
+        <AskClenDrawer
+          documentId={askDocId}
+          filename={askFilename}
+          onClose={() => { setAskDocId(null); setAskFilename(null) }}
         />
       )}
     </div>

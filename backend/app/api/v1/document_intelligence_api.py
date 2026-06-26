@@ -22,8 +22,6 @@ from app.tools.document_intelligence import (
 logger = get_logger(__name__)
 router = APIRouter(prefix="/document-intelligence", tags=["document-intelligence"])
 
-_VALID_DOCUMENT_TYPES = {"invoice", "receipt", "contract"}
-
 
 def _serialize_document(doc) -> dict:
     return {
@@ -49,7 +47,6 @@ def _serialize_document(doc) -> dict:
 @router.post("/{tool_id}/upload")
 async def upload_document(
     tool_id: str,
-    document_type: str,
     file: UploadFile,
     current_user: RequireOrgAuth,
     db: Annotated[Prisma, Depends(get_db_dep)],
@@ -57,23 +54,17 @@ async def upload_document(
     """
     Accept a document upload, generate a thumbnail, create a Document record,
     and enqueue the document_intelligence job for async processing.
+    Claude auto-classifies the document as 'receipt' or 'document' during processing.
     """
     tenant_id = current_user.tenant_id
-    logger.debug("doc_upload_start", extra={"tenant_id": tenant_id, "tool_id": tool_id, "document_type": document_type, "file_name": file.filename, "content_type": file.content_type})
-
-    if document_type not in _VALID_DOCUMENT_TYPES:
-        logger.debug("doc_upload_invalid_type", extra={"document_type": document_type})
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=f"document_type must be one of: {', '.join(sorted(_VALID_DOCUMENT_TYPES))}",
-        )
+    logger.debug("doc_upload_start", extra={"tenant_id": tenant_id, "tool_id": tool_id, "file_name": file.filename, "content_type": file.content_type})
 
     content_type = file.content_type or "application/pdf"
     if content_type not in _ALLOWED_CONTENT_TYPES:
         logger.debug("doc_upload_unsupported_content_type", extra={"content_type": content_type})
         raise HTTPException(
             status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
-            detail=f"Unsupported file type. Allowed: {', '.join(sorted(_ALLOWED_CONTENT_TYPES))}",
+            detail="Unsupported file type. Allowed: PDF, Word (.docx), PNG, JPG, WebP",
         )
 
     file_bytes = await file.read()
@@ -107,7 +98,7 @@ async def upload_document(
     doc_record = await db.document.create(data={
         "tenant_id": tenant_id,
         "tool_id": tool_id,
-        "document_type": document_type,
+        "document_type": "pending",
         "filename": file.filename,
         "content_type": content_type,
         "file_size_bytes": len(file_bytes),
@@ -143,7 +134,6 @@ async def upload_document(
         execution_id=execution.id,
         tenant_id=tenant_id,
         tool_id=tool_id,
-        document_type=document_type,
         file_bytes=file_bytes,
         content_type=content_type,
         policy_config=policy_config,
@@ -156,7 +146,6 @@ async def upload_document(
             "tool_id": tool_id,
             "document_id": doc_record.id,
             "execution_id": execution.id,
-            "document_type": document_type,
             "file_name": file.filename,
             "size_bytes": len(file_bytes),
         },
