@@ -1,5 +1,6 @@
 """
-FreshBooks bill write — creates a bill for a document pushed from Document Intelligence.
+FreshBooks expense write — creates an expense for a document pushed from Document Intelligence.
+Uses the standard Expenses API (universally available) rather than the Bills API (feature-gated).
 """
 import asyncio
 import random
@@ -43,18 +44,18 @@ async def create_bill(
     invoice_number: str,
     amount_minor: int,
     currency: str,
-    due_date: str | None,
 ) -> dict:
     """
-    Creates a bill in FreshBooks for the given tenant.
-    Decrypts credentials from DB. Returns {"freshbooks_bill_id": str}.
+    Creates an expense in FreshBooks for the given tenant.
+    Uses Expenses API (not Bills) — available on all FreshBooks plans.
+    Decrypts credentials from DB. Returns {"freshbooks_expense_id": str}.
     Raises ValueError if no connected integration or credentials incomplete.
     """
     db = get_db()
-    logger.info("freshbooks_create_bill_start", extra={
+    logger.info("freshbooks_create_expense_start", extra={
         "tenant_id": tenant_id, "vendor": vendor,
         "invoice_number": invoice_number, "amount_minor": amount_minor,
-        "currency": currency, "due_date": due_date,
+        "currency": currency,
     })
 
     integration = await db.integration.find_first(
@@ -63,10 +64,6 @@ async def create_bill(
     if not integration:
         logger.error("freshbooks_no_connected_integration", extra={"tenant_id": tenant_id})
         raise ValueError(f"No connected FreshBooks integration for tenant {tenant_id}")
-
-    logger.info("freshbooks_integration_found", extra={
-        "tenant_id": tenant_id, "integration_id": integration.id,
-    })
 
     creds = decrypt_credentials(integration.encrypted_credentials, tenant_id)
     access_token: str = creds.get("access_token", "")
@@ -87,13 +84,6 @@ async def create_bill(
         except Exception as exc:
             logger.error("freshbooks_write_token_refresh_failed", extra={"tenant_id": tenant_id, "error": type(exc).__name__})
 
-    logger.info("freshbooks_credentials_check", extra={
-        "tenant_id": tenant_id,
-        "has_access_token": bool(access_token),
-        "has_account_id": bool(account_id),
-        "cred_keys": list(creds.keys()),
-    })
-
     if not access_token or not account_id:
         logger.error("freshbooks_credentials_incomplete", extra={
             "tenant_id": tenant_id,
@@ -102,25 +92,28 @@ async def create_bill(
         })
         raise ValueError("FreshBooks credentials missing access_token or account_id")
 
-    logger.info("freshbooks_resolving_vendor", extra={"tenant_id": tenant_id, "vendor": vendor})
-    vendor_id = await fb.find_or_create_vendor(access_token, account_id, vendor)
-    logger.info("freshbooks_vendor_resolved", extra={"tenant_id": tenant_id, "vendor_id": vendor_id})
+    # Resolve a default expense category_id (required by FreshBooks Expenses API)
+    category_id: int | None = None
+    try:
+        categories = await fb.get_expense_categories(access_token, account_id)
+        if categories:
+            # Prefer "Other" category; fall back to first available
+            other = next((c for c in categories if "other" in c.get("name", "").lower()), None)
+            category_id = int((other or categories[0])["id"])
+    except Exception as exc:
+        logger.warning("freshbooks_category_lookup_failed", extra={"tenant_id": tenant_id, "error": type(exc).__name__})
 
     amount_str = str(round(amount_minor / 100.0, 2))
-    bill_payload: dict = {
-        "vendorid": vendor_id,
-        "currency_code": currency.upper(),
-        "lines": [
-            {
-                "description": f"Invoice {invoice_number} from {vendor}",
-                "quantity": "1",
-                "unit_cost": {"amount": amount_str, "code": currency.upper()},
-            }
-        ],
+    expense_payload: dict = {
+        "amount": {"amount": amount_str, "code": currency.upper()},
+        "vendor": vendor,
+        "notes": f"Invoice {invoice_number} from {vendor}",
     }
+    if category_id is not None:
+        expense_payload["category_id"] = category_id
 
     async def _call():
-        url = f"{FRESHBOOKS_API_BASE}/accounting/account/{account_id}/bills/bills"
+        url = f"{FRESHBOOKS_API_BASE}/accounting/account/{account_id}/expenses/expenses"
         logger.info("freshbooks_http_request", extra={
             "tenant_id": tenant_id, "invoice_number": invoice_number, "url": url,
         })
@@ -131,9 +124,8 @@ async def create_bill(
                     "Authorization": f"Bearer {access_token}",
                     "Accept": "application/json",
                     "Content-Type": "application/json",
-                    "Api-Version": "alpha",
                 },
-                json={"bill": bill_payload},
+                json={"expense": expense_payload},
                 timeout=15.0,
             )
             logger.info("freshbooks_http_response", extra={
@@ -149,15 +141,15 @@ async def create_bill(
             return resp.json()
 
     raw = await _retry(_call)
-    bill_id = str(
-        raw.get("response", {}).get("result", {}).get("bill", {}).get("id", "")
+    expense_id = str(
+        raw.get("response", {}).get("result", {}).get("expense", {}).get("id", "")
     )
     logger.info(
-        "freshbooks_bill_created",
+        "freshbooks_expense_created",
         extra={
             "tenant_id": tenant_id,
-            "freshbooks_bill_id": bill_id,
+            "freshbooks_expense_id": expense_id,
             "invoice_number": invoice_number,
         },
     )
-    return {"freshbooks_bill_id": bill_id}
+    return {"freshbooks_expense_id": expense_id}
