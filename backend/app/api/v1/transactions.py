@@ -1,7 +1,10 @@
+import csv
+import io
 from datetime import date, datetime
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi.responses import StreamingResponse
 from prisma import Prisma
 from pydantic import BaseModel
 
@@ -153,4 +156,56 @@ async def update_transaction_category(
 
     return standard_response(
         data={"id": updated.id, "ai_category": updated.ai_category, "status": updated.status}
+    )
+
+
+@router.get("/transactions/export")
+async def export_transactions_csv(
+    current_user: RequireOrgAuth,
+    db: Annotated[Prisma, Depends(get_db_dep)],
+    status_filter: str | None = Query(None, alias="status"),
+    from_date: date | None = Query(None),
+    to_date: date | None = Query(None),
+) -> StreamingResponse:
+    """Export all transactions for the tenant as CSV. Respects status/date filters."""
+    tenant_id = current_user.tenant_id
+
+    where: dict = {"tenant_id": tenant_id}
+    if status_filter:
+        where["status"] = status_filter
+    date_filter: dict = {}
+    if from_date:
+        date_filter["gte"] = datetime(from_date.year, from_date.month, from_date.day)
+    if to_date:
+        date_filter["lte"] = datetime(to_date.year, to_date.month, to_date.day, 23, 59, 59)
+    if date_filter:
+        where["date"] = date_filter
+
+    transactions = await db.banktransaction.find_many(
+        where=where,
+        order={"date": "desc"},
+        include={"account": True},
+    )
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["date", "account_name", "merchant_name", "description", "amount", "currency", "ai_category", "status", "matched_invoice_id"])
+    for t in transactions:
+        writer.writerow([
+            t.date.date().isoformat() if t.date else "",
+            t.account.name if t.account else "",
+            t.merchant_name or "",
+            t.description or "",
+            f"{t.amount_minor / 100:.2f}",
+            t.currency,
+            t.ai_category or "",
+            t.status,
+            t.matched_invoice_id or "",
+        ])
+
+    csv_bytes = output.getvalue().encode("utf-8-sig")
+    return StreamingResponse(
+        iter([csv_bytes]),
+        media_type="text/csv; charset=utf-8",
+        headers={"Content-Disposition": 'attachment; filename="transactions.csv"'},
     )

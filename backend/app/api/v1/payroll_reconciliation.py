@@ -1,13 +1,16 @@
 """
 Payroll Reconciliation API — /v1/payroll-runs
-Endpoints: list runs, trigger run, get run detail, get ghosts, get missing.
+Endpoints: list runs, trigger run, get run detail, get ghosts, get missing, export CSV.
 All queries scoped to current_user.tenant_id (no cross-tenant access).
 """
 from __future__ import annotations
 
+import csv
+import io
 import uuid
 
 from fastapi import APIRouter, HTTPException
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, field_validator
 
 from app.core.db import get_db
@@ -257,3 +260,52 @@ async def get_payroll_run_missing(run_id: str, current_user: RequireOrgAuth) -> 
     missing = results.get("missing", [])
 
     return standard_response(data={"run_id": run_id, "missing": missing, "total": len(missing)})
+
+
+# ---------------------------------------------------------------------------
+# GET /v1/payroll-runs/{run_id}/export
+# ---------------------------------------------------------------------------
+
+
+@router.get("/payroll-runs/{run_id}/export")
+async def export_payroll_run_csv(run_id: str, current_user: RequireOrgAuth) -> StreamingResponse:
+    """Export payroll reconciliation results (ghosts, missing, discrepancies) as CSV."""
+    db = get_db()
+    tenant_id = current_user.tenant_id
+
+    run = await db.payrollrun.find_first(where={"id": run_id, "tenant_id": tenant_id})
+    if run is None:
+        raise HTTPException(status_code=404, detail="Payroll run not found")
+
+    results = run.results_json if isinstance(run.results_json, dict) else {}
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["type", "name", "description", "amount", "expected_amount", "diff_pct", "date", "transaction_id"])
+
+    for g in results.get("ghosts", []):
+        writer.writerow([
+            "ghost", g.get("extracted_name", ""), g.get("description", ""),
+            f"{g.get('amount_minor', 0) / 100:.2f}", "", "",
+            g.get("date", ""), g.get("transaction_id", ""),
+        ])
+
+    for m in results.get("missing", []):
+        writer.writerow([
+            "missing", m.get("name", ""), "",
+            "", f"{m.get('expected_minor', 0) / 100:.2f}", "", "", "",
+        ])
+
+    for d in results.get("discrepancies", []):
+        writer.writerow([
+            "discrepancy", d.get("name", ""), "",
+            f"{d.get('actual_minor', 0) / 100:.2f}", f"{d.get('expected_minor', 0) / 100:.2f}",
+            f"{d.get('diff_pct', 0):.1f}", "", d.get("transaction_id", ""),
+        ])
+
+    csv_bytes = output.getvalue().encode("utf-8-sig")
+    return StreamingResponse(
+        iter([csv_bytes]),
+        media_type="text/csv; charset=utf-8",
+        headers={"Content-Disposition": f'attachment; filename="payroll_rec_{run.period}.csv"'},
+    )

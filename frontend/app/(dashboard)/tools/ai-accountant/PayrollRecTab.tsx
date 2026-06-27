@@ -167,6 +167,7 @@ export function PayrollRecTab({ toolId }: { toolId: string | null }) {
 
   const [activeRun, setActiveRun] = useState<PayrollRun | null>(null)
   const [results, setResults] = useState<RunResults | null>(null)
+  const [exporting, setExporting] = useState(false)
   const [history, setHistory] = useState<PayrollRun[]>([])
   const [loadingHistory, setLoadingHistory] = useState(false)
   const [historyLoaded, setHistoryLoaded] = useState(false)
@@ -197,6 +198,27 @@ export function PayrollRecTab({ toolId }: { toolId: string | null }) {
 
   function removeEmployee(index: number) {
     setRoster(prev => prev.filter((_, i) => i !== index))
+  }
+
+  async function handleExport() {
+    if (!activeRun) return
+    setExporting(true)
+    try {
+      const token = await getToken()
+      const res = await fetch(`${API}/v1/payroll-runs/${activeRun.id}/export`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      if (!res.ok) return
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `payroll_rec_${activeRun.period}.csv`
+      a.click()
+      URL.revokeObjectURL(url)
+    } finally {
+      setExporting(false)
+    }
   }
 
   const validRoster = roster.filter(e => e.name.trim() && e.expectedSalary.trim())
@@ -341,11 +363,21 @@ export function PayrollRecTab({ toolId }: { toolId: string | null }) {
             className="space-y-4"
           >
             <div className="bg-brand-surface border border-brand-border rounded-sm p-4 space-y-3">
-              <div className="flex items-center gap-3 flex-wrap">
-                <span className={`text-[10px] font-mono px-2 py-0.5 rounded-sm uppercase tracking-wider ${STATUS_STYLE[activeRun.status]}`}>
-                  {activeRun.status}
-                </span>
-                <span className="text-[10px] font-mono text-brand-muted">{activeRun.period}</span>
+              <div className="flex items-center justify-between gap-3 flex-wrap">
+                <div className="flex items-center gap-3">
+                  <span className={`text-[10px] font-mono px-2 py-0.5 rounded-sm uppercase tracking-wider ${STATUS_STYLE[activeRun.status]}`}>
+                    {activeRun.status}
+                  </span>
+                  <span className="text-[10px] font-mono text-brand-muted">{activeRun.period}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleExport}
+                  disabled={exporting}
+                  className="text-[10px] font-mono border border-brand-border text-brand-muted hover:text-brand-text rounded-sm px-3 py-1 transition-colors disabled:opacity-40"
+                >
+                  {exporting ? 'Exporting…' : 'Export CSV'}
+                </button>
               </div>
               <div className="flex gap-3 flex-wrap">
                 <span className="text-[10px] font-mono px-2 py-1 rounded-sm bg-[rgba(0,200,83,0.08)] text-[#00C853] border border-[rgba(0,200,83,0.2)]">

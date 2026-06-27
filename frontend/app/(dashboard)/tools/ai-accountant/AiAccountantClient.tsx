@@ -209,6 +209,23 @@ export function AiAccountantClient() {
     try { await fetchTransactions(offset, false) } finally { setLoadingMore(false) }
   }
 
+  async function handleExportCsv() {
+    const token = await getToken()
+    const params = new URLSearchParams()
+    if (filter !== 'all') params.set('status', filter)
+    const res = await fetch(`${API}/v1/transactions/export?${params}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+    if (!res.ok) { toast('Export failed — please try again', 'error'); return }
+    const blob = await res.blob()
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `transactions${filter !== 'all' ? `_${filter}` : ''}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
   function handleCategoryUpdate(id: string, category: string) {
     setTransactions(prev => prev.map(t => t.id === id ? { ...t, ai_category: category, status: 'categorised' } : t))
   }
@@ -349,14 +366,24 @@ export function AiAccountantClient() {
                     </button>
                   ))}
                 </div>
-                <button
-                  type="button"
-                  onClick={handleCategoriseNow}
-                  disabled={!deployed?.id || running || pendingCount === 0}
-                  className="text-xs font-mono bg-[#00C853] text-black hover:bg-[#00a844] active:scale-[0.97] rounded-sm px-4 py-1.5 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-                >
-                  {running ? 'Categorising…' : `Categorise Now (${pendingCount})`}
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handleExportCsv}
+                    disabled={transactions.length === 0}
+                    className="text-xs font-mono border border-brand-border text-brand-muted hover:text-brand-text rounded-sm px-3 py-1.5 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    Export CSV
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleCategoriseNow}
+                    disabled={!deployed?.id || running || pendingCount === 0}
+                    className="text-xs font-mono bg-[#00C853] text-black hover:bg-[#00a844] active:scale-[0.97] rounded-sm px-4 py-1.5 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    {running ? 'Categorising…' : `Categorise Now (${pendingCount})`}
+                  </button>
+                </div>
               </div>
 
               {/* Transaction table */}
