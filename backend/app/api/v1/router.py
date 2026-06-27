@@ -68,6 +68,9 @@ from app.api.v1.budgets import router as budgets_router
 from app.api.v1.currency import router as currency_router
 from app.api.v1.document_intelligence_api import router as document_intelligence_router
 from app.api.v1.document_actions import router as document_actions_router
+from app.api.v1.month_end_close import router as month_end_close_router
+from app.api.v1.payroll_reconciliation import router as payroll_rec_router
+from app.api.v1.journal_entries import router as journal_entries_router
 
 v1_router = APIRouter()
 v1_router.include_router(onboarding.router)
@@ -142,4 +145,7 @@ v1_router.include_router(truelayer_webhook_router)
 v1_router.include_router(adyen_webhook_router)
 v1_router.include_router(document_intelligence_router)
 v1_router.include_router(document_actions_router)
+v1_router.include_router(month_end_close_router)
+v1_router.include_router(payroll_rec_router)
+v1_router.include_router(journal_entries_router)
 v1_router.include_router(generic_router)  # must be last — uses {slug} path params

@@ -1,0 +1,457 @@
+'use client'
+
+import { useCallback, useEffect, useRef, useState } from 'react'
+import Link from 'next/link'
+import { useAuth } from '@clerk/nextjs'
+import { useCanConfigure } from '@/lib/auth-client'
+import { useToast } from '@/components/Providers'
+import { ConfigDrawer } from '@/components/dashboard/tools/ConfigDrawer'
+import { ToolExecutionsTab } from '@/components/dashboard/tools/ToolExecutionsTab'
+import { ToolApprovalsTab } from '@/components/dashboard/tools/ToolApprovalsTab'
+import { ToolAuditTab } from '@/components/dashboard/tools/ToolAuditTab'
+import { TransactionRow, type Transaction } from '@/components/dashboard/transactions/TransactionRow'
+import { MonthEndCloseTab } from './MonthEndCloseTab'
+import { PayrollRecTab } from './PayrollRecTab'
+import { JournalEntriesTab } from './JournalEntriesTab'
+import type { Tool } from '@/components/dashboard/tools/ToolCard'
+import { motion, AnimatePresence } from 'framer-motion'
+import { cn } from '@/lib/utils'
+
+const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+const PAGE_SIZE = 50
+
+type Tab = 'overview' | 'executions' | 'approvals' | 'audit' | 'month-end-close' | 'payroll' | 'journal-entries'
+const TABS: { key: Tab; label: string }[] = [
+  { key: 'overview', label: 'Overview' },
+  { key: 'month-end-close', label: 'Month-End Close' },
+  { key: 'payroll', label: 'Payroll Rec' },
+  { key: 'journal-entries', label: 'Journal Entries' },
+  { key: 'executions', label: 'Executions' },
+  { key: 'approvals', label: 'Approvals' },
+  { key: 'audit', label: 'Audit' },
+]
+
+type StatusFilter = 'all' | 'pending' | 'categorised' | 'matched'
+const FILTER_KEYS: StatusFilter[] = ['all', 'pending', 'categorised', 'matched']
+const FILTER_LABELS: Record<StatusFilter, string> = {
+  all: 'All', pending: 'Pending', categorised: 'Categorised', matched: 'Matched',
+}
+const TABLE_COLS = ['Date', 'Account', 'Merchant', 'Amount', 'Category', 'Invoice', 'Status']
+
+const AUTONOMY_BADGE: Record<string, { label: string; className: string }> = {
+  auto:    { label: 'Auto',    className: 'bg-[rgba(0,200,83,0.08)] text-[#00C853] border border-[rgba(0,200,83,0.2)]' },
+  approve: { label: 'Approve', className: 'bg-[rgba(0,168,204,0.08)] text-[#00a8cc] border border-[rgba(0,168,204,0.2)]' },
+}
+const AUTONOMY_DESC: Record<string, string> = {
+  auto:    'Executes automatically — no approval required before acting.',
+  approve: 'Every decision is routed to you for review before the agent acts.',
+}
+
+const EASE = [0.25, 0.46, 0.45, 0.94] as const
+const pageVariants = { hidden: {}, show: { transition: { staggerChildren: 0.07 } } }
+const sectionVariants = {
+  hidden: { opacity: 0, y: 14 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.38, ease: EASE } },
+}
+
+export function AiAccountantClient() {
+  const { getToken } = useAuth()
+  const canConfigure = useCanConfigure()
+  const { toast } = useToast()
+  const [activeTab, setActiveTab] = useState<Tab>('overview')
+  const [deployed, setDeployed] = useState<Tool | null>(null)
+  const [transactions, setTransactions] = useState<Transaction[]>([])
+  const [total, setTotal] = useState(0)
+  const [offset, setOffset] = useState(0)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const [categories, setCategories] = useState<{ income: string[]; expenses: string[] }>({ income: [], expenses: [] })
+  const [filter, setFilter] = useState<StatusFilter>('all')
+  const [running, setRunning] = useState(false)
+  const [polling, setPolling] = useState(false)
+  const [showConfig, setShowConfig] = useState(false)
+  const [toggling, setToggling] = useState(false)
+  const [deploying, setDeploying] = useState(false)
+  const pollStartCategorisedRef = useRef(0)
+
+  const fetchDeployed = useCallback(async () => {
+    const token = await getToken()
+    const res = await fetch(`${API}/v1/tools`, { headers: { Authorization: `Bearer ${token}` } })
+    if (!res.ok) return
+    const json = await res.json()
+    const tools: Tool[] = json.data?.tools ?? json.data ?? []
+    setDeployed(tools.find((w) => w.type === 'ai_accountant') ?? null)
+  }, [getToken])
+
+  const fetchTransactions = useCallback(async (fromOffset = 0, replace = true) => {
+    const token = await getToken()
+    const res = await fetch(
+      `${API}/v1/transactions?limit=${PAGE_SIZE}&offset=${fromOffset}`,
+      { headers: { Authorization: `Bearer ${token}` } },
+    )
+    if (!res.ok) return
+    const json = await res.json()
+    const txns: Transaction[] = json.data?.transactions ?? []
+    setTotal(json.data?.total ?? 0)
+    if (replace) { setTransactions(txns); setOffset(txns.length) }
+    else { setTransactions(prev => [...prev, ...txns]); setOffset(prev => prev + txns.length) }
+    return txns
+  }, [getToken])
+
+  const fetchCategories = useCallback(async () => {
+    const token = await getToken()
+    const res = await fetch(`${API}/v1/transactions/categories`, { headers: { Authorization: `Bearer ${token}` } })
+    if (!res.ok) return
+    const json = await res.json()
+    if (json.data) setCategories(json.data)
+  }, [getToken])
+
+  useEffect(() => {
+    async function init() {
+      await Promise.all([fetchDeployed(), fetchTransactions(), fetchCategories()])
+    }
+    init()
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (!polling) return
+    let active = true
+    const interval = setInterval(async () => {
+      if (!active) return
+      const txns = await fetchTransactions(0, true)
+      if (!txns) return
+      const categorisedCount = txns.filter(t => t.status !== 'pending').length
+      if (categorisedCount > pollStartCategorisedRef.current) {
+        active = false
+        setPolling(false)
+        setRunning(false)
+        toast('Categorisation complete', 'success')
+      }
+    }, 2000)
+    const timeout = setTimeout(() => {
+      active = false
+      setPolling(false)
+      setRunning(false)
+    }, 5 * 60 * 1000)
+    return () => { active = false; clearInterval(interval); clearTimeout(timeout) }
+  }, [polling, fetchTransactions, toast])
+
+  async function handleToggle() {
+    if (!deployed) return
+    setToggling(true)
+    try {
+      const token = await getToken()
+      await fetch(`${API}/v1/tools/${deployed.id}/pause`, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      })
+      await fetchDeployed()
+    } finally {
+      setToggling(false)
+    }
+  }
+
+  async function handleDeploy() {
+    setDeploying(true)
+    try {
+      const token = await getToken()
+      if (deployed) {
+        await fetch(`${API}/v1/tools/${deployed.id}/pause`, {
+          method: 'PATCH',
+          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        })
+      } else {
+        const { getDefaultConfig } = await import('@/components/dashboard/tools/ToolConfigFields')
+        await fetch(`${API}/v1/tools`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type: 'ai_accountant', autonomy_level: 'approve', config: getDefaultConfig('ai_accountant') }),
+        })
+      }
+      await fetchDeployed()
+    } finally {
+      setDeploying(false)
+    }
+  }
+
+  async function handleCategoriseNow() {
+    if (!deployed?.id || running) return
+    const pending = transactions.filter(t => t.status === 'pending')
+    if (pending.length === 0) { toast('No uncategorised transactions', 'info'); return }
+    setRunning(true)
+    pollStartCategorisedRef.current = transactions.filter(t => t.status !== 'pending').length
+    try {
+      const token = await getToken()
+      const idempotencyKey = `ai-accountant-${deployed.id}-${Date.now()}`
+      const res = await fetch(`${API}/v1/agents/${deployed.id}/trigger`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'Idempotency-Key': idempotencyKey,
+        },
+        body: JSON.stringify({ payload: { transaction_ids: pending.map(t => t.id) } }),
+      })
+      if (!res.ok) {
+        const json = await res.json().catch(() => null)
+        toast(json?.detail ?? `Trigger failed (${res.status})`, 'error')
+        setRunning(false)
+        return
+      }
+      setPolling(true)
+    } catch (err) {
+      toast(err instanceof Error ? err.message : 'Network error', 'error')
+      setRunning(false)
+    }
+  }
+
+  async function handleLoadMore() {
+    setLoadingMore(true)
+    try { await fetchTransactions(offset, false) } finally { setLoadingMore(false) }
+  }
+
+  function handleCategoryUpdate(id: string, category: string) {
+    setTransactions(prev => prev.map(t => t.id === id ? { ...t, ai_category: category, status: 'categorised' } : t))
+  }
+
+  const isActive = deployed?.status === 'active'
+  const badge = deployed ? (AUTONOMY_BADGE[deployed.autonomy_level] ?? AUTONOMY_BADGE.approve) : null
+  const actionLoading = toggling || deploying
+
+  const pendingCount = transactions.filter(t => t.status === 'pending').length
+  const categorisedCount = transactions.filter(t => t.status === 'categorised').length
+  const matchedCount = transactions.filter(t => t.status === 'matched').length
+  const categorisedPct = total > 0 ? Math.round(((categorisedCount + matchedCount) / total) * 100) : 0
+
+  const filtered = filter === 'all' ? transactions : transactions.filter(t => t.status === filter)
+  const counts: Record<StatusFilter, number> = {
+    all: transactions.length, pending: pendingCount, categorised: categorisedCount, matched: matchedCount,
+  }
+
+  return (
+    <motion.div variants={pageVariants} initial="hidden" animate="show" className="p-6 space-y-6">
+      <motion.div variants={sectionVariants}>
+        <Link href="/tools" className="text-[11px] font-mono text-brand-muted hover:text-brand-secondary transition-colors">
+          ← Tools
+        </Link>
+      </motion.div>
+
+      <motion.div variants={sectionVariants} className="flex items-start justify-between gap-4 flex-wrap">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2 flex-wrap">
+            <h1 className="font-heading font-bold text-2xl text-brand-text">AI Accountant</h1>
+            {badge && <span className={`text-[10px] font-mono px-2 py-0.5 rounded-sm ${badge.className}`}>{badge.label}</span>}
+          </div>
+          <p className="text-xs font-mono text-brand-muted max-w-xl">
+            Automate transaction categorisation, invoice matching, and month-end close with AI.
+          </p>
+        </div>
+        {canConfigure && (
+          <div className="flex items-center gap-2">
+            <button type="button" onClick={() => setShowConfig(true)}
+              className="text-xs font-mono border border-brand-border text-brand-text hover:bg-brand-elevated rounded-sm px-3 py-1.5 transition-colors">
+              Configure
+            </button>
+            <button type="button" onClick={isActive ? handleToggle : handleDeploy} disabled={actionLoading}
+              className={`text-xs font-mono rounded-sm px-3 py-1.5 transition-all disabled:opacity-50 ${
+                isActive
+                  ? 'border border-brand-border text-brand-text hover:bg-brand-elevated'
+                  : 'bg-[#00C853] text-black hover:bg-[#00a844] active:scale-[0.97]'
+              }`}>
+              {toggling ? 'Pausing…' : deploying ? 'Deploying…' : isActive ? 'Pause' : 'Deploy'}
+            </button>
+          </div>
+        )}
+      </motion.div>
+
+      <motion.div variants={sectionVariants} className="flex items-center gap-2">
+        {isActive ? (
+          <>
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#00C853] opacity-60" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-[#00C853]" />
+            </span>
+            <span className="text-xs font-mono text-[#00C853]">Active</span>
+          </>
+        ) : (
+          <>
+            <span className="h-2 w-2 rounded-full bg-brand-muted" />
+            <span className="text-xs font-mono text-brand-muted">{deployed ? 'Paused' : 'Not deployed'}</span>
+          </>
+        )}
+      </motion.div>
+
+      <motion.div variants={sectionVariants} className="flex gap-1 border-b border-brand-border">
+        {TABS.map(t => (
+          <button key={t.key} type="button" onClick={() => setActiveTab(t.key)}
+            className={`text-xs font-mono px-4 py-2.5 border-b-2 transition-colors -mb-px ${
+              activeTab === t.key
+                ? 'border-[#00C853] text-brand-text'
+                : 'border-transparent text-brand-muted hover:text-brand-secondary'
+            }`}>
+            {t.label}
+          </button>
+        ))}
+      </motion.div>
+
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={activeTab}
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -8 }}
+          transition={{ duration: 0.2, ease: 'easeOut' }}
+        >
+          {activeTab === 'overview' && (
+            <div className="space-y-4">
+              {/* Stats */}
+              <div className="grid grid-cols-4 gap-3">
+                <div className="bg-brand-surface border border-brand-border rounded-sm p-4">
+                  <p className="text-[10px] font-mono text-brand-muted uppercase tracking-wider">Total</p>
+                  <p className="text-2xl font-mono font-semibold text-brand-text mt-1">{total}</p>
+                  <p className="text-[10px] font-mono text-brand-muted mt-1">transactions</p>
+                </div>
+                <div className="bg-brand-surface border border-brand-border rounded-sm p-4">
+                  <p className="text-[10px] font-mono text-brand-muted uppercase tracking-wider">Uncategorised</p>
+                  <p className={`text-2xl font-mono font-semibold mt-1 ${pendingCount > 0 ? 'text-[#f5a623]' : 'text-brand-text'}`}>
+                    {pendingCount}
+                  </p>
+                  <p className="text-[10px] font-mono text-brand-muted mt-1">pending review</p>
+                </div>
+                <div className="bg-brand-surface border border-brand-border rounded-sm p-4">
+                  <p className="text-[10px] font-mono text-brand-muted uppercase tracking-wider">Categorised</p>
+                  <p className={`text-2xl font-mono font-semibold mt-1 ${categorisedPct >= 90 ? 'text-[#00C853]' : 'text-brand-text'}`}>
+                    {categorisedPct}%
+                  </p>
+                  <p className="text-[10px] font-mono text-brand-muted mt-1">{categorisedCount + matchedCount} of {total}</p>
+                </div>
+                <div className="bg-brand-surface border border-brand-border rounded-sm p-4">
+                  <p className="text-[10px] font-mono text-brand-muted uppercase tracking-wider">Matched</p>
+                  <p className="text-2xl font-mono font-semibold text-[#00C853] mt-1">{matchedCount}</p>
+                  <p className="text-[10px] font-mono text-brand-muted mt-1">to invoices</p>
+                </div>
+              </div>
+
+              {/* Controls row */}
+              <div className="flex items-center justify-between gap-4 flex-wrap">
+                <div className="flex gap-1">
+                  {FILTER_KEYS.map(key => (
+                    <button key={key} type="button" onClick={() => setFilter(key)}
+                      className={cn(
+                        'text-[10px] font-mono px-3 py-1.5 rounded-sm border transition-colors uppercase tracking-wider',
+                        filter === key
+                          ? 'border-[rgba(0,200,83,0.3)] bg-[rgba(0,200,83,0.08)] text-[#00C853]'
+                          : 'border-brand-border text-brand-muted hover:text-brand-text',
+                      )}>
+                      {FILTER_LABELS[key]}
+                      <span className={cn('ml-1.5', filter === key ? 'text-brand-secondary' : 'text-brand-muted')}>
+                        {counts[key]}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  onClick={handleCategoriseNow}
+                  disabled={!deployed?.id || running || pendingCount === 0}
+                  className="text-xs font-mono bg-[#00C853] text-black hover:bg-[#00a844] active:scale-[0.97] rounded-sm px-4 py-1.5 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  {running ? 'Categorising…' : `Categorise Now (${pendingCount})`}
+                </button>
+              </div>
+
+              {/* Transaction table */}
+              <div className="bg-brand-surface border border-brand-border rounded-sm overflow-hidden">
+                {filtered.length === 0 ? (
+                  <div className="px-5 py-16 text-center">
+                    <p className="text-xs font-mono text-brand-muted">
+                      {transactions.length === 0
+                        ? 'No transactions yet — connect a bank account via Integrations.'
+                        : 'No transactions match the selected filter.'}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="border-b border-brand-border">
+                          {TABLE_COLS.map(h => (
+                            <th key={h} className="text-left text-[10px] font-mono text-brand-muted uppercase tracking-widest px-5 py-3 whitespace-nowrap">
+                              {h}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filtered.map(t => (
+                          <TransactionRow
+                            key={t.id}
+                            transaction={t}
+                            onCategoryUpdate={handleCategoryUpdate}
+                            categories={categories}
+                          />
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+
+              {/* Load more */}
+              {transactions.length < total && (
+                <div className="flex justify-end">
+                  <button type="button" onClick={handleLoadMore} disabled={loadingMore}
+                    className="text-[10px] font-mono px-4 py-2 border border-brand-border text-brand-muted hover:text-brand-text transition-colors rounded-sm disabled:opacity-60">
+                    {loadingMore ? 'Loading…' : `Load more (${total - transactions.length} remaining)`}
+                  </button>
+                </div>
+              )}
+
+              {/* Configuration */}
+              {deployed && (
+                <div className="bg-brand-surface border border-brand-border rounded-sm overflow-hidden">
+                  <div className="px-4 py-3 border-b border-brand-border">
+                    <p className="text-[10px] font-mono uppercase tracking-widest text-brand-muted">Configuration</p>
+                  </div>
+                  <div className="px-4 py-4 grid grid-cols-3 gap-6">
+                    <div className="space-y-1.5">
+                      <p className="text-[10px] font-mono text-brand-muted uppercase tracking-widest">Autonomy</p>
+                      {badge && <span className={`text-[10px] font-mono px-2 py-0.5 rounded-sm inline-block ${badge.className}`}>{badge.label}</span>}
+                      <p className="text-[10px] font-mono text-brand-muted leading-relaxed">{AUTONOMY_DESC[deployed.autonomy_level] ?? ''}</p>
+                    </div>
+                    <div className="space-y-1.5">
+                      <p className="text-[10px] font-mono text-brand-muted uppercase tracking-widest">Version</p>
+                      <p className="text-xs font-mono text-brand-text">v{deployed.version}</p>
+                      <p className="text-[10px] font-mono text-brand-muted">Increments on every config change</p>
+                    </div>
+                    <div className="space-y-1.5">
+                      <p className="text-[10px] font-mono text-brand-muted uppercase tracking-widest">Status</p>
+                      <p className="text-xs font-mono text-brand-text">{deployed.status === 'active' ? 'Running' : 'Paused'}</p>
+                      <p className="text-[10px] font-mono text-brand-muted">
+                        {deployed.status === 'active' ? 'Agent is live and processing' : 'Agent is paused — no runs will fire'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+          {activeTab === 'month-end-close' && <MonthEndCloseTab toolId={deployed?.id ?? null} />}
+          {activeTab === 'payroll' && <PayrollRecTab toolId={deployed?.id ?? null} />}
+          {activeTab === 'journal-entries' && <JournalEntriesTab toolId={deployed?.id ?? null} />}
+          {activeTab === 'executions' && <ToolExecutionsTab toolId={deployed?.id ?? null} />}
+          {activeTab === 'approvals' && <ToolApprovalsTab toolId={deployed?.id ?? null} />}
+          {activeTab === 'audit' && <ToolAuditTab toolId={deployed?.id ?? null} />}
+        </motion.div>
+      </AnimatePresence>
+
+      {showConfig && (
+        <ConfigDrawer
+          tool={deployed}
+          toolType="ai_accountant"
+          onClose={() => setShowConfig(false)}
+          onSaved={() => { setShowConfig(false); fetchDeployed() }}
+        />
+      )}
+    </motion.div>
+  )
+}

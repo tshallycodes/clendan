@@ -114,7 +114,7 @@ class AIAccountantTool:
 
         # STEP 3: Execute — call Claude with retry
         results, reasoning_trace = await self._call_claude(
-            transactions, invoices, policy, prior_category_dist
+            transactions, invoices, policy, prior_category_dist, tenant_id
         )
 
         # STEP 3b: Category drift detection
@@ -251,9 +251,30 @@ class AIAccountantTool:
         invoices: list,
         policy: _ToolPolicy,
         prior_category_dist: Counter[str] | None = None,
+        tenant_id: str = "",
     ) -> tuple[list[TransactionResult], str]:
         settings = get_settings()
         client = anthropic.AsyncAnthropic(api_key=settings.anthropic_api_key)
+        db = get_db()
+
+        # Fetch recent manual corrections to use as few-shot examples
+        recent_corrections = await db.categorycorrection.find_many(
+            where={"tenant_id": tenant_id},
+            order={"created_at": "desc"},
+            take=10,
+        ) if tenant_id else []
+
+        correction_examples = ""
+        if recent_corrections:
+            examples = [
+                f'  - "{c.merchant_name or c.description or "unknown"}" was corrected from "{c.original_category}" to "{c.corrected_category}"'
+                for c in recent_corrections
+            ]
+            correction_examples = (
+                "\nLEARNED CORRECTIONS (your team manually corrected these — apply the same logic):\n"
+                + "\n".join(examples)
+                + "\n"
+            )
 
         txn_list = [
             {
@@ -312,7 +333,7 @@ OPEN INVOICES:
 {json.dumps(invoice_list, indent=2)}
 
 ALLOWED CATEGORIES: {", ".join(sorted(ALLOWED_CATEGORIES))}
-{drift_note}
+{drift_note}{correction_examples}
 For each transaction, return a JSON array with this exact shape:
 [
   {{

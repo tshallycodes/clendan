@@ -23,6 +23,14 @@ TOOL_TYPE_TO_EVENT: dict[str, str] = {
     "financial_reporting": "financial_report_run",
     "payment_run":         "payment_run_requested",
     "budgeting":           "budget_check_run",
+    "ai_accountant":       "transaction_posted",
+    "spend_control":       "spend_control_run",
+    "ar_collections":      "ar_collections_run",
+    "risk_compliance":     "risk_compliance_run",
+    "treasury_cash":       "treasury_cash_run",
+    "tax_compliance":      "tax_compliance_run",
+    "credit_underwriting": "credit_assessment_run",
+    "document_intelligence": "document_received",
 }
 
 _logger = get_logger(__name__)

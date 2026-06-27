@@ -57,6 +57,9 @@ from app.tools.financial_reporting import run_financial_reporting_job
 from app.tools.payment_run import run_payment_run_job
 from app.tools.budgeting import run_budgeting_job
 from app.tools.document_intelligence import run_document_intelligence_job
+from app.tools.month_end_close import run_month_end_close_job
+from app.tools.payroll_reconciliation import run_payroll_rec_job
+from app.tools.journal_entries import run_journal_entry_job
 
 logger = get_logger(__name__)
 
@@ -1056,6 +1059,9 @@ class ToolSettings:
         sync_adyen_connection,
         sync_wise_connection,
         fetch_exchange_rates_daily,
+        run_month_end_close_job,
+        run_payroll_rec_job,
+        run_journal_entry_job,
     ]
     cron_jobs = [
         cron(run_revenue_recognition_monthly, day=1, hour=0, minute=0),

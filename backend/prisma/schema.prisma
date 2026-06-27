@@ -48,6 +48,10 @@ model Tenant {
   payment_runs            PaymentRun[]
   budgets                 Budget[]
   documents               Document[]
+  month_end_close_runs    MonthEndCloseRun[]
+  payroll_runs            PayrollRun[]
+  journal_entries         JournalEntry[]
+  category_corrections    CategoryCorrection[]
 }
 
 model User {
@@ -682,4 +686,90 @@ model ExchangeRate {
   @@unique([base_currency, target_currency])
   @@index([target_currency])
   @@index([updated_at])
+}
+
+model MonthEndCloseRun {
+  id              String    @id @default(cuid())
+  tenant_id       String
+  period          String
+  status          String    @default("open")
+  tasks_json      Json      @default("[]")
+  sign_offs_json  Json      @default("[]")
+  created_at      DateTime  @default(now())
+  closed_at       DateTime?
+  closed_by_email String?
+
+  tenant Tenant @relation(fields: [tenant_id], references: [id])
+
+  @@unique([tenant_id, period])
+  @@index([tenant_id])
+}
+
+model PayrollRun {
+  id                  String   @id @default(cuid())
+  tenant_id           String
+  period              String
+  status              String   @default("pending")
+  total_payroll_minor Int      @default(0)
+  matched_count       Int      @default(0)
+  ghost_count         Int      @default(0)
+  missing_count       Int      @default(0)
+  discrepancy_count   Int      @default(0)
+  results_json        Json     @default("{}")
+  roster_json         Json     @default("[]")
+  execution_id        String?
+  created_at          DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenant_id], references: [id])
+
+  @@index([tenant_id])
+  @@index([tenant_id, period])
+}
+
+model JournalEntry {
+  id          String             @id @default(cuid())
+  tenant_id   String
+  period      String
+  entry_type  String             @default("payroll")
+  description String
+  status      String             @default("draft")
+  total_minor Int                @default(0)
+  currency    String             @default("GBP")
+  posted_at   DateTime?
+  created_at  DateTime           @default(now())
+  lines       JournalEntryLine[]
+
+  tenant Tenant @relation(fields: [tenant_id], references: [id])
+
+  @@index([tenant_id])
+  @@index([tenant_id, period])
+}
+
+model JournalEntryLine {
+  id               String       @id @default(cuid())
+  journal_entry_id String
+  account_code     String
+  account_name     String
+  debit_minor      Int          @default(0)
+  credit_minor     Int          @default(0)
+  description      String?
+  entry            JournalEntry @relation(fields: [journal_entry_id], references: [id], onDelete: Cascade)
+
+  @@index([journal_entry_id])
+}
+
+model CategoryCorrection {
+  id                 String   @id @default(cuid())
+  tenant_id          String
+  transaction_id     String
+  original_category  String
+  corrected_category String
+  merchant_name      String?
+  description        String?
+  created_at         DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenant_id], references: [id])
+
+  @@index([tenant_id])
+  @@index([tenant_id, created_at])
 }

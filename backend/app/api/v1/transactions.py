@@ -136,6 +136,21 @@ async def update_transaction_category(
         where={"id": transaction_id},
         data={"ai_category": body.category, "status": "categorised"},
     )
+
+    # Log correction for AI learning — only when the category actually changed
+    original_category = txn.ai_category
+    if original_category and original_category != body.category:
+        await db.categorycorrection.create(
+            data={
+                "tenant_id": current_user.tenant_id,
+                "transaction_id": transaction_id,
+                "original_category": original_category,
+                "corrected_category": body.category,
+                "merchant_name": txn.merchant_name,
+                "description": txn.description,
+            }
+        )
+
     return standard_response(
         data={"id": updated.id, "ai_category": updated.ai_category, "status": updated.status}
     )
