@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useMemo } from 'react'
 import { useAuth } from '@clerk/nextjs'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useCurrency } from '@/components/Providers'
@@ -8,9 +8,11 @@ import { CURRENCY_MAP } from '@/lib/currency'
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
-interface RosterEmployee {
+interface ParsedEmployee {
   name: string
-  expectedSalary: string // display value, converted to minor on submit
+  expected_minor: number
+  raw: string
+  error?: string
 }
 
 interface PayrollRun {
@@ -62,6 +64,23 @@ const STATUS_STYLE: Record<string, string> = {
 
 function formatMinor(minor: number, symbol: string): string {
   return `${symbol}${(minor / 100).toFixed(2)}`
+}
+
+function parseRosterText(text: string): ParsedEmployee[] {
+  return text
+    .split('\n')
+    .map(line => line.trim())
+    .filter(line => line.length > 0 && !line.startsWith('#'))
+    .map(raw => {
+      const comma = raw.lastIndexOf(',')
+      if (comma === -1) return { name: '', expected_minor: 0, raw, error: 'Missing comma — use: Name, Salary' }
+      const name = raw.slice(0, comma).trim()
+      const salaryStr = raw.slice(comma + 1).trim().replace(/[,\s]/g, '')
+      const salary = parseFloat(salaryStr)
+      if (!name) return { name: '', expected_minor: 0, raw, error: 'Name is empty' }
+      if (isNaN(salary) || salary <= 0) return { name, expected_minor: 0, raw, error: `Invalid salary: "${raw.slice(comma + 1).trim()}"` }
+      return { name, expected_minor: Math.round(salary * 100), raw }
+    })
 }
 
 function GhostTable({ rows, symbol }: { rows: GhostRow[]; symbol: string }) {
@@ -161,7 +180,7 @@ export function PayrollRecTab({ toolId }: { toolId: string | null }) {
     const now = new Date()
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
   })
-  const [roster, setRoster] = useState<RosterEmployee[]>([{ name: '', expectedSalary: '' }])
+  const [rosterText, setRosterText] = useState('')
   const [running, setRunning] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -171,6 +190,11 @@ export function PayrollRecTab({ toolId }: { toolId: string | null }) {
   const [history, setHistory] = useState<PayrollRun[]>([])
   const [loadingHistory, setLoadingHistory] = useState(false)
   const [historyLoaded, setHistoryLoaded] = useState(false)
+
+  const parsed = useMemo(() => parseRosterText(rosterText), [rosterText])
+  const parseErrors = parsed.filter(p => p.error)
+  const validRoster = parsed.filter(p => !p.error)
+  const canRun = !!toolId && validRoster.length > 0 && parseErrors.length === 0 && !running
 
   const loadHistory = useCallback(async () => {
     if (historyLoaded) return
@@ -187,18 +211,6 @@ export function PayrollRecTab({ toolId }: { toolId: string | null }) {
       setHistoryLoaded(true)
     }
   }, [getToken, historyLoaded])
-
-  function addEmployee() {
-    setRoster(prev => [...prev, { name: '', expectedSalary: '' }])
-  }
-
-  function updateEmployee(index: number, field: keyof RosterEmployee, value: string) {
-    setRoster(prev => prev.map((e, i) => i === index ? { ...e, [field]: value } : e))
-  }
-
-  function removeEmployee(index: number) {
-    setRoster(prev => prev.filter((_, i) => i !== index))
-  }
 
   async function handleExport() {
     if (!activeRun) return
@@ -221,19 +233,13 @@ export function PayrollRecTab({ toolId }: { toolId: string | null }) {
     }
   }
 
-  const validRoster = roster.filter(e => e.name.trim() && e.expectedSalary.trim())
-  const canRun = !!toolId && validRoster.length > 0 && !running
-
   async function handleRun() {
     if (!canRun || !toolId) return
     setRunning(true)
     setError(null)
     try {
       const token = await getToken()
-      const rosterPayload = validRoster.map(e => ({
-        name: e.name.trim(),
-        expected_minor: Math.round(parseFloat(e.expectedSalary) * 100),
-      }))
+      const rosterPayload = validRoster.map(e => ({ name: e.name, expected_minor: e.expected_minor }))
       const res = await fetch(`${API}/v1/payroll-runs`, {
         method: 'POST',
         headers: {
@@ -247,7 +253,6 @@ export function PayrollRecTab({ toolId }: { toolId: string | null }) {
       if (!res.ok) { setError(json.detail ?? `Error ${res.status}`); return }
 
       const runId: string = json.data?.run_id
-      // Poll until complete
       let attempts = 0
       while (attempts < 30) {
         await new Promise(r => setTimeout(r, 2000))
@@ -280,64 +285,48 @@ export function PayrollRecTab({ toolId }: { toolId: string | null }) {
       transition={{ duration: 0.2 }}
       className="space-y-5"
     >
-      {/* Period + Roster builder */}
+      {/* Config card */}
       <div className="bg-brand-surface border border-brand-border rounded-sm p-4 space-y-4">
         <p className="text-[10px] font-mono uppercase tracking-widest text-brand-muted">Run Payroll Reconciliation</p>
 
-        <div className="flex items-center gap-4 flex-wrap">
-          <div className="space-y-1">
-            <label className="text-[10px] font-mono text-brand-muted uppercase tracking-widest">Period</label>
-            <input
-              type="month"
-              value={period}
-              onChange={e => setPeriod(e.target.value)}
-              className="bg-brand-bg border border-brand-border focus:border-[#00C853] text-brand-text text-xs font-mono rounded-sm px-3 py-2 outline-none transition-colors"
-            />
-          </div>
+        {/* Period */}
+        <div className="flex flex-col gap-1">
+          <label className="text-[10px] font-mono text-brand-muted uppercase tracking-widest">Period</label>
+          <input
+            type="month"
+            value={period}
+            onChange={e => setPeriod(e.target.value)}
+            className="w-fit bg-brand-bg border border-brand-border focus:border-[#00C853] text-brand-text text-xs font-mono rounded-sm px-3 py-2 outline-none transition-colors"
+          />
         </div>
 
-        {/* Roster table */}
-        <div className="space-y-2">
-          <p className="text-[10px] font-mono text-brand-muted uppercase tracking-widest">Employee Roster</p>
-          <div className="space-y-1">
-            {roster.map((emp, i) => (
-              <div key={i} className="flex items-center gap-2">
-                <input
-                  type="text"
-                  placeholder="Employee name"
-                  value={emp.name}
-                  onChange={e => updateEmployee(i, 'name', e.target.value)}
-                  className="flex-1 bg-brand-bg border border-brand-border focus:border-[#00C853] text-brand-text placeholder:text-brand-muted text-xs font-mono rounded-sm px-3 py-2 outline-none transition-colors"
-                />
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-mono text-brand-muted pointer-events-none">{currencySymbol}</span>
-                  <input
-                    type="number"
-                    placeholder="Monthly salary"
-                    value={emp.expectedSalary}
-                    onChange={e => updateEmployee(i, 'expectedSalary', e.target.value)}
-                    className="w-40 bg-brand-bg border border-brand-border focus:border-[#00C853] text-brand-text placeholder:text-brand-muted text-xs font-mono rounded-sm pl-7 pr-3 py-2 outline-none transition-colors"
-                  />
-                </div>
-                {roster.length > 1 && (
-                  <button
-                    type="button"
-                    onClick={() => removeEmployee(i)}
-                    className="text-[10px] font-mono text-brand-muted hover:text-[#ff4d6d] transition-colors px-2"
-                  >
-                    ✕
-                  </button>
-                )}
-              </div>
-            ))}
+        {/* Roster — bulk paste */}
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center justify-between">
+            <label className="text-[10px] font-mono text-brand-muted uppercase tracking-widest">Employee Roster</label>
+            {validRoster.length > 0 && parseErrors.length === 0 && (
+              <span className="text-[10px] font-mono text-[#00C853]">{validRoster.length} employee{validRoster.length !== 1 ? 's' : ''} ready</span>
+            )}
+            {parseErrors.length > 0 && (
+              <span className="text-[10px] font-mono text-[#ff4d6d]">{parseErrors.length} line{parseErrors.length !== 1 ? 's' : ''} with errors</span>
+            )}
           </div>
-          <button
-            type="button"
-            onClick={addEmployee}
-            className="text-[10px] font-mono text-brand-muted hover:text-brand-text border border-brand-border rounded-sm px-3 py-1.5 transition-colors"
-          >
-            + Add Employee
-          </button>
+          <textarea
+            rows={8}
+            value={rosterText}
+            onChange={e => setRosterText(e.target.value)}
+            placeholder={`Paste your roster — one employee per line:\n\nJane Smith, 5000\nBob Jones, 4500\nAlice Chen, 6200\n\nFormat: Name, Monthly salary`}
+            className="w-full bg-brand-bg border border-brand-border focus:border-[#00C853] text-brand-text placeholder:text-brand-muted text-xs font-mono rounded-sm px-3 py-2.5 outline-none transition-colors resize-y leading-relaxed"
+          />
+          {parseErrors.length > 0 && (
+            <div className="space-y-1">
+              {parseErrors.map((e, i) => (
+                <p key={i} className="text-[10px] font-mono text-[#ff4d6d]">
+                  Line {parsed.indexOf(e) + 1}: {e.error} — <span className="text-brand-muted">{e.raw}</span>
+                </p>
+              ))}
+            </div>
+          )}
         </div>
 
         {error && <p className="text-xs font-mono text-[#ff4d6d]">{error}</p>}
