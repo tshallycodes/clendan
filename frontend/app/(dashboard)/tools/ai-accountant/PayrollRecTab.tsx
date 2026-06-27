@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useMemo } from 'react'
+import { useState, useCallback, useMemo, useRef } from 'react'
 import { useAuth } from '@clerk/nextjs'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useCurrency } from '@/components/Providers'
@@ -190,6 +190,7 @@ export function PayrollRecTab({ toolId }: { toolId: string | null }) {
   const [history, setHistory] = useState<PayrollRun[]>([])
   const [loadingHistory, setLoadingHistory] = useState(false)
   const [historyLoaded, setHistoryLoaded] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const parsed = useMemo(() => parseRosterText(rosterText), [rosterText])
   const parseErrors = parsed.filter(p => p.error)
@@ -211,6 +212,31 @@ export function PayrollRecTab({ toolId }: { toolId: string | null }) {
       setHistoryLoaded(true)
     }
   }, [getToken, historyLoaded])
+
+  function handleCsvImport(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = ev => {
+      const text = ev.target?.result as string
+      const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean)
+      // Detect header row — skip if first cell is non-numeric name-like header
+      const start = /^(name|employee|full\s*name|staff)/i.test(lines[0]?.split(',')[0] ?? '') ? 1 : 0
+      const normalised = lines.slice(start).map(line => {
+        const cols = line.split(',').map(c => c.trim().replace(/^"|"$/g, ''))
+        // Support: Name, Salary  OR  Name, Salary, ...extra columns ignored
+        if (cols.length < 2) return line
+        const name = cols[0]
+        // Find first numeric-looking column after name
+        const salary = cols.slice(1).find(c => /^[\d.]+$/.test(c.replace(/[,\s]/g, ''))) ?? cols[1]
+        return `${name}, ${salary}`
+      })
+      setRosterText(normalised.join('\n'))
+      // Reset so the same file can be re-imported
+      e.target.value = ''
+    }
+    reader.readAsText(file)
+  }
 
   async function handleExport() {
     if (!activeRun) return
@@ -300,16 +326,32 @@ export function PayrollRecTab({ toolId }: { toolId: string | null }) {
           />
         </div>
 
-        {/* Roster — bulk paste */}
+        {/* Roster — bulk paste or CSV import */}
         <div className="flex flex-col gap-2">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-2">
             <label className="text-[10px] font-mono text-brand-muted uppercase tracking-widest">Employee Roster</label>
-            {validRoster.length > 0 && parseErrors.length === 0 && (
-              <span className="text-[10px] font-mono text-[#00C853]">{validRoster.length} employee{validRoster.length !== 1 ? 's' : ''} ready</span>
-            )}
-            {parseErrors.length > 0 && (
-              <span className="text-[10px] font-mono text-[#ff4d6d]">{parseErrors.length} line{parseErrors.length !== 1 ? 's' : ''} with errors</span>
-            )}
+            <div className="flex items-center gap-2">
+              {validRoster.length > 0 && parseErrors.length === 0 && (
+                <span className="text-[10px] font-mono text-[#00C853]">{validRoster.length} employee{validRoster.length !== 1 ? 's' : ''} ready</span>
+              )}
+              {parseErrors.length > 0 && (
+                <span className="text-[10px] font-mono text-[#ff4d6d]">{parseErrors.length} line{parseErrors.length !== 1 ? 's' : ''} with errors</span>
+              )}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".csv,text/csv"
+                className="hidden"
+                onChange={handleCsvImport}
+              />
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="text-[10px] font-mono border border-brand-border text-brand-muted hover:text-brand-text rounded-sm px-2.5 py-1 transition-colors"
+              >
+                Import CSV
+              </button>
+            </div>
           </div>
           <textarea
             rows={8}
