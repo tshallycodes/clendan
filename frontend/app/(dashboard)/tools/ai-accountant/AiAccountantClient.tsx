@@ -23,12 +23,12 @@ const PAGE_SIZE = 50
 type Tab = 'overview' | 'executions' | 'approvals' | 'audit' | 'month-end-close' | 'payroll' | 'journal-entries'
 const TABS: { key: Tab; label: string }[] = [
   { key: 'overview', label: 'Overview' },
-  { key: 'month-end-close', label: 'Month-End Close' },
-  { key: 'payroll', label: 'Payroll Rec' },
-  { key: 'journal-entries', label: 'Journal Entries' },
   { key: 'executions', label: 'Executions' },
   { key: 'approvals', label: 'Approvals' },
   { key: 'audit', label: 'Audit' },
+  { key: 'month-end-close', label: 'Month-End Close' },
+  { key: 'payroll', label: 'Payroll Rec' },
+  { key: 'journal-entries', label: 'Journal Entries' },
 ]
 
 type StatusFilter = 'all' | 'pending' | 'categorised' | 'matched'
