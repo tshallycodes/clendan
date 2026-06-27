@@ -9,34 +9,46 @@ import { ConfigDrawer } from '@/components/dashboard/tools/ConfigDrawer'
 import { ToolExecutionsTab } from '@/components/dashboard/tools/ToolExecutionsTab'
 import { ToolApprovalsTab } from '@/components/dashboard/tools/ToolApprovalsTab'
 import { ToolAuditTab } from '@/components/dashboard/tools/ToolAuditTab'
-import { TransactionRow, type Transaction } from '@/components/dashboard/transactions/TransactionRow'
+import { TransactionsTab, type StatusFilter } from './TransactionsTab'
 import { MonthEndCloseTab } from './MonthEndCloseTab'
 import { PayrollRecTab } from './PayrollRecTab'
 import { JournalEntriesTab } from './JournalEntriesTab'
 import type { Tool } from '@/components/dashboard/tools/ToolCard'
+import type { Transaction } from '@/components/dashboard/transactions/TransactionRow'
 import { motion, AnimatePresence } from 'framer-motion'
-import { cn } from '@/lib/utils'
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 const PAGE_SIZE = 50
 
-type Tab = 'overview' | 'executions' | 'approvals' | 'audit' | 'month-end-close' | 'payroll' | 'journal-entries'
+type Tab = 'overview' | 'transactions' | 'executions' | 'approvals' | 'audit' | 'month-end-close' | 'payroll' | 'journal-entries'
 const TABS: { key: Tab; label: string }[] = [
-  { key: 'overview', label: 'Overview' },
-  { key: 'executions', label: 'Executions' },
-  { key: 'approvals', label: 'Approvals' },
-  { key: 'audit', label: 'Audit' },
+  { key: 'overview',        label: 'Overview' },
+  { key: 'transactions',    label: 'Transactions' },
+  { key: 'executions',      label: 'Executions' },
+  { key: 'approvals',       label: 'Approvals' },
+  { key: 'audit',           label: 'Audit' },
   { key: 'month-end-close', label: 'Month-End Close' },
-  { key: 'payroll', label: 'Payroll Rec' },
+  { key: 'payroll',         label: 'Payroll Rec' },
   { key: 'journal-entries', label: 'Journal Entries' },
 ]
 
-type StatusFilter = 'all' | 'pending' | 'categorised' | 'matched'
-const FILTER_KEYS: StatusFilter[] = ['all', 'pending', 'categorised', 'matched']
-const FILTER_LABELS: Record<StatusFilter, string> = {
-  all: 'All', pending: 'Pending', categorised: 'Categorised', matched: 'Matched',
-}
-const TABLE_COLS = ['Date', 'Account', 'Merchant', 'Amount', 'Category', 'Invoice', 'Status']
+const HOW_IT_WORKS = [
+  { step: '01', label: 'Ingest',       desc: 'Every new bank transaction is pulled from connected accounts and queued for classification.' },
+  { step: '02', label: 'Classify',     desc: 'Claude assigns a chart-of-accounts category with a confidence score. Low-confidence items are flagged for review.' },
+  { step: '03', label: 'Policy check', desc: 'Policy engine validates the classification before any write. Blocked items are never committed without human sign-off.' },
+  { step: '04', label: 'Audit',        desc: 'Every categorisation decision — including reasoning and confidence — is written to the immutable audit log.' },
+]
+
+const CAPABILITIES = [
+  'Automatic transaction categorisation with confidence scoring',
+  'Human review queue for low-confidence categorisations',
+  'Learns from manual corrections over time',
+  'Strict chart-of-accounts mode enforcement',
+  'Month-end close orchestration — task tracking, sign-offs, bottleneck detection',
+  'Payroll reconciliation against HR roster with ghost employee detection',
+  'Payroll journal entry posting with automated approval routing',
+  'Batch processing for high-volume transaction periods',
+]
 
 const AUTONOMY_BADGE: Record<string, { label: string; className: string }> = {
   auto:    { label: 'Auto',    className: 'bg-[rgba(0,200,83,0.08)] text-[#00C853] border border-[rgba(0,200,83,0.2)]' },
@@ -52,6 +64,11 @@ const pageVariants = { hidden: {}, show: { transition: { staggerChildren: 0.07 }
 const sectionVariants = {
   hidden: { opacity: 0, y: 14 },
   show: { opacity: 1, y: 0, transition: { duration: 0.38, ease: EASE } },
+}
+const capabilityVariants = { hidden: {}, show: { transition: { staggerChildren: 0.05 } } }
+const capItemVariants = {
+  hidden: { opacity: 0, x: -8 },
+  show: { opacity: 1, x: 0, transition: { duration: 0.25, ease: EASE } },
 }
 
 export function AiAccountantClient() {
@@ -181,13 +198,12 @@ export function AiAccountantClient() {
     pollStartCategorisedRef.current = transactions.filter(t => t.status !== 'pending').length
     try {
       const token = await getToken()
-      const idempotencyKey = `ai-accountant-${deployed.id}-${Date.now()}`
       const res = await fetch(`${API}/v1/agents/${deployed.id}/trigger`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
-          'Idempotency-Key': idempotencyKey,
+          'Idempotency-Key': `ai-accountant-${deployed.id}-${Date.now()}`,
         },
         body: JSON.stringify({ payload: { transaction_ids: pending.map(t => t.id) } }),
       })
@@ -202,11 +218,6 @@ export function AiAccountantClient() {
       toast(err instanceof Error ? err.message : 'Network error', 'error')
       setRunning(false)
     }
-  }
-
-  async function handleLoadMore() {
-    setLoadingMore(true)
-    try { await fetchTransactions(offset, false) } finally { setLoadingMore(false) }
   }
 
   async function handleExportCsv() {
@@ -226,6 +237,11 @@ export function AiAccountantClient() {
     URL.revokeObjectURL(url)
   }
 
+  async function handleLoadMore() {
+    setLoadingMore(true)
+    try { await fetchTransactions(offset, false) } finally { setLoadingMore(false) }
+  }
+
   function handleCategoryUpdate(id: string, category: string) {
     setTransactions(prev => prev.map(t => t.id === id ? { ...t, ai_category: category, status: 'categorised' } : t))
   }
@@ -238,8 +254,6 @@ export function AiAccountantClient() {
   const categorisedCount = transactions.filter(t => t.status === 'categorised').length
   const matchedCount = transactions.filter(t => t.status === 'matched').length
   const categorisedPct = total > 0 ? Math.round(((categorisedCount + matchedCount) / total) * 100) : 0
-
-  const filtered = filter === 'all' ? transactions : transactions.filter(t => t.status === filter)
   const counts: Record<StatusFilter, number> = {
     all: transactions.length, pending: pendingCount, categorised: categorisedCount, matched: matchedCount,
   }
@@ -348,90 +362,56 @@ export function AiAccountantClient() {
                 </div>
               </div>
 
-              {/* Controls row */}
-              <div className="flex items-center justify-between gap-4 flex-wrap">
-                <div className="flex gap-1">
-                  {FILTER_KEYS.map(key => (
-                    <button key={key} type="button" onClick={() => setFilter(key)}
-                      className={cn(
-                        'text-[10px] font-mono px-3 py-1.5 rounded-sm border transition-colors uppercase tracking-wider',
-                        filter === key
-                          ? 'border-[rgba(0,200,83,0.3)] bg-[rgba(0,200,83,0.08)] text-[#00C853]'
-                          : 'border-brand-border text-brand-muted hover:text-brand-text',
-                      )}>
-                      {FILTER_LABELS[key]}
-                      <span className={cn('ml-1.5', filter === key ? 'text-brand-secondary' : 'text-brand-muted')}>
-                        {counts[key]}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={handleExportCsv}
-                    disabled={transactions.length === 0}
-                    className="text-xs font-mono border border-brand-border text-brand-muted hover:text-brand-text rounded-sm px-3 py-1.5 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                  >
-                    Export CSV
-                  </button>
+              {/* Quick action */}
+              {pendingCount > 0 && (
+                <div className="bg-brand-surface border border-brand-border rounded-sm p-4 flex items-center justify-between gap-4">
+                  <div>
+                    <p className="text-xs font-mono text-brand-text">{pendingCount} transaction{pendingCount !== 1 ? 's' : ''} pending categorisation</p>
+                    <p className="text-[10px] font-mono text-brand-muted mt-0.5">Run the AI now or view them in the Transactions tab</p>
+                  </div>
                   <button
                     type="button"
                     onClick={handleCategoriseNow}
-                    disabled={!deployed?.id || running || pendingCount === 0}
-                    className="text-xs font-mono bg-[#00C853] text-black hover:bg-[#00a844] active:scale-[0.97] rounded-sm px-4 py-1.5 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                    disabled={!deployed?.id || running}
+                    className="shrink-0 text-xs font-mono bg-[#00C853] text-black hover:bg-[#00a844] active:scale-[0.97] rounded-sm px-4 py-1.5 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                   >
-                    {running ? 'Categorising…' : `Categorise Now (${pendingCount})`}
-                  </button>
-                </div>
-              </div>
-
-              {/* Transaction table */}
-              <div className="bg-brand-surface border border-brand-border rounded-sm overflow-hidden">
-                {filtered.length === 0 ? (
-                  <div className="px-5 py-16 text-center">
-                    <p className="text-xs font-mono text-brand-muted">
-                      {transactions.length === 0
-                        ? 'No transactions yet — connect a bank account via Integrations.'
-                        : 'No transactions match the selected filter.'}
-                    </p>
-                  </div>
-                ) : (
-                  <div className="overflow-x-auto">
-                    <table className="w-full">
-                      <thead>
-                        <tr className="border-b border-brand-border">
-                          {TABLE_COLS.map(h => (
-                            <th key={h} className="text-left text-[10px] font-mono text-brand-muted uppercase tracking-widest px-5 py-3 whitespace-nowrap">
-                              {h}
-                            </th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {filtered.map(t => (
-                          <TransactionRow
-                            key={t.id}
-                            transaction={t}
-                            onCategoryUpdate={handleCategoryUpdate}
-                            categories={categories}
-                          />
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </div>
-
-              {/* Load more */}
-              {transactions.length < total && (
-                <div className="flex justify-end">
-                  <button type="button" onClick={handleLoadMore} disabled={loadingMore}
-                    className="text-[10px] font-mono px-4 py-2 border border-brand-border text-brand-muted hover:text-brand-text transition-colors rounded-sm disabled:opacity-60">
-                    {loadingMore ? 'Loading…' : `Load more (${total - transactions.length} remaining)`}
+                    {running ? 'Categorising…' : 'Categorise Now'}
                   </button>
                 </div>
               )}
+
+              {/* How it works */}
+              <div className="bg-brand-surface border border-brand-border rounded-sm overflow-hidden">
+                <div className="px-4 py-3 border-b border-brand-border">
+                  <p className="text-[10px] font-mono uppercase tracking-widest text-brand-muted">How it works</p>
+                  <p className="text-[10px] font-mono text-brand-muted mt-0.5">Every transaction follows this fixed execution flow — no step can be skipped</p>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-4 divide-x divide-brand-border">
+                  {HOW_IT_WORKS.map(({ step, label, desc }) => (
+                    <div key={step} className="px-4 py-4 space-y-1.5">
+                      <p className="text-[10px] font-mono text-brand-muted">{step}</p>
+                      <p className="text-xs font-mono font-medium text-brand-text">{label}</p>
+                      <p className="text-[10px] font-mono text-brand-muted leading-relaxed">{desc}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Capabilities */}
+              <div className="bg-brand-surface border border-brand-border rounded-sm overflow-hidden">
+                <div className="px-4 py-3 border-b border-brand-border">
+                  <p className="text-[10px] font-mono uppercase tracking-widest text-brand-muted">Capabilities</p>
+                  <p className="text-[10px] font-mono text-brand-muted mt-0.5">What this agent does once deployed and connected to your data</p>
+                </div>
+                <motion.ul variants={capabilityVariants} initial="hidden" animate="show" className="divide-y divide-brand-border">
+                  {CAPABILITIES.map(cap => (
+                    <motion.li key={cap} variants={capItemVariants} className="flex items-start gap-3 px-4 py-3">
+                      <span className="text-brand-muted font-mono text-[10px] mt-0.5 shrink-0">→</span>
+                      <span className="text-xs font-mono text-brand-secondary">{cap}</span>
+                    </motion.li>
+                  ))}
+                </motion.ul>
+              </div>
 
               {/* Configuration */}
               {deployed && (
@@ -462,6 +442,27 @@ export function AiAccountantClient() {
               )}
             </div>
           )}
+
+          {activeTab === 'transactions' && (
+            <TransactionsTab
+              transactions={transactions}
+              total={total}
+              offset={offset}
+              loadingMore={loadingMore}
+              filter={filter}
+              counts={counts}
+              categories={categories}
+              running={running}
+              deployedId={deployed?.id ?? null}
+              pendingCount={pendingCount}
+              onFilterChange={setFilter}
+              onCategoryUpdate={handleCategoryUpdate}
+              onCategoriseNow={handleCategoriseNow}
+              onExportCsv={handleExportCsv}
+              onLoadMore={handleLoadMore}
+            />
+          )}
+
           {activeTab === 'month-end-close' && <MonthEndCloseTab toolId={deployed?.id ?? null} />}
           {activeTab === 'payroll' && <PayrollRecTab toolId={deployed?.id ?? null} />}
           {activeTab === 'journal-entries' && <JournalEntriesTab toolId={deployed?.id ?? null} />}
