@@ -47,6 +47,7 @@ def _make_db(transactions=None, invoices=None, execution=None) -> MagicMock:
     exec_record = execution or MagicMock(id="exec_123")
     db.execution.create = AsyncMock(return_value=exec_record)
     db.auditlog.create = AsyncMock(return_value=None)
+    db.categorycorrection.find_many = AsyncMock(return_value=[])
     return db
 
 

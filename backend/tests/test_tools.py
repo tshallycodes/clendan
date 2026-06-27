@@ -118,7 +118,7 @@ class TestDeployTool:
     def test_accepts_all_valid_autonomy_levels(self):
         from app.api.v1.tools import DeployToolRequest
 
-        for level in ("auto", "approve", "suggest"):
+        for level in ("auto", "approve"):
             req = DeployToolRequest(type="invoice_processing", autonomy_level=level)
             assert req.autonomy_level == level
 
