@@ -200,7 +200,8 @@ export function AiAccountantClient() {
   }
 
   async function handleCategoriseNow() {
-    if (!deployed?.id || running) return
+    if (!deployed?.id) { toast('Deploy the tool to continue', 'error'); return }
+    if (running) return
     const pending = transactions.filter(t => t.status === 'pending')
     if (pendingCount === 0) { toast('No uncategorised transactions', 'info'); return }
     setRunning(true)
@@ -378,7 +379,7 @@ export function AiAccountantClient() {
                   <button
                     type="button"
                     onClick={handleCategoriseNow}
-                    disabled={!deployed?.id || running}
+                    disabled={running}
                     className="shrink-0 text-xs font-mono bg-[#00C853] text-black hover:bg-[#00a844] active:scale-[0.97] rounded-sm px-4 py-1.5 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     {running ? 'Categorising…' : 'Categorise Now'}

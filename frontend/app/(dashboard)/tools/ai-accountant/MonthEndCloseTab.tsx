@@ -82,6 +82,7 @@ export function MonthEndCloseTab({ toolId }: Props) {
   useEffect(() => { fetchRun(period) }, [period, fetchRun])
 
   async function handleOpen() {
+    if (!toolId) { toast('Deploy the tool to continue', 'error'); return }
     setOpening(true)
     setError(null)
     try {

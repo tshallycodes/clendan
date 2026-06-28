@@ -197,7 +197,8 @@ export function PayrollRecTab({ toolId }: { toolId: string | null }) {
   const parsed = useMemo(() => parseRosterText(rosterText), [rosterText])
   const parseErrors = parsed.filter(p => p.error)
   const validRoster = parsed.filter(p => !p.error)
-  const canRun = !!toolId && validRoster.length > 0 && parseErrors.length === 0 && !running
+  const rosterReady = validRoster.length > 0 && parseErrors.length === 0 && !running
+  const canRun = !!toolId && rosterReady
 
   const loadHistory = useCallback(async () => {
     if (historyLoaded) return
@@ -263,7 +264,8 @@ export function PayrollRecTab({ toolId }: { toolId: string | null }) {
   }
 
   async function handleRun() {
-    if (!canRun || !toolId) return
+    if (!toolId) { toast('Deploy the tool to continue', 'error'); return }
+    if (!canRun) return
     setRunning(true)
     setError(null)
     try {
@@ -381,7 +383,7 @@ export function PayrollRecTab({ toolId }: { toolId: string | null }) {
         <button
           type="button"
           onClick={handleRun}
-          disabled={!canRun}
+          disabled={!rosterReady}
           className="bg-[#00C853] text-black text-xs font-mono rounded-sm px-4 py-2 hover:bg-[#00a844] active:scale-[0.97] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
         >
           {running ? 'Running…' : 'Run Payroll Rec'}

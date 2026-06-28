@@ -39,13 +39,10 @@ export function RunControls({
         </div>
 
         <div className="flex flex-col gap-1 justify-end">
-          {!toolReady && !running && (
-            <p className="text-[10px] font-mono text-brand-muted">Deploy the Reconciliation tool first</p>
-          )}
           <button
             type="button"
             onClick={onRun}
-            disabled={running || !toolReady}
+            disabled={running}
             className="flex items-center gap-2 bg-[#00C853] text-black text-xs font-mono px-4 py-2 rounded-sm hover:bg-[#00a844] active:scale-[0.97] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {running && (

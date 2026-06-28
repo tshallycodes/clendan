@@ -254,7 +254,8 @@ export function ReconciliationClient() {
   }
 
   async function handleRun() {
-    if (!deployed?.id || running) return
+    if (!deployed?.id) { toast('Deploy the tool to continue', 'error'); return }
+    if (running) return
     setRunning(true)
     try {
       const token = await getToken()
