@@ -934,6 +934,53 @@ async def run_budget_check_weekly(ctx: dict) -> None:
             logger.error("budget_check_cron_failed tenant=%s: %s", tool.tenant_id, type(exc).__name__)
 
 
+_INTEGRATION_SYNC_JOBS: dict[str, str] = {
+    "quickbooks":  "sync_quickbooks_connection",
+    "xero":        "sync_xero_connection",
+    "freshbooks":  "sync_freshbooks_connection",
+    "stripe":      "sync_stripe_connection",
+    "gocardless":  "sync_gocardless_connection",
+    "square":      "sync_square_connection",
+    "paypal":      "sync_paypal_connection",
+}
+
+
+async def resync_integrations_daily(_ctx: dict) -> None:
+    """Daily cron: re-enqueues sync jobs for all connected accounting and payment integrations."""
+    db = get_db()
+    pool = await get_queue_pool()
+    day_key = datetime.now(UTC).strftime("%Y-%m-%d")
+
+    integrations = await db.integration.find_many(
+        where={
+            "type": {"in": list(_INTEGRATION_SYNC_JOBS.keys())},
+            "status": "connected",
+        }
+    )
+
+    for intg in integrations:
+        job_fn = _INTEGRATION_SYNC_JOBS.get(intg.type)
+        if not job_fn:
+            continue
+        job_id = f"daily_resync:{intg.type}:{intg.id}:{day_key}"
+        try:
+            await pool.enqueue_job(
+                job_fn,
+                integration_id=intg.id,
+                tenant_id=intg.tenant_id,
+                _job_id=job_id,
+            )
+            logger.info(
+                "daily_resync_enqueued type=%s integration_id=%s tenant_id=%s",
+                intg.type, intg.id, intg.tenant_id,
+            )
+        except Exception as exc:
+            logger.error(
+                "daily_resync_enqueue_failed type=%s integration_id=%s: %s",
+                intg.type, intg.id, type(exc).__name__,
+            )
+
+
 async def run_reconciliation_scheduled_check(_ctx: dict) -> None:
     """Hourly cron: fires reconciliation_run for tools configured for daily or weekly frequency.
     Real-time frequency is handled separately via sync hooks in plaid/truelayer sync.
@@ -1062,6 +1109,7 @@ class ToolSettings:
         run_month_end_close_job,
         run_payroll_rec_job,
         run_journal_entry_job,
+        resync_integrations_daily,
     ]
     cron_jobs = [
         cron(run_revenue_recognition_monthly, day=1, hour=0, minute=0),
@@ -1069,7 +1117,8 @@ class ToolSettings:
         cron(run_payment_run_weekly, weekday=0, hour=7, minute=0),
         cron(run_budget_check_weekly, weekday=0, hour=7, minute=30),
         cron(fetch_exchange_rates_daily, hour=0, minute=5),
-        cron(run_reconciliation_scheduled_check, minute=0),  # hourly — checks per-tool run_hour_utc / run_day_of_week
+        cron(run_reconciliation_scheduled_check, minute=0),  # hourly
+        cron(resync_integrations_daily, hour=3, minute=0),   # daily 3am UTC
     ]
     on_startup = startup
     on_shutdown = shutdown
