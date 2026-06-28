@@ -33,10 +33,24 @@ class _ToolPolicy(BaseModel):
     approve_confidence_threshold: float = 0.50
     max_batch_size: int = 500
     lookback_days: int = 30
+    learn_from_corrections: bool = True
+    strict_coa_mode: bool = True
 
 
 def _parse_policy(raw: dict[str, Any]) -> _ToolPolicy:
-    return _ToolPolicy(**{k: v for k, v in raw.items() if k in _ToolPolicy.model_fields})
+    mapped: dict[str, Any] = {}
+    # Confidence values are stored as percentages (0–100) in config; convert to 0–1 for comparisons
+    if "auto_categorise_confidence_min" in raw:
+        mapped["auto_confidence_threshold"] = float(raw["auto_categorise_confidence_min"]) / 100
+    if "human_review_confidence_min" in raw:
+        mapped["approve_confidence_threshold"] = float(raw["human_review_confidence_min"]) / 100
+    if "bulk_categorise_batch_size" in raw:
+        mapped["max_batch_size"] = int(raw["bulk_categorise_batch_size"])
+    if "learn_from_corrections" in raw:
+        mapped["learn_from_corrections"] = bool(raw["learn_from_corrections"])
+    if "strict_coa_mode" in raw:
+        mapped["strict_coa_mode"] = bool(raw["strict_coa_mode"])
+    return _ToolPolicy(**mapped)
 
 
 @dataclass
@@ -257,12 +271,12 @@ class AIAccountantTool:
         client = anthropic.AsyncAnthropic(api_key=settings.anthropic_api_key)
         db = get_db()
 
-        # Fetch recent manual corrections to use as few-shot examples
+        # Fetch recent manual corrections to use as few-shot examples (only if enabled in config)
         recent_corrections = await db.categorycorrection.find_many(
             where={"tenant_id": tenant_id},
             order={"created_at": "desc"},
             take=10,
-        ) if tenant_id else []
+        ) if (tenant_id and policy.learn_from_corrections) else []
 
         correction_examples = ""
         if recent_corrections:
@@ -324,6 +338,13 @@ class AIAccountantTool:
                     f"Flag any that seem anomalous in your reasoning.\n"
                 )
 
+        strict_coa_instruction = (
+            "STRICT COA MODE: You MUST only use categories from the ALLOWED CATEGORIES list below. "
+            "Do not invent new categories. If no category fits, use 'other'.\n"
+            if policy.strict_coa_mode else
+            "You should prefer categories from the ALLOWED CATEGORIES list, but may use 'other' for anything that does not fit.\n"
+        )
+
         prompt = f"""You are an AI accountant. Categorise each bank transaction and match it to an invoice if one exists.
 
 TRANSACTIONS:
@@ -333,7 +354,7 @@ OPEN INVOICES:
 {json.dumps(invoice_list, indent=2)}
 
 ALLOWED CATEGORIES: {", ".join(sorted(ALLOWED_CATEGORIES))}
-{drift_note}{correction_examples}
+{strict_coa_instruction}{drift_note}{correction_examples}
 For each transaction, return a JSON array with this exact shape:
 [
   {{
