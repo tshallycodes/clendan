@@ -3,7 +3,7 @@
 import { useState, useCallback, useMemo, useRef } from 'react'
 import { useAuth } from '@clerk/nextjs'
 import { motion, AnimatePresence } from 'framer-motion'
-import { useCurrency } from '@/components/Providers'
+import { useCurrency, useToast } from '@/components/Providers'
 import { CURRENCY_MAP } from '@/lib/currency'
 import { MonthPicker } from './MonthPicker'
 
@@ -176,6 +176,7 @@ export function PayrollRecTab({ toolId }: { toolId: string | null }) {
   const { getToken } = useAuth()
   const { currency } = useCurrency()
   const currencySymbol = CURRENCY_MAP[currency]?.symbol ?? currency
+  const { toast } = useToast()
 
   const [period, setPeriod] = useState(() => {
     const now = new Date()
@@ -247,7 +248,7 @@ export function PayrollRecTab({ toolId }: { toolId: string | null }) {
       const res = await fetch(`${API}/v1/payroll-runs/${activeRun.id}/export`, {
         headers: { Authorization: `Bearer ${token}` },
       })
-      if (!res.ok) return
+      if (!res.ok) { toast('Export failed — please try again', 'error'); return }
       const blob = await res.blob()
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
@@ -255,6 +256,7 @@ export function PayrollRecTab({ toolId }: { toolId: string | null }) {
       a.download = `payroll_rec_${activeRun.period}.csv`
       a.click()
       URL.revokeObjectURL(url)
+      toast('Export downloaded', 'success')
     } finally {
       setExporting(false)
     }
@@ -277,10 +279,11 @@ export function PayrollRecTab({ toolId }: { toolId: string | null }) {
         body: JSON.stringify({ period, roster: rosterPayload, tool_id: toolId }),
       })
       const json = await res.json()
-      if (!res.ok) { setError(json.detail ?? `Error ${res.status}`); return }
+      if (!res.ok) { setError(json.detail ?? `Error ${res.status}`); toast(json.detail ?? 'Run failed', 'error'); return }
 
       const runId: string = json.data?.run_id
       let attempts = 0
+      let completed = false
       while (attempts < 30) {
         await new Promise(r => setTimeout(r, 2000))
         const poll = await fetch(`${API}/v1/payroll-runs/${runId}`, {
@@ -293,13 +296,19 @@ export function PayrollRecTab({ toolId }: { toolId: string | null }) {
             setActiveRun(run)
             setResults(run.results_json ?? null)
             setHistoryLoaded(false)
+            completed = true
+            const issues = (run.ghost_count ?? 0) + (run.missing_count ?? 0) + (run.discrepancy_count ?? 0)
+            toast(issues > 0 ? `Rec complete — ${issues} issue${issues !== 1 ? 's' : ''} found` : 'Payroll rec complete — all clear', issues > 0 ? 'info' : 'success')
             break
           }
         }
         attempts++
       }
+      if (!completed) toast('Rec timed out — check back shortly', 'error')
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Network error')
+      const msg = err instanceof Error ? err.message : 'Network error'
+      setError(msg)
+      toast(msg, 'error')
     } finally {
       setRunning(false)
     }

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { useAuth } from '@clerk/nextjs'
+import { useToast } from '@/components/Providers'
 import { motion, AnimatePresence } from 'framer-motion'
 import { MonthPicker } from './MonthPicker'
 
@@ -215,6 +216,7 @@ const itemVariants = {
 
 export function JournalEntriesTab({ toolId }: Props) {
   const { getToken } = useAuth()
+  const { toast } = useToast()
   const [entries, setEntries] = useState<JournalEntry[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
@@ -281,12 +283,16 @@ export function JournalEntriesTab({ toolId }: Props) {
         },
         body: JSON.stringify({ period, description, lines }),
       })
-      if (!res.ok) return
+      const json = await res.json().catch(() => null)
+      if (!res.ok) { toast((json as { detail?: string })?.detail ?? 'Failed to create entry', 'error'); return }
+      toast('Journal entry created', 'success')
       setShowForm(false)
       setPeriod('')
       setDescription('')
       setLineInputs([EMPTY_LINE(), EMPTY_LINE()])
       await fetchEntries()
+    } catch {
+      toast('Network error — please try again', 'error')
     } finally {
       setSubmitting(false)
     }
@@ -296,11 +302,15 @@ export function JournalEntriesTab({ toolId }: Props) {
     setPostingId(entryId)
     try {
       const token = await getToken()
-      await fetch(`${API}/v1/journal-entries/${entryId}/post`, {
+      const res = await fetch(`${API}/v1/journal-entries/${entryId}/post`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
       })
+      if (!res.ok) { const j = await res.json().catch(() => null); toast((j as { detail?: string })?.detail ?? 'Failed to post entry', 'error'); return }
+      toast('Entry posted', 'success')
       await fetchEntries()
+    } catch {
+      toast('Network error — please try again', 'error')
     } finally {
       setPostingId(null)
     }
@@ -310,11 +320,15 @@ export function JournalEntriesTab({ toolId }: Props) {
     setVoidingId(entryId)
     try {
       const token = await getToken()
-      await fetch(`${API}/v1/journal-entries/${entryId}`, {
+      const res = await fetch(`${API}/v1/journal-entries/${entryId}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       })
+      if (!res.ok) { const j = await res.json().catch(() => null); toast((j as { detail?: string })?.detail ?? 'Failed to void entry', 'error'); return }
+      toast('Entry voided', 'success')
       await fetchEntries()
+    } catch {
+      toast('Network error — please try again', 'error')
     } finally {
       setVoidingId(null)
     }

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { MonthPicker } from './MonthPicker'
 import { useAuth } from '@clerk/nextjs'
+import { useToast } from '@/components/Providers'
 import { motion, AnimatePresence } from 'framer-motion'
 import { CloseRunChecklist } from './CloseRunChecklist'
 import { CloseRunBottlenecks } from './CloseRunBottlenecks'
@@ -51,6 +52,7 @@ interface Props {
 
 export function MonthEndCloseTab({ toolId }: Props) {
   const { getToken } = useAuth()
+  const { toast } = useToast()
   const [period, setPeriod] = useState(currentMonth)
   const [run, setRun] = useState<CloseRun | null>(null)
   const [loading, setLoading] = useState(false)
@@ -90,7 +92,8 @@ export function MonthEndCloseTab({ toolId }: Props) {
         body: JSON.stringify({ period }),
       })
       const json = await res.json()
-      if (!res.ok) { setError(json.detail ?? 'Failed to open run'); return }
+      if (!res.ok) { setError(json.detail ?? 'Failed to open run'); toast(json.detail ?? 'Failed to open run', 'error'); return }
+      toast('Month-end close opened', 'success')
       setRun(json.data)
     } finally {
       setOpening(false)
@@ -102,10 +105,11 @@ export function MonthEndCloseTab({ toolId }: Props) {
     setRefreshing(true)
     try {
       const token = await getToken()
-      await fetch(`${API}/v1/close-runs/${run.id}/refresh`, {
+      const res = await fetch(`${API}/v1/close-runs/${run.id}/refresh`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
       })
+      if (!res.ok) { toast('Refresh failed — please try again', 'error'); return }
       setTimeout(() => fetchRun(period), 2000)
     } finally {
       setRefreshing(false)
@@ -121,6 +125,7 @@ export function MonthEndCloseTab({ toolId }: Props) {
       body: JSON.stringify({}),
     })
     if (res.ok) { const j = await res.json(); setRun(j.data) }
+    else { const j = await res.json().catch(() => null); toast((j as { detail?: string })?.detail ?? 'Failed to update task', 'error') }
   }
 
   async function handleSignOff() {
@@ -130,7 +135,8 @@ export function MonthEndCloseTab({ toolId }: Props) {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}` },
     })
-    if (res.ok) { const j = await res.json(); setRun(j.data) }
+    if (res.ok) { const j = await res.json(); setRun(j.data); toast('Month-end close signed off', 'success') }
+    else { const j = await res.json().catch(() => null); toast((j as { detail?: string })?.detail ?? 'Failed to sign off', 'error') }
   }
 
   return (

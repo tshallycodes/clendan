@@ -181,12 +181,14 @@ export function ReconciliationClient() {
         active = false
         setPolling(false)
         setRunning(false)
+        toast('Reconciliation complete', 'success')
       }
     }, 2000)
     const timeout = setTimeout(() => {
       active = false
       setPolling(false)
       setRunning(false)
+      toast('Reconciliation timed out — check back shortly', 'error')
     }, 5 * 60 * 1000)
     return () => {
       active = false
