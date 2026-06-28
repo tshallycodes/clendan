@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useAuth } from '@clerk/nextjs'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useToast } from '@/components/Providers'
@@ -133,10 +133,9 @@ interface QuickActionsProps {
   doc: ProcessedDocument
   toolId: string
   onAbort: (id: string) => void
-  onReupload: () => void
 }
 
-function QuickActions({ doc, toolId, onAbort, onReupload }: QuickActionsProps) {
+function QuickActions({ doc, toolId, onAbort }: QuickActionsProps) {
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const { getToken } = useAuth()
   const { toast } = useToast()
@@ -161,12 +160,12 @@ function QuickActions({ doc, toolId, onAbort, onReupload }: QuickActionsProps) {
     finally { setActionLoading(null) }
   }
 
-  async function handleReupload() {
-    setActionLoading('reupload')
+  async function handleDelete() {
+    setActionLoading('delete')
     try {
       const token = await getToken()
       const res = await fetch(`${API}/v1/document-intelligence/${toolId}/documents/${doc.id}/abort`, { method: 'POST', headers: { Authorization: `Bearer ${token}` } })
-      if (res.ok) { toast('Document removed — re-upload to reprocess', 'success'); onAbort(doc.id); onReupload() }
+      if (res.ok) { toast('Document deleted', 'success'); onAbort(doc.id) }
       else { const j = await res.json().catch(() => ({})); toast((j as { detail?: string }).detail ?? 'Failed', 'error') }
     } catch { toast('Network error', 'error') }
     finally { setActionLoading(null) }
@@ -183,11 +182,11 @@ function QuickActions({ doc, toolId, onAbort, onReupload }: QuickActionsProps) {
         </button>
         <button
           type="button"
-          onClick={handleReupload}
+          onClick={handleDelete}
           disabled={actionLoading !== null}
           className="text-[10px] font-mono px-3 py-1.5 rounded-sm border border-[#ff4d6d] text-[#ff4d6d] bg-[rgba(255,77,109,0.1)] hover:bg-[rgba(255,77,109,0.16)] transition-colors disabled:opacity-50"
         >
-          {actionLoading === 'reupload' ? '…' : 'Re-upload'}
+          {actionLoading === 'delete' ? '…' : 'Delete'}
         </button>
       </div>
     </div>
@@ -198,10 +197,9 @@ interface DocumentRowProps {
   doc: ProcessedDocument
   toolId: string
   onAbort: (id: string) => void
-  onReupload: () => void
 }
 
-function DocumentRow({ doc, toolId, onAbort, onReupload }: DocumentRowProps) {
+function DocumentRow({ doc, toolId, onAbort }: DocumentRowProps) {
   const [expanded, setExpanded] = useState(false)
   const [aborting, setAborting] = useState(false)
   const { getToken } = useAuth()
@@ -372,7 +370,6 @@ function DocumentRow({ doc, toolId, onAbort, onReupload }: DocumentRowProps) {
                   doc={doc}
                   toolId={toolId}
                   onAbort={onAbort}
-                  onReupload={onReupload}
                 />
               )}
             </div>
@@ -435,7 +432,6 @@ export function DocumentsTab({ toolId }: { toolId: string | null }) {
   const [uploading, setUploading] = useState(false)
   const [total, setTotal] = useState(0)
   const [offset, setOffset] = useState(0)
-  const uploadRef = useRef<HTMLDivElement>(null)
   const limit = 20
 
   async function load(off = 0) {
@@ -581,7 +577,7 @@ export function DocumentsTab({ toolId }: { toolId: string | null }) {
 
   return (
     <div className="space-y-4">
-      <div ref={uploadRef}>
+      <div>
         <UploadArea uploading={uploading} onFiles={handleFiles} />
       </div>
 
@@ -616,7 +612,6 @@ export function DocumentsTab({ toolId }: { toolId: string | null }) {
                   doc={doc}
                   toolId={toolId}
                   onAbort={handleAborted}
-                  onReupload={() => uploadRef.current?.scrollIntoView({ behavior: 'smooth' })}
                 />
               ))}
             </div>
