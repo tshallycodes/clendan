@@ -140,22 +140,25 @@ function QuickActions({ doc, toolId, onAbort }: QuickActionsProps) {
   const { getToken } = useAuth()
   const { toast } = useToast()
 
-  async function handleExport() {
-    setActionLoading('export')
+  async function handleDownloadPdf() {
+    setActionLoading('pdf')
     try {
       const token = await getToken()
-      const res = await fetch(`${API}/v1/documents/${doc.id}/export`, { headers: { Authorization: `Bearer ${token}` } })
-      if (!res.ok) { toast('Export failed', 'error'); return }
+      const res = await fetch(
+        `${API}/v1/document-intelligence/${toolId}/documents/${doc.id}/pdf`,
+        { headers: { Authorization: `Bearer ${token}` } },
+      )
+      if (!res.ok) { toast('PDF generation failed', 'error'); return }
       const blob = await res.blob()
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
       const raw = doc.filename ?? doc.id
       const base = raw.includes('.') ? raw.substring(0, raw.lastIndexOf('.')) : raw
-      a.download = `${base}.json`
+      a.download = `${base}_analysis.pdf`
       a.click()
       URL.revokeObjectURL(url)
-      toast('Export downloaded', 'success')
+      toast('PDF downloaded', 'success')
     } catch { toast('Network error', 'error') }
     finally { setActionLoading(null) }
   }
@@ -177,8 +180,8 @@ function QuickActions({ doc, toolId, onAbort }: QuickActionsProps) {
     <div className="pt-3 border-t border-brand-border">
       <p className="text-[10px] font-mono text-brand-muted uppercase tracking-widest mb-2">Quick actions</p>
       <div className="flex flex-wrap gap-2">
-        <button type="button" onClick={handleExport} disabled={actionLoading !== null} className={btn}>
-          {actionLoading === 'export' ? '…' : 'Export JSON'}
+        <button type="button" onClick={handleDownloadPdf} disabled={actionLoading !== null} className={btn}>
+          {actionLoading === 'pdf' ? '…' : 'Download PDF'}
         </button>
         <button
           type="button"
