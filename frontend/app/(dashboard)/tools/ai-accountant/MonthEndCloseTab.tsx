@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
+import { MonthPicker } from './MonthPicker'
 import { useAuth } from '@clerk/nextjs'
 import { motion, AnimatePresence } from 'framer-motion'
 import { CloseRunChecklist } from './CloseRunChecklist'
@@ -138,12 +139,7 @@ export function MonthEndCloseTab({ toolId }: Props) {
       <div className="flex items-center gap-3 flex-wrap">
         <div className="flex flex-col gap-1">
           <label className="text-[10px] font-mono text-brand-muted uppercase tracking-widest">Period</label>
-          <input
-            type="month"
-            value={period}
-            onChange={(e) => setPeriod(e.target.value)}
-            className="bg-brand-bg border border-brand-border focus:border-[#00C853] text-brand-text font-mono text-xs rounded-sm px-3 py-1.5 outline-none"
-          />
+          <MonthPicker value={period} onChange={setPeriod} />
         </div>
         {!loading && !run && (
           <button
