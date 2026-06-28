@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useAuth } from '@clerk/nextjs'
 import { motion, AnimatePresence } from 'framer-motion'
 import { MonthPicker } from './MonthPicker'
@@ -349,16 +349,11 @@ export function JournalEntriesTab({ toolId }: Props) {
           >
             <div className="bg-brand-surface border border-brand-border rounded-sm p-4 space-y-4">
               <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
+                <div className="flex flex-col gap-1">
                   <label className="text-[10px] font-mono text-brand-muted uppercase tracking-widest">
                     Period
                   </label>
-                  <input
-                    type="month"
-                    value={period}
-                    onChange={(e) => setPeriod(e.target.value)}
-                    className="w-full bg-brand-bg border border-brand-border focus:border-[#00C853] text-brand-text placeholder:text-brand-muted rounded-sm px-3 py-2 text-xs font-mono outline-none transition-colors"
-                  />
+                  <MonthPicker value={period} onChange={setPeriod} />
                 </div>
                 <div className="space-y-1">
                   <label className="text-[10px] font-mono text-brand-muted uppercase tracking-widest">
