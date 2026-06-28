@@ -79,6 +79,9 @@ export function AiAccountantClient() {
   const [deployed, setDeployed] = useState<Tool | null>(null)
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [total, setTotal] = useState(0)
+  const [pendingCount, setPendingCount] = useState(0)
+  const [categorisedCount, setCategorisedCount] = useState(0)
+  const [matchedCount, setMatchedCount] = useState(0)
   const [offset, setOffset] = useState(0)
   const [loadingMore, setLoadingMore] = useState(false)
   const [categories, setCategories] = useState<{ income: string[]; expenses: string[] }>({ income: [], expenses: [] })
@@ -108,10 +111,16 @@ export function AiAccountantClient() {
     if (!res.ok) return
     const json = await res.json()
     const txns: Transaction[] = json.data?.transactions ?? []
+    const serverPending: number = json.data?.pending_count ?? 0
+    const serverCategorised: number = json.data?.categorised_count ?? 0
+    const serverMatched: number = json.data?.matched_count ?? 0
     setTotal(json.data?.total ?? 0)
+    setPendingCount(serverPending)
+    setCategorisedCount(serverCategorised)
+    setMatchedCount(serverMatched)
     if (replace) { setTransactions(txns); setOffset(txns.length) }
     else { setTransactions(prev => [...prev, ...txns]); setOffset(prev => prev + txns.length) }
-    return txns
+    return { txns, pending: serverPending, categorised: serverCategorised, matched: serverMatched }
   }, [getToken])
 
   const fetchCategories = useCallback(async () => {
@@ -134,10 +143,10 @@ export function AiAccountantClient() {
     let active = true
     const interval = setInterval(async () => {
       if (!active) return
-      const txns = await fetchTransactions(0, true)
-      if (!txns) return
-      const categorisedCount = txns.filter(t => t.status !== 'pending').length
-      if (categorisedCount > pollStartCategorisedRef.current) {
+      const result = await fetchTransactions(0, true)
+      if (!result) return
+      const newCategorisedCount = result.categorised + result.matched
+      if (newCategorisedCount > pollStartCategorisedRef.current) {
         active = false
         setPolling(false)
         setRunning(false)
@@ -193,9 +202,9 @@ export function AiAccountantClient() {
   async function handleCategoriseNow() {
     if (!deployed?.id || running) return
     const pending = transactions.filter(t => t.status === 'pending')
-    if (pending.length === 0) { toast('No uncategorised transactions', 'info'); return }
+    if (pendingCount === 0) { toast('No uncategorised transactions', 'info'); return }
     setRunning(true)
-    pollStartCategorisedRef.current = transactions.filter(t => t.status !== 'pending').length
+    pollStartCategorisedRef.current = categorisedCount + matchedCount
     try {
       const token = await getToken()
       const res = await fetch(`${API}/v1/agents/${deployed.id}/trigger`, {
@@ -250,12 +259,9 @@ export function AiAccountantClient() {
   const badge = deployed ? (AUTONOMY_BADGE[deployed.autonomy_level] ?? AUTONOMY_BADGE.approve) : null
   const actionLoading = toggling || deploying
 
-  const pendingCount = transactions.filter(t => t.status === 'pending').length
-  const categorisedCount = transactions.filter(t => t.status === 'categorised').length
-  const matchedCount = transactions.filter(t => t.status === 'matched').length
   const categorisedPct = total > 0 ? Math.round(((categorisedCount + matchedCount) / total) * 100) : 0
   const counts: Record<StatusFilter, number> = {
-    all: transactions.length, pending: pendingCount, categorised: categorisedCount, matched: matchedCount,
+    all: total, pending: pendingCount, categorised: categorisedCount, matched: matchedCount,
   }
 
   return (
