@@ -31,7 +31,7 @@ type ResponseState =
 
 type HttpMethod = 'GET' | 'POST' | 'PATCH' | 'DELETE'
 
-interface AiAccountantEndpoint {
+interface EndpointDef {
   id: string
   method: HttpMethod
   path: string
@@ -59,27 +59,12 @@ const DEFAULT_PAYLOADS: Record<ToolName, object> = {
   spend_control:         { employee_id: 'emp_001', amount_minor: 35000, currency: 'GBP', category: 'software', vendor: 'Figma' },
 }
 
-const AI_ACCOUNTANT_ENDPOINTS: AiAccountantEndpoint[] = [
-  {
-    id: 'categorise',
-    method: 'POST',
-    path: '/v1/execute',
-    description: 'Categorise transactions — enqueue the AI Accountant tool to auto-categorise the given transaction IDs. Returns an execution_id; poll GET /v1/execute/{execution_id} for the result.',
-    defaultBody: JSON.stringify(
-      {
-        tool: 'ai_accountant',
-        payload: { transaction_ids: ['txn_abc123', 'txn_def456'] },
-      },
-      null,
-      2,
-    ),
-    defaultPathParam: null,
-  },
+const RELATED_ENDPOINTS: EndpointDef[] = [
   {
     id: 'get-transactions',
     method: 'GET',
     path: '/v1/execute/transactions?status=pending&limit=50',
-    description: 'Get transactions — list bank transactions for your tenant. Filter by status: pending, categorised, or matched.',
+    description: 'List bank transactions for your tenant. Filtered by status (pending, categorised, matched) and paginated.',
     defaultBody: null,
     defaultPathParam: null,
   },
@@ -93,15 +78,15 @@ const METHOD_COLORS: Record<HttpMethod, string> = {
 }
 
 // ---------------------------------------------------------------------------
-// AiAccountantEndpointRow — one interactive row per endpoint
+// EndpointRow — expandable row for a single API endpoint
 // ---------------------------------------------------------------------------
-interface AiAccountantEndpointRowProps {
-  endpoint: AiAccountantEndpoint
+interface EndpointRowProps {
+  endpoint: EndpointDef
   apiKey: string
   idempotencyKey: string
 }
 
-function AiAccountantEndpointRow({ endpoint, apiKey, idempotencyKey }: AiAccountantEndpointRowProps) {
+function EndpointRow({ endpoint, apiKey, idempotencyKey }: EndpointRowProps) {
   const [expanded, setExpanded] = useState(false)
   const [bodyText, setBodyText] = useState(endpoint.defaultBody ?? '')
   const [pathParam, setPathParam] = useState(endpoint.defaultPathParam ?? '')
@@ -240,7 +225,6 @@ function AiAccountantEndpointRow({ endpoint, apiKey, idempotencyKey }: AiAccount
 // ApiPlayground — main export
 // ---------------------------------------------------------------------------
 export function ApiPlayground() {
-  const [tab, setTab] = useState<'execute' | 'ai-accountant'>('execute')
   const [selectedTool, setSelectedTool] = useState<ToolName>('invoice_processing')
   const [payloadText, setPayloadText] = useState(() => JSON.stringify(DEFAULT_PAYLOADS['invoice_processing'], null, 2))
   const [idempotencyKey, setIdempotencyKey] = useState('')
@@ -330,25 +314,7 @@ export function ApiPlayground() {
     >
       <p className="text-[10px] font-mono uppercase tracking-widest text-brand-muted">API Playground</p>
 
-      {/* Tab switcher */}
-      <div className="flex items-center gap-1 border-b border-brand-border pb-0">
-        {(['execute', 'ai-accountant'] as const).map((t) => (
-          <button
-            key={t}
-            type="button"
-            onClick={() => setTab(t)}
-            className={`px-3 py-1.5 text-[10px] font-mono uppercase tracking-widest transition-colors border-b-2 -mb-px ${
-              tab === t
-                ? 'border-[#00C853] text-brand-text'
-                : 'border-transparent text-brand-muted hover:text-brand-text'
-            }`}
-          >
-            {t === 'execute' ? 'Execute' : 'AI Accountant'}
-          </button>
-        ))}
-      </div>
-
-      {/* Shared API Key (always visible) */}
+      {/* API Key */}
       <div className="space-y-1.5">
         <label className="text-[10px] font-mono uppercase tracking-widest text-brand-muted">API Key</label>
         <div className="flex items-center gap-2">
@@ -372,128 +338,118 @@ export function ApiPlayground() {
         </div>
       </div>
 
-      {/* Execute tab */}
-      {tab === 'execute' && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-
-          {/* Left — inputs */}
-          <div className="space-y-4">
-
-            {/* Tool selector */}
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-mono uppercase tracking-widest text-brand-muted">Tool</label>
-              <select
-                value={selectedTool}
-                onChange={(e) => {
-                  const tool = e.target.value as ToolName
-                  setSelectedTool(tool)
-                  setPayloadText(JSON.stringify(DEFAULT_PAYLOADS[tool], null, 2))
-                }}
-                className="w-full bg-brand-bg border border-brand-border focus:border-[#00C853] text-brand-text rounded-sm px-3 py-2 text-xs font-mono outline-none appearance-none cursor-pointer"
-              >
-                {TOOLS.map((t) => (
-                  <option key={t} value={t}>{t}</option>
-                ))}
-              </select>
-            </div>
-
-            {/* Payload editor */}
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-mono uppercase tracking-widest text-brand-muted">Payload (JSON)</label>
-              <textarea
-                value={payloadText}
-                onChange={(e) => setPayloadText(e.target.value)}
-                rows={6}
-                spellCheck={false}
-                className="w-full bg-brand-bg border border-brand-border focus:border-[#00C853] text-brand-text placeholder:text-brand-muted rounded-sm px-3 py-2 text-xs font-mono outline-none resize-none"
-              />
-            </div>
-
-            {/* Idempotency Key */}
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-mono uppercase tracking-widest text-brand-muted">Idempotency Key</label>
-              <div className="flex items-center gap-2">
-                <input
-                  readOnly
-                  value={idempotencyKey}
-                  className="flex-1 min-w-0 bg-brand-bg border border-brand-border text-brand-muted rounded-sm px-3 py-2 text-xs font-mono outline-none cursor-default"
-                />
-                <button
-                  type="button"
-                  onClick={regenerateKey}
-                  className="shrink-0 flex items-center gap-1 border border-brand-border text-brand-text hover:bg-brand-elevated rounded-sm px-2.5 py-2 text-xs font-mono transition-colors"
-                >
-                  <ArrowCounterClockwise className="w-3.5 h-3.5" /> Regenerate
-                </button>
-              </div>
-            </div>
-
-            {/* Run button */}
-            <button
-              type="button"
-              onClick={handleRun}
-              disabled={response.kind === 'loading'}
-              className="flex items-center gap-2 bg-[#00C853] text-black hover:bg-[#00a844] active:scale-[0.97] rounded-sm px-4 py-2 text-xs font-mono font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <Play className="w-3.5 h-3.5" weight="fill" />
-              {response.kind === 'loading'
-                ? response.attempt ? `Polling ${response.attempt}/${MAX_POLL_ATTEMPTS}…` : 'Queuing…'
-                : 'Run'}
-            </button>
-          </div>
-
-          {/* Right — response panel */}
+      {/* Execute */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Left — inputs */}
+        <div className="space-y-4">
+          {/* Tool selector */}
           <div className="space-y-1.5">
-            <label className="text-[10px] font-mono uppercase tracking-widest text-brand-muted">Response</label>
-            <div className="bg-brand-bg border border-brand-border rounded-sm p-4 min-h-[280px] max-h-[500px] overflow-y-auto">
-              {response.kind === 'idle' && (
-                <p className="text-xs font-mono text-brand-muted">Response will appear here</p>
-              )}
-              {response.kind === 'loading' && (
-                <div className="space-y-2">
-                  <p className="text-xs font-mono text-brand-muted animate-pulse">
-                    {response.attempt
-                      ? `Polling result… (${response.attempt}/${MAX_POLL_ATTEMPTS})`
-                      : 'Queuing job…'}
-                  </p>
-                  {response.attempt && (
-                    <div className="w-full bg-brand-border rounded-full h-0.5">
-                      <div
-                        className="bg-[#00C853] h-0.5 rounded-full transition-all duration-500"
-                        style={{ width: `${(response.attempt / MAX_POLL_ATTEMPTS) * 100}%` }}
-                      />
-                    </div>
-                  )}
-                </div>
-              )}
-              {response.kind === 'result' && (
-                <pre className="text-xs font-mono text-brand-text whitespace-pre-wrap break-all">
-                  {JSON.stringify(response.data, null, 2)}
-                </pre>
-              )}
+            <label className="text-[10px] font-mono uppercase tracking-widest text-brand-muted">Tool</label>
+            <select
+              value={selectedTool}
+              onChange={(e) => {
+                const tool = e.target.value as ToolName
+                setSelectedTool(tool)
+                setPayloadText(JSON.stringify(DEFAULT_PAYLOADS[tool], null, 2))
+              }}
+              className="w-full bg-brand-bg border border-brand-border focus:border-[#00C853] text-brand-text rounded-sm px-3 py-2 text-xs font-mono outline-none appearance-none cursor-pointer"
+            >
+              {TOOLS.map((t) => (
+                <option key={t} value={t}>{t}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Payload editor */}
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-mono uppercase tracking-widest text-brand-muted">Payload (JSON)</label>
+            <textarea
+              value={payloadText}
+              onChange={(e) => setPayloadText(e.target.value)}
+              rows={6}
+              spellCheck={false}
+              className="w-full bg-brand-bg border border-brand-border focus:border-[#00C853] text-brand-text placeholder:text-brand-muted rounded-sm px-3 py-2 text-xs font-mono outline-none resize-none"
+            />
+          </div>
+
+          {/* Idempotency Key */}
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-mono uppercase tracking-widest text-brand-muted">Idempotency Key</label>
+            <div className="flex items-center gap-2">
+              <input
+                readOnly
+                value={idempotencyKey}
+                className="flex-1 min-w-0 bg-brand-bg border border-brand-border text-brand-muted rounded-sm px-3 py-2 text-xs font-mono outline-none cursor-default"
+              />
+              <button
+                type="button"
+                onClick={regenerateKey}
+                className="shrink-0 flex items-center gap-1 border border-brand-border text-brand-text hover:bg-brand-elevated rounded-sm px-2.5 py-2 text-xs font-mono transition-colors"
+              >
+                <ArrowCounterClockwise className="w-3.5 h-3.5" /> Regenerate
+              </button>
             </div>
           </div>
 
+          {/* Run button */}
+          <button
+            type="button"
+            onClick={handleRun}
+            disabled={response.kind === 'loading'}
+            className="flex items-center gap-2 bg-[#00C853] text-black hover:bg-[#00a844] active:scale-[0.97] rounded-sm px-4 py-2 text-xs font-mono font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Play className="w-3.5 h-3.5" weight="fill" />
+            {response.kind === 'loading'
+              ? response.attempt ? `Polling ${response.attempt}/${MAX_POLL_ATTEMPTS}…` : 'Queuing…'
+              : 'Run'}
+          </button>
         </div>
-      )}
 
-      {/* AI Accountant tab */}
-      {tab === 'ai-accountant' && (
-        <div className="space-y-2">
-          <p className="text-[10px] font-mono text-brand-muted">
-            Click any endpoint to expand it, edit the body, and run it against your API key above.
-            POST and PATCH requests use a shared idempotency key.
-          </p>
-          {AI_ACCOUNTANT_ENDPOINTS.map((ep) => (
-            <AiAccountantEndpointRow
-              key={ep.id}
-              endpoint={ep}
-              apiKey={apiKey}
-              idempotencyKey={idempotencyKey}
-            />
-          ))}
+        {/* Right — response panel */}
+        <div className="space-y-1.5">
+          <label className="text-[10px] font-mono uppercase tracking-widest text-brand-muted">Response</label>
+          <div className="bg-brand-bg border border-brand-border rounded-sm p-4 min-h-[280px] max-h-[500px] overflow-y-auto">
+            {response.kind === 'idle' && (
+              <p className="text-xs font-mono text-brand-muted">Response will appear here</p>
+            )}
+            {response.kind === 'loading' && (
+              <div className="space-y-2">
+                <p className="text-xs font-mono text-brand-muted animate-pulse">
+                  {response.attempt
+                    ? `Polling result… (${response.attempt}/${MAX_POLL_ATTEMPTS})`
+                    : 'Queuing job…'}
+                </p>
+                {response.attempt && (
+                  <div className="w-full bg-brand-border rounded-full h-0.5">
+                    <div
+                      className="bg-[#00C853] h-0.5 rounded-full transition-all duration-500"
+                      style={{ width: `${(response.attempt / MAX_POLL_ATTEMPTS) * 100}%` }}
+                    />
+                  </div>
+                )}
+              </div>
+            )}
+            {response.kind === 'result' && (
+              <pre className="text-xs font-mono text-brand-text whitespace-pre-wrap break-all">
+                {JSON.stringify(response.data, null, 2)}
+              </pre>
+            )}
+          </div>
         </div>
-      )}
+      </div>
+
+      {/* Related endpoints */}
+      <div className="space-y-2">
+        <p className="text-[10px] font-mono uppercase tracking-widest text-brand-muted">Related endpoints</p>
+        {RELATED_ENDPOINTS.map((ep) => (
+          <EndpointRow
+            key={ep.id}
+            endpoint={ep}
+            apiKey={apiKey}
+            idempotencyKey={idempotencyKey}
+          />
+        ))}
+      </div>
     </motion.div>
   )
 }
