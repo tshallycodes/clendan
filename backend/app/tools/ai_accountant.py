@@ -36,6 +36,8 @@ class _ToolPolicy(BaseModel):
     learn_from_corrections: bool = True
     strict_coa_mode: bool = True
     max_correction_examples: int = 10
+    close_run_day_of_month: int = 1
+    payroll_keywords: str = "payroll, salary, wages"
 
 
 def _parse_policy(raw: dict[str, Any]) -> _ToolPolicy:
@@ -53,6 +55,10 @@ def _parse_policy(raw: dict[str, Any]) -> _ToolPolicy:
         mapped["strict_coa_mode"] = bool(raw["strict_coa_mode"])
     if "max_correction_examples" in raw:
         mapped["max_correction_examples"] = int(raw["max_correction_examples"])
+    if "close_run_day_of_month" in raw:
+        mapped["close_run_day_of_month"] = int(raw["close_run_day_of_month"])
+    if "payroll_keywords" in raw:
+        mapped["payroll_keywords"] = str(raw["payroll_keywords"])
     return _ToolPolicy(**mapped)
 
 
@@ -348,6 +354,13 @@ class AIAccountantTool:
             "You should prefer categories from the ALLOWED CATEGORIES list, but may use 'other' for anything that does not fit.\n"
         )
 
+        payroll_hint = ""
+        if policy.payroll_keywords.strip():
+            payroll_hint = (
+                f"\nPAYROLL KEYWORDS: Transactions whose description or merchant name contains any of these "
+                f"keywords must be categorised as 'payroll': {policy.payroll_keywords}\n"
+            )
+
         prompt = f"""You are an AI accountant. Categorise each bank transaction and match it to an invoice if one exists.
 
 TRANSACTIONS:
@@ -357,7 +370,7 @@ OPEN INVOICES:
 {json.dumps(invoice_list, indent=2)}
 
 ALLOWED CATEGORIES: {", ".join(sorted(ALLOWED_CATEGORIES))}
-{strict_coa_instruction}{drift_note}{correction_examples}
+{strict_coa_instruction}{payroll_hint}{drift_note}{correction_examples}
 For each transaction, return a JSON array with this exact shape:
 [
   {{

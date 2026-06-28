@@ -29,13 +29,15 @@ _MODEL_VERSION = "reconciliation-v1"
 
 class _ToolPolicy(BaseModel):
     unmatched_pct_threshold: float = 0.20
-    match_amount_tolerance_pct: float = 0.01
-    match_date_window_days: int = 30
+    match_amount_tolerance_pct: float = 0.0003
+    match_amount_tolerance_minor: int = 150
+    match_date_window_days: int = 5
     staleness_days: int = 30  # retained for backward-compat
     auto_match_confidence_min: float = 0.95
     partial_match_enabled: bool = True
     reconciliation_frequency: str = "daily"
     stale_open_item_days: int = 90
+    unmatched_alert_days: int = 5
     period_lock_respect: bool = True
     segregation_of_duties_enforced: bool = True
     include_reconciled: bool = False
@@ -87,15 +89,23 @@ class _ClaudeItemResult(BaseModel):
 def _parse_policy(config_json: dict, overrides: dict | None = None) -> _ToolPolicy:
     raw = config_json.get("policy", config_json)
     merged = {k: v for k, v in raw.items() if k in _ToolPolicy.model_fields}
+    # Frontend key → backend field remapping
+    if "amount_tolerance_pct" in raw:
+        merged["match_amount_tolerance_pct"] = float(raw["amount_tolerance_pct"])
+    if "amount_tolerance_minor_units" in raw:
+        merged["match_amount_tolerance_minor"] = int(raw["amount_tolerance_minor_units"])
+    if "date_tolerance_days" in raw:
+        merged["match_date_window_days"] = int(raw["date_tolerance_days"])
     if overrides:
         merged.update({k: v for k, v in overrides.items() if k in _ToolPolicy.model_fields})
     return _ToolPolicy.model_validate(merged)
 
 
-def _amounts_match(txn_amount: int, outstanding_cents: int, tolerance_pct: float) -> bool:
+def _amounts_match(txn_amount: int, outstanding_cents: int, tolerance_pct: float, tolerance_minor: int = 150) -> bool:
     if outstanding_cents == 0:
         return txn_amount == 0
-    return abs(txn_amount - outstanding_cents) <= int(outstanding_cents * tolerance_pct) + 1
+    pct_allow = int(outstanding_cents * tolerance_pct) + 1
+    return abs(txn_amount - outstanding_cents) <= max(pct_allow, tolerance_minor)
 
 
 def _dates_match(txn_date: datetime, due_date: datetime | None, window_days: int) -> bool:
@@ -496,7 +506,7 @@ async def _execute_reconciliation(
                 if invoice.id in matched_inv_ids:
                     continue
                 if (
-                    _amounts_match(txn_abs, invoice.outstanding_cents, policy.match_amount_tolerance_pct)
+                    _amounts_match(txn_abs, invoice.outstanding_cents, policy.match_amount_tolerance_pct, policy.match_amount_tolerance_minor)
                     and _dates_match(txn.date, invoice.due_date, policy.match_date_window_days)
                 ):
                     matched_txn_ids.add(txn.id)
@@ -509,7 +519,7 @@ async def _execute_reconciliation(
                 if bill.id in matched_bill_ids:
                     continue
                 if (
-                    _amounts_match(txn_abs, bill.outstanding_cents, policy.match_amount_tolerance_pct)
+                    _amounts_match(txn_abs, bill.outstanding_cents, policy.match_amount_tolerance_pct, policy.match_amount_tolerance_minor)
                     and _dates_match(txn.date, bill.due_date, policy.match_date_window_days)
                 ):
                     matched_txn_ids.add(txn.id)
