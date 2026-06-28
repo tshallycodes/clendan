@@ -6,11 +6,13 @@ import asyncio
 import base64
 import json
 import time
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import anthropic
 import fitz  # PyMuPDF
 from prisma import Json as PrismaJson
+from pydantic import BaseModel
 
 from app.audit.logger import write_audit_log
 from app.core.config import get_settings
@@ -31,6 +33,20 @@ _ALLOWED_CONTENT_TYPES = {
 }
 _MAX_FILE_BYTES = 10 * 1024 * 1024  # 10 MB
 _DOCX_MIME = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+
+class _ToolPolicy(BaseModel):
+    auto_approve_confidence_min: float = 0.80
+    flag_keywords: str = ""
+
+
+def _parse_policy(config_json: dict) -> _ToolPolicy:
+    mapped: dict[str, Any] = {}
+    if "auto_approve_confidence_min" in config_json:
+        mapped["auto_approve_confidence_min"] = float(config_json["auto_approve_confidence_min"]) / 100
+    if "flag_keywords" in config_json:
+        mapped["flag_keywords"] = str(config_json["flag_keywords"])
+    return _ToolPolicy(**mapped)
+
 
 _CLASSIFY_PROMPT = """Classify this document. Return ONLY valid JSON:
 {
@@ -231,7 +247,6 @@ async def _process_document(file_bytes: bytes, content_type: str) -> dict[str, A
         "confidence": confidence,
         "reason": f"Document analysed — {subtype.replace('_', ' ')}",
         "extracted": extracted,
-        "accounting_write_status": None,
     }
 
 
@@ -247,6 +262,7 @@ async def run_document_intelligence_job(
 ) -> dict:
     """arq job entry point. Classifies then routes to receipt or document processing."""
     db = get_db()
+    settings = get_settings()
     _start = time.monotonic()
     _logger.debug("doc_intel_job_start", extra={
         "execution_id": execution_id, "tenant_id": tenant_id, "tool_id": tool_id,
@@ -254,9 +270,14 @@ async def run_document_intelligence_job(
     })
 
     try:
+        tool = await db.tool.find_first(where={"id": tool_id, "tenant_id": tenant_id})
+        policy = _parse_policy(tool.config_json if tool and isinstance(tool.config_json, dict) else {})
+
         classification = await _classify_document(file_bytes, content_type)
         doc_type = classification.get("type", "error")
         _logger.debug("doc_intel_classified", extra={"execution_id": execution_id, "doc_type": doc_type})
+
+        rule_triggered: str | None = None
 
         if doc_type == "error":
             error_msg = classification.get("error_message") or "Could not read this document"
@@ -271,6 +292,21 @@ async def run_document_intelligence_job(
             r = await _process_document(file_bytes, content_type)
             result = {"document_type": "document", **r}
 
+            # Apply policy — keyword check first, then confidence threshold
+            if policy.flag_keywords.strip():
+                keywords = [kw.strip().lower() for kw in policy.flag_keywords.split(",") if kw.strip()]
+                analysis_text = json.dumps(result.get("extracted", {})).lower()
+                matched = [kw for kw in keywords if kw in analysis_text]
+                if matched:
+                    result["decision"] = "approval_required"
+                    rule_triggered = f"keyword: {', '.join(matched)}"
+
+            if result["decision"] != "approval_required":
+                if result.get("confidence", 0.0) >= policy.auto_approve_confidence_min:
+                    result["decision"] = "auto_approved"
+                else:
+                    result["decision"] = "approval_required"
+
         # Audit FIRST — if this fails, the operation fails (hard requirement)
         await write_audit_log(
             tenant_id=tenant_id,
@@ -282,6 +318,7 @@ async def run_document_intelligence_job(
                 "decision": result["decision"],
                 "confidence": result["confidence"],
                 "reason": result["reason"],
+                "rule_triggered": rule_triggered,
                 "tool_version": WORKER_VERSION,
             },
             model_version=f"{TOOL_TYPE}-v{WORKER_VERSION}",
@@ -299,6 +336,16 @@ async def run_document_intelligence_job(
             },
         )
 
+        if result["decision"] == "approval_required":
+            try:
+                await db.approval.create(data={
+                    "tenant_id": tenant_id,
+                    "execution_id": execution_id,
+                    "expires_at": datetime.now(UTC) + timedelta(seconds=settings.approval_ttl_seconds),
+                })
+            except Exception as exc:
+                _logger.warning("doc_intel_approval_create_failed", extra={"execution_id": execution_id, "error": str(exc)})
+
         if document_id:
             try:
                 await db.document.update(
@@ -309,6 +356,7 @@ async def run_document_intelligence_job(
                         "decision": result["decision"],
                         "confidence": result["confidence"],
                         "reason": result["reason"],
+                        "rule_triggered": rule_triggered,
                         "extracted_json": PrismaJson(result.get("extracted", {})),
                     },
                 )

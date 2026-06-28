@@ -27,6 +27,12 @@ interface FieldDef {
 }
 
 const WORKER_FIELDS: Record<string, FieldDef[]> = {
+  document_intelligence: [
+    { key: 'auto_approve_confidence_min', type: 'number', label: 'Auto-approve min confidence', unit: '%', step: 1, min: 0, max: 100, default: 80,
+      description: "Documents where Claude's confidence is at or above this are auto-approved. Below this threshold, the document is routed to the Approvals queue for human review." },
+    { key: 'flag_keywords', type: 'text', label: 'Flag keywords', placeholder: 'termination, penalty, indemnity', default: '',
+      description: 'Comma-separated keywords. If any appear in the analysis output, the document is routed to Approvals regardless of confidence. Leave blank to disable keyword flagging.' },
+  ],
   reconciliation: [
     { key: 'amount_tolerance_minor_units', type: 'number', label: 'Amount tolerance', penceDisplay: true, default: 150,
       description: 'Max pence difference between a bank transaction and an invoice for them to count as a match. E.g. £1.50 covers minor bank charges or rounding.' },
