@@ -53,9 +53,9 @@ const DEFAULT_PAYLOADS: Record<ToolName, object> = {
   compliance:            { entity_id: 'ent_001', entity_type: 'vendor', jurisdiction: 'GB' },
   reconciliation:        { period_start: '2026-05-01', period_end: '2026-05-31', policy: { unmatched_pct_threshold: 0.2, match_date_window_days: 30, match_amount_tolerance_pct: 0.01, include_reconciled: false } },
   revenue_recognition:   { contract_id: 'con_001', amount_minor: 1200000, currency: 'GBP', start_date: '2026-01-01', end_date: '2026-12-31' },
-  ai_accountant:         { query: 'Summarise outstanding liabilities for May 2026', context: 'month-end review' },
+  ai_accountant:         { transaction_ids: ['txn_abc123', 'txn_def456'] },
   credit_underwriting:   { applicant_id: 'app_001', requested_amount_minor: 5000000, currency: 'GBP', term_months: 12 },
-  document_intelligence: { document_id: 'doc_001', document_type: 'invoice', source: 'email_attachment' },
+  document_intelligence: { source: 'gmail', integration_id: '<your_integration_id>', document_type: 'invoice', message_id: '<gmail_message_id>', attachment_id: '<gmail_attachment_id>', filename: 'invoice.pdf' },
   spend_control:         { employee_id: 'emp_001', amount_minor: 35000, currency: 'GBP', category: 'software', vendor: 'Figma' },
 }
 
@@ -64,7 +64,7 @@ const AI_ACCOUNTANT_ENDPOINTS: AiAccountantEndpoint[] = [
     id: 'categorise',
     method: 'POST',
     path: '/v1/execute',
-    description: 'Categorise transactions — enqueue the AI Accountant tool to auto-categorise the given transaction IDs.',
+    description: 'Categorise transactions — enqueue the AI Accountant tool to auto-categorise the given transaction IDs. Returns an execution_id; poll GET /v1/execute/{execution_id} for the result.',
     defaultBody: JSON.stringify(
       {
         tool: 'ai_accountant',
@@ -78,62 +78,9 @@ const AI_ACCOUNTANT_ENDPOINTS: AiAccountantEndpoint[] = [
   {
     id: 'get-transactions',
     method: 'GET',
-    path: '/v1/transactions?status=pending&limit=50',
-    description: 'Get transactions — list transactions processed by the AI Accountant, filtered by status.',
+    path: '/v1/execute/transactions?status=pending&limit=50',
+    description: 'Get transactions — list bank transactions for your tenant. Filter by status: pending, categorised, or matched.',
     defaultBody: null,
-    defaultPathParam: null,
-  },
-  {
-    id: 'correct-category',
-    method: 'PATCH',
-    path: '/v1/transactions/{transaction_id}/category',
-    description: 'Correct transaction category — override the AI-assigned category for a specific transaction.',
-    defaultBody: JSON.stringify({ category: 'software' }, null, 2),
-    defaultPathParam: 'txn_abc123',
-  },
-  {
-    id: 'month-end-close',
-    method: 'POST',
-    path: '/v1/close-runs',
-    description: 'Trigger month-end close — orchestrate the close process for the given accounting period.',
-    defaultBody: JSON.stringify({ period: '2025-01' }, null, 2),
-    defaultPathParam: null,
-  },
-  {
-    id: 'payroll-reconciliation',
-    method: 'POST',
-    path: '/v1/payroll-runs',
-    description: 'Run payroll reconciliation — match payroll payments against the provided roster and flag discrepancies.',
-    defaultBody: JSON.stringify(
-      {
-        period: '2025-01',
-        roster: [
-          { name: 'Jane Smith', expected_minor: 450000 },
-          { name: 'John Doe', expected_minor: 380000 },
-        ],
-      },
-      null,
-      2,
-    ),
-    defaultPathParam: null,
-  },
-  {
-    id: 'journal-entry',
-    method: 'POST',
-    path: '/v1/journal-entries',
-    description: 'Create journal entry — post a double-entry journal to the connected accounting system.',
-    defaultBody: JSON.stringify(
-      {
-        period: '2025-01',
-        description: 'January 2025 Payroll',
-        lines: [
-          { account_code: '5000', account_name: 'Payroll Expense - Engineering', debit_minor: 4500000, credit_minor: 0 },
-          { account_code: '1010', account_name: 'Business Current Account', debit_minor: 0, credit_minor: 4500000 },
-        ],
-      },
-      null,
-      2,
-    ),
     defaultPathParam: null,
   },
 ]
