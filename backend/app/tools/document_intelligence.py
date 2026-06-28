@@ -1,7 +1,6 @@
 """
-Document Intelligence Tool — auto-classifies uploads as receipts or documents.
-Receipts: extract fields and auto-push to configured accounting integrations.
-Documents: comprehensive AI analysis (summary, risks, loopholes, improvements).
+Document Intelligence Tool — comprehensive AI analysis of any business document.
+Classifies uploads and produces structured analysis: summary, risks, loopholes, improvements.
 """
 import asyncio
 import base64
@@ -45,16 +44,6 @@ error = cannot classify. Set error_reason and a clear error_message.
 Error reasons: image_unreadable (too blurry/dark), empty_document (blank), no_text_found (no readable text), cannot_identify (unrecognised content).
 Return ONLY the JSON object. No markdown, no explanation."""
 
-_RECEIPT_PROMPT = """Extract all data from this receipt. Return ONLY valid JSON:
-{
-  "merchant": "store or vendor name",
-  "amount_minor": integer total paid in minor currency units (multiply decimal by 100),
-  "currency": "ISO 4217 code e.g. GBP USD EUR",
-  "date": "YYYY-MM-DD" or null,
-  "category": one of: food_and_drink travel accommodation software office_supplies utilities entertainment professional_services fuel other,
-  "confidence": float 0.0 to 1.0
-}
-Return ONLY the JSON. No markdown, no explanation."""
 
 _DOCUMENT_PROMPT = """Analyse this business document comprehensively. Return ONLY valid JSON:
 {
@@ -218,127 +207,6 @@ async def _classify_document(file_bytes: bytes, content_type: str) -> dict[str, 
     ) from last_exc
 
 
-async def _process_receipt(
-    file_bytes: bytes,
-    content_type: str,
-    accounting_integrations: list[str],
-    tenant_id: str,
-    execution_id: str,
-) -> dict[str, Any]:
-    if content_type == _DOCX_MIME:
-        text = _docx_to_text(file_bytes)
-        data = await _call_claude_text(text, _RECEIPT_PROMPT, max_tokens=512)
-    else:
-        data = await _call_claude_vision(file_bytes, content_type, _RECEIPT_PROMPT, max_tokens=512)
-
-    merchant = data.get("merchant", "Unknown")
-    amount_minor = int(data.get("amount_minor", 0))
-    currency = data.get("currency", "GBP")
-    date_str = data.get("date")
-    category = data.get("category", "other")
-    confidence = float(data.get("confidence", 0.0))
-    extracted: dict[str, Any] = {
-        "merchant": merchant,
-        "amount_minor": amount_minor,
-        "currency": currency,
-        "date": date_str,
-        "category": category,
-    }
-
-    _logger.info("doc_intel_push_start", extra={
-        "execution_id": execution_id,
-        "tenant_id": tenant_id,
-        "accounting_integrations": accounting_integrations,
-        "merchant": merchant,
-        "amount_minor": amount_minor,
-        "currency": currency,
-        "date": date_str,
-    })
-
-    if not accounting_integrations:
-        _logger.warning("doc_intel_push_no_integrations", extra={
-            "execution_id": execution_id, "tenant_id": tenant_id,
-        })
-        return {
-            "decision": "push_failed",
-            "confidence": confidence,
-            "reason": "No accounting integrations configured — add one in tool settings",
-            "extracted": extracted,
-            "accounting_write_status": None,
-        }
-
-    ref = f"RCPT-{execution_id[:8].upper()}"
-    write_results: list[str] = []
-    for integration in accounting_integrations:
-        _logger.info("doc_intel_push_attempt", extra={
-            "execution_id": execution_id, "integration": integration, "ref": ref,
-        })
-        try:
-            if integration == "xero":
-                from app.integrations.xero.write import create_bill
-                await create_bill(
-                    tenant_id=tenant_id, vendor=merchant, invoice_number=ref,
-                    amount_minor=amount_minor, currency=currency, due_date=date_str,
-                )
-            elif integration == "quickbooks":
-                from app.integrations.quickbooks.write import write_bill_to_quickbooks
-                await write_bill_to_quickbooks(
-                    tenant_id=tenant_id, execution_id=execution_id, vendor=merchant,
-                    invoice_number=ref, amount_minor=amount_minor, currency=currency,
-                    due_date=date_str, line_items=[],
-                )
-            elif integration == "freshbooks":
-                from app.integrations.freshbooks.write import create_bill as fb_create
-                await fb_create(
-                    tenant_id=tenant_id, vendor=merchant, invoice_number=ref,
-                    amount_minor=amount_minor, currency=currency, expense_date=date_str,
-                )
-            else:
-                _logger.warning("doc_intel_unknown_integration", extra={
-                    "execution_id": execution_id, "integration": integration,
-                })
-                write_results.append(f"unsupported:{integration}")
-                continue
-            _logger.info("doc_intel_push_ok", extra={
-                "execution_id": execution_id, "integration": integration,
-            })
-            write_results.append(f"written:{integration}")
-        except Exception as exc:
-            import httpx as _httpx
-            response_body: str | None = None
-            status_code: int | None = None
-            if isinstance(exc, _httpx.HTTPStatusError):
-                status_code = exc.response.status_code
-                try:
-                    response_body = exc.response.text
-                except Exception:
-                    response_body = "<unreadable>"
-            _logger.error(
-                "doc_intel_push_failed",
-                extra={
-                    "execution_id": execution_id,
-                    "integration": integration,
-                    "error_type": type(exc).__name__,
-                    "error": str(exc),
-                    "http_status": status_code,
-                    "response_body": response_body,
-                },
-            )
-            write_results.append(f"failed:{integration}")
-
-    accounting_write_status = ",".join(write_results)
-    all_failed = all(not r.startswith("written:") for r in write_results)
-    decision = "push_failed" if all_failed else "auto_pushed"
-    names = [i.capitalize() for i in accounting_integrations]
-    reason = "Push failed for all integrations" if all_failed else f"Pushed to {', '.join(names)}"
-    return {
-        "decision": decision,
-        "confidence": confidence,
-        "reason": reason,
-        "extracted": extracted,
-        "accounting_write_status": accounting_write_status,
-    }
-
 
 async def _process_document(file_bytes: bytes, content_type: str) -> dict[str, Any]:
     if content_type == _DOCX_MIME:
@@ -375,16 +243,11 @@ async def run_document_intelligence_job(
     tool_id: str,
     file_bytes: bytes,
     content_type: str,
-    policy_config: dict,
     document_id: str | None = None,
 ) -> dict:
     """arq job entry point. Classifies then routes to receipt or document processing."""
     db = get_db()
     _start = time.monotonic()
-    accounting_integrations: list[str] = (
-        policy_config.get("accounting_integrations", []) or []
-        if isinstance(policy_config, dict) else []
-    )
     _logger.debug("doc_intel_job_start", extra={
         "execution_id": execution_id, "tenant_id": tenant_id, "tool_id": tool_id,
         "document_id": document_id, "size_bytes": len(file_bytes), "job_try": ctx.get("job_try", 1),
@@ -396,18 +259,14 @@ async def run_document_intelligence_job(
         _logger.debug("doc_intel_classified", extra={"execution_id": execution_id, "doc_type": doc_type})
 
         if doc_type == "error":
-            error_msg = classification.get("error_message") or "Could not classify this document"
+            error_msg = classification.get("error_message") or "Could not read this document"
             result: dict[str, Any] = {
                 "document_type": "pending",
                 "decision": "classification_failed",
                 "confidence": 0.0,
                 "reason": error_msg,
                 "extracted": {},
-                "accounting_write_status": None,
             }
-        elif doc_type == "receipt":
-            r = await _process_receipt(file_bytes, content_type, accounting_integrations, tenant_id, execution_id)
-            result = {"document_type": "receipt", **r}
         else:
             r = await _process_document(file_bytes, content_type)
             result = {"document_type": "document", **r}
@@ -423,7 +282,6 @@ async def run_document_intelligence_job(
                 "decision": result["decision"],
                 "confidence": result["confidence"],
                 "reason": result["reason"],
-                "accounting_write_status": result.get("accounting_write_status"),
                 "tool_version": WORKER_VERSION,
             },
             model_version=f"{TOOL_TYPE}-v{WORKER_VERSION}",
@@ -452,7 +310,6 @@ async def run_document_intelligence_job(
                         "confidence": result["confidence"],
                         "reason": result["reason"],
                         "extracted_json": PrismaJson(result.get("extracted", {})),
-                        "accounting_write_status": result.get("accounting_write_status"),
                     },
                 )
             except Exception as exc:

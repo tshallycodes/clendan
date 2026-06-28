@@ -116,12 +116,10 @@ function DocumentIntelligenceTrace({ trace }: { trace: Record<string, unknown> }
 
   const decisionConfig = {
     auto_approved:         { label: 'Auto-approved',      color: 'text-[#00C853]', bg: 'bg-[rgba(0,200,83,0.08)]',   border: 'border-[rgba(0,200,83,0.2)]' },
-    auto_pushed:           { label: 'Pushed',             color: 'text-[#00C853]', bg: 'bg-[rgba(0,200,83,0.08)]',   border: 'border-[rgba(0,200,83,0.2)]' },
     analysed:              { label: 'Analysed',           color: 'text-[#00C853]', bg: 'bg-[rgba(0,200,83,0.08)]',   border: 'border-[rgba(0,200,83,0.2)]' },
     approval_required:     { label: 'Approval required',  color: 'text-[#00a8cc]', bg: 'bg-[rgba(0,168,204,0.08)]', border: 'border-[rgba(0,168,204,0.2)]' },
     blocked:               { label: 'Blocked',            color: 'text-[#ff4d6d]', bg: 'bg-[rgba(255,77,109,0.08)]', border: 'border-[rgba(255,77,109,0.2)]' },
-    push_failed:           { label: 'Push failed',        color: 'text-[#ff4d6d]', bg: 'bg-[rgba(255,77,109,0.08)]', border: 'border-[rgba(255,77,109,0.2)]' },
-    classification_failed: { label: 'Unclassified',       color: 'text-[#ff4d6d]', bg: 'bg-[rgba(255,77,109,0.08)]', border: 'border-[rgba(255,77,109,0.2)]' },
+    classification_failed: { label: 'Unreadable',         color: 'text-[#ff4d6d]', bg: 'bg-[rgba(255,77,109,0.08)]', border: 'border-[rgba(255,77,109,0.2)]' },
   }
   const dc = decisionConfig[decision as keyof typeof decisionConfig] ?? { label: decision, color: 'text-brand-muted', bg: 'bg-brand-bg', border: 'border-brand-border' }
 

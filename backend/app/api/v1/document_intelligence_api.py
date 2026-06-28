@@ -39,7 +39,6 @@ def _serialize_document(doc) -> dict:
         "flags_json": doc.flags_json,
         "extracted_json": doc.extracted_json,
         "thumbnail_b64": doc.thumbnail_b64,
-        "accounting_write_status": doc.accounting_write_status,
         "created_at": doc.created_at.isoformat() if doc.created_at else None,
     }
 
@@ -54,7 +53,7 @@ async def upload_document(
     """
     Accept a document upload, generate a thumbnail, create a Document record,
     and enqueue the document_intelligence job for async processing.
-    Claude auto-classifies the document as 'receipt' or 'document' during processing.
+    Claude analyses the document and produces structured output — summary, risks, loopholes, improvements.
     """
     tenant_id = current_user.tenant_id
     logger.debug("doc_upload_start", extra={"tenant_id": tenant_id, "tool_id": tool_id, "file_name": file.filename, "content_type": file.content_type})
@@ -108,8 +107,6 @@ async def upload_document(
     })
     logger.debug("doc_upload_record_created", extra={"document_id": doc_record.id})
 
-    policy_config = tool.config_json if isinstance(tool.config_json, dict) else {}
-
     idempotency_key = f"doc-upload:{doc_record.id}"
     execution = await db.execution.create(data={
         "tenant_id": tenant_id,
@@ -136,7 +133,6 @@ async def upload_document(
         tool_id=tool_id,
         file_bytes=file_bytes,
         content_type=content_type,
-        policy_config=policy_config,
         document_id=doc_record.id,
     )
     logger.info(

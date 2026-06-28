@@ -50,11 +50,6 @@ const WORKER_FIELDS: Record<string, FieldDef[]> = {
     { key: 'include_reconciled', type: 'boolean', label: 'Re-reconcile previously matched transactions', default: false,
       description: 'When on, transactions already marked as reconciled in a previous run are included in future runs. Use this if you suspect a prior run matched incorrectly or you want to audit completed matches.' },
   ],
-  document_intelligence: [
-    { key: 'accounting_integrations', type: 'multiselect', label: 'Push receipts to', default: [],
-      options: ['quickbooks', 'xero', 'freshbooks'],
-      description: 'When a receipt is uploaded and classified, it is automatically pushed to all selected integrations. At least one must be selected — uploads will fail with an error if none are configured.' },
-  ],
   ai_accountant: [
     { key: 'auto_categorise_confidence_min', type: 'number', label: 'Auto-categorise min confidence', unit: '0–1', step: 0.01, min: 0, max: 1, default: 0.90,
       description: "Transactions where Claude's confidence is at or above this are categorised automatically into your chart of accounts." },

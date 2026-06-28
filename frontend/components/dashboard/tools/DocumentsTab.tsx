@@ -7,7 +7,7 @@ import { useToast } from '@/components/Providers'
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
-type DocumentType = 'receipt' | 'document' | 'pending'
+type DocumentType = 'document' | 'pending'
 type DocumentStatus = 'processing' | 'completed' | 'failed'
 
 interface ProcessedDocument {
@@ -25,62 +25,26 @@ interface ProcessedDocument {
   flags_json: string[] | null
   extracted_json: Record<string, unknown> | null
   thumbnail_b64: string | null
-  accounting_write_status: string | null
   created_at: string
 }
 
 const DECISION_CONFIG: Record<string, { label: string; color: string; bg: string; border: string }> = {
-  auto_pushed:           { label: 'Pushed',              color: 'text-[#00C853]',  bg: 'bg-[rgba(0,200,83,0.08)]',   border: 'border-[rgba(0,200,83,0.2)]' },
-  analysed:              { label: 'Analysed',            color: 'text-[#00C853]',  bg: 'bg-[rgba(0,200,83,0.08)]',   border: 'border-[rgba(0,200,83,0.2)]' },
-  push_failed:           { label: 'Push failed',         color: 'text-[#ff4d6d]',  bg: 'bg-[rgba(255,77,109,0.08)]', border: 'border-[rgba(255,77,109,0.2)]' },
-  classification_failed: { label: 'Could not classify',  color: 'text-[#ff4d6d]',  bg: 'bg-[rgba(255,77,109,0.08)]', border: 'border-[rgba(255,77,109,0.2)]' },
-  blocked:               { label: 'Blocked',             color: 'text-[#ff4d6d]',  bg: 'bg-[rgba(255,77,109,0.08)]', border: 'border-[rgba(255,77,109,0.2)]' },
-  auto_approved:         { label: 'Auto-approved',       color: 'text-[#00C853]',  bg: 'bg-[rgba(0,200,83,0.08)]',   border: 'border-[rgba(0,200,83,0.2)]' },
-  approval_required:     { label: 'Needs review',        color: 'text-[#00a8cc]',  bg: 'bg-[rgba(0,168,204,0.08)]',  border: 'border-[rgba(0,168,204,0.2)]' },
+  analysed:              { label: 'Analysed',        color: 'text-[#00C853]',  bg: 'bg-[rgba(0,200,83,0.08)]',   border: 'border-[rgba(0,200,83,0.2)]' },
+  classification_failed: { label: 'Unreadable',      color: 'text-[#ff4d6d]',  bg: 'bg-[rgba(255,77,109,0.08)]', border: 'border-[rgba(255,77,109,0.2)]' },
+  blocked:               { label: 'Blocked',         color: 'text-[#ff4d6d]',  bg: 'bg-[rgba(255,77,109,0.08)]', border: 'border-[rgba(255,77,109,0.2)]' },
+  auto_approved:         { label: 'Auto-approved',   color: 'text-[#00C853]',  bg: 'bg-[rgba(0,200,83,0.08)]',   border: 'border-[rgba(0,200,83,0.2)]' },
+  approval_required:     { label: 'Needs review',    color: 'text-[#00a8cc]',  bg: 'bg-[rgba(0,168,204,0.08)]',  border: 'border-[rgba(0,168,204,0.2)]' },
 }
 
 const DOC_TYPE_LABEL: Record<string, string> = {
-  receipt:  'Receipt',
   document: 'Document',
-  pending:  'Classifying…',
+  pending:  'Analysing…',
 }
 
 function formatBytes(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
-}
-
-function formatCurrency(amount_minor: number, currency: string): string {
-  const symbols: Record<string, string> = { GBP: '£', USD: '$', EUR: '€' }
-  const symbol = symbols[currency?.toUpperCase()] ?? currency ?? ''
-  return `${symbol}${(amount_minor / 100).toFixed(2)}`
-}
-
-function ReceiptFields({ extracted }: { extracted: Record<string, unknown> }) {
-  const amount_minor = extracted.amount_minor as number | undefined
-  const currency = extracted.currency as string | undefined
-  const merchant = extracted.merchant as string | undefined
-  const date = extracted.date as string | undefined
-  const category = extracted.category as string | undefined
-
-  const fields = [
-    { label: 'Merchant', value: merchant },
-    { label: 'Amount',   value: amount_minor != null && currency ? formatCurrency(amount_minor, currency) : undefined },
-    { label: 'Date',     value: date },
-    { label: 'Category', value: category?.replace(/_/g, ' ') },
-  ].filter(f => f.value)
-
-  return (
-    <div className="grid grid-cols-2 gap-x-6 gap-y-2 mt-1">
-      {fields.map(({ label, value }) => (
-        <div key={label}>
-          <p className="text-[10px] font-mono text-brand-muted">{label}</p>
-          <p className="text-xs font-mono text-brand-text">{value}</p>
-        </div>
-      ))}
-    </div>
-  )
 }
 
 function AccordionSection({ title, items, color = 'text-brand-secondary' }: { title: string; items: string[]; color?: string }) {
@@ -275,7 +239,6 @@ function DocumentRow({ doc, toolId, onAbort, onReupload }: DocumentRowProps) {
     Date.now() - new Date(doc.created_at).getTime() > 10 * 60 * 1000
 
   const showAnalysis = doc.status === 'completed' && doc.extracted_json && Object.keys(doc.extracted_json).length > 0
-  const accountingStatus = doc.accounting_write_status
 
   return (
     <div className="border-b border-brand-border last:border-0">
@@ -392,55 +355,17 @@ function DocumentRow({ doc, toolId, onAbort, onReupload }: DocumentRowProps) {
             <div className="px-4 pb-4 border-t border-brand-border space-y-4">
               {showAnalysis && (
                 <div className="mt-3">
-                  {doc.document_type === 'receipt' && (
-                    <>
-                      <p className="text-[10px] font-mono text-brand-muted uppercase tracking-widest mb-2">Receipt details</p>
-                      <ReceiptFields extracted={doc.extracted_json!} />
-                    </>
-                  )}
-                  {doc.document_type === 'document' && (
-                    <>
-                      <p className="text-[10px] font-mono text-brand-muted uppercase tracking-widest mb-2">
-                        Analysis
-                        {!!doc.extracted_json?.document_subtype && (
-                          <span className="ml-2 normal-case tracking-normal text-brand-secondary">
-                            — {String(doc.extracted_json.document_subtype).replace(/_/g, ' ')}
-                          </span>
-                        )}
-                      </p>
-                      <DocumentAnalysis extracted={doc.extracted_json!} />
-                    </>
-                  )}
+                  <p className="text-[10px] font-mono text-brand-muted uppercase tracking-widest mb-2">
+                    Analysis
+                    {!!doc.extracted_json?.document_subtype && (
+                      <span className="ml-2 normal-case tracking-normal text-brand-secondary">
+                        — {String(doc.extracted_json.document_subtype).replace(/_/g, ' ')}
+                      </span>
+                    )}
+                  </p>
+                  <DocumentAnalysis extracted={doc.extracted_json!} />
                 </div>
               )}
-
-              {/* Accounting write status (receipts) */}
-              {accountingStatus && (() => {
-                const parts = accountingStatus.split(',').filter(p => p.includes(':'))
-                const written = parts.filter(p => p.startsWith('written:')).map(p => p.split(':')[1])
-                const failed = parts.filter(p => p.startsWith('failed:')).map(p => p.split(':')[1])
-                if (!written.length && !failed.length) return null
-                return (
-                  <div className="space-y-1">
-                    {written.length > 0 && (
-                      <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-mono text-brand-muted uppercase tracking-widest">Pushed to</span>
-                        <span className="text-[10px] font-mono text-[#00C853]">
-                          {written.map(i => i.charAt(0).toUpperCase() + i.slice(1)).join(', ')}
-                        </span>
-                      </div>
-                    )}
-                    {failed.length > 0 && (
-                      <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-mono text-brand-muted uppercase tracking-widest">Push failed</span>
-                        <span className="text-[10px] font-mono text-[#ff4d6d]">
-                          {failed.map(i => i.charAt(0).toUpperCase() + i.slice(1)).join(', ')}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                )
-              })()}
 
               {doc.status === 'completed' && (
                 <QuickActions
@@ -494,7 +419,7 @@ function UploadArea({ uploading, onFiles }: { uploading: boolean; onFiles: (file
             PDF · Word · PNG · JPG · WebP · max 10 MB
           </p>
           <p className="text-[10px] font-mono text-brand-muted mt-1">
-            Clen auto-classifies as receipt or document
+            Clen analyses and extracts summary, risks, loopholes, and improvements
           </p>
         </div>
       )}
@@ -593,7 +518,6 @@ export function DocumentsTab({ toolId }: { toolId: string | null }) {
         flags_json: null,
         extracted_json: null,
         thumbnail_b64: null,
-        accounting_write_status: null,
         created_at: now,
       }, ...prev])
       setTotal(t => t + 1)
@@ -614,7 +538,7 @@ export function DocumentsTab({ toolId }: { toolId: string | null }) {
           setTotal(t => t - 1)
           continue
         }
-        toast(`${file.name} uploaded — classifying…`, 'success')
+        toast(`${file.name} uploaded — analysing…`, 'success')
         setDocuments(prev => prev.map(d => d.id === tempId ? {
           id: json.data.document_id,
           document_type: 'pending' as DocumentType,
@@ -630,7 +554,6 @@ export function DocumentsTab({ toolId }: { toolId: string | null }) {
           flags_json: null,
           extracted_json: null,
           thumbnail_b64: json.data.thumbnail_b64 ?? null,
-          accounting_write_status: null,
           created_at: now,
         } : d))
       } catch {

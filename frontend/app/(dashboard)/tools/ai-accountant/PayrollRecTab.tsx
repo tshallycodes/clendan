@@ -1,10 +1,11 @@
 'use client'
 
-import { useState, useCallback, useMemo, useRef } from 'react'
+import { useState, useCallback, useMemo, useRef, useEffect } from 'react'
 import { useAuth } from '@clerk/nextjs'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useCurrency } from '@/components/Providers'
 import { CURRENCY_MAP } from '@/lib/currency'
+import { MonthPicker } from './MonthPicker'
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
@@ -318,12 +319,7 @@ export function PayrollRecTab({ toolId }: { toolId: string | null }) {
         {/* Period */}
         <div className="flex flex-col gap-1">
           <label className="text-[10px] font-mono text-brand-muted uppercase tracking-widest">Period</label>
-          <input
-            type="month"
-            value={period}
-            onChange={e => setPeriod(e.target.value)}
-            className="w-fit bg-brand-bg border border-brand-border focus:border-[#00C853] text-brand-text text-xs font-mono rounded-sm px-3 py-2 outline-none transition-colors"
-          />
+          <MonthPicker value={period} onChange={setPeriod} />
         </div>
 
         {/* Roster — bulk paste or CSV import */}
