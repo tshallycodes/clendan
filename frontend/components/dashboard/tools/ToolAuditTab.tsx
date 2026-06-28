@@ -112,8 +112,6 @@ function DocumentIntelligenceTrace({ trace }: { trace: Record<string, unknown> }
   const confidence = trace.confidence as number
   const flags = (trace.flags as string[]) || []
   const reason = trace.reason as string
-  const extracted = (trace.extracted as Record<string, unknown>) || {}
-
   const decisionConfig = {
     auto_approved:         { label: 'Auto-approved',      color: 'text-[#00C853]', bg: 'bg-[rgba(0,200,83,0.08)]',   border: 'border-[rgba(0,200,83,0.2)]' },
     analysed:              { label: 'Analysed',           color: 'text-[#00C853]', bg: 'bg-[rgba(0,200,83,0.08)]',   border: 'border-[rgba(0,200,83,0.2)]' },
@@ -123,19 +121,10 @@ function DocumentIntelligenceTrace({ trace }: { trace: Record<string, unknown> }
   }
   const dc = decisionConfig[decision as keyof typeof decisionConfig] ?? { label: decision, color: 'text-brand-muted', bg: 'bg-brand-bg', border: 'border-brand-border' }
 
-  const extractedEntries = Object.entries(extracted).filter(
-    ([, v]) => v !== null && v !== undefined && v !== '' && !(Array.isArray(v) && v.length === 0)
-  )
-
   return (
     <div className="space-y-4 pt-2">
-      <div className="flex items-center gap-2">
-        <div className={`inline-flex px-3 py-1.5 rounded-sm border ${dc.bg} ${dc.border}`}>
-          <span className={`text-xs font-mono font-medium ${dc.color}`}>{dc.label}</span>
-        </div>
-        <span className="text-[10px] font-mono text-brand-muted uppercase tracking-widest border border-brand-border rounded-sm px-2 py-1">
-          {documentType}
-        </span>
+      <div className={`inline-flex px-3 py-1.5 rounded-sm border ${dc.bg} ${dc.border}`}>
+        <span className={`text-xs font-mono font-medium ${dc.color}`}>{dc.label}</span>
       </div>
 
       <div className="grid grid-cols-3 gap-2">
@@ -146,8 +135,8 @@ function DocumentIntelligenceTrace({ trace }: { trace: Record<string, unknown> }
           </p>
         </div>
         <div className="bg-brand-bg border border-brand-border rounded-sm p-3">
-          <p className="text-[10px] font-mono text-brand-muted uppercase tracking-widest">Fields extracted</p>
-          <p className="text-xl font-heading font-bold text-brand-text mt-1">{extractedEntries.length}</p>
+          <p className="text-[10px] font-mono text-brand-muted uppercase tracking-widest">Document type</p>
+          <p className="text-xs font-mono text-brand-text mt-1 capitalize">{documentType.replace(/_/g, ' ') || '—'}</p>
         </div>
         <div className="bg-brand-bg border border-brand-border rounded-sm p-3">
           <p className="text-[10px] font-mono text-brand-muted uppercase tracking-widest">Policy flags</p>
@@ -161,22 +150,6 @@ function DocumentIntelligenceTrace({ trace }: { trace: Record<string, unknown> }
         <div className="bg-brand-bg border border-brand-border rounded-sm px-3 py-2.5">
           <p className="text-[10px] font-mono text-brand-muted uppercase tracking-widest mb-1.5">Reason</p>
           <p className="text-[11px] font-mono text-brand-secondary leading-relaxed">{reason}</p>
-        </div>
-      )}
-
-      {extractedEntries.length > 0 && (
-        <div>
-          <p className="text-[10px] font-mono text-brand-muted uppercase tracking-widest mb-1.5">Extracted fields</p>
-          <div className="bg-brand-bg border border-brand-border rounded-sm divide-y divide-brand-border">
-            {extractedEntries.map(([key, value]) => (
-              <div key={key} className="flex items-start justify-between px-3 py-2 gap-4">
-                <span className="text-[10px] font-mono text-brand-muted shrink-0">{key}</span>
-                <span className="text-[11px] font-mono text-brand-secondary text-right break-all">
-                  {Array.isArray(value) ? value.join(', ') : String(value)}
-                </span>
-              </div>
-            ))}
-          </div>
         </div>
       )}
 
@@ -261,7 +234,7 @@ function TraceView({ entry }: { entry: AuditEntry }) {
   const [showRaw, setShowRaw] = useState(false)
   const trace = typeof entry.reasoning_trace_json === 'object' ? entry.reasoning_trace_json : null
   const isReconciliation = entry.action?.startsWith('reconciliation:') && trace && 'overall_decision' in trace
-  const isDocumentIntelligence = !isReconciliation && entry.action?.startsWith('document_processed:') && trace && 'extracted' in trace
+  const isDocumentIntelligence = !isReconciliation && entry.action?.startsWith('document_processed:') && trace != null
   const isOrchestrator = !isReconciliation && !isDocumentIntelligence && trace && 'decision' in trace
 
   const hasFormatted = isReconciliation || isDocumentIntelligence || isOrchestrator
