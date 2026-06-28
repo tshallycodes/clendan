@@ -202,7 +202,7 @@ export function AiAccountantClient() {
   async function handleCategoriseNow() {
     if (!deployed?.id) { toast('Deploy the tool to continue', 'error'); return }
     if (running) return
-    const pending = transactions.filter(t => t.status === 'pending')
+    const pending = transactions.filter(t => t.status === 'pending' || t.status === 'unprocessed')
     if (pendingCount === 0) { toast('No uncategorised transactions', 'info'); return }
     setRunning(true)
     pollStartCategorisedRef.current = categorisedCount + matchedCount

@@ -88,7 +88,7 @@ async def list_all_transactions(
         db.banktransaction.count(where=where),
         db.banktransaction.find_many(where={**where, "amount_minor": {"gt": 0}}),
         db.banktransaction.find_many(where={**where, "amount_minor": {"lt": 0}}),
-        db.banktransaction.count(where={**status_count_where, "status": "pending"}),
+        db.banktransaction.count(where={**status_count_where, "status": {"in": ["pending", "unprocessed"]}}),
         db.banktransaction.count(where={**status_count_where, "status": "categorised"}),
         db.banktransaction.count(where={**status_count_where, "status": "matched"}),
     )
