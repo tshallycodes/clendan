@@ -259,7 +259,15 @@ export function GenericToolClient({ tool, deployed }: Props) {
             </div>
           )}
           {activeTab === 'executions' && <ToolExecutionsTab toolId={deployed?.id ?? null} />}
-          {activeTab === 'approvals' && <ToolApprovalsTab toolId={deployed?.id ?? null} />}
+          {activeTab === 'approvals' && (
+            tool.type === 'document_intelligence'
+              ? (
+                <div className="bg-brand-surface border border-brand-border rounded-sm p-8 text-center">
+                  <p className="text-xs font-mono text-brand-muted">Approvals are not applicable for this tool — document analysis requires no human sign-off.</p>
+                </div>
+              )
+              : <ToolApprovalsTab toolId={deployed?.id ?? null} />
+          )}
           {activeTab === 'audit' && <ToolAuditTab toolId={deployed?.id ?? null} />}
           {activeTab === 'documents' && (
             <DocumentsTab toolId={deployed?.id ?? null} />
