@@ -159,7 +159,7 @@ export function ConfigDrawer({ tool, toolType, onClose, onSaved }: Props) {
         </div>
 
         <div className="space-y-5">
-          <div className="space-y-1.5">
+          <div className={`space-y-1.5 ${toolType === 'document_intelligence' ? 'opacity-40 pointer-events-none' : ''}`}>
             <label className={labelClass}>Autonomy Level</label>
             <Select
               value={autonomy}
@@ -169,6 +169,9 @@ export function ConfigDrawer({ tool, toolType, onClose, onSaved }: Props) {
                 { value: 'approve', label: 'Approve — requires human approval above threshold' },
               ]}
             />
+            {toolType === 'document_intelligence' && (
+              <p className="text-[10px] font-mono text-brand-muted">Routing is controlled by the confidence threshold below.</p>
+            )}
           </div>
 
           <ToolConfigFields
