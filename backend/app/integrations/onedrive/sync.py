@@ -3,6 +3,7 @@ OneDrive sync job — runs via arq worker.
 Creates Graph API drive subscription, lists PDF files, emits receipt_received events.
 # TODO: add onedrive source handler in app/tool.py _orchestrate_receipt_received
 """
+import base64
 import time
 from datetime import datetime, UTC
 
@@ -140,36 +141,43 @@ async def sync_onedrive_connection(ctx: dict, integration_id: str, tenant_id: st
         return {"status": "error", "reason": "sync_failed"}
 
     if initial_status == "connected" and files:
-        try:
-            from app.orchestrator.events import enqueue_orchestrator_event
-            for f in files:
-                file_id = f.get("id", "")
-                if not file_id:
-                    continue
-                input_ref = f"onedrive:{file_id}"
-                # Idempotency: skip if an execution already exists for this file
-                existing = await db.execution.find_first(
-                    where={"input_ref": input_ref, "tenant_id": tenant_id}
-                )
-                if existing:
-                    continue
+        from app.orchestrator.events import enqueue_orchestrator_event
+        _MAX_BYTES = 10 * 1024 * 1024
+        for f in files:
+            file_id = f.get("id", "")
+            if not file_id:
+                continue
+            idempotency_key = f"onedrive:document:{file_id}"
+            existing = await db.execution.find_first(
+                where={"input_ref": idempotency_key, "tenant_id": tenant_id}
+            )
+            if existing:
+                continue
+            try:
+                file_bytes = await onedrive.download_file(access_token, file_id)
+            except Exception as exc:
+                logger.warning("onedrive_file_download_failed file_id=%s: %s", file_id, type(exc).__name__)
+                continue
+            if len(file_bytes) > _MAX_BYTES:
+                logger.warning("onedrive_file_too_large file_id=%s size=%d", file_id, len(file_bytes))
+                continue
+            try:
                 await enqueue_orchestrator_event(
                     tenant_id=tenant_id,
-                    event_type="receipt_received",
+                    event_type="document_received",
                     payload={
                         "source": "onedrive",
                         "integration_id": integration_id,
                         "file_id": file_id,
-                        "file_name": f.get("name", ""),
+                        "filename": f.get("name", ""),
+                        "file_bytes": base64.b64encode(file_bytes).decode(),
+                        "content_type": "application/pdf",
                     },
-                    idempotency_key=input_ref,
+                    idempotency_key=idempotency_key,
                     db=db,
                 )
-        except Exception as exc:
-            logger.error(
-                "onedrive_receipt_event_failed integration_id=%s: %s",
-                integration_id, type(exc).__name__,
-            )
+            except Exception as exc:
+                logger.error("onedrive_document_event_failed file_id=%s: %s", file_id, type(exc).__name__)
 
     logger.info(
         "onedrive_sync_ok tenant=%s files=%d elapsed_ms=%d",

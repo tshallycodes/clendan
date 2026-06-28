@@ -2,6 +2,7 @@
 Google Drive sync job — runs via arq tool.
 Lists PDF files in Drive, writes sync log, updates integration status.
 """
+import base64
 import time
 from datetime import datetime, UTC
 
@@ -94,30 +95,27 @@ async def sync_drive_connection(ctx: dict, integration_id: str, tenant_id: str) 
             data={"status": "connected", "connected_at": datetime.now(UTC)},
         )
         if initial_status == "connected" and files:
-            try:
-                from app.orchestrator.events import enqueue_orchestrator_event
-                for f in files:
-                    file_id = f.get("id", "")
-                    if not file_id:
-                        continue
-                    file_name = f.get("name", "")
-                    name_lower = file_name.lower()
-                    _doc_type = (
-                        "receipt" if "receipt" in name_lower else
-                        "contract" if "contract" in name_lower or "agreement" in name_lower else
-                        "invoice"
-                    )
-                    await enqueue_orchestrator_event(
-                        tenant_id=tenant_id,
-                        event_type="receipt_received",
-                        payload={
-                            "source": "google_drive",
-                            "integration_id": integration_id,
-                            "file_id": file_id,
-                        },
-                        idempotency_key=f"drive:receipt:{file_id}",
-                        db=db,
-                    )
+            from app.orchestrator.events import enqueue_orchestrator_event
+            _MAX_BYTES = 10 * 1024 * 1024
+            for f in files:
+                file_id = f.get("id", "")
+                if not file_id:
+                    continue
+                idempotency_key = f"drive:document:{file_id}"
+                existing = await db.execution.find_first(
+                    where={"input_ref": idempotency_key, "tenant_id": tenant_id}
+                )
+                if existing:
+                    continue
+                try:
+                    file_bytes = await google.download_drive_file_bytes(access_token, file_id)
+                except Exception as exc:
+                    logger.warning("drive_file_download_failed file_id=%s: %s", file_id, type(exc).__name__)
+                    continue
+                if len(file_bytes) > _MAX_BYTES:
+                    logger.warning("drive_file_too_large file_id=%s size=%d", file_id, len(file_bytes))
+                    continue
+                try:
                     await enqueue_orchestrator_event(
                         tenant_id=tenant_id,
                         event_type="document_received",
@@ -125,17 +123,15 @@ async def sync_drive_connection(ctx: dict, integration_id: str, tenant_id: str) 
                             "source": "google_drive",
                             "integration_id": integration_id,
                             "file_id": file_id,
-                            "document_type": _doc_type,
-                            "filename": file_name,
+                            "filename": f.get("name", ""),
+                            "file_bytes": base64.b64encode(file_bytes).decode(),
+                            "content_type": "application/pdf",
                         },
-                        idempotency_key=f"drive:document:{file_id}",
+                        idempotency_key=idempotency_key,
                         db=db,
                     )
-            except Exception as exc:
-                logger.error(
-                    "drive_document_event_failed integration_id=%s: %s",
-                    integration_id, type(exc).__name__,
-                )
+                except Exception as exc:
+                    logger.error("drive_document_event_failed file_id=%s: %s", file_id, type(exc).__name__)
         logger.info("drive_sync_ok tenant=%s files=%d", tenant_id, file_count)
         return {"status": "ok", "files_found": file_count}
 

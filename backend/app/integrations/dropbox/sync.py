@@ -2,6 +2,7 @@
 Dropbox sync job — runs via arq worker.
 Lists PDF files, checks idempotency, emits receipt_received events, writes sync log.
 """
+import base64
 import time
 from datetime import datetime, UTC
 
@@ -100,36 +101,44 @@ async def sync_dropbox_connection(ctx: dict, integration_id: str, tenant_id: str
             data={"status": "connected", "connected_at": datetime.now(UTC)},
         )
         if initial_status == "connected" and files:
-            try:
-                from app.orchestrator.events import enqueue_orchestrator_event
-                for f in files:
-                    file_id = f.get("id", "")
-                    if not file_id:
-                        continue
-                    input_ref = f"dropbox:{file_id}"
-                    # Idempotency: skip if an execution already exists for this file
-                    existing = await db.execution.find_first(
-                        where={"input_ref": input_ref, "tenant_id": tenant_id}
-                    )
-                    if existing:
-                        continue
+            from app.orchestrator.events import enqueue_orchestrator_event
+            _MAX_BYTES = 10 * 1024 * 1024
+            for f in files:
+                file_id = f.get("id", "")
+                if not file_id:
+                    continue
+                idempotency_key = f"dropbox:document:{file_id}"
+                existing = await db.execution.find_first(
+                    where={"input_ref": idempotency_key, "tenant_id": tenant_id}
+                )
+                if existing:
+                    continue
+                path = f.get("path_lower", "")
+                try:
+                    file_bytes = await dropbox.download_file(access_token, path)
+                except Exception as exc:
+                    logger.warning("dropbox_file_download_failed file_id=%s: %s", file_id, type(exc).__name__)
+                    continue
+                if len(file_bytes) > _MAX_BYTES:
+                    logger.warning("dropbox_file_too_large file_id=%s size=%d", file_id, len(file_bytes))
+                    continue
+                try:
                     await enqueue_orchestrator_event(
                         tenant_id=tenant_id,
-                        event_type="receipt_received",
+                        event_type="document_received",
                         payload={
                             "source": "dropbox",
                             "integration_id": integration_id,
                             "file_id": file_id,
-                            "file_name": f.get("name", ""),
+                            "filename": f.get("name", ""),
+                            "file_bytes": base64.b64encode(file_bytes).decode(),
+                            "content_type": "application/pdf",
                         },
-                        idempotency_key=input_ref,
+                        idempotency_key=idempotency_key,
                         db=db,
                     )
-            except Exception as exc:
-                logger.error(
-                    "dropbox_receipt_event_failed integration_id=%s: %s",
-                    integration_id, type(exc).__name__,
-                )
+                except Exception as exc:
+                    logger.error("dropbox_document_event_failed file_id=%s: %s", file_id, type(exc).__name__)
         logger.info("dropbox_sync_ok tenant=%s files=%d", tenant_id, file_count)
         return {"status": "ok", "files_found": file_count}
 

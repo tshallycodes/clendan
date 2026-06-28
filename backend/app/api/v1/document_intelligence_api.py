@@ -312,6 +312,132 @@ async def export_document_pdf(
     )
 
 
+@router.post("/{tool_id}/import/{source}")
+async def import_from_integration(
+    tool_id: str,
+    source: str,
+    current_user: RequireOrgAuth,
+    db: Annotated[Prisma, Depends(get_db_dep)],
+) -> dict:
+    """
+    Trigger an ad-hoc import from Google Drive, Dropbox, or OneDrive.
+    Lists new PDF files from the connected integration and enqueues Document Intelligence
+    analysis for each one not yet processed.
+    """
+    import base64 as _b64
+
+    SUPPORTED = {"google_drive", "dropbox", "onedrive"}
+    if source not in SUPPORTED:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Unsupported source. Must be one of: {', '.join(sorted(SUPPORTED))}",
+        )
+
+    tenant_id = current_user.tenant_id
+
+    tool = await db.tool.find_unique(where={"id": tool_id})
+    if not tool or tool.tenant_id != tenant_id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Tool not found")
+
+    from app.integrations.encryption import decrypt_credentials
+
+    PROVIDER_MAP = {"google_drive": "google_drive", "dropbox": "dropbox", "onedrive": "onedrive"}
+    integration = await db.integration.find_first(
+        where={"tenant_id": tenant_id, "provider": PROVIDER_MAP[source], "status": "connected"}
+    )
+    if not integration:
+        label = source.replace("_", " ").title()
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"No connected {label} integration. Connect it in Integrations first.",
+        )
+
+    try:
+        creds = decrypt_credentials(integration.encrypted_credentials, tenant_id)
+    except ValueError:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Credential decryption failed")
+
+    access_token = creds.get("access_token", "")
+
+    try:
+        if source == "google_drive":
+            from app.integrations.google import client as _google
+            files = await _google.list_pdf_files(access_token)
+        elif source == "dropbox":
+            from app.integrations.dropbox import client as _dropbox
+            files = await _dropbox.list_pdf_files(access_token)
+        else:
+            from app.integrations.onedrive import client as _onedrive
+            files = await _onedrive.list_pdf_files(access_token)
+    except Exception as exc:
+        logger.error("import_list_failed source=%s error=%s", source, str(exc))
+        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=f"Failed to list files from {source}")
+
+    from app.orchestrator.events import enqueue_orchestrator_event
+
+    queued = 0
+    skipped = 0
+
+    for f in files:
+        file_id = f.get("id", "")
+        if not file_id:
+            continue
+
+        PREFIX = {"google_drive": "drive", "dropbox": "dropbox", "onedrive": "onedrive"}
+        idempotency_key = f"{PREFIX[source]}:document:{file_id}"
+
+        existing = await db.execution.find_first(
+            where={"input_ref": idempotency_key, "tenant_id": tenant_id}
+        )
+        if existing:
+            skipped += 1
+            continue
+
+        try:
+            if source == "google_drive":
+                file_bytes = await _google.download_drive_file_bytes(access_token, file_id)
+            elif source == "dropbox":
+                path = f.get("path_lower", "")
+                file_bytes = await _dropbox.download_file(access_token, path)
+            else:
+                file_bytes = await _onedrive.download_file(access_token, file_id)
+        except Exception as exc:
+            logger.warning("import_download_failed source=%s file_id=%s: %s", source, file_id, str(exc))
+            skipped += 1
+            continue
+
+        if len(file_bytes) > _MAX_FILE_BYTES:
+            logger.warning("import_file_too_large source=%s file_id=%s size=%d", source, file_id, len(file_bytes))
+            skipped += 1
+            continue
+
+        try:
+            await enqueue_orchestrator_event(
+                tenant_id=tenant_id,
+                event_type="document_received",
+                payload={
+                    "source": source,
+                    "integration_id": integration.id,
+                    "file_id": file_id,
+                    "filename": f.get("name", ""),
+                    "file_bytes": _b64.b64encode(file_bytes).decode(),
+                    "content_type": "application/pdf",
+                },
+                idempotency_key=idempotency_key,
+                db=db,
+            )
+            queued += 1
+        except Exception as exc:
+            logger.error("import_enqueue_failed source=%s file_id=%s: %s", source, file_id, str(exc))
+            skipped += 1
+
+    logger.info(
+        "import_complete",
+        extra={"tenant_id": tenant_id, "source": source, "queued": queued, "skipped": skipped},
+    )
+    return standard_response(data={"queued": queued, "skipped": skipped, "source": source})
+
+
 @router.get("/{tool_id}/documents")
 async def list_documents(
     tool_id: str,

@@ -291,13 +291,19 @@ async def run_orchestrator_job(
                 if isinstance(raw_bytes, str):
                     raw_bytes = base64.b64decode(raw_bytes) if raw_bytes else b""
                 if raw_bytes:
-                    document_type = payload.get("document_type", "invoice")
+                    document_type = payload.get("document_type", "document")
                     content_type_val = payload.get("content_type", "application/pdf")
-                    _policy_cfg = (
-                        _tool_for_dispatch.config_json
-                        if isinstance(_tool_for_dispatch.config_json, dict)
-                        else {}
-                    )
+                    doc_record = await db.document.create(data={
+                        "tenant_id": tenant_id,
+                        "tool_id": tool_id,
+                        "document_type": "pending",
+                        "filename": payload.get("filename", ""),
+                        "content_type": content_type_val,
+                        "file_size_bytes": len(raw_bytes),
+                        "uploaded_by": payload.get("source", "integration"),
+                        "status": "processing",
+                        "execution_id": execution_id,
+                    })
                     pool = await get_queue_pool()
                     await pool.enqueue_job(
                         "run_document_intelligence_job",
@@ -306,7 +312,7 @@ async def run_orchestrator_job(
                         tool_id=tool_id,
                         file_bytes=raw_bytes,
                         content_type=content_type_val,
-                        policy_config=_policy_cfg,
+                        document_id=doc_record.id,
                     )
                     decision, confidence, reasoning = (
                         "routed", 1.0, f"Routed {document_type} to Document Intelligence"

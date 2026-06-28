@@ -383,6 +383,62 @@ function DocumentRow({ doc, toolId, onAbort }: DocumentRowProps) {
   )
 }
 
+const CLOUD_SOURCES = [
+  { id: 'google_drive', label: 'Google Drive' },
+  { id: 'dropbox',      label: 'Dropbox' },
+  { id: 'onedrive',     label: 'OneDrive' },
+] as const
+
+function CloudImport({ toolId, onImported }: { toolId: string; onImported: () => void }) {
+  const { getToken } = useAuth()
+  const { toast } = useToast()
+  const [loading, setLoading] = useState<string | null>(null)
+
+  async function handleImport(source: string, label: string) {
+    setLoading(source)
+    try {
+      const token = await getToken()
+      const res = await fetch(
+        `${API}/v1/document-intelligence/${toolId}/import/${source}`,
+        { method: 'POST', headers: { Authorization: `Bearer ${token}` } },
+      )
+      const json = await res.json()
+      if (!res.ok) {
+        toast((json as { detail?: string }).detail ?? 'Import failed', 'error')
+        return
+      }
+      const { queued, skipped } = (json as { data: { queued: number; skipped: number } }).data
+      if (queued > 0) {
+        toast(`Importing ${queued} file${queued !== 1 ? 's' : ''} from ${label}…`, 'success')
+        onImported()
+      } else {
+        toast(`No new files from ${label} — ${skipped} already imported`, 'success')
+      }
+    } catch {
+      toast('Network error', 'error')
+    } finally {
+      setLoading(null)
+    }
+  }
+
+  return (
+    <div className="flex items-center gap-2.5 flex-wrap">
+      <span className="text-[10px] font-mono text-brand-muted">Import from:</span>
+      {CLOUD_SOURCES.map(s => (
+        <button
+          key={s.id}
+          type="button"
+          onClick={() => handleImport(s.id, s.label)}
+          disabled={loading !== null}
+          className="text-[10px] font-mono px-2.5 py-1 rounded-sm border border-brand-border text-brand-secondary hover:bg-brand-elevated hover:text-brand-text transition-colors disabled:opacity-40"
+        >
+          {loading === s.id ? '…' : s.label}
+        </button>
+      ))}
+    </div>
+  )
+}
+
 function UploadArea({ uploading, onFiles }: { uploading: boolean; onFiles: (files: FileList) => void }) {
   const [dragOver, setDragOver] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -583,6 +639,8 @@ export function DocumentsTab({ toolId }: { toolId: string | null }) {
       <div>
         <UploadArea uploading={uploading} onFiles={handleFiles} />
       </div>
+
+      <CloudImport toolId={toolId} onImported={() => load(0)} />
 
       <div>
         <div className="flex items-center justify-between mb-2">
