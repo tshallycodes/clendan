@@ -238,6 +238,70 @@ class MonthEndCloseTool:
         }
 
 
+async def run_month_end_close_scheduled(_ctx: dict) -> None:
+    """Daily cron: auto-open and run month-end close for tenants whose configured day matches today."""
+    from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
+    from app.queue.pool import get_queue_pool
+
+    db = get_db()
+    now_utc = datetime.now(UTC)
+    pool = await get_queue_pool()
+
+    tools = await db.tool.find_many(where={"type": "ai_accountant", "status": "active"})
+    for tool in tools:
+        try:
+            cfg = tool.config_json or {}
+            run_day = int(cfg.get("close_run_day_of_month", 1))
+
+            tenant = await db.tenant.find_unique(where={"id": tool.tenant_id})
+            tz_name = (tenant.timezone if tenant and tenant.timezone else None) or "UTC"
+            try:
+                tz = ZoneInfo(tz_name)
+            except ZoneInfoNotFoundError:
+                logger.warning("month_end_close_cron_unknown_tz tool=%s tz=%s — falling back to UTC", tool.id, tz_name)
+                tz = ZoneInfo("UTC")
+
+            local_now = now_utc.astimezone(tz)
+            if local_now.day != run_day:
+                continue
+
+            period = local_now.strftime("%Y-%m")
+
+            existing = await db.monthendcloserun.find_unique(
+                where={"tenant_id_period": {"tenant_id": tool.tenant_id, "period": period}}
+            )
+            if existing:
+                logger.info("month_end_close_scheduled_skip_existing tenant=%s period=%s", tool.tenant_id, period)
+                continue
+
+            close_run = await db.monthendcloserun.create(
+                data={
+                    "tenant_id": tool.tenant_id,
+                    "period": period,
+                    "status": "open",
+                    "tasks_json": _build_default_tasks(),
+                }
+            )
+
+            idem_key = f"month-end-close-auto:{tool.tenant_id}:{period}"
+            await pool.enqueue_job(
+                "run_month_end_close_job",
+                close_run_id=close_run.id,
+                tenant_id=tool.tenant_id,
+                tool_id=tool.id,
+                _job_id=idem_key,
+            )
+            logger.info(
+                "month_end_close_scheduled_queued tenant=%s tool=%s period=%s",
+                tool.tenant_id, tool.id, period,
+            )
+        except Exception as exc:
+            logger.error(
+                "month_end_close_cron_failed tenant=%s tool=%s: %s",
+                tool.tenant_id, tool.id, type(exc).__name__,
+            )
+
+
 async def run_month_end_close_job(
     ctx: dict,
     close_run_id: str,

@@ -57,7 +57,7 @@ from app.tools.financial_reporting import run_financial_reporting_job
 from app.tools.payment_run import run_payment_run_job
 from app.tools.budgeting import run_budgeting_job
 from app.tools.document_intelligence import run_document_intelligence_job
-from app.tools.month_end_close import run_month_end_close_job
+from app.tools.month_end_close import run_month_end_close_job, run_month_end_close_scheduled
 from app.tools.payroll_reconciliation import run_payroll_rec_job
 from app.tools.journal_entries import run_journal_entry_job
 
@@ -1107,6 +1107,7 @@ class ToolSettings:
         sync_wise_connection,
         fetch_exchange_rates_daily,
         run_month_end_close_job,
+        run_month_end_close_scheduled,
         run_payroll_rec_job,
         run_journal_entry_job,
         resync_integrations_daily,
@@ -1118,6 +1119,7 @@ class ToolSettings:
         cron(run_budget_check_weekly, weekday=0, hour=7, minute=30),
         cron(fetch_exchange_rates_daily, hour=0, minute=5),
         cron(run_reconciliation_scheduled_check, minute=0),  # hourly
+        cron(run_month_end_close_scheduled, hour=0, minute=10),  # daily midnight UTC
         cron(resync_integrations_daily, hour=3, minute=0),   # daily 3am UTC
     ]
     on_startup = startup

@@ -20,7 +20,7 @@ from app.queue.pool import push_to_dlq
 
 logger = get_logger(__name__)
 
-PAYROLL_KEYWORDS = ["payroll", "salary", "wages", "payroll processing", "adp", "paychex"]
+DEFAULT_PAYROLL_KEYWORDS = ["payroll", "salary", "wages", "payroll processing", "adp", "paychex"]
 DISCREPANCY_THRESHOLD = 0.05  # 5%
 MISSING_BLOCK_THRESHOLD = 0.30  # 30% missing → blocked
 
@@ -80,9 +80,14 @@ def _period_date_range(period: str) -> tuple[datetime, datetime]:
     return start, end
 
 
-def _is_payroll_transaction(description: str | None, merchant_name: str | None) -> bool:
+def _is_payroll_transaction(
+    description: str | None,
+    merchant_name: str | None,
+    keywords: list[str] | None = None,
+) -> bool:
     text = " ".join(filter(None, [description, merchant_name])).lower()
-    return any(kw in text for kw in PAYROLL_KEYWORDS)
+    kws = keywords if keywords else DEFAULT_PAYROLL_KEYWORDS
+    return any(kw in text for kw in kws)
 
 
 def _fuzzy_match(extracted: str, roster_name: str) -> bool:
@@ -104,6 +109,7 @@ class PayrollReconciliationTool:
         tenant_id: str,
         tool_id: str,
         roster: list[dict[str, Any]],
+        keywords: list[str] | None = None,
     ) -> dict[str, Any]:
         start = time.monotonic()
         trace_id = get_trace_id()
@@ -140,7 +146,7 @@ class PayrollReconciliationTool:
 
         payroll_txns = [
             t for t in all_txns
-            if _is_payroll_transaction(t.description, t.merchant_name)
+            if _is_payroll_transaction(t.description, t.merchant_name, keywords)
         ]
 
         if not payroll_txns:
@@ -413,6 +419,16 @@ async def run_payroll_rec_job(
     period: str,
 ) -> dict[str, Any]:
     """arq job wrapper for the Payroll Reconciliation Tool."""
+    db = get_db()
+    tool_record = await db.tool.find_unique(where={"id": tool_id})
+    cfg = (tool_record.config_json or {}) if tool_record else {}
+    raw_keywords = cfg.get("payroll_keywords", "")
+    keywords: list[str] | None = (
+        [k.strip().lower() for k in raw_keywords.split(",") if k.strip()]
+        if isinstance(raw_keywords, str) and raw_keywords.strip()
+        else None
+    )
+
     tool = PayrollReconciliationTool()
     try:
         result = await tool.run(
@@ -420,6 +436,7 @@ async def run_payroll_rec_job(
             tenant_id=tenant_id,
             tool_id=tool_id,
             roster=roster,
+            keywords=keywords,
         )
         return result
     except Exception as exc:

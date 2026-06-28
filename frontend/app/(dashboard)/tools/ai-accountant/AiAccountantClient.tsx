@@ -42,10 +42,10 @@ const HOW_IT_WORKS = [
 const CAPABILITIES = [
   'Automatic transaction categorisation with confidence scoring',
   'Human review queue for low-confidence categorisations',
-  'Learns from manual corrections over time',
-  'Strict chart-of-accounts mode enforcement',
-  'Month-end close orchestration — task tracking, sign-offs, bottleneck detection',
-  'Payroll reconciliation against HR roster with ghost employee detection',
+  'Learns from your team\'s manual corrections — configurable example window',
+  'Strict chart-of-accounts enforcement — only codes that exist in your COA',
+  'Month-end close orchestration — auto-triggered on your configured day each month',
+  'Payroll reconciliation with keyword-matched transaction detection and ghost employee flagging',
   'Payroll journal entry posting with automated approval routing',
   'Batch processing for high-volume transaction periods',
 ]

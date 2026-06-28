@@ -35,6 +35,7 @@ class _ToolPolicy(BaseModel):
     lookback_days: int = 30
     learn_from_corrections: bool = True
     strict_coa_mode: bool = True
+    max_correction_examples: int = 10
 
 
 def _parse_policy(raw: dict[str, Any]) -> _ToolPolicy:
@@ -50,6 +51,8 @@ def _parse_policy(raw: dict[str, Any]) -> _ToolPolicy:
         mapped["learn_from_corrections"] = bool(raw["learn_from_corrections"])
     if "strict_coa_mode" in raw:
         mapped["strict_coa_mode"] = bool(raw["strict_coa_mode"])
+    if "max_correction_examples" in raw:
+        mapped["max_correction_examples"] = int(raw["max_correction_examples"])
     return _ToolPolicy(**mapped)
 
 
@@ -275,7 +278,7 @@ class AIAccountantTool:
         recent_corrections = await db.categorycorrection.find_many(
             where={"tenant_id": tenant_id},
             order={"created_at": "desc"},
-            take=10,
+            take=policy.max_correction_examples,
         ) if (tenant_id and policy.learn_from_corrections) else []
 
         correction_examples = ""
