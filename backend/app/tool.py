@@ -551,12 +551,19 @@ async def _orchestrate_transaction_posted(
     if not transaction_ids:
         return "blocked", 0.0, "No transaction_ids in payload"
 
+    db = get_db()
+    tool_record = await db.tool.find_unique(where={"id": tool_id})
+    policy_config = (
+        tool_record.config_json if tool_record and isinstance(tool_record.config_json, dict) else {}
+    )
+
     pool = await get_queue_pool()
     await pool.enqueue_job(
         "run_ai_accountant",
         transaction_ids=transaction_ids,
         tenant_id=tenant_id,
         tool_id=tool_id,
+        policy_config=policy_config,
     )
 
     return "routed", 1.0, f"Routed {len(transaction_ids)} transactions to AI Accountant"

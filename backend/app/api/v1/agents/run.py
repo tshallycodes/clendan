@@ -191,9 +191,9 @@ async def trigger_agent(
         )
 
     # --- Extract policy config from tool config ---
-    policy_config: dict[str, Any] = {}
-    if tool.config_json and isinstance(tool.config_json, dict):
-        policy_config = tool.config_json.get("policy", {})
+    policy_config: dict[str, Any] = (
+        tool.config_json if tool.config_json and isinstance(tool.config_json, dict) else {}
+    )
 
     event_type = TOOL_TYPE_TO_EVENT.get(tool.type, "invoice_received")
 
