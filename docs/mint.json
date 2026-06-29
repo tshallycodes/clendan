@@ -16,12 +16,12 @@
   "topbarLinks": [
     {
       "name": "Dashboard",
-      "url": "https://clendan.vercel.app/dashboard"
+      "url": "https://clendan.com/dashboard"
     }
   ],
   "topbarCtaButton": {
     "name": "Get Started",
-    "url": "https://clendan.vercel.app/sign-up"
+    "url": "https://clendan.com/sign-up"
   },
   "tabs": [
     {

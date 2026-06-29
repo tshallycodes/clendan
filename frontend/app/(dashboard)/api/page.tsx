@@ -4,7 +4,7 @@ import { EndpointCard } from '@/components/dashboard/api/EndpointCard'
 
 export const metadata: Metadata = { title: 'API Docs' }
 
-const BASE_URL = 'https://api-production-0d35.up.railway.app/v1'
+const BASE_URL = 'https://api.clendan.com/v1'
 
 const TOOL_TYPES = [
   'invoice_processing',
