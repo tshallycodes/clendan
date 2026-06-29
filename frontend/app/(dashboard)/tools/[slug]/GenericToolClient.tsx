@@ -133,7 +133,7 @@ export function GenericToolClient({ tool, deployed }: Props) {
         <div className="space-y-1">
           <div className="flex items-center gap-2 flex-wrap">
             <h1 className="font-heading font-bold text-2xl text-brand-text">{tool.name}</h1>
-            {badge && <span className={`text-[10px] font-mono px-2 py-0.5 rounded-sm ${badge.className}`}>{badge.label}</span>}
+            {badge && tool.type !== 'document_intelligence' && <span className={`text-[10px] font-mono px-2 py-0.5 rounded-sm ${badge.className}`}>{badge.label}</span>}
           </div>
           <p className="text-xs font-mono text-brand-muted max-w-xl">{tool.desc}</p>
         </div>
@@ -224,11 +224,13 @@ export function GenericToolClient({ tool, deployed }: Props) {
                     <p className="text-[10px] font-mono uppercase tracking-widest text-brand-muted">Configuration</p>
                   </div>
                   <div className="px-4 py-4 grid grid-cols-2 gap-6">
-                    <div className="space-y-1.5">
-                      <p className="text-[10px] font-mono text-brand-muted uppercase tracking-widest">Autonomy</p>
-                      {badge && <span className={`text-[10px] font-mono px-2 py-0.5 rounded-sm inline-block ${badge.className}`}>{badge.label}</span>}
-                      <p className="text-[10px] font-mono text-brand-muted leading-relaxed">{AUTONOMY_DESC[deployed.autonomy_level] ?? ''}</p>
-                    </div>
+                    {tool.type !== 'document_intelligence' && (
+                      <div className="space-y-1.5">
+                        <p className="text-[10px] font-mono text-brand-muted uppercase tracking-widest">Autonomy</p>
+                        {badge && <span className={`text-[10px] font-mono px-2 py-0.5 rounded-sm inline-block ${badge.className}`}>{badge.label}</span>}
+                        <p className="text-[10px] font-mono text-brand-muted leading-relaxed">{AUTONOMY_DESC[deployed.autonomy_level] ?? ''}</p>
+                      </div>
+                    )}
                     <div className="space-y-1.5">
                       <p className="text-[10px] font-mono text-brand-muted uppercase tracking-widest">Status</p>
                       <p className="text-xs font-mono text-brand-text">{deployed.status === 'active' ? 'Running' : 'Paused'}</p>
