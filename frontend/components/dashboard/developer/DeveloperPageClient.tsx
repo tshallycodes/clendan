@@ -79,6 +79,7 @@ const CAPABILITIES = [
 
 const ENDPOINTS = [
   { method: 'POST', path: '/execute',                        desc: 'Trigger any deployed tool' },
+  { method: 'POST', path: '/execute/document-intelligence',  desc: 'Upload file for analysis' },
   { method: 'GET',  path: '/execute/{execution_id}',         desc: 'Poll execution result' },
   { method: 'GET',  path: '/execute/tools',                  desc: 'List deployed tools' },
   { method: 'GET',  path: '/execute/stats',                  desc: 'Aggregate execution counts' },

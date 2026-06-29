@@ -3,13 +3,18 @@ import hashlib
 from datetime import datetime, timezone, UTC
 from typing import Any
 
-from fastapi import APIRouter, Header, HTTPException, Query
+from fastapi import APIRouter, File, Header, HTTPException, Query, UploadFile
 from pydantic import BaseModel
 
 from app.core.db import get_db
 from app.core.logging import get_logger
 from app.core.responses import standard_response
 from app.queue.pool import get_queue_pool
+from app.tools.document_intelligence import (
+    _ALLOWED_CONTENT_TYPES,
+    _MAX_FILE_BYTES,
+    _generate_thumbnail,
+)
 
 _logger = get_logger(__name__)
 
@@ -169,6 +174,99 @@ async def execute(
             "idempotent": False,
         }
     )
+
+
+@router.post("/document-intelligence")
+async def execute_document_intelligence(
+    file: UploadFile = File(...),
+    authorization: str = Header(..., alias="Authorization"),
+    idempotency_key: str = Header(..., alias="Idempotency-Key"),
+):
+    """
+    Upload a file for analysis via API key. Accepts PDF, Word, PNG, JPG, WebP.
+    Returns execution_id to poll via GET /execute/{execution_id}.
+    The completed response includes extracted_json with summary, risks, parties, key dates.
+    """
+    tenant_id, _ = await _resolve_api_key(authorization)
+    db = get_db()
+
+    content_type = file.content_type or "application/pdf"
+    if content_type not in _ALLOWED_CONTENT_TYPES:
+        raise HTTPException(
+            status_code=415,
+            detail="Unsupported file type. Allowed: PDF, Word (.docx), PNG, JPG, WebP",
+        )
+
+    file_bytes = await file.read()
+    if not file_bytes:
+        raise HTTPException(status_code=400, detail="Empty file")
+    if len(file_bytes) > _MAX_FILE_BYTES:
+        raise HTTPException(status_code=413, detail="File exceeds 10 MB limit")
+
+    tool = await db.tool.find_first(
+        where={"tenant_id": tenant_id, "type": "document_intelligence", "status": "active"}
+    )
+    if not tool:
+        raise HTTPException(
+            status_code=404,
+            detail="No active document_intelligence tool found for this tenant",
+        )
+
+    thumbnail_b64 = _generate_thumbnail(file_bytes, content_type)
+
+    doc_record = await db.document.create(data={
+        "tenant_id": tenant_id,
+        "tool_id": tool.id,
+        "document_type": "pending",
+        "filename": file.filename,
+        "content_type": content_type,
+        "file_size_bytes": len(file_bytes),
+        "status": "processing",
+        "thumbnail_b64": thumbnail_b64,
+    })
+
+    execution = await db.execution.create(data={
+        "tenant_id": tenant_id,
+        "tool_id": tool.id,
+        "input_ref": idempotency_key,
+        "decision": "pending",
+        "confidence": 0.0,
+        "status": "queued",
+    })
+
+    await db.document.update(
+        where={"id": doc_record.id},
+        data={"execution_id": execution.id},
+    )
+
+    pool = await get_queue_pool()
+    await pool.enqueue_job(
+        "run_document_intelligence_job",
+        execution_id=execution.id,
+        tenant_id=tenant_id,
+        tool_id=tool.id,
+        file_bytes=file_bytes,
+        content_type=content_type,
+        document_id=doc_record.id,
+    )
+
+    _logger.info(
+        "doc_intelligence_api_upload_queued",
+        extra={
+            "tenant_id": tenant_id,
+            "tool_id": tool.id,
+            "document_id": doc_record.id,
+            "execution_id": execution.id,
+            "filename": file.filename,
+            "size_bytes": len(file_bytes),
+        },
+    )
+
+    return standard_response(data={
+        "document_id": doc_record.id,
+        "execution_id": execution.id,
+        "status": "queued",
+    })
 
 
 @router.get("/tools")
@@ -434,6 +532,23 @@ async def get_execution(
         order={"created_at": "desc"},
     )
 
+    # For document intelligence jobs, include the extracted analysis in the response
+    document = None
+    if execution.tool and execution.tool.type == "document_intelligence":
+        doc = await db.document.find_first(
+            where={"execution_id": execution_id, "tenant_id": tenant_id}
+        )
+        if doc:
+            document = {
+                "id": doc.id,
+                "filename": doc.filename,
+                "document_type": doc.document_type,
+                "status": doc.status,
+                "confidence": doc.confidence,
+                "extracted_json": doc.extracted_json,
+                "flags_json": doc.flags_json,
+            }
+
     return standard_response(
         data={
             "execution_id": execution.id,
@@ -445,5 +560,6 @@ async def get_execution(
             "error": execution.error_message,
             "reasoning_trace": audit.reasoning_trace_json if audit else None,
             "created_at": execution.created_at.isoformat(),
+            **({"document": document} if document is not None else {}),
         }
     )

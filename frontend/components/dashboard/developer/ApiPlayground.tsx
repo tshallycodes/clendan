@@ -236,6 +236,7 @@ function EndpointRow({ endpoint, apiKey, idempotencyKey }: EndpointRowProps) {
 export function ApiPlayground() {
   const [selectedTool, setSelectedTool] = useState<ToolName>('invoice_processing')
   const [payloadText, setPayloadText] = useState(() => JSON.stringify(DEFAULT_PAYLOADS['invoice_processing'], null, 2))
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [idempotencyKey, setIdempotencyKey] = useState('')
   const [apiKey, setApiKey] = useState('')
   const [showApiKey, setShowApiKey] = useState(false)
@@ -278,27 +279,42 @@ export function ApiPlayground() {
 
   async function handleRun() {
     if (pollRef.current) clearTimeout(pollRef.current)
-
-    let parsedPayload: unknown
-    try {
-      parsedPayload = JSON.parse(payloadText)
-    } catch {
-      setResponse({ kind: 'result', data: { error: 'Invalid JSON in payload' } })
-      return
-    }
-
     setResponse({ kind: 'loading' })
 
     try {
-      const res = await fetch(`${API}/execute`, {
-        method: 'POST',
-        headers: {
-          Authorization: apiKey,
-          'Idempotency-Key': idempotencyKey,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ tool: selectedTool, payload: parsedPayload }),
-      })
+      let res: Response
+
+      if (selectedTool === 'document_intelligence') {
+        if (!selectedFile) {
+          setResponse({ kind: 'result', data: { error: 'Select a file first' } })
+          return
+        }
+        const form = new FormData()
+        form.append('file', selectedFile)
+        res = await fetch(`${API}/execute/document-intelligence`, {
+          method: 'POST',
+          headers: { Authorization: apiKey, 'Idempotency-Key': idempotencyKey },
+          body: form,
+        })
+      } else {
+        let parsedPayload: unknown
+        try {
+          parsedPayload = JSON.parse(payloadText)
+        } catch {
+          setResponse({ kind: 'result', data: { error: 'Invalid JSON in payload' } })
+          return
+        }
+        res = await fetch(`${API}/execute`, {
+          method: 'POST',
+          headers: {
+            Authorization: apiKey,
+            'Idempotency-Key': idempotencyKey,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ tool: selectedTool, payload: parsedPayload }),
+        })
+      }
+
       const json: unknown = await res.json()
       const inner = ((json as Record<string, unknown>)?.['data']) as Record<string, unknown> | undefined
       const status = inner?.['status'] as string | undefined
@@ -360,6 +376,7 @@ export function ApiPlayground() {
                 const tool = e.target.value as ToolName
                 setSelectedTool(tool)
                 setPayloadText(JSON.stringify(DEFAULT_PAYLOADS[tool], null, 2))
+                setSelectedFile(null)
               }}
               className="w-full bg-brand-bg border border-brand-border focus:border-[#00C853] text-brand-text rounded-sm px-3 py-2 text-xs font-mono outline-none appearance-none cursor-pointer"
             >
@@ -369,17 +386,42 @@ export function ApiPlayground() {
             </select>
           </div>
 
-          {/* Payload editor */}
-          <div className="space-y-1.5">
-            <label className="text-[10px] font-mono uppercase tracking-widest text-brand-muted">Payload (JSON)</label>
-            <textarea
-              value={payloadText}
-              onChange={(e) => setPayloadText(e.target.value)}
-              rows={6}
-              spellCheck={false}
-              className="w-full bg-brand-bg border border-brand-border focus:border-[#00C853] text-brand-text placeholder:text-brand-muted rounded-sm px-3 py-2 text-xs font-mono outline-none resize-none"
-            />
-          </div>
+          {/* Payload — file picker for document_intelligence, JSON editor for everything else */}
+          {selectedTool === 'document_intelligence' ? (
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-mono uppercase tracking-widest text-brand-muted">File</label>
+              <label className="flex flex-col items-center justify-center w-full h-24 bg-brand-bg border border-dashed border-brand-border rounded-sm cursor-pointer hover:border-[#00C853] transition-colors group">
+                <input
+                  type="file"
+                  accept=".pdf,.docx,.png,.jpg,.jpeg,.webp"
+                  className="hidden"
+                  onChange={(e) => setSelectedFile(e.target.files?.[0] ?? null)}
+                />
+                {selectedFile ? (
+                  <div className="text-center">
+                    <p className="text-xs font-mono text-brand-text">{selectedFile.name}</p>
+                    <p className="text-[10px] font-mono text-brand-muted mt-0.5">{(selectedFile.size / 1024).toFixed(1)} KB — click to change</p>
+                  </div>
+                ) : (
+                  <div className="text-center">
+                    <p className="text-xs font-mono text-brand-muted group-hover:text-brand-text transition-colors">Click to select a file</p>
+                    <p className="text-[10px] font-mono text-brand-muted mt-0.5">PDF, Word, PNG, JPG, WebP — max 10 MB</p>
+                  </div>
+                )}
+              </label>
+            </div>
+          ) : (
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-mono uppercase tracking-widest text-brand-muted">Payload (JSON)</label>
+              <textarea
+                value={payloadText}
+                onChange={(e) => setPayloadText(e.target.value)}
+                rows={6}
+                spellCheck={false}
+                className="w-full bg-brand-bg border border-brand-border focus:border-[#00C853] text-brand-text placeholder:text-brand-muted rounded-sm px-3 py-2 text-xs font-mono outline-none resize-none"
+              />
+            </div>
+          )}
 
           {/* Idempotency Key */}
           <div className="space-y-1.5">
