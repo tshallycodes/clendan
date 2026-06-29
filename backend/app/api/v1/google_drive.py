@@ -7,6 +7,7 @@ from datetime import datetime, UTC
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.responses import RedirectResponse
 from prisma import Prisma
 
 from app.core.config import get_settings
@@ -108,7 +109,8 @@ async def drive_callback(
     except Exception as exc:
         logger.warning("drive_sync_enqueue_failed", extra={"tenant_id": tenant_id, "error": str(exc)})
 
-    return standard_response(data={"status": "syncing", "integration_id": integration.id})
+    frontend_url = settings.frontend_url
+    return RedirectResponse(url=f"{frontend_url}/dashboard/integrations?connected=google_drive")
 
 
 @router.get("/integrations/google-drive/status")

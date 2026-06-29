@@ -7,8 +7,10 @@ from datetime import datetime, UTC
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi.responses import RedirectResponse
 from prisma import Prisma
 
+from app.core.config import get_settings
 from app.core.db import get_db_dep
 from app.core.logging import get_logger
 from app.core.responses import standard_response
@@ -87,7 +89,8 @@ async def dropbox_callback(
     except Exception as exc:
         logger.warning("dropbox_sync_enqueue_failed tenant=%s: %s", tenant_id, type(exc).__name__)
 
-    return standard_response(data={"status": "syncing", "integration_id": integration.id})
+    frontend_url = get_settings().frontend_url
+    return RedirectResponse(url=f"{frontend_url}/dashboard/integrations?connected=dropbox")
 
 
 @router.get("/integrations/dropbox/status")
