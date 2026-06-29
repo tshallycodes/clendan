@@ -209,8 +209,10 @@ function QuickActions({ doc, toolId, onAbort }: QuickActionsProps) {
           style={{ backgroundColor: 'rgba(66,133,244,0.07)', borderColor: 'rgba(66,133,244,0.28)' }}
           className="flex items-center gap-1.5 text-[10px] font-mono px-3 py-1.5 rounded-sm border text-brand-secondary hover:opacity-80 transition-opacity disabled:opacity-40"
         >
-          <svg width="11" height="10" viewBox="0 0 24 20" fill="none" aria-hidden>
-            <path d="M12 2 0 20h8z" fill="#34A853"/><path d="M12 2 8 20h8z" fill="#FBBC04"/><path d="M12 2 16 20h8z" fill="#4285F4"/>
+          <svg width="11" height="10" viewBox="0 0 24 21" fill="none" aria-hidden>
+            <path d="M12 0L0 21L12 14Z" fill="#34A853"/>
+            <path d="M0 21L12 14L24 21Z" fill="#FBBC04"/>
+            <path d="M12 0L12 14L24 21Z" fill="#4285F4"/>
           </svg>
           {actionLoading === 'google-drive' ? '…' : 'Export to Drive'}
         </button>
@@ -437,10 +439,10 @@ const CLOUD_SOURCES: { id: string; label: string }[] = [
 function CloudProviderIcon({ id }: { id: string }) {
   if (id === 'google_drive') {
     return (
-      <svg width="13" height="12" viewBox="0 0 24 20" fill="none" className="shrink-0" aria-hidden>
-        <path d="M12 2 0 20h8z" fill="#34A853"/>
-        <path d="M12 2 8 20h8z" fill="#FBBC04"/>
-        <path d="M12 2 16 20h8z" fill="#4285F4"/>
+      <svg width="13" height="12" viewBox="0 0 24 21" fill="none" className="shrink-0" aria-hidden>
+        <path d="M12 0L0 21L12 14Z" fill="#34A853"/>
+        <path d="M0 21L12 14L24 21Z" fill="#FBBC04"/>
+        <path d="M12 0L12 14L24 21Z" fill="#4285F4"/>
       </svg>
     )
   }
