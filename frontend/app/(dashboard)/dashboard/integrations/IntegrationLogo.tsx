@@ -29,9 +29,18 @@ function DropboxSVG({ size }: { size: number }) {
   )
 }
 
+function GmailSVG({ size }: { size: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-label="Gmail">
+      <path d="M20 4H4C2.9 4 2 4.9 2 6v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4-8 5-8-5V6l8 5 8-5v2z" fill="#EA4335"/>
+    </svg>
+  )
+}
+
 const INLINE_SVG: Partial<Record<string, (size: number) => React.ReactElement>> = {
   'google-drive': (size) => <GoogleDriveSVG size={size} />,
   dropbox:        (size) => <DropboxSVG size={size} />,
+  gmail:          (size) => <GmailSVG size={size} />,
 }
 
 // Brands available in simple-icons — rendered as inline SVG
@@ -45,7 +54,6 @@ const SLUG_TO_SI_KEY: Record<string, string> = {
   wise:           'siWise',
   sap:            'siSap',
   hubspot:        'siHubspot',
-  gmail:          'siGmail',
 }
 
 // Domain for Google favicon API — used for all logo sources
@@ -59,9 +67,6 @@ const SLUG_TO_DOMAIN: Record<string, string> = {
   wise:           'wise.com',
   sap:            'sap.com',
   hubspot:        'hubspot.com',
-  gmail:          'gmail.com',
-  'google-drive': 'drive.google.com',
-  dropbox:        'dropbox.com',
   plaid:          'plaid.com',
   mono:           'mono.co',
   freshbooks:     'freshbooks.com',
