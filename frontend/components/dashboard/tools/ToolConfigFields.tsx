@@ -368,7 +368,7 @@ export function ToolConfigFields({ toolType, config, onChange, dynamicOptions }:
                         onChange(field.key, next)
                       }}
                       className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-sm border text-left transition-colors ${
-                        isChecked ? 'bg-brand-elevated border-brand-border' : 'bg-brand-bg border-brand-border hover:bg-brand-elevated'
+                        isChecked ? 'bg-brand-elevated border-brand-border' : 'bg-brand-bg border-brand-border hover:bg-brand-bg'
                       }`}
                     >
                       <span className={`w-3.5 h-3.5 rounded-sm border flex items-center justify-center shrink-0 transition-colors ${

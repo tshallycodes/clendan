@@ -167,7 +167,7 @@ export function ReconciliationTable({ items, loading, runId, onExport }: Reconci
                   <Fragment key={item.id}>
                     <tr
                       onClick={() => hasReasoning && setExpandedId(isExpanded ? null : item.id)}
-                      className={`border-b border-brand-border transition-colors ${hasReasoning ? 'cursor-pointer' : ''} hover:bg-brand-elevated ${
+                      className={`border-b border-brand-border transition-colors ${hasReasoning ? 'cursor-pointer' : ''} hover:bg-brand-bg ${
                         item.ai_action === 'flag' ? 'border-l border-l-[#ff4d6d]' :
                         item.ai_action === 'review' ? 'border-l border-l-[#00a8cc]' : ''
                       }`}

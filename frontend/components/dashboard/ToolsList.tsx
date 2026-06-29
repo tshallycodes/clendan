@@ -64,7 +64,7 @@ export function ToolsList({ tools }: { tools: DeployedTool[] }) {
             const isActive = tool.status === 'active'
             const autonomy = AUTONOMY_STYLES[tool.autonomy_level] ?? AUTONOMY_STYLES.approve
             return (
-              <motion.div key={tool.id} variants={rowVariants} className="px-5 py-3 flex items-center gap-4 hover:bg-brand-elevated transition-colors">
+              <motion.div key={tool.id} variants={rowVariants} className="px-5 py-3 flex items-center gap-4 hover:bg-brand-bg transition-colors">
                 <span className="relative flex h-2.5 w-2.5 shrink-0">
                   {isActive && (
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#00C853] opacity-60" />

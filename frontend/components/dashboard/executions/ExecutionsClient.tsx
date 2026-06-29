@@ -360,7 +360,7 @@ export function ExecutionsClient({ initialExecutions, total }: Props) {
                   <motion.tr
                     key={e.id}
                     variants={rowVariants}
-                    className="border-b border-brand-border last:border-0 hover:bg-brand-elevated transition-colors cursor-pointer"
+                    className="border-b border-brand-border last:border-0 hover:bg-brand-bg transition-colors cursor-pointer"
                     onClick={() => setSelectedId(e.id === selectedId ? null : e.id)}
                   >
                     <td className="px-5 py-3 text-xs font-mono text-brand-muted whitespace-nowrap">

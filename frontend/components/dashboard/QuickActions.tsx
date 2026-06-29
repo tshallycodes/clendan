@@ -31,7 +31,7 @@ export function QuickActions() {
         <Link
           key={href}
           href={href}
-          className="bg-brand-surface border border-brand-border rounded-sm p-4 flex items-start gap-3 hover:bg-brand-elevated transition-colors group"
+          className="bg-brand-surface border border-brand-border rounded-sm p-4 flex items-start gap-3 hover:bg-brand-bg transition-colors group"
         >
           <Icon className="w-4 h-4 text-brand-muted group-hover:text-brand-text transition-colors mt-0.5 shrink-0" />
           <div>

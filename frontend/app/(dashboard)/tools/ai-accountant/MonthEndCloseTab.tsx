@@ -196,7 +196,7 @@ export function MonthEndCloseTab({ toolId }: Props) {
             type="button"
             onClick={handleRefresh}
             disabled={refreshing || run.status === 'closed'}
-            className="mt-5 text-xs font-mono border border-brand-border text-brand-text hover:bg-brand-elevated rounded-sm px-3 py-1.5 transition-colors disabled:opacity-50"
+            className="mt-5 text-xs font-mono border border-brand-border text-brand-text hover:bg-brand-bg rounded-sm px-3 py-1.5 transition-colors disabled:opacity-50"
           >
             {refreshing ? 'Refreshing…' : 'Refresh'}
           </button>

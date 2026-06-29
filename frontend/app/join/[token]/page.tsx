@@ -22,7 +22,7 @@ const ROLE_LABEL: Record<string, string> = {
 }
 
 const BTN_PRIMARY = 'block w-full text-center bg-[#00C853] text-black hover:bg-[#00a844] active:scale-[0.97] rounded-sm px-4 py-2.5 text-xs font-mono font-medium transition-all disabled:opacity-60 disabled:cursor-not-allowed'
-const BTN_SECONDARY = 'block w-full text-center bg-transparent border border-brand-border text-brand-text hover:bg-brand-elevated rounded-sm px-4 py-2.5 text-xs font-mono font-medium transition-all'
+const BTN_SECONDARY = 'block w-full text-center bg-transparent border border-brand-border text-brand-text hover:bg-brand-bg rounded-sm px-4 py-2.5 text-xs font-mono font-medium transition-all'
 
 export default function JoinPage() {
   const params = useParams()

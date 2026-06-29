@@ -94,7 +94,7 @@ export function TransactionRow({ transaction: t, onCategoryUpdate, categories }:
   const isDebit = t.amount_minor > 0
 
   return (
-    <tr className="border-b border-brand-border last:border-0 hover:bg-brand-elevated transition-colors">
+    <tr className="border-b border-brand-border last:border-0 hover:bg-brand-bg transition-colors">
       {/* Date */}
       <td className="px-5 py-3 text-xs font-mono text-brand-muted whitespace-nowrap">
         {formatDate(t.date)}

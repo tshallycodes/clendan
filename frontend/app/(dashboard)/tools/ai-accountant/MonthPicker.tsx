@@ -88,7 +88,7 @@ export function MonthPicker({ value, onChange }: { value: string; onChange: (v: 
                     className={`text-[11px] font-mono rounded-sm px-2 py-1.5 transition-colors ${
                       isActive
                         ? 'bg-[#00C853] text-black'
-                        : 'text-brand-text hover:bg-brand-elevated'
+                        : 'text-brand-text hover:bg-brand-bg'
                     }`}
                   >
                     {m}

@@ -40,7 +40,7 @@ export function Sidebar() {
           const active = !external && (pathname === href || (href !== '/dashboard' && pathname.startsWith(href)))
           const cls = cn(
             'flex items-center gap-3 px-5 py-2.5 text-xs font-mono transition-colors relative',
-            active ? 'text-brand-text bg-brand-elevated' : 'text-brand-muted hover:text-brand-text hover:bg-brand-elevated/50',
+            active ? 'text-brand-text bg-brand-elevated' : 'text-brand-muted hover:text-brand-text hover:bg-brand-bg/50',
           )
           return external ? (
             <a key={href} href={href} target="_blank" rel="noopener noreferrer" className={cls}>

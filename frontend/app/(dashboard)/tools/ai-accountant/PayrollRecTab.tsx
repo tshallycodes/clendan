@@ -100,7 +100,7 @@ function GhostTable({ rows, symbol }: { rows: GhostRow[]; symbol: string }) {
           </thead>
           <tbody>
             {rows.map(r => (
-              <tr key={r.transaction_id} className="border-b border-brand-border last:border-0 hover:bg-brand-elevated transition-colors">
+              <tr key={r.transaction_id} className="border-b border-brand-border last:border-0 hover:bg-brand-bg transition-colors">
                 <td className="px-4 py-2.5 text-xs font-mono text-[#ff4d6d]">{r.extracted_name || '—'}</td>
                 <td className="px-4 py-2.5 text-xs font-mono text-brand-text max-w-[240px] truncate">{r.description}</td>
                 <td className="px-4 py-2.5 text-xs font-mono text-brand-text">{formatMinor(r.amount_minor, symbol)}</td>
@@ -130,7 +130,7 @@ function MissingTable({ rows, symbol }: { rows: MissingRow[]; symbol: string }) 
           </thead>
           <tbody>
             {rows.map(r => (
-              <tr key={r.name} className="border-b border-brand-border last:border-0 hover:bg-brand-elevated transition-colors">
+              <tr key={r.name} className="border-b border-brand-border last:border-0 hover:bg-brand-bg transition-colors">
                 <td className="px-4 py-2.5 text-xs font-mono text-[#f5a623]">{r.name}</td>
                 <td className="px-4 py-2.5 text-xs font-mono text-brand-text">{formatMinor(r.expected_minor, symbol)}</td>
               </tr>
@@ -158,7 +158,7 @@ function DiscrepancyTable({ rows, symbol }: { rows: DiscrepancyRow[]; symbol: st
           </thead>
           <tbody>
             {rows.map(r => (
-              <tr key={r.transaction_id} className="border-b border-brand-border last:border-0 hover:bg-brand-elevated transition-colors">
+              <tr key={r.transaction_id} className="border-b border-brand-border last:border-0 hover:bg-brand-bg transition-colors">
                 <td className="px-4 py-2.5 text-xs font-mono text-brand-text">{r.name}</td>
                 <td className="px-4 py-2.5 text-xs font-mono text-brand-muted">{formatMinor(r.expected_minor, symbol)}</td>
                 <td className="px-4 py-2.5 text-xs font-mono text-brand-text">{formatMinor(r.actual_minor, symbol)}</td>
@@ -455,7 +455,7 @@ export function PayrollRecTab({ toolId }: { toolId: string | null }) {
         {history.length > 0 && (
           <div className="bg-brand-surface border border-brand-border rounded-sm overflow-hidden">
             {history.map(r => (
-              <div key={r.id} className="flex items-center justify-between px-4 py-3 border-b border-brand-border last:border-0 hover:bg-brand-elevated transition-colors">
+              <div key={r.id} className="flex items-center justify-between px-4 py-3 border-b border-brand-border last:border-0 hover:bg-brand-bg transition-colors">
                 <span className="text-xs font-mono text-brand-text">{r.period}</span>
                 <div className="flex items-center gap-3">
                   <span className="text-[10px] font-mono text-brand-muted">

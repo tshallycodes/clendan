@@ -121,12 +121,12 @@ export function ToolCard({ tool, onConfigure, onStatusChange }: Props) {
           </div>
 
           {canConfigure && (
-            <button type="button" onClick={onConfigure} className="text-xs font-mono border border-brand-border text-brand-text hover:bg-brand-elevated rounded-sm px-2.5 py-1 transition-colors">
+            <button type="button" onClick={onConfigure} className="text-xs font-mono border border-brand-border text-brand-text hover:bg-brand-bg rounded-sm px-2.5 py-1 transition-colors">
               Configure
             </button>
           )}
 
-          <button type="button" onClick={() => setShowRun(true)} disabled={!isActive} className="text-xs font-mono border border-brand-border text-brand-text hover:bg-brand-elevated rounded-sm px-2.5 py-1 transition-colors disabled:opacity-50">Run</button>
+          <button type="button" onClick={() => setShowRun(true)} disabled={!isActive} className="text-xs font-mono border border-brand-border text-brand-text hover:bg-brand-bg rounded-sm px-2.5 py-1 transition-colors disabled:opacity-50">Run</button>
 
           {canConfigure && (
             <button
@@ -136,8 +136,8 @@ export function ToolCard({ tool, onConfigure, onStatusChange }: Props) {
               className={[
                 'text-xs font-mono rounded-sm px-2.5 py-1 transition-colors disabled:opacity-50',
                 isActive
-                  ? 'border border-brand-border text-brand-muted hover:text-brand-text hover:bg-brand-elevated'
-                  : 'border border-brand-border text-brand-green hover:bg-brand-elevated',
+                  ? 'border border-brand-border text-brand-muted hover:text-brand-text hover:bg-brand-bg'
+                  : 'border border-brand-border text-brand-green hover:bg-brand-bg',
               ].join(' ')}
             >
               {toggling ? '…' : isActive ? 'Pause' : 'Resume'}

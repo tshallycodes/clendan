@@ -72,7 +72,7 @@ export default function ApiDocsPage() {
                 ['/v1/parse/*',                         '20 req / min'],
                 ['All other /v1/* endpoints',           '200 req / min'],
               ].map(([endpoint, limit]) => (
-                <tr key={endpoint} className="hover:bg-brand-elevated">
+                <tr key={endpoint} className="hover:bg-brand-bg">
                   <td className="px-3 py-2 text-brand-text">{endpoint}</td>
                   <td className="px-3 py-2 text-brand-secondary">{limit}</td>
                 </tr>
@@ -356,7 +356,7 @@ with open("assessments.csv", "w", newline="") as f:
                   ['policy.partial_match_enabled',      'boolean',   'true', 'Allow partial amount matches'],
                   ['policy.period_lock_respect',        'boolean',   'true', 'Reject edits to locked accounting periods'],
                 ].map(([field, type, def, desc]) => (
-                  <tr key={field} className="hover:bg-brand-elevated">
+                  <tr key={field} className="hover:bg-brand-bg">
                     <td className="px-3 py-2 text-[#00C853]">{field}</td>
                     <td className="px-3 py-2 text-brand-muted">{type}</td>
                     <td className="px-3 py-2 text-brand-muted">{def}</td>
@@ -403,7 +403,7 @@ with open("assessments.csv", "w", newline="") as f:
                   ['employee_id',   'string',  'Employee reference (expense_control, spend_control)'],
                   ['category',      'string',  'Expense category (travel, software, meals, etc.)'],
                 ].map(([field, type, desc]) => (
-                  <tr key={field} className="hover:bg-brand-elevated">
+                  <tr key={field} className="hover:bg-brand-bg">
                     <td className="px-3 py-2 text-[#00C853]">{field}</td>
                     <td className="px-3 py-2 text-brand-muted">{type}</td>
                     <td className="px-3 py-2 text-brand-secondary">{desc}</td>

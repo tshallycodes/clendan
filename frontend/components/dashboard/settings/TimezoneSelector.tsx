@@ -80,7 +80,7 @@ export function TimezoneSelector() {
       <button
         onClick={() => { setOpen(v => !v); setTimeout(() => searchRef.current?.focus(), 50) }}
         disabled={saving}
-        className="w-full flex items-center justify-between gap-3 bg-brand-bg border border-brand-border rounded-sm px-3 py-2 text-xs font-mono text-brand-text hover:bg-brand-elevated transition-colors disabled:opacity-50"
+        className="w-full flex items-center justify-between gap-3 bg-brand-bg border border-brand-border rounded-sm px-3 py-2 text-xs font-mono text-brand-text hover:bg-brand-bg transition-colors disabled:opacity-50"
       >
         <span className="truncate">{selected.label}</span>
         <motion.span animate={{ rotate: open ? 180 : 0 }} transition={{ duration: 0.15 }} className="text-brand-muted shrink-0 text-[10px]">▼</motion.span>

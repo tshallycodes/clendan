@@ -211,7 +211,7 @@ export function ConfigDrawer({ tool, toolType, onClose, onSaved }: Props) {
                               setSelectedAccountIds(next)
                             }
                           }}
-                          className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-brand-elevated transition-colors text-left"
+                          className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-brand-bg transition-colors text-left"
                         >
                           <span className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center shrink-0 transition-colors ${checked ? 'bg-[#00C853] border-[#00C853]' : 'bg-brand-bg border-brand-border'}`}>
                             {checked && (
@@ -258,7 +258,7 @@ export function ConfigDrawer({ tool, toolType, onClose, onSaved }: Props) {
                           setSelectedIntegrationSources(next)
                         }
                       }}
-                      className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-brand-elevated transition-colors text-left"
+                      className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-brand-bg transition-colors text-left"
                     >
                       <span className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center shrink-0 transition-colors ${checked ? 'bg-[#00C853] border-[#00C853]' : 'bg-brand-bg border-brand-border'}`}>
                         {checked && (

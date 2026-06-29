@@ -250,7 +250,7 @@ export function DeveloperPageClient() {
           </p>
         </div>
         <a href={DOCS_URL} target="_blank" rel="noopener noreferrer"
-          className="shrink-0 flex items-center gap-1.5 text-xs font-mono border border-brand-border text-brand-text hover:bg-brand-elevated rounded-sm px-3 py-1.5 transition-colors">
+          className="shrink-0 flex items-center gap-1.5 text-xs font-mono border border-brand-border text-brand-text hover:bg-brand-bg rounded-sm px-3 py-1.5 transition-colors">
           API Reference <ArrowSquareOut className="w-3 h-3" />
         </a>
       </motion.div>

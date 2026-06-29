@@ -55,7 +55,7 @@ function AccordionSection({ title, items, color = 'text-brand-secondary' }: { ti
       <button
         type="button"
         onClick={() => setOpen(v => !v)}
-        className="w-full flex items-center justify-between px-3 py-2 hover:bg-brand-elevated transition-colors text-left"
+        className="w-full flex items-center justify-between px-3 py-2 hover:bg-brand-bg transition-colors text-left"
       >
         <span className="text-[10px] font-mono text-brand-muted uppercase tracking-widest">
           {title} <span className="text-brand-secondary normal-case tracking-normal">({items.length})</span>
@@ -193,7 +193,7 @@ function QuickActions({ doc, toolId, onAbort }: QuickActionsProps) {
     finally { setActionLoading(null) }
   }
 
-  const btn = 'text-[10px] font-mono px-3 py-1.5 rounded-sm border border-brand-border text-brand-text bg-transparent hover:bg-brand-elevated transition-colors disabled:opacity-50'
+  const btn = 'text-[10px] font-mono px-3 py-1.5 rounded-sm border border-brand-border text-brand-text bg-transparent hover:bg-brand-bg transition-colors disabled:opacity-50'
 
   return (
     <div className="pt-3 border-t border-brand-border">
@@ -291,7 +291,7 @@ function DocumentRow({ doc, toolId, onAbort }: DocumentRowProps) {
       <button
         type="button"
         onClick={() => setExpanded(v => !v)}
-        className="w-full flex items-stretch gap-4 p-4 hover:bg-brand-elevated transition-colors text-left"
+        className="w-full flex items-stretch gap-4 p-4 hover:bg-brand-bg transition-colors text-left"
       >
         {/* Thumbnail */}
         <div className="shrink-0 w-[52px] h-[72px] bg-brand-bg border border-brand-border rounded-sm overflow-hidden flex items-center justify-center">
@@ -504,7 +504,7 @@ function CloudImport({ toolId, onImported }: { toolId: string; onImported: () =>
           type="button"
           onClick={() => handleImport(s.id, s.label)}
           disabled={loading !== null}
-          className="flex items-center gap-1.5 text-[10px] font-mono px-2.5 py-1.5 rounded-sm border border-brand-border bg-brand-surface hover:bg-brand-elevated text-brand-secondary transition-colors disabled:opacity-40"
+          className="flex items-center gap-1.5 text-[10px] font-mono px-2.5 py-1.5 rounded-sm border border-brand-border bg-brand-surface hover:bg-brand-bg text-brand-secondary transition-colors disabled:opacity-40"
         >
           <CloudProviderIcon id={s.id} />
           {loading === s.id ? 'Importing…' : s.label}
@@ -757,7 +757,7 @@ export function DocumentsTab({ toolId }: { toolId: string | null }) {
                 type="button"
                 onClick={() => load(offset + limit)}
                 disabled={loading}
-                className="w-full mt-2 text-xs font-mono text-brand-muted border border-brand-border rounded-sm py-2 hover:bg-brand-elevated transition-colors disabled:opacity-50"
+                className="w-full mt-2 text-xs font-mono text-brand-muted border border-brand-border rounded-sm py-2 hover:bg-brand-bg transition-colors disabled:opacity-50"
               >
                 {loading ? 'Loading…' : `Load more (${total - documents.length} remaining)`}
               </button>

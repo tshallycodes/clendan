@@ -130,7 +130,7 @@ function JournalEntryCard({
       <button
         type="button"
         onClick={() => setExpanded((p) => !p)}
-        className="w-full flex items-center justify-between px-4 py-3 hover:bg-brand-elevated transition-colors text-left"
+        className="w-full flex items-center justify-between px-4 py-3 hover:bg-brand-bg transition-colors text-left"
       >
         <div className="flex items-center gap-3 min-w-0">
           <span className="text-[10px] font-mono text-brand-muted uppercase tracking-wider shrink-0">
@@ -344,7 +344,7 @@ export function JournalEntriesTab({ toolId }: Props) {
         <button
           type="button"
           onClick={() => setShowForm((p) => !p)}
-          className="text-xs font-mono border border-brand-border text-brand-text hover:bg-brand-elevated rounded-sm px-3 py-1.5 transition-colors"
+          className="text-xs font-mono border border-brand-border text-brand-text hover:bg-brand-bg rounded-sm px-3 py-1.5 transition-colors"
         >
           {showForm ? 'Cancel' : 'Create Journal Entry'}
         </button>

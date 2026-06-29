@@ -97,7 +97,7 @@ export function PolicySection() {
                   <button
                     type="button"
                     onClick={() => setActiveTool(tool)}
-                    className="text-xs font-mono border border-brand-border text-brand-text hover:bg-brand-elevated rounded-sm px-2.5 py-1 transition-colors"
+                    className="text-xs font-mono border border-brand-border text-brand-text hover:bg-brand-bg rounded-sm px-2.5 py-1 transition-colors"
                   >
                     Configure
                   </button>

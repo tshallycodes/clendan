@@ -286,11 +286,11 @@ export function IntegrationDetailDrawer({ slug, intg, status, lastSyncedAt, onCl
                           setResyncing(true)
                           try { await onResync() } finally { setResyncing(false) }
                         }}
-                        className="flex-1 py-2 text-[11px] font-mono text-brand-text border border-brand-border rounded-sm hover:bg-brand-elevated transition-colors disabled:opacity-60"
+                        className="flex-1 py-2 text-[11px] font-mono text-brand-text border border-brand-border rounded-sm hover:bg-brand-bg transition-colors disabled:opacity-60"
                       >
                         {resyncing ? 'Syncing...' : 'Resync'}
                       </button>
-                      <button onClick={onSyncLog} className="flex-1 py-2 text-[11px] font-mono text-brand-text border border-brand-border rounded-sm hover:bg-brand-elevated transition-colors">Sync Log</button>
+                      <button onClick={onSyncLog} className="flex-1 py-2 text-[11px] font-mono text-brand-text border border-brand-border rounded-sm hover:bg-brand-bg transition-colors">Sync Log</button>
                       {confirmDisconnect ? (
                         <>
                           <button
@@ -303,7 +303,7 @@ export function IntegrationDetailDrawer({ slug, intg, status, lastSyncedAt, onCl
                           >
                             {disconnecting ? 'Disconnecting...' : 'Confirm'}
                           </button>
-                          <button onClick={() => setConfirmDisconnect(false)} className="px-3 py-2 text-[11px] font-mono text-brand-muted border border-brand-border rounded-sm hover:bg-brand-elevated transition-colors">Cancel</button>
+                          <button onClick={() => setConfirmDisconnect(false)} className="px-3 py-2 text-[11px] font-mono text-brand-muted border border-brand-border rounded-sm hover:bg-brand-bg transition-colors">Cancel</button>
                         </>
                       ) : (
                         <button onClick={() => setConfirmDisconnect(true)} className="flex-1 py-2 text-[11px] font-mono text-[#ff4d6d] bg-[rgba(255,77,109,0.05)] border border-[#ff4d6d]/30 rounded-sm hover:bg-[rgba(255,77,109,0.1)] transition-colors">Disconnect</button>

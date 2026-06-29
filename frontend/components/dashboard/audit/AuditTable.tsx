@@ -134,7 +134,7 @@ export function AuditTable({ entries, searchQuery, dateFrom, dateTo }: Props) {
                 <motion.tr
                   variants={{ hidden: { opacity: 0 }, show: { opacity: 1, transition: { duration: 0.2 } } }}
                   onClick={() => setExpandedId(isExpanded ? null : e.id)}
-                  className="hover:bg-brand-elevated transition-colors cursor-pointer"
+                  className="hover:bg-brand-bg transition-colors cursor-pointer"
                 >
                   <td className="px-5 py-3 text-brand-muted whitespace-nowrap">
                     {formatTimestamp(e.created_at)}

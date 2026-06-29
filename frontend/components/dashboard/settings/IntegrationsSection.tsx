@@ -259,7 +259,7 @@ export function IntegrationsSection() {
           <button
             onClick={resyncAll}
             disabled={resyncing}
-            className="text-[10px] font-mono text-brand-secondary border border-brand-border bg-transparent hover:bg-brand-elevated rounded-sm px-2 py-1 transition-colors disabled:opacity-50"
+            className="text-[10px] font-mono text-brand-secondary border border-brand-border bg-transparent hover:bg-brand-bg rounded-sm px-2 py-1 transition-colors disabled:opacity-50"
           >
             {resyncing ? 'Syncing…' : 'Resync All'}
           </button>

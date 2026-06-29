@@ -35,7 +35,7 @@ function ToolCard({ tool, deployed }: { tool: ToolDef; deployed: Tool | undefine
     <motion.div variants={cardVariants}>
       <Link
         href={`/tools/${tool.slug}`}
-        className={`group bg-brand-surface border border-brand-border rounded-sm p-4 flex flex-col gap-3 hover:bg-brand-elevated transition-colors h-full ${
+        className={`group bg-brand-surface border border-brand-border rounded-sm p-4 flex flex-col gap-3 hover:bg-brand-bg transition-colors h-full ${
           isActive ? 'border-l-[3px] border-l-[#00C853]' : isInactive ? 'border-l-[3px] border-l-brand-border' : ''
         }`}
       >
