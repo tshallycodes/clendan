@@ -429,53 +429,190 @@ const CLOUD_SOURCES: { id: string; label: string; logoSlug: string }[] = [
   { id: 'onedrive',     label: 'OneDrive',     logoSlug: 'onedrive' },
 ]
 
+interface CloudFile {
+  id: string
+  name: string
+  size: number | null
+  modified: string | null
+  already_imported: boolean
+}
+
 function CloudImport({ toolId, onImported }: { toolId: string; onImported: () => void }) {
   const { getToken } = useAuth()
   const { toast } = useToast()
-  const [loading, setLoading] = useState<string | null>(null)
+  const [activePicker, setActivePicker] = useState<{ id: string; label: string; logoSlug: string } | null>(null)
+  const [filesLoading, setFilesLoading] = useState(false)
+  const [files, setFiles] = useState<CloudFile[]>([])
+  const [selected, setSelected] = useState<Set<string>>(new Set())
+  const [importing, setImporting] = useState(false)
 
-  async function handleImport(source: string, label: string) {
-    setLoading(source)
+  async function openPicker(source: { id: string; label: string; logoSlug: string }) {
+    if (activePicker?.id === source.id) { setActivePicker(null); return }
+    setActivePicker(source)
+    setFilesLoading(true)
+    setFiles([])
+    setSelected(new Set())
     try {
       const token = await getToken()
       const res = await fetch(
-        `${API}/v1/document-intelligence/${toolId}/import/${source}`,
-        { method: 'POST', headers: { Authorization: `Bearer ${token}` } },
+        `${API}/v1/document-intelligence/${toolId}/browse/${source.id}`,
+        { headers: { Authorization: `Bearer ${token}` } },
+      )
+      const json = await res.json()
+      if (!res.ok) {
+        toast((json as { detail?: string }).detail ?? 'Failed to list files', 'error')
+        setActivePicker(null)
+        return
+      }
+      setFiles((json as { data: { files: CloudFile[] } }).data.files)
+    } catch {
+      toast('Network error', 'error')
+      setActivePicker(null)
+    } finally {
+      setFilesLoading(false)
+    }
+  }
+
+  function toggleFile(id: string, alreadyImported: boolean) {
+    if (alreadyImported) return
+    setSelected(prev => {
+      const next = new Set(prev)
+      next.has(id) ? next.delete(id) : next.add(id)
+      return next
+    })
+  }
+
+  async function importSelected() {
+    if (!activePicker || selected.size === 0) return
+    setImporting(true)
+    try {
+      const token = await getToken()
+      const res = await fetch(
+        `${API}/v1/document-intelligence/${toolId}/import/${activePicker.id}`,
+        {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ file_ids: [...selected] }),
+        },
       )
       const json = await res.json()
       if (!res.ok) {
         toast((json as { detail?: string }).detail ?? 'Import failed', 'error')
         return
       }
-      const { queued, skipped } = (json as { data: { queued: number; skipped: number } }).data
-      if (queued > 0) {
-        toast(`Importing ${queued} file${queued !== 1 ? 's' : ''} from ${label}…`, 'success')
-        onImported()
-      } else {
-        toast(`No new files from ${label} — ${skipped} already imported`, 'success')
-      }
+      const { queued } = (json as { data: { queued: number; skipped: number } }).data
+      toast(queued > 0 ? `Importing ${queued} file${queued !== 1 ? 's' : ''}…` : 'Already imported', 'success')
+      if (queued > 0) onImported()
+      setActivePicker(null)
     } catch {
       toast('Network error', 'error')
     } finally {
-      setLoading(null)
+      setImporting(false)
     }
   }
 
   return (
-    <div className="flex items-center gap-2 flex-wrap">
-      <span className="text-[10px] font-mono text-brand-muted">Import from:</span>
-      {CLOUD_SOURCES.map(s => (
-        <button
-          key={s.id}
-          type="button"
-          onClick={() => handleImport(s.id, s.label)}
-          disabled={loading !== null}
-          className="flex items-center gap-1.5 text-[10px] font-mono px-2.5 py-1.5 rounded-sm border border-brand-border bg-brand-surface hover:bg-brand-bg text-brand-secondary transition-colors disabled:opacity-40"
-        >
-          <IntegrationLogo slug={s.logoSlug} size={13} />
-          {loading === s.id ? 'Importing…' : s.label}
-        </button>
-      ))}
+    <div className="space-y-2">
+      <div className="flex items-center gap-2 flex-wrap">
+        <span className="text-[10px] font-mono text-brand-muted">Import from:</span>
+        {CLOUD_SOURCES.map(s => (
+          <button
+            key={s.id}
+            type="button"
+            onClick={() => openPicker(s)}
+            className={`flex items-center gap-1.5 text-[10px] font-mono px-2.5 py-1.5 rounded-sm border transition-colors ${
+              activePicker?.id === s.id
+                ? 'border-brand-secondary bg-brand-elevated text-brand-text'
+                : 'border-brand-border bg-brand-surface hover:bg-brand-bg text-brand-secondary'
+            }`}
+          >
+            <IntegrationLogo slug={s.logoSlug} size={13} />
+            {activePicker?.id === s.id && filesLoading ? 'Loading…' : s.label}
+          </button>
+        ))}
+      </div>
+
+      {activePicker && !filesLoading && (
+        <div className="bg-brand-surface border border-brand-border rounded-sm overflow-hidden">
+          <div className="flex items-center justify-between px-3 py-2 border-b border-brand-border">
+            <div className="flex items-center gap-2">
+              <IntegrationLogo slug={activePicker.logoSlug} size={13} />
+              <span className="text-[10px] font-mono text-brand-muted uppercase tracking-widest">
+                {activePicker.label} · {files.length} file{files.length !== 1 ? 's' : ''}
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setActivePicker(null)}
+              className="text-[10px] font-mono text-brand-muted hover:text-brand-text transition-colors"
+            >
+              ✕
+            </button>
+          </div>
+
+          {files.length === 0 ? (
+            <div className="px-3 py-6 text-center">
+              <p className="text-[11px] font-mono text-brand-muted">No PDF files found</p>
+            </div>
+          ) : (
+            <div className="divide-y divide-brand-border-subtle max-h-52 overflow-y-auto">
+              {files.map(f => (
+                <button
+                  key={f.id}
+                  type="button"
+                  onClick={() => toggleFile(f.id, f.already_imported)}
+                  disabled={f.already_imported}
+                  className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-brand-elevated transition-colors text-left disabled:opacity-50"
+                >
+                  <span className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center shrink-0 transition-colors ${
+                    f.already_imported
+                      ? 'bg-brand-border border-brand-border'
+                      : selected.has(f.id)
+                      ? 'bg-[#00C853] border-[#00C853]'
+                      : 'bg-brand-bg border-brand-border'
+                  }`}>
+                    {(selected.has(f.id) || f.already_imported) && (
+                      <svg width="8" height="6" viewBox="0 0 8 6" fill="none">
+                        <path d="M1 3L3 5L7 1" stroke={f.already_imported ? '#5d6b7a' : 'black'} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                    )}
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[11px] font-mono text-brand-text truncate">{f.name}</p>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      {f.size != null && (
+                        <span className="text-[10px] font-mono text-brand-muted">
+                          {f.size < 1024 * 1024
+                            ? `${(f.size / 1024).toFixed(0)} KB`
+                            : `${(f.size / (1024 * 1024)).toFixed(1)} MB`}
+                        </span>
+                      )}
+                      {f.already_imported && (
+                        <span className="text-[10px] font-mono text-brand-muted">Already imported</span>
+                      )}
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+
+          <div className="px-3 py-2 border-t border-brand-border">
+            <button
+              type="button"
+              onClick={importSelected}
+              disabled={selected.size === 0 || importing}
+              className="w-full bg-[#00C853] text-black text-[10px] font-mono py-1.5 rounded-sm hover:bg-[#00a844] active:scale-[0.97] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              {importing
+                ? 'Importing…'
+                : selected.size === 0
+                ? 'Select files to import'
+                : `Import ${selected.size} file${selected.size !== 1 ? 's' : ''}`}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

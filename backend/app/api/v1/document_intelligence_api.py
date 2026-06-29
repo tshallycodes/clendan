@@ -13,6 +13,7 @@ import fitz
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, status
 from fastapi.responses import StreamingResponse
 from prisma import Prisma
+from pydantic import BaseModel
 
 from app.core.db import get_db_dep
 from app.core.logging import get_logger
@@ -27,6 +28,10 @@ from app.tools.document_intelligence import (
 
 logger = get_logger(__name__)
 router = APIRouter(prefix="/document-intelligence", tags=["document-intelligence"])
+
+
+class ImportRequest(BaseModel):
+    file_ids: list[str] | None = None
 
 _DECISION_LABELS = {
     "auto_approved": "Auto-approved",
@@ -410,10 +415,86 @@ async def export_to_dropbox(
     return standard_response(data={"path": result.get("path_display", ""), "filename": filename, "destination": "dropbox"})
 
 
+@router.get("/{tool_id}/browse/{source}")
+async def browse_integration_files(
+    tool_id: str,
+    source: str,
+    current_user: RequireOrgAuth,
+    db: Annotated[Prisma, Depends(get_db_dep)],
+) -> dict:
+    """List PDF files available in a connected integration without importing them."""
+    from app.integrations.encryption import decrypt_credentials
+
+    SUPPORTED = {"google_drive", "dropbox", "onedrive"}
+    if source not in SUPPORTED:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Unsupported source")
+
+    tenant_id = current_user.tenant_id
+
+    tool = await db.tool.find_unique(where={"id": tool_id})
+    if not tool or tool.tenant_id != tenant_id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Tool not found")
+
+    integration = await db.integration.find_first(
+        where={"tenant_id": tenant_id, "type": source, "status": "connected"}
+    )
+    if not integration:
+        label = source.replace("_", " ").title()
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"No connected {label} integration. Connect it in Integrations first.",
+        )
+
+    try:
+        creds = decrypt_credentials(integration.encrypted_credentials, tenant_id)
+    except ValueError:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Credential decryption failed")
+
+    access_token = creds.get("access_token", "")
+
+    try:
+        if source == "google_drive":
+            from app.integrations.google import client as _google
+            raw_files = await _google.list_pdf_files(access_token)
+        elif source == "dropbox":
+            from app.integrations.dropbox import client as _dropbox
+            raw_files = await _dropbox.list_pdf_files(access_token)
+        else:
+            from app.integrations.onedrive import client as _onedrive
+            raw_files = await _onedrive.list_pdf_files(access_token)
+    except Exception as exc:
+        logger.error("browse_list_failed source=%s error=%s", source, str(exc))
+        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=f"Failed to list files from {source}")
+
+    PREFIX = {"google_drive": "drive", "dropbox": "dropbox", "onedrive": "onedrive"}
+    prefix = PREFIX[source]
+
+    files = []
+    for f in raw_files:
+        file_id = f.get("id", "")
+        if not file_id:
+            continue
+        idempotency_key = f"{prefix}:document:{file_id}"
+        existing = await db.execution.find_first(
+            where={"input_ref": idempotency_key, "tenant_id": tenant_id}
+        )
+        raw_size = f.get("size")
+        files.append({
+            "id": file_id,
+            "name": f.get("name", ""),
+            "size": int(raw_size) if raw_size is not None else None,
+            "modified": f.get("modifiedTime"),  # populated by Google Drive; None for others
+            "already_imported": existing is not None,
+        })
+
+    return standard_response(data={"files": files, "source": source})
+
+
 @router.post("/{tool_id}/import/{source}")
 async def import_from_integration(
     tool_id: str,
     source: str,
+    body: ImportRequest,
     current_user: RequireOrgAuth,
     db: Annotated[Prisma, Depends(get_db_dep)],
 ) -> dict:
@@ -475,9 +556,14 @@ async def import_from_integration(
     queued = 0
     skipped = 0
 
+    allowed_ids = set(body.file_ids) if body.file_ids is not None else None
+
     for f in files:
         file_id = f.get("id", "")
         if not file_id:
+            continue
+
+        if allowed_ids is not None and file_id not in allowed_ids:
             continue
 
         PREFIX = {"google_drive": "drive", "dropbox": "dropbox", "onedrive": "onedrive"}
