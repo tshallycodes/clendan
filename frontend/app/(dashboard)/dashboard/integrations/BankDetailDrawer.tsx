@@ -87,7 +87,7 @@ function ConnectionSection({
     : 'Not synced'
 
   return (
-    <div className="bg-brand-elevated border border-brand-border rounded-sm overflow-hidden" style={{ borderLeft: '3px solid #00C853' }}>
+    <div className="bg-brand-bg border border-brand-border rounded-sm overflow-hidden" style={{ borderLeft: '3px solid #00C853' }}>
       {/* Header row */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-brand-border">
         <div>
