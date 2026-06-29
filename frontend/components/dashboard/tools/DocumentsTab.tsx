@@ -223,6 +223,15 @@ function QuickActions({ doc, toolId, onAbort }: QuickActionsProps) {
         </button>
         <button
           type="button"
+          onClick={() => handleExport('onedrive')}
+          disabled={actionLoading !== null}
+          className="flex items-center gap-1.5 text-[10px] font-mono px-2.5 py-1.5 rounded-sm border border-brand-border bg-brand-surface hover:bg-brand-bg text-brand-secondary transition-colors disabled:opacity-40"
+        >
+          <IntegrationLogo slug="onedrive" size={13} />
+          {actionLoading === 'onedrive' ? '…' : 'Export to OneDrive'}
+        </button>
+        <button
+          type="button"
           onClick={handleDelete}
           disabled={actionLoading !== null}
           className="text-[10px] font-mono px-3 py-1.5 rounded-sm border border-[#ff4d6d] text-[#ff4d6d] bg-[rgba(255,77,109,0.1)] hover:bg-[rgba(255,77,109,0.16)] transition-colors disabled:opacity-50"

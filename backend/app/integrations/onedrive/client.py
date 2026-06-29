@@ -17,7 +17,7 @@ from app.integrations.onedrive.circuit_breaker import _circuit
 logger = get_logger(__name__)
 
 GRAPH_API_BASE = "https://graph.microsoft.com/v1.0"
-ONEDRIVE_SCOPES = "Files.Read offline_access"
+ONEDRIVE_SCOPES = "Files.ReadWrite offline_access"
 TOKEN_TTL_SECONDS = 3600
 SUBSCRIPTION_EXPIRY_MINUTES = 4230  # Maximum allowed by Microsoft Graph
 
@@ -161,6 +161,25 @@ async def download_file(access_token: str, file_id: str) -> bytes:
             )
             response.raise_for_status()
             return response.content
+
+    return await _circuit.call(_retry, _call)
+
+
+async def upload_file(access_token: str, file_bytes: bytes, filename: str) -> dict:
+    """Uploads a file to /Clendan/ in OneDrive using simple PUT (files under 4 MB). Returns item dict."""
+    async def _call():
+        async with httpx.AsyncClient() as client:
+            response = await client.put(
+                f"{GRAPH_API_BASE}/me/drive/root:/Clendan/{filename}:/content",
+                headers={
+                    "Authorization": f"Bearer {access_token}",
+                    "Content-Type": "application/octet-stream",
+                },
+                content=file_bytes,
+                timeout=60.0,
+            )
+            response.raise_for_status()
+            return response.json()
 
     return await _circuit.call(_retry, _call)
 

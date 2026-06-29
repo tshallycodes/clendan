@@ -415,6 +415,55 @@ async def export_to_dropbox(
     return standard_response(data={"path": result.get("path_display", ""), "filename": filename, "destination": "dropbox"})
 
 
+@router.post("/{tool_id}/documents/{document_id}/export/onedrive")
+async def export_to_onedrive(
+    tool_id: str,
+    document_id: str,
+    current_user: RequireOrgAuth,
+    db: Annotated[Prisma, Depends(get_db_dep)],
+) -> dict:
+    """Generate analysis PDF and upload it to the tenant's connected OneDrive under /Clendan/."""
+    from app.integrations.encryption import decrypt_credentials
+    from app.integrations.onedrive import client as _onedrive
+
+    tenant_id = current_user.tenant_id
+
+    doc = await db.document.find_unique(where={"id": document_id})
+    if not doc or doc.tenant_id != tenant_id or doc.tool_id != tool_id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
+    if doc.status != "completed" or not doc.extracted_json:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Analysis not yet complete")
+
+    integration = await db.integration.find_first(
+        where={"tenant_id": tenant_id, "type": "onedrive", "status": "connected"}
+    )
+    if not integration:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No connected OneDrive integration")
+
+    try:
+        creds = decrypt_credentials(integration.encrypted_credentials, tenant_id)
+    except ValueError:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Credential decryption failed")
+
+    try:
+        pdf_bytes = _generate_analysis_pdf(doc)
+    except Exception as exc:
+        logger.error("pdf_generation_failed", extra={"document_id": document_id, "error": str(exc)})
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="PDF generation failed")
+
+    base = (doc.filename or document_id).rsplit(".", 1)[0]
+    filename = f"{base}_analysis.pdf"
+
+    try:
+        item = await _onedrive.upload_file(creds.get("access_token", ""), pdf_bytes, filename)
+    except Exception as exc:
+        logger.error("onedrive_export_failed", extra={"document_id": document_id, "error": str(exc)})
+        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail="Upload to OneDrive failed")
+
+    logger.info("onedrive_export_ok", extra={"document_id": document_id, "item_id": item.get("id", "")})
+    return standard_response(data={"item_id": item.get("id", ""), "filename": filename, "destination": "onedrive"})
+
+
 @router.get("/{tool_id}/browse/{source}")
 async def browse_integration_files(
     tool_id: str,
