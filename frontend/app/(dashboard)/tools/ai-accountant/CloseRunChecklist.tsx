@@ -2,6 +2,14 @@
 
 const MANUAL_TASKS = new Set(['payroll_reconciled', 'sign_offs_collected'])
 
+const TASK_DESCRIPTIONS: Record<string, string> = {
+  all_transactions_categorised: 'Checked automatically — passes when no pending or uncategorised transactions remain for this period.',
+  reconciliation_complete:      'Checked automatically — passes when a completed reconciliation run exists for this period.',
+  approvals_resolved:           'Checked automatically — passes when there are no pending approvals awaiting a decision.',
+  payroll_reconciled:           'Confirm manually once payroll for this period has been processed and verified against your records.',
+  sign_offs_collected:          'Confirm manually once the appropriate team members have reviewed and approved the period\'s financials.',
+}
+
 interface CloseTask {
   task_key: string
   label: string
@@ -47,6 +55,9 @@ export function CloseRunChecklist({ tasks, onCompleteTask, runClosed }: Props) {
                 <span className={`text-sm font-mono shrink-0 ${cls}`}>{icon}</span>
                 <div className="min-w-0">
                   <p className="text-xs font-mono text-brand-text truncate">{task.label}</p>
+                  <p className="text-[10px] font-mono text-brand-muted mt-0.5 leading-relaxed">
+                    {TASK_DESCRIPTIONS[task.task_key]}
+                  </p>
                   {task.completed_by && (
                     <p className="text-[10px] font-mono text-brand-muted mt-0.5">
                       by {task.completed_by}

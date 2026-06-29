@@ -142,6 +142,16 @@ export function MonthEndCloseTab({ toolId }: Props) {
 
   return (
     <div className="space-y-4">
+      {/* Explainer */}
+      <div className="bg-brand-surface border border-brand-border rounded-sm px-4 py-3">
+        <p className="text-xs font-mono text-brand-secondary leading-relaxed">
+          Month-end close is a structured checklist for closing your books on a given period.
+          Clendan automatically checks whether your transactions are categorised, reconciliation
+          is complete, and all approvals are resolved. Payroll and sign-offs require manual
+          confirmation from your team before the period can be marked closed.
+        </p>
+      </div>
+
       {/* Period picker + action */}
       <div className="flex items-center gap-3 flex-wrap">
         <div className="flex flex-col gap-1">
@@ -185,9 +195,11 @@ export function MonthEndCloseTab({ toolId }: Props) {
 
       {/* No run for period */}
       {!loading && !run && !error && (
-        <div className="bg-brand-surface border border-brand-border rounded-sm p-6 text-center">
-          <p className="text-xs font-mono text-brand-muted">
-            No close run for {period}. Open one to begin the month-end checklist.
+        <div className="bg-brand-surface border border-brand-border rounded-sm p-6 text-center space-y-1">
+          <p className="text-xs font-mono text-brand-text">No close run for {period}</p>
+          <p className="text-[11px] font-mono text-brand-muted">
+            Opening a close run starts the checklist for this period. Clendan will automatically
+            evaluate data readiness — you only need to manually confirm payroll and sign-offs.
           </p>
         </div>
       )}
@@ -252,6 +264,10 @@ function CloseRunSignOffs({ signOffs, onSignOff, runClosed }: SignOffsProps) {
           </button>
         )}
       </div>
+      <p className="px-4 py-2 text-[10px] font-mono text-brand-muted border-b border-brand-border">
+        A sign-off is your confirmation that you have reviewed this period&apos;s financials and
+        they are accurate. Each team member who needs to approve should click &quot;Sign Off&quot; individually.
+      </p>
       {signOffs.length === 0 ? (
         <p className="px-4 py-4 text-xs font-mono text-brand-muted">No sign-offs yet.</p>
       ) : (
