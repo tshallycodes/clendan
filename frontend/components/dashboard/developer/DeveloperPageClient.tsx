@@ -81,6 +81,7 @@ const ENDPOINTS = [
   { method: 'POST', path: '/execute',                        desc: 'Trigger any deployed tool' },
   { method: 'GET',  path: '/execute/{execution_id}',         desc: 'Poll execution result' },
   { method: 'GET',  path: '/execute/tools',                  desc: 'List deployed tools' },
+  { method: 'GET',  path: '/execute/stats',                  desc: 'Aggregate execution counts' },
   { method: 'GET',  path: '/execute/approvals',              desc: 'List pending approvals' },
   { method: 'POST', path: '/execute/approvals/{id}/approve', desc: 'Approve an agent action' },
   { method: 'POST', path: '/execute/approvals/{id}/reject',  desc: 'Reject an agent action' },

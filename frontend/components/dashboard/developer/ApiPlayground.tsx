@@ -1,7 +1,7 @@
 ﻿'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { Eye, EyeSlash, ArrowCounterClockwise, Play } from '@phosphor-icons/react'
+import { Eye, EyeSlash, ArrowCounterClockwise, Play, CaretRight } from '@phosphor-icons/react'
 import { motion } from 'framer-motion'
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
@@ -35,6 +35,7 @@ interface EndpointDef {
   id: string
   method: HttpMethod
   path: string
+  shortDesc: string
   description: string
   defaultBody: string | null
   defaultPathParam: string | null
@@ -59,16 +60,28 @@ const DEFAULT_PAYLOADS: Record<ToolName, object> = {
   spend_control:         { employee_id: 'emp_001', amount_minor: 35000, currency: 'GBP', category: 'software', vendor: 'Figma' },
 }
 
-const RELATED_ENDPOINTS: EndpointDef[] = [
-  {
-    id: 'get-transactions',
-    method: 'GET',
-    path: '/execute/transactions?status=pending&limit=50',
-    description: 'List bank transactions for your tenant. Filtered by status (pending, categorised, matched) and paginated.',
-    defaultBody: null,
-    defaultPathParam: null,
-  },
-]
+const TRANSACTIONS_ENDPOINT: EndpointDef = {
+  id: 'get-transactions',
+  method: 'GET',
+  path: '/execute/transactions?status=pending&limit=50',
+  shortDesc: 'List bank transactions',
+  description: 'List bank transactions for your tenant. Filtered by status (pending, categorised, matched) and paginated.',
+  defaultBody: null,
+  defaultPathParam: null,
+}
+
+// Endpoints relevant to a given tool — only shown when the selected tool has any.
+const RELATED_ENDPOINTS: Partial<Record<ToolName, EndpointDef[]>> = {
+  collections: [TRANSACTIONS_ENDPOINT],
+  reconciliation: [TRANSACTIONS_ENDPOINT],
+  treasury: [TRANSACTIONS_ENDPOINT],
+}
+
+// Explains non-obvious payload shapes — e.g. tools that operate on already-connected
+// integration data rather than the literal fields suggesting a raw upload.
+const PAYLOAD_HINTS: Partial<Record<ToolName, string>> = {
+  document_intelligence: 'Analyzes a file already accessible via a connected integration — this does not upload a new file. integration_id is the ID of your connected Gmail/Drive/Dropbox/OneDrive integration (see GET /execute/tools). message_id and attachment_id identify the specific email and attachment to fetch and analyze.',
+}
 
 const METHOD_COLORS: Record<HttpMethod, string> = {
   GET:    'text-[#00C853]',
@@ -148,7 +161,8 @@ function EndpointRow({ endpoint, apiKey, idempotencyKey }: EndpointRowProps) {
           {endpoint.method}
         </span>
         <span className="flex-1 min-w-0 text-xs font-mono text-brand-text truncate">{endpoint.path}</span>
-        <span className="shrink-0 text-[10px] font-mono text-brand-muted hidden sm:block">{endpoint.description.split('â€”')[0].trim()}</span>
+        <span className="shrink-0 text-[10px] font-mono text-brand-muted hidden sm:block">{endpoint.shortDesc}</span>
+        <CaretRight className={`w-3.5 h-3.5 text-brand-muted shrink-0 transition-transform duration-150 ${expanded ? 'rotate-90' : ''}`} />
       </button>
 
       {/* Expanded body */}
@@ -363,6 +377,9 @@ export function ApiPlayground() {
           {/* Payload editor */}
           <div className="space-y-1.5">
             <label className="text-[10px] font-mono uppercase tracking-widest text-brand-muted">Payload (JSON)</label>
+            {PAYLOAD_HINTS[selectedTool] && (
+              <p className="text-[10px] font-mono text-brand-muted leading-relaxed">{PAYLOAD_HINTS[selectedTool]}</p>
+            )}
             <textarea
               value={payloadText}
               onChange={(e) => setPayloadText(e.target.value)}
@@ -439,17 +456,19 @@ export function ApiPlayground() {
       </div>
 
       {/* Related endpoints */}
-      <div className="space-y-2">
-        <p className="text-[10px] font-mono uppercase tracking-widest text-brand-muted">Related endpoints</p>
-        {RELATED_ENDPOINTS.map((ep) => (
-          <EndpointRow
-            key={ep.id}
-            endpoint={ep}
-            apiKey={apiKey}
-            idempotencyKey={idempotencyKey}
-          />
-        ))}
-      </div>
+      {(RELATED_ENDPOINTS[selectedTool] ?? []).length > 0 && (
+        <div className="space-y-2">
+          <p className="text-[10px] font-mono uppercase tracking-widest text-brand-muted">Related endpoints</p>
+          {RELATED_ENDPOINTS[selectedTool]!.map((ep) => (
+            <EndpointRow
+              key={ep.id}
+              endpoint={ep}
+              apiKey={apiKey}
+              idempotencyKey={idempotencyKey}
+            />
+          ))}
+        </div>
+      )}
     </motion.div>
   )
 }
