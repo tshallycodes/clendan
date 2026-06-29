@@ -1,9 +1,0 @@
-- generic [active] [ref=e1]:
-  - generic [ref=e2]:
-    - generic [ref=e3]: This platform is under active development — not intended for public use.
-    - button "Dismiss warning" [ref=e4]: ✕
-  - link "Clendan home" [ref=e7] [cursor=pointer]:
-    - /url: /
-    - generic [ref=e8]:
-      - img [ref=e9]
-      - generic [ref=e11]: clendan.

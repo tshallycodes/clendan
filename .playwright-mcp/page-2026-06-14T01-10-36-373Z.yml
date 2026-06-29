@@ -1,6 +1,0 @@
-- generic [active] [ref=e1]:
-  - generic [ref=e4]:
-    - generic [ref=e5]: C
-    - generic [ref=e6]: Clendan
-  - button "Open Next.js Dev Tools" [ref=e12] [cursor=pointer]:
-    - img [ref=e13]

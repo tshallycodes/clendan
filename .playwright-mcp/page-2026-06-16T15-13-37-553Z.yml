@@ -1,6 +1,0 @@
-- generic [active] [ref=e1]:
-  - generic [ref=e2]: This platform is under active development — not intended for public use.
-  - generic [ref=e5]:
-    - generic [ref=e6]: C
-    - generic [ref=e7]: Clendan
-  - alert [ref=e8]
