@@ -140,7 +140,7 @@ function ConnectionSection({
             setResyncing(true)
             try { await onResync(conn.integration_id, provider) } finally { setResyncing(false) }
           }}
-          className="flex-1 py-1.5 text-[10px] font-mono text-brand-text bg-transparent border border-brand-border rounded-sm hover:bg-brand-elevated transition-colors disabled:opacity-60"
+          className="flex-1 py-1.5 text-[10px] font-mono text-brand-text bg-transparent border border-brand-border rounded-sm hover:bg-brand-bg transition-colors disabled:opacity-60"
         >
           {resyncing ? 'Syncing...' : 'Resync'}
         </button>
@@ -149,7 +149,7 @@ function ConnectionSection({
             `${provider}/connections/${conn.integration_id}`,
             conn.institution_name || 'Connection',
           )}
-          className="flex-1 py-1.5 text-[10px] font-mono text-brand-text bg-transparent border border-brand-border rounded-sm hover:bg-brand-elevated transition-colors"
+          className="flex-1 py-1.5 text-[10px] font-mono text-brand-text bg-transparent border border-brand-border rounded-sm hover:bg-brand-bg transition-colors"
         >
           Sync Log
         </button>
@@ -170,7 +170,7 @@ function ConnectionSection({
             </button>
             <button
               onClick={() => setConfirmDisconnect(false)}
-              className="px-3 py-1.5 text-[10px] font-mono text-brand-muted bg-transparent border border-brand-border rounded-sm hover:bg-brand-elevated transition-colors"
+              className="px-3 py-1.5 text-[10px] font-mono text-brand-muted bg-transparent border border-brand-border rounded-sm hover:bg-brand-bg transition-colors"
             >
               Cancel
             </button>
