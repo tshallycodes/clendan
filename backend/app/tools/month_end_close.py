@@ -131,7 +131,7 @@ class MonthEndCloseTool:
             where={
                 "tenant_id": tenant_id,
                 "date": {"gte": period_start, "lt": period_end},
-                "status": "pending",
+                "status": {"in": ["pending", "unprocessed"]},
             }
         )
         task_updates["all_transactions_categorised"] = (
