@@ -20,6 +20,7 @@ async def enqueue_orchestrator_event(
     payload: dict,
     idempotency_key: str,
     db: Prisma,
+    triggered_by_email: str | None = None,
 ) -> str | None:
     """
     Finds the active tool, creates an Execution record (status: queued),
@@ -53,6 +54,7 @@ async def enqueue_orchestrator_event(
             "decision": "pending",
             "confidence": 0.0,
             "status": "queued",
+            **({"triggered_by_email": triggered_by_email} if triggered_by_email else {}),
         })
     except UniqueViolationError:
         # Another worker instance already created this execution — this worker loses the race.

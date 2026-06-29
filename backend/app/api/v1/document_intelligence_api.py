@@ -657,6 +657,7 @@ async def import_from_integration(
                 },
                 idempotency_key=idempotency_key,
                 db=db,
+                triggered_by_email=current_user.email,
             )
             queued += 1
         except Exception as exc:
