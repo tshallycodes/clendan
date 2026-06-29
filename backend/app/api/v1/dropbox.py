@@ -31,7 +31,7 @@ async def dropbox_connect(
     """Returns Dropbox OAuth authorization URL and state token."""
     state = f"{current_user.tenant_id}:{secrets.token_urlsafe(16)}"
     auth_url = dropbox.build_auth_url(state=state)
-    return standard_response(data={"url": auth_url, "state": state})
+    return standard_response(data={"auth_url": auth_url, "state": state})
 
 
 @router.get("/integrations/dropbox/callback")
