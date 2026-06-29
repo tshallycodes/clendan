@@ -439,9 +439,8 @@ async def import_from_integration(
 
     from app.integrations.encryption import decrypt_credentials
 
-    PROVIDER_MAP = {"google_drive": "google_drive", "dropbox": "dropbox", "onedrive": "onedrive"}
     integration = await db.integration.find_first(
-        where={"tenant_id": tenant_id, "provider": PROVIDER_MAP[source], "status": "connected"}
+        where={"tenant_id": tenant_id, "type": source, "status": "connected"}
     )
     if not integration:
         label = source.replace("_", " ").title()
