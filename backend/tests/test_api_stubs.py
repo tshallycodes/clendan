@@ -1,4 +1,4 @@
-"""
+﻿"""
 API stub endpoint tests.
 Verifies correct response shape for the three stub routes:
   POST /v1/reconcile
@@ -38,7 +38,7 @@ class TestReconcileStub:
     def test_returns_200_with_correct_shape(self):
         client = _make_client()
         response = client.post(
-            "/v1/reconcile",
+            "/reconcile",
             json={"source_dataset": [], "target_dataset": []},
         )
         assert response.status_code == 200
@@ -55,7 +55,7 @@ class TestReconcileStub:
     def test_matched_is_list(self):
         client = _make_client()
         response = client.post(
-            "/v1/reconcile",
+            "/reconcile",
             json={"source_dataset": [], "target_dataset": []},
         )
         data = response.json()["data"]
@@ -66,7 +66,7 @@ class TestReconcileStub:
     def test_confidence_is_float(self):
         client = _make_client()
         response = client.post(
-            "/v1/reconcile",
+            "/reconcile",
             json={"source_dataset": [], "target_dataset": []},
         )
         data = response.json()["data"]
@@ -76,7 +76,7 @@ class TestReconcileStub:
         app.dependency_overrides.clear()
         bare_client = TestClient(app)
         response = bare_client.post(
-            "/v1/reconcile",
+            "/reconcile",
             json={"source_dataset": [], "target_dataset": []},
         )
         assert response.status_code in (401, 403)
@@ -88,7 +88,7 @@ class TestFraudScoreStub:
     def test_returns_200_with_correct_shape(self):
         client = _make_client()
         response = client.post(
-            "/v1/fraud/score",
+            "/fraud/score",
             json={
                 "transaction_id": "txn_001",
                 "amount_minor": 5000,
@@ -110,7 +110,7 @@ class TestFraudScoreStub:
     def test_signals_is_list(self):
         client = _make_client()
         response = client.post(
-            "/v1/fraud/score",
+            "/fraud/score",
             json={
                 "transaction_id": "txn_002",
                 "amount_minor": 1000,
@@ -124,7 +124,7 @@ class TestFraudScoreStub:
     def test_risk_score_is_float(self):
         client = _make_client()
         response = client.post(
-            "/v1/fraud/score",
+            "/fraud/score",
             json={
                 "transaction_id": "txn_003",
                 "amount_minor": 100,
@@ -139,7 +139,7 @@ class TestFraudScoreStub:
         app.dependency_overrides.clear()
         bare_client = TestClient(app)
         response = bare_client.post(
-            "/v1/fraud/score",
+            "/fraud/score",
             json={
                 "transaction_id": "txn_noauth",
                 "amount_minor": 100,
@@ -153,7 +153,7 @@ class TestFraudScoreStub:
     def test_accepts_optional_metadata(self):
         client = _make_client()
         response = client.post(
-            "/v1/fraud/score",
+            "/fraud/score",
             json={
                 "transaction_id": "txn_004",
                 "amount_minor": 250,
@@ -170,7 +170,7 @@ class TestParseContractStub:
     def test_returns_200_with_correct_shape(self):
         client = _make_client()
         response = client.post(
-            "/v1/parse/contract",
+            "/parse/contract",
             json={"file_bytes_b64": "dGVzdA==", "content_type": "application/pdf"},
         )
         assert response.status_code == 200
@@ -185,7 +185,7 @@ class TestParseContractStub:
     def test_confidence_is_float(self):
         client = _make_client()
         response = client.post(
-            "/v1/parse/contract",
+            "/parse/contract",
             json={"file_bytes_b64": "dGVzdA=="},
         )
         data = response.json()["data"]
@@ -194,7 +194,7 @@ class TestParseContractStub:
     def test_obligations_is_list(self):
         client = _make_client()
         response = client.post(
-            "/v1/parse/contract",
+            "/parse/contract",
             json={"file_bytes_b64": "dGVzdA=="},
         )
         data = response.json()["data"]
@@ -205,7 +205,7 @@ class TestParseContractStub:
         app.dependency_overrides.clear()
         bare_client = TestClient(app)
         response = bare_client.post(
-            "/v1/parse/contract",
+            "/parse/contract",
             json={"file_bytes_b64": "dGVzdA=="},
         )
         assert response.status_code in (401, 403)
@@ -214,7 +214,7 @@ class TestParseContractStub:
     def test_content_type_defaults_to_pdf(self):
         client = _make_client()
         response = client.post(
-            "/v1/parse/contract",
+            "/parse/contract",
             json={"file_bytes_b64": "dGVzdA=="},
         )
         assert response.status_code == 200

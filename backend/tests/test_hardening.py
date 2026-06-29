@@ -26,14 +26,14 @@ def test_rate_limit_path_buckets():
     """Verify the correct limits are selected for each path type."""
     from app.core.rate_limit import _get_limit
 
-    parse_limit, parse_window = _get_limit("/v1/parse/invoice")
+    parse_limit, parse_window = _get_limit("/parse/invoice")
     assert parse_limit == 20
     assert parse_window == 60
 
-    agents_limit, _ = _get_limit("/v1/agents/abc/run")
+    agents_limit, _ = _get_limit("/agents/abc/run")
     assert agents_limit == 30
 
-    general_limit, _ = _get_limit("/v1/dashboard/stats")
+    general_limit, _ = _get_limit("/dashboard/stats")
     assert general_limit == 200
 
 

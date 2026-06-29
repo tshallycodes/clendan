@@ -1,12 +1,12 @@
-"""
+﻿"""
 Tests for webhook signature verification.
 
 Covers:
-- GoCardless webhook: valid HMAC-SHA256 signature → 200
-- GoCardless webhook: invalid signature → 401
-- GoCardless webhook: missing Webhook-Signature header → 422 (FastAPI) or 401
-- Stripe: valid Stripe-style HMAC signature → verify_stripe_signature returns True
-- Stripe: invalid signature → verify_stripe_signature returns False
+- GoCardless webhook: valid HMAC-SHA256 signature â†’ 200
+- GoCardless webhook: invalid signature â†’ 401
+- GoCardless webhook: missing Webhook-Signature header â†’ 422 (FastAPI) or 401
+- Stripe: valid Stripe-style HMAC signature â†’ verify_stripe_signature returns True
+- Stripe: invalid signature â†’ verify_stripe_signature returns False
 """
 
 import hashlib
@@ -60,7 +60,7 @@ def _gocardless_payload() -> bytes:
 # ---------------------------------------------------------------------------
 
 def test_gocardless_valid_signature():
-    """Valid HMAC-SHA256 signature → 200."""
+    """Valid HMAC-SHA256 signature â†’ 200."""
     payload = _gocardless_payload()
     signature = _sign_gocardless(payload, GOCARDLESS_WEBHOOK_SECRET)
 
@@ -83,7 +83,7 @@ def test_gocardless_valid_signature():
 
         client = _get_test_client()
         response = client.post(
-            "/v1/webhooks/gocardless",
+            "/webhooks/gocardless",
             content=payload,
             headers={
                 "Content-Type": "application/json",
@@ -95,7 +95,7 @@ def test_gocardless_valid_signature():
 
 
 def test_gocardless_invalid_signature():
-    """Wrong signature → 401."""
+    """Wrong signature â†’ 401."""
     payload = _gocardless_payload()
     wrong_signature = _sign_gocardless(payload, "wrong-secret")
 
@@ -111,7 +111,7 @@ def test_gocardless_invalid_signature():
 
         client = _get_test_client()
         response = client.post(
-            "/v1/webhooks/gocardless",
+            "/webhooks/gocardless",
             content=payload,
             headers={
                 "Content-Type": "application/json",
@@ -123,7 +123,7 @@ def test_gocardless_invalid_signature():
 
 
 def test_gocardless_missing_signature_header():
-    """Request without Webhook-Signature header → FastAPI returns 422 (missing required header)."""
+    """Request without Webhook-Signature header â†’ FastAPI returns 422 (missing required header)."""
     payload = _gocardless_payload()
 
     with (
@@ -138,7 +138,7 @@ def test_gocardless_missing_signature_header():
 
         client = _get_test_client()
         response = client.post(
-            "/v1/webhooks/gocardless",
+            "/webhooks/gocardless",
             content=payload,
             headers={"Content-Type": "application/json"},
         )
@@ -148,11 +148,11 @@ def test_gocardless_missing_signature_header():
 
 
 # ---------------------------------------------------------------------------
-# Stripe signature verification unit tests (no HTTP — testing the function directly)
+# Stripe signature verification unit tests (no HTTP â€” testing the function directly)
 # ---------------------------------------------------------------------------
 
 def test_stripe_valid_signature():
-    """verify_stripe_signature with correct HMAC → returns True."""
+    """verify_stripe_signature with correct HMAC â†’ returns True."""
     payload = b'{"type":"invoice.payment_succeeded","data":{}}'
     timestamp = int(time.time())
     sig = _sign_stripe(payload, STRIPE_WEBHOOK_SECRET, timestamp)
@@ -163,7 +163,7 @@ def test_stripe_valid_signature():
 
 
 def test_stripe_invalid_signature():
-    """verify_stripe_signature with wrong secret → returns False."""
+    """verify_stripe_signature with wrong secret â†’ returns False."""
     payload = b'{"type":"invoice.payment_succeeded","data":{}}'
     timestamp = int(time.time())
     sig = _sign_stripe(payload, "wrong-secret", timestamp)

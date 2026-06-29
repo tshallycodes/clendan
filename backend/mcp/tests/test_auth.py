@@ -107,7 +107,7 @@ async def test_api_get_success(monkeypatch):
         return_value=httpx.Response(200, json={"data": {"tools": []}})
     )
 
-    result = await api_get("/v1/tools")
+    result = await api_get("/tools")
     assert result == {"data": {"tools": []}}
 
 
@@ -123,7 +123,7 @@ async def test_api_get_401_raises_mcp_error(monkeypatch):
     )
 
     with pytest.raises(MCPError) as exc_info:
-        await api_get("/v1/tools")
+        await api_get("/tools")
     assert exc_info.value.status_code == 401
     assert "invalid" in str(exc_info.value).lower() or "authentication" in str(exc_info.value).lower()
 
@@ -139,7 +139,7 @@ async def test_api_post_success(monkeypatch):
         return_value=httpx.Response(200, json={"data": {"risk_score": 0.1}})
     )
 
-    result = await api_post("/v1/fraud/score", data={"transaction_id": "tx_1"})
+    result = await api_post("/fraud/score", data={"transaction_id": "tx_1"})
     assert result == {"data": {"risk_score": 0.1}}
 
 
@@ -154,5 +154,5 @@ async def test_api_patch_success(monkeypatch):
         return_value=httpx.Response(200, json={"data": {"status": "inactive"}})
     )
 
-    result = await api_patch("/v1/tools/w_1/pause")
+    result = await api_patch("/tools/w_1/pause")
     assert result == {"data": {"status": "inactive"}}

@@ -72,7 +72,7 @@ async def parse_invoice(file_path: str) -> dict[str, Any]:
 
     # Upload via multipart POST
     files = {"file": (path.name, file_bytes, mime_type)}
-    submit_response = await api_post("/v1/parse/invoice", files=files)
+    submit_response = await api_post("/parse/invoice", files=files)
     body = submit_response.get("data", submit_response)
 
     parse_id = body.get("parse_id")
@@ -91,7 +91,7 @@ async def parse_invoice(file_path: str) -> dict[str, Any]:
     deadline = time.monotonic() + POLL_TIMEOUT
     while time.monotonic() < deadline:
         await asyncio.sleep(POLL_INTERVAL)
-        poll_response = await api_get(f"/v1/parse/invoice/{parse_id}")
+        poll_response = await api_get(f"/parse/invoice/{parse_id}")
         poll_body = poll_response.get("data", poll_response)
         poll_status = poll_body.get("status", "pending")
 
@@ -138,7 +138,7 @@ async def run_invoice_tool(invoice_data: dict[str, Any]) -> dict[str, Any]:
         raise MCPError("invoice_data is empty. Pass the output of parse_invoice() directly.")
 
     response = await api_post(
-        "/v1/agents/run",
+        "/agents/run",
         data={
             "tool_type": "invoice_processing",
             "input": invoice_data,

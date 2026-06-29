@@ -85,7 +85,7 @@ async def get_audit_trail(
     if to_date:
         params["to_date"] = to_date
 
-    response = await api_get("/v1/dashboard/audit", params=params)
+    response = await api_get("/dashboard/audit", params=params)
     body = response.get("data", response)
     return body.get("entries", [])
 
@@ -125,5 +125,5 @@ async def get_execution_detail(trace_id: str) -> dict[str, Any]:
             "under the 'execution_id' field."
         )
 
-    response = await api_get(f"/v1/decisions/{trace_id.strip()}/explain")
+    response = await api_get(f"/decisions/{trace_id.strip()}/explain")
     return response.get("data", response)

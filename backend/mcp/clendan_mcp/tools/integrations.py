@@ -1,5 +1,5 @@
-"""
-tools/integrations.py — Integration status tools.
+﻿"""
+tools/integrations.py â€” Integration status tools.
 
 Integrations connect Clendan to external financial systems (QuickBooks,
 Xero, Plaid, GoCardless, etc.). These tools let you check their health
@@ -13,33 +13,33 @@ from clendan_mcp.auth import MCPError, api_get, api_post
 
 # Known integration types and their status API paths
 _INTEGRATION_PATHS: dict[str, str] = {
-    "quickbooks": "/v1/integrations/quickbooks/status",
-    "xero": "/v1/xero/status",
-    "plaid": "/v1/plaid/status",
-    "stripe": "/v1/stripe/status",
-    "gocardless": "/v1/gocardless/status",
-    "truelayer": "/v1/truelayer/status",
-    "mono": "/v1/integrations/mono/status",
-    "codat": "/v1/codat/status",
-    "hubspot": "/v1/hubspot/status",
-    "gmail": "/v1/gmail/status",
-    "google_drive": "/v1/google-drive/status",
-    "outlook": "/v1/outlook/status",
+    "quickbooks": "/integrations/quickbooks/status",
+    "xero": "/xero/status",
+    "plaid": "/plaid/status",
+    "stripe": "/stripe/status",
+    "gocardless": "/gocardless/status",
+    "truelayer": "/truelayer/status",
+    "mono": "/integrations/mono/status",
+    "codat": "/codat/status",
+    "hubspot": "/hubspot/status",
+    "gmail": "/gmail/status",
+    "google_drive": "/google-drive/status",
+    "outlook": "/outlook/status",
 }
 
 _SYNC_PATHS: dict[str, str] = {
-    "quickbooks": "/v1/integrations/quickbooks/sync",
-    "xero": "/v1/xero/sync",
-    "plaid": "/v1/plaid/sync",
-    "stripe": "/v1/stripe/sync",
-    "gocardless": "/v1/gocardless/sync",
-    "truelayer": "/v1/truelayer/sync",
-    "mono": "/v1/integrations/mono/sync",
-    "codat": "/v1/codat/sync",
-    "hubspot": "/v1/hubspot/sync",
-    "gmail": "/v1/gmail/sync",
-    "google_drive": "/v1/google-drive/sync",
-    "outlook": "/v1/outlook/sync",
+    "quickbooks": "/integrations/quickbooks/sync",
+    "xero": "/xero/sync",
+    "plaid": "/plaid/sync",
+    "stripe": "/stripe/sync",
+    "gocardless": "/gocardless/sync",
+    "truelayer": "/truelayer/sync",
+    "mono": "/integrations/mono/sync",
+    "codat": "/codat/sync",
+    "hubspot": "/hubspot/sync",
+    "gmail": "/gmail/sync",
+    "google_drive": "/google-drive/sync",
+    "outlook": "/outlook/sync",
 }
 
 
@@ -70,7 +70,7 @@ async def list_integrations() -> list[dict[str, Any]]:
                 **body,
             })
         except MCPError as exc:
-            # 404 means not configured — include it with not_configured status
+            # 404 means not configured â€” include it with not_configured status
             if exc.status_code == 404:
                 results.append({"type": integration_type, "status": "not_configured"})
             else:
@@ -131,7 +131,7 @@ async def trigger_sync(integration_type: str) -> dict[str, Any]:
     Manually trigger a data resync for an integration.
 
     Useful when you need fresh data immediately rather than waiting for the
-    next scheduled sync. The sync runs asynchronously — use the returned
+    next scheduled sync. The sync runs asynchronously â€” use the returned
     job_id to track progress.
 
     IMPORTANT: This only works for connected integrations. Check
@@ -142,7 +142,7 @@ async def trigger_sync(integration_type: str) -> dict[str, Any]:
             truelayer, codat, hubspot, gmail, google_drive, outlook
 
     Returns:
-        job_id (str): Sync job ID — you can poll the integration status to see
+        job_id (str): Sync job ID â€” you can poll the integration status to see
             when the sync completes
         integration_type (str): The integration being synced
         status (str): "queued" | "running"
@@ -163,7 +163,7 @@ async def trigger_sync(integration_type: str) -> dict[str, Any]:
     except MCPError as exc:
         if exc.status_code == 404:
             raise MCPError(
-                f"Cannot sync '{integration_type}' — it is not connected. "
+                f"Cannot sync '{integration_type}' â€” it is not connected. "
                 f"Connect it at https://app.clendan.com/dashboard/integrations"
             )
         raise

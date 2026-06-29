@@ -1,10 +1,10 @@
-"""
+﻿"""
 Tests for the developer-facing execute API:
-  POST /v1/execute   — enqueue any tool by API key
-  GET  /v1/execute/{execution_id} — poll for result
+  POST /v1/execute   â€” enqueue any tool by API key
+  GET  /v1/execute/{execution_id} â€” poll for result
 
 All 13 frontend tool types must be reachable through the API.
-DB and arq queue are mocked — no live services required.
+DB and arq queue are mocked â€” no live services required.
 """
 from __future__ import annotations
 
@@ -127,7 +127,7 @@ class TestPostExecute:
     def test_rejects_invalid_key_format(self):
         client = TestClient(app)
         response = client.post(
-            "/v1/execute",
+            "/execute",
             headers={"Authorization": "bad_key", "Idempotency-Key": "k1"},
             json={"tool": "reconciliation"},
         )
@@ -136,7 +136,7 @@ class TestPostExecute:
     def test_rejects_missing_idempotency_key(self):
         client = TestClient(app)
         response = client.post(
-            "/v1/execute",
+            "/execute",
             headers={"Authorization": _VALID_KEY},
             json={"tool": "reconciliation"},
         )
@@ -147,7 +147,7 @@ class TestPostExecute:
         client = TestClient(app)
         with patch("app.api.v1.execute.get_db", return_value=db):
             response = client.post(
-                "/v1/execute",
+                "/execute",
                 headers=VALID_HEADERS,
                 json={"tool": "nonexistent_tool"},
             )
@@ -160,7 +160,7 @@ class TestPostExecute:
         client = TestClient(app)
         with patch("app.api.v1.execute.get_db", return_value=db):
             response = client.post(
-                "/v1/execute",
+                "/execute",
                 headers=VALID_HEADERS,
                 json={"tool": "reconciliation"},
             )
@@ -175,7 +175,7 @@ class TestPostExecute:
             patch("app.api.v1.execute.get_queue_pool", AsyncMock(return_value=pool)),
         ):
             response = client.post(
-                "/v1/execute",
+                "/execute",
                 headers=VALID_HEADERS,
                 json={"tool": "reconciliation", "payload": {"period": "2026-01"}},
             )
@@ -201,7 +201,7 @@ class TestPostExecute:
             patch("app.api.v1.execute.get_queue_pool", AsyncMock(return_value=pool)),
         ):
             response = client.post(
-                "/v1/execute",
+                "/execute",
                 headers=VALID_HEADERS,
                 json={"tool": "reconciliation"},
             )
@@ -217,7 +217,7 @@ class TestPostExecute:
         client = TestClient(app)
         with patch("app.api.v1.execute.get_db", return_value=db):
             response = client.post(
-                "/v1/execute",
+                "/execute",
                 headers=VALID_HEADERS,
                 json={"tool": "budgeting"},
             )
@@ -235,7 +235,7 @@ class TestPostExecute:
             patch("app.api.v1.execute.get_queue_pool", AsyncMock(return_value=pool)),
         ):
             response = client.post(
-                "/v1/execute",
+                "/execute",
                 headers={"Authorization": _VALID_KEY, "Idempotency-Key": f"idem_{tool_type}"},
                 json={"tool": tool_type},
             )
@@ -267,7 +267,7 @@ class TestGetExecution:
         client = TestClient(app)
         with patch("app.api.v1.execute.get_db", return_value=db):
             response = client.get(
-                f"/v1/execute/{_EXECUTION_ID}",
+                f"/execute/{_EXECUTION_ID}",
                 headers={"Authorization": _VALID_KEY},
             )
         assert response.status_code == 200
@@ -284,7 +284,7 @@ class TestGetExecution:
         client = TestClient(app)
         with patch("app.api.v1.execute.get_db", return_value=db):
             response = client.get(
-                f"/v1/execute/{_EXECUTION_ID}",
+                f"/execute/{_EXECUTION_ID}",
                 headers={"Authorization": _VALID_KEY},
             )
         data = response.json()["data"]
@@ -296,7 +296,7 @@ class TestGetExecution:
         client = TestClient(app)
         with patch("app.api.v1.execute.get_db", return_value=db):
             response = client.get(
-                f"/v1/execute/{_EXECUTION_ID}",
+                f"/execute/{_EXECUTION_ID}",
                 headers={"Authorization": _VALID_KEY},
             )
         data = response.json()["data"]
@@ -309,7 +309,7 @@ class TestGetExecution:
         client = TestClient(app)
         with patch("app.api.v1.execute.get_db", return_value=db):
             response = client.get(
-                "/v1/execute/does_not_exist",
+                "/execute/does_not_exist",
                 headers={"Authorization": _VALID_KEY},
             )
         assert response.status_code == 404
@@ -317,7 +317,7 @@ class TestGetExecution:
     def test_rejects_invalid_key(self):
         client = TestClient(app)
         response = client.get(
-            f"/v1/execute/{_EXECUTION_ID}",
+            f"/execute/{_EXECUTION_ID}",
             headers={"Authorization": "not_a_valid_key"},
         )
         assert response.status_code == 401
@@ -325,12 +325,12 @@ class TestGetExecution:
     def test_cannot_access_other_tenant_execution(self):
         db = AsyncMock()
         db.apikey.find_first = AsyncMock(return_value=_FAKE_API_KEY)
-        # Execution scoped to a different tenant — DB returns None
+        # Execution scoped to a different tenant â€” DB returns None
         db.execution.find_first = AsyncMock(return_value=None)
         client = TestClient(app)
         with patch("app.api.v1.execute.get_db", return_value=db):
             response = client.get(
-                "/v1/execute/other_tenant_exec",
+                "/execute/other_tenant_exec",
                 headers={"Authorization": _VALID_KEY},
             )
         assert response.status_code == 404

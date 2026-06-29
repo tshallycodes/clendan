@@ -71,7 +71,7 @@ async def score_fraud(
         )
 
     response = await api_post(
-        "/v1/fraud/score",
+        "/fraud/score",
         data={
             "transaction_id": transaction_id.strip(),
             "amount_minor": amount_minor,
@@ -128,7 +128,7 @@ async def reconcile_datasets(
         raise MCPError("period_end must be on or after period_start.")
 
     response = await api_post(
-        "/v1/reconcile",
+        "/reconcile",
         data={
             "source_dataset": source_records,
             "target_dataset": target_records,
@@ -180,5 +180,5 @@ async def extract_contract_data(file_path: str) -> dict[str, Any]:
         raise MCPError(f"File is empty: {file_path}")
 
     files = {"file": (path.name, file_bytes, CONTRACT_MIME)}
-    response = await api_post("/v1/parse/contract", files=files)
+    response = await api_post("/parse/contract", files=files)
     return response.get("data", response)

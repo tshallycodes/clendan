@@ -33,7 +33,7 @@ async def _find_tool_by_type(tool_type: str) -> dict[str, Any]:
             f"Unknown tool type '{tool_type}'. "
             f"Valid types: {', '.join(sorted(VALID_TOOL_TYPES))}"
         )
-    response = await api_get("/v1/tools")
+    response = await api_get("/tools")
     body = response.get("data", response)
     tools = body.get("tools", [])
     match = next((w for w in tools if w.get("type") == tool_type), None)
@@ -59,7 +59,7 @@ async def list_tools() -> list[dict[str, Any]]:
 
     Returns an empty list if no tools are deployed.
     """
-    response = await api_get("/v1/tools")
+    response = await api_get("/tools")
     body = response.get("data", response)
     return body.get("tools", [])
 
@@ -116,7 +116,7 @@ async def pause_tool(tool_type: str) -> dict[str, Any]:
             "Call resume_tool() to restart it."
         )
 
-    response = await api_patch(f"/v1/tools/{tool_id}/pause")
+    response = await api_patch(f"/tools/{tool_id}/pause")
     return response.get("data", response)
 
 
@@ -144,7 +144,7 @@ async def resume_tool(tool_type: str) -> dict[str, Any]:
             "Call pause_tool() to stop it."
         )
 
-    response = await api_patch(f"/v1/tools/{tool_id}/pause")
+    response = await api_patch(f"/tools/{tool_id}/pause")
     return response.get("data", response)
 
 

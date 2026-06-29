@@ -1,4 +1,4 @@
-"""
+﻿"""
 Cross-tenant isolation tests.
 
 These tests prove that:
@@ -62,13 +62,13 @@ class TestUnauthenticated:
     """No token = no data, ever."""
 
     def test_no_token_returns_401_or_403(self):
-        response = client.get("/v1/tenants/me")
+        response = client.get("/tenants/me")
         assert response.status_code in (401, 403), (
             f"Expected 401/403 without auth, got {response.status_code}"
         )
 
     def test_no_token_never_leaks_tenant_data(self):
-        response = client.get("/v1/tenants/me")
+        response = client.get("/tenants/me")
         assert response.status_code in (401, 403)
         body = response.json()
         assert "tenant" not in body
@@ -88,13 +88,13 @@ class TestJwtValidation:
     def test_jwt_with_no_org_id_returns_403(self):
         """
         A valid Clerk token for a user who is NOT in an organisation
-        must receive 403 — the org_id claim is required.
+        must receive 403 â€” the org_id claim is required.
         """
         fake_payload = _make_fake_payload("user_no_org", org_id="")
 
         with patch("app.core.security._verify_jwt", new_callable=AsyncMock, return_value=fake_payload):
             response = client.get(
-                "/v1/tenants/me",
+                "/tenants/me",
                 headers={"Authorization": "Bearer fake-token"},
             )
 
@@ -105,13 +105,13 @@ class TestJwtValidation:
     def test_jwt_with_unprovisioned_org_returns_403(self):
         """
         A valid JWT with an org_id that has no corresponding Tenant record
-        must return 403 — not 200 with another tenant's data.
+        must return 403 â€” not 200 with another tenant's data.
         """
         fake_payload = _make_fake_payload("user_xyz", org_id="org_not_in_db")
 
         with patch("app.core.security._verify_jwt", new_callable=AsyncMock, return_value=fake_payload):
             response = client.get(
-                "/v1/tenants/me",
+                "/tenants/me",
                 headers={"Authorization": "Bearer fake-token"},
             )
 
@@ -136,17 +136,17 @@ class TestTenantIsolation:
     def test_authenticated_user_can_reach_tenant_endpoint(self):
         """
         With a valid CurrentUser injected, the tenant endpoint is reachable.
-        A 404 (tenant not found in DB) proves isolation — not another user's data.
+        A 404 (tenant not found in DB) proves isolation â€” not another user's data.
         """
         fake_user = _make_current_user(tenant_id="tenant_does_not_exist_xyz")
         app.dependency_overrides[get_current_user] = lambda: fake_user
 
         response = client.get(
-            "/v1/tenants/me",
+            "/tenants/me",
             headers={"Authorization": "Bearer fake"},
         )
 
-        # 404 = tenant not found in DB (correct — isolation works)
+        # 404 = tenant not found in DB (correct â€” isolation works)
         # 200 would only be valid if the tenant actually exists
         assert response.status_code in (200, 404), (
             f"Expected 200 or 404 with valid auth, got {response.status_code}"

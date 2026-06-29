@@ -1,4 +1,4 @@
-import pytest
+﻿import pytest
 from fastapi.testclient import TestClient
 
 from app.main import app
@@ -7,8 +7,8 @@ import app.core.security as security_module
 client = TestClient(app)
 
 PROTECTED_ROUTES = [
-    ("GET", "/v1/tenants/me"),
-    ("POST", "/v1/onboarding"),
+    ("GET", "/tenants/me"),
+    ("POST", "/onboarding"),
 ]
 
 
@@ -29,7 +29,7 @@ class TestAuthProtection:
         Missing Authorization header.
 
         FastAPI's HTTPBearer raises 403 (Forbidden) when the Authorization
-        header is absent entirely — this is the FastAPI default for a missing
+        header is absent entirely â€” this is the FastAPI default for a missing
         bearer credential, distinct from an invalid one.  Both 401 and 403
         are acceptable rejections; what matters is that the route is not open.
         """
@@ -61,19 +61,19 @@ class TestAuthProtection:
         )
 
     def test_health_is_public(self):
-        """Health endpoint must remain public — no auth required."""
+        """Health endpoint must remain public â€” no auth required."""
         response = client.get("/health")
         assert response.status_code == 200
 
     def test_ready_is_public(self):
-        """Ready endpoint must remain public — no auth required."""
+        """Ready endpoint must remain public â€” no auth required."""
         response = client.get("/ready")
         assert response.status_code == 200
 
     def test_invalid_token_response_shape(self):
         """401 response body must follow FastAPI's standard error shape."""
         response = client.get(
-            "/v1/tenants/me",
+            "/tenants/me",
             headers={"Authorization": "Bearer invalid"},
         )
         assert response.status_code == 401

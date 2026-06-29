@@ -1,12 +1,12 @@
-"""
+﻿"""
 Tests for OAuth callback and API-key connect endpoints.
 
 Covers:
-- QuickBooks callback: successful code exchange → 302 redirect with connected=quickbooks
-- QuickBooks callback: invalid state (no colon) → 302 redirect with error=invalid_state
-- QuickBooks callback: tenant not found → 302 redirect with error=tenant_not_found
-- GoCardless connect: valid API key → 200 with status "syncing"
-- GoCardless connect: invalid API key (401 from GoCardless) → 400
+- QuickBooks callback: successful code exchange â†’ 302 redirect with connected=quickbooks
+- QuickBooks callback: invalid state (no colon) â†’ 302 redirect with error=invalid_state
+- QuickBooks callback: tenant not found â†’ 302 redirect with error=tenant_not_found
+- GoCardless connect: valid API key â†’ 200 with status "syncing"
+- GoCardless connect: invalid API key (401 from GoCardless) â†’ 400
 """
 
 import pytest
@@ -77,7 +77,7 @@ def _get_client_with_overrides(extra_overrides: dict | None = None) -> TestClien
 # ---------------------------------------------------------------------------
 
 def test_quickbooks_callback_success():
-    """Valid code + state → 302 redirect to frontend with connected=quickbooks."""
+    """Valid code + state â†’ 302 redirect to frontend with connected=quickbooks."""
     tenant_mock = _make_tenant_mock()
     integration_mock = _make_integration_mock()
 
@@ -100,7 +100,7 @@ def test_quickbooks_callback_success():
     ):
         client = _get_client_with_overrides({get_db_dep: lambda: db_mock})
         response = client.get(
-            f"/v1/integrations/quickbooks/callback?code=auth_code&state={TENANT_ID}:nonce_abc&realmId=realm_123"
+            f"/integrations/quickbooks/callback?code=auth_code&state={TENANT_ID}:nonce_abc&realmId=realm_123"
         )
 
     assert response.status_code in (302, 307)
@@ -108,12 +108,12 @@ def test_quickbooks_callback_success():
 
 
 def test_quickbooks_callback_invalid_state():
-    """State without colon separator → 302 redirect with error=invalid_state."""
+    """State without colon separator â†’ 302 redirect with error=invalid_state."""
     db_mock = AsyncMock()
 
     client = _get_client_with_overrides({get_db_dep: lambda: db_mock})
     response = client.get(
-        "/v1/integrations/quickbooks/callback?code=auth_code&state=invalidsate&realmId=realm_123"
+        "/integrations/quickbooks/callback?code=auth_code&state=invalidsate&realmId=realm_123"
     )
 
     assert response.status_code in (302, 307)
@@ -121,13 +121,13 @@ def test_quickbooks_callback_invalid_state():
 
 
 def test_quickbooks_callback_tenant_not_found():
-    """Tenant lookup returns None → 302 redirect with error=tenant_not_found."""
+    """Tenant lookup returns None â†’ 302 redirect with error=tenant_not_found."""
     db_mock = AsyncMock()
     db_mock.tenant.find_unique.return_value = None
 
     client = _get_client_with_overrides({get_db_dep: lambda: db_mock})
     response = client.get(
-        f"/v1/integrations/quickbooks/callback?code=auth_code&state={TENANT_ID}:nonce&realmId=realm_123"
+        f"/integrations/quickbooks/callback?code=auth_code&state={TENANT_ID}:nonce&realmId=realm_123"
     )
 
     assert response.status_code in (302, 307)
@@ -139,7 +139,7 @@ def test_quickbooks_callback_tenant_not_found():
 # ---------------------------------------------------------------------------
 
 def test_gocardless_connect_valid_api_key():
-    """Valid GoCardless API key → 200, status syncing."""
+    """Valid GoCardless API key â†’ 200, status syncing."""
     db_mock = AsyncMock()
     integration_mock = _make_integration_mock("intg_gc_001")
     integration_mock.status = "syncing"
@@ -164,7 +164,7 @@ def test_gocardless_connect_valid_api_key():
     ):
         client = _get_client_with_overrides({get_db_dep: lambda: db_mock})
         response = client.post(
-            "/v1/integrations/gocardless/connect",
+            "/integrations/gocardless/connect",
             json={"access_token": "gc_key_abc", "environment": "sandbox"},
             headers=AUTH_HEADER,
         )
@@ -175,7 +175,7 @@ def test_gocardless_connect_valid_api_key():
 
 
 def test_gocardless_connect_invalid_api_key():
-    """GoCardless returns 401 on validate_api_key → 400 with structured error."""
+    """GoCardless returns 401 on validate_api_key â†’ 400 with structured error."""
     db_mock = AsyncMock()
 
     # Build a minimal httpx.HTTPStatusError for a 401 response
@@ -193,7 +193,7 @@ def test_gocardless_connect_invalid_api_key():
     ):
         client = _get_client_with_overrides({get_db_dep: lambda: db_mock})
         response = client.post(
-            "/v1/integrations/gocardless/connect",
+            "/integrations/gocardless/connect",
             json={"access_token": "bad_key", "environment": "sandbox"},
             headers=AUTH_HEADER,
         )

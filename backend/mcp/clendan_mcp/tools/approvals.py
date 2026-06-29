@@ -26,7 +26,7 @@ async def get_pending_approvals() -> list[dict[str, Any]]:
 
     Returns an empty list if no approvals are pending.
     """
-    response = await api_get("/v1/dashboard/approvals", params={"limit": 100})
+    response = await api_get("/dashboard/approvals", params={"limit": 100})
     body = response.get("data", response)
     return body.get("approvals", [])
 
@@ -53,7 +53,7 @@ async def approve_execution(approval_id: str, note: str = "") -> dict[str, Any]:
         raise MCPError("approval_id is required. Get it from get_pending_approvals().")
 
     response = await api_post(
-        f"/v1/approvals/{approval_id.strip()}/respond",
+        f"/approvals/{approval_id.strip()}/respond",
         data={"action": "approve", "note": note or ""},
     )
     return response.get("data", response)
@@ -85,7 +85,7 @@ async def reject_execution(approval_id: str, reason: str) -> dict[str, Any]:
         )
 
     response = await api_post(
-        f"/v1/approvals/{approval_id.strip()}/respond",
+        f"/approvals/{approval_id.strip()}/respond",
         data={"action": "reject", "reason": reason.strip()},
     )
     return response.get("data", response)
@@ -114,7 +114,7 @@ async def get_approval_detail(approval_id: str) -> dict[str, Any]:
 
     # First fetch the approval to get execution_id
     # The approvals list endpoint gives us execution_id
-    approvals_response = await api_get("/v1/dashboard/approvals", params={"limit": 200})
+    approvals_response = await api_get("/dashboard/approvals", params={"limit": 200})
     approvals_body = approvals_response.get("data", approvals_response)
     approvals = approvals_body.get("approvals", [])
 
@@ -134,7 +134,7 @@ async def get_approval_detail(approval_id: str) -> dict[str, Any]:
         raise MCPError(f"Approval '{approval_id}' has no associated execution.")
 
     # Fetch the full decision explanation
-    detail_response = await api_get(f"/v1/decisions/{execution_id}/explain")
+    detail_response = await api_get(f"/decisions/{execution_id}/explain")
     detail_body = detail_response.get("data", detail_response)
 
     return {

@@ -18,14 +18,14 @@ _logger = get_logger(__name__)
 _EXEMPT = {"/health", "/ready"}
 
 # Path prefixes also exempt
-_EXEMPT_PREFIXES = ("/v1/integrations", "/v1/webhooks")
+_EXEMPT_PREFIXES = ("/integrations", "/webhooks")
 
 # (requests, window_seconds) per path prefix — first match wins
 _LIMITS: list[tuple[str, int, int]] = [
-    ("/v1/parse/",   20,  60),   # 20 req/min  — Claude vision is expensive
-    ("/v1/agents/",  30,  60),   # 30 req/min  — queue submissions
-    ("/v1/execute",  60,  60),   # 60 req/min  — agent executions (each triggers a job)
-    ("/v1/",        200,  60),   # 200 req/min — all other v1 endpoints
+    ("/parse/",   20,  60),   # 20 req/min  — Claude vision is expensive
+    ("/agents/",  30,  60),   # 30 req/min  — queue submissions
+    ("/execute",  60,  60),   # 60 req/min  — agent executions (each triggers a job)
+    ("/",        200,  60),   # 200 req/min — all other endpoints
 ]
 
 

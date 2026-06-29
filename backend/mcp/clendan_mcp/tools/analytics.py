@@ -64,11 +64,11 @@ async def get_execution_stats(period: str = "7d") -> dict[str, Any]:
         )
 
     # Fetch dashboard stats and executions in parallel
-    stats_response = await api_get("/v1/dashboard/stats")
+    stats_response = await api_get("/dashboard/stats")
     stats = stats_response.get("data", stats_response)
 
     # Fetch executions with limit to get breakdown
-    exec_response = await api_get("/v1/dashboard/executions", params={"limit": 200})
+    exec_response = await api_get("/dashboard/executions", params={"limit": 200})
     exec_data = exec_response.get("data", exec_response)
     executions = exec_data.get("executions", [])
 
@@ -135,7 +135,7 @@ async def get_hours_saved(period: str = "30d") -> dict[str, Any]:
             f"Invalid period '{period}'. Valid periods: {', '.join(sorted(VALID_PERIODS))}"
         )
 
-    exec_response = await api_get("/v1/dashboard/executions", params={"limit": 200})
+    exec_response = await api_get("/dashboard/executions", params={"limit": 200})
     exec_data = exec_response.get("data", exec_response)
     executions = exec_data.get("executions", [])
 
