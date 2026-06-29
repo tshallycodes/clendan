@@ -90,9 +90,15 @@ async def sync_drive_connection(ctx: dict, integration_id: str, tenant_id: str) 
     })
 
     if sync_status == "success":
+        from prisma.types import Json
         await db.integration.update(
             where={"id": integration_id},
-            data={"status": "connected", "connected_at": datetime.now(UTC)},
+            data={
+                "status": "connected",
+                "connected_at": datetime.now(UTC),
+                "last_synced_at": datetime.now(UTC),
+                "sync_metadata": Json({"files": file_count}),
+            },
         )
         if initial_status == "connected" and files:
             from app.orchestrator.events import enqueue_orchestrator_event

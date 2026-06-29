@@ -42,6 +42,8 @@ interface AccountSummary {
   charges?: number
   mandates?: number
   payouts?: number
+  // Document storage counts
+  files?: number
   [key: string]: number | string | undefined
 }
 
@@ -229,6 +231,9 @@ export function IntegrationDetailDrawer({ slug, intg, status, lastSyncedAt, onCl
                         )}
                         {summary.total_invoices === undefined && summary.payouts !== undefined && (
                           <SummaryCard label="Payouts" value={String(summary.payouts)} accent="ok" />
+                        )}
+                        {summary.files !== undefined && (
+                          <SummaryCard label="PDF Files" value={String(summary.files)} />
                         )}
                       </div>
                     </section>
