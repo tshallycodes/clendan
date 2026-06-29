@@ -207,8 +207,7 @@ function QuickActions({ doc, toolId, onAbort }: QuickActionsProps) {
           type="button"
           onClick={() => handleExport('google-drive')}
           disabled={actionLoading !== null}
-          style={{ backgroundColor: 'rgba(66,133,244,0.07)', borderColor: 'rgba(66,133,244,0.28)' }}
-          className="flex items-center gap-1.5 text-[10px] font-mono px-3 py-1.5 rounded-sm border text-brand-secondary hover:opacity-80 transition-opacity disabled:opacity-40"
+          className="flex items-center gap-1.5 text-[10px] font-mono px-2.5 py-1.5 rounded-sm border border-brand-border bg-brand-surface hover:bg-brand-bg text-brand-secondary transition-colors disabled:opacity-40"
         >
           <IntegrationLogo slug="google-drive" size={13} />
           {actionLoading === 'google-drive' ? '…' : 'Export to Drive'}
@@ -217,8 +216,7 @@ function QuickActions({ doc, toolId, onAbort }: QuickActionsProps) {
           type="button"
           onClick={() => handleExport('dropbox')}
           disabled={actionLoading !== null}
-          style={{ backgroundColor: 'rgba(0,97,255,0.07)', borderColor: 'rgba(0,97,255,0.28)' }}
-          className="flex items-center gap-1.5 text-[10px] font-mono px-3 py-1.5 rounded-sm border text-brand-secondary hover:opacity-80 transition-opacity disabled:opacity-40"
+          className="flex items-center gap-1.5 text-[10px] font-mono px-2.5 py-1.5 rounded-sm border border-brand-border bg-brand-surface hover:bg-brand-bg text-brand-secondary transition-colors disabled:opacity-40"
         >
           <IntegrationLogo slug="dropbox" size={13} />
           {actionLoading === 'dropbox' ? '…' : 'Export to Dropbox'}
