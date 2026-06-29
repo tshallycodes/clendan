@@ -77,11 +77,6 @@ const RELATED_ENDPOINTS: Partial<Record<ToolName, EndpointDef[]>> = {
   treasury: [TRANSACTIONS_ENDPOINT],
 }
 
-// Explains non-obvious payload shapes — e.g. tools that operate on already-connected
-// integration data rather than the literal fields suggesting a raw upload.
-const PAYLOAD_HINTS: Partial<Record<ToolName, string>> = {
-  document_intelligence: 'Analyzes a file already accessible via a connected integration — this does not upload a new file. integration_id is the ID of your connected Gmail/Drive/Dropbox/OneDrive integration (see GET /execute/tools). message_id and attachment_id identify the specific email and attachment to fetch and analyze.',
-}
 
 const METHOD_COLORS: Record<HttpMethod, string> = {
   GET:    'text-[#00C853]',
@@ -91,7 +86,7 @@ const METHOD_COLORS: Record<HttpMethod, string> = {
 }
 
 // ---------------------------------------------------------------------------
-// EndpointRow â€” expandable row for a single API endpoint
+// EndpointRow - expandable row for a single API endpoint
 // ---------------------------------------------------------------------------
 interface EndpointRowProps {
   endpoint: EndpointDef
@@ -145,7 +140,7 @@ function EndpointRow({ endpoint, apiKey, idempotencyKey }: EndpointRowProps) {
       const json: unknown = await res.json()
       setResp({ kind: 'result', data: json })
     } catch {
-      setResp({ kind: 'result', data: { error: 'Request failed â€” check API URL and key' } })
+      setResp({ kind: 'result', data: { error: 'Request failed - check API URL and key' } })
     }
   }
 
@@ -206,7 +201,7 @@ function EndpointRow({ endpoint, apiKey, idempotencyKey }: EndpointRowProps) {
               className="flex items-center gap-1.5 bg-[#00C853] text-black hover:bg-[#00a844] active:scale-[0.97] rounded-sm px-3 py-1.5 text-xs font-mono font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Play className="w-3 h-3" weight="fill" />
-              {resp.kind === 'loading' ? 'Runningâ€¦' : 'Run'}
+              {resp.kind === 'loading' ? 'Running...' : 'Run'}
             </button>
             {resp.kind === 'result' && (
               <button
@@ -220,7 +215,7 @@ function EndpointRow({ endpoint, apiKey, idempotencyKey }: EndpointRowProps) {
           </div>
 
           {resp.kind === 'loading' && (
-            <p className="text-xs font-mono text-brand-muted animate-pulse">Waiting for responseâ€¦</p>
+            <p className="text-xs font-mono text-brand-muted animate-pulse">Waiting for response...</p>
           )}
           {resp.kind === 'result' && (
             <div className="bg-brand-bg border border-brand-border rounded-sm p-3 max-h-60 overflow-y-auto">
@@ -236,7 +231,7 @@ function EndpointRow({ endpoint, apiKey, idempotencyKey }: EndpointRowProps) {
 }
 
 // ---------------------------------------------------------------------------
-// ApiPlayground â€” main export
+// ApiPlayground - main export
 // ---------------------------------------------------------------------------
 export function ApiPlayground() {
   const [selectedTool, setSelectedTool] = useState<ToolName>('invoice_processing')
@@ -315,7 +310,7 @@ export function ApiPlayground() {
         setResponse({ kind: 'result', data: json })
       }
     } catch {
-      setResponse({ kind: 'result', data: { error: 'Request failed â€” check API URL and key' } })
+      setResponse({ kind: 'result', data: { error: 'Request failed - check API URL and key' } })
     }
   }
 
@@ -354,7 +349,7 @@ export function ApiPlayground() {
 
       {/* Execute */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Left â€” inputs */}
+        {/* Left - inputs */}
         <div className="space-y-4">
           {/* Tool selector */}
           <div className="space-y-1.5">
@@ -377,9 +372,6 @@ export function ApiPlayground() {
           {/* Payload editor */}
           <div className="space-y-1.5">
             <label className="text-[10px] font-mono uppercase tracking-widest text-brand-muted">Payload (JSON)</label>
-            {PAYLOAD_HINTS[selectedTool] && (
-              <p className="text-[10px] font-mono text-brand-muted leading-relaxed">{PAYLOAD_HINTS[selectedTool]}</p>
-            )}
             <textarea
               value={payloadText}
               onChange={(e) => setPayloadText(e.target.value)}
@@ -417,12 +409,12 @@ export function ApiPlayground() {
           >
             <Play className="w-3.5 h-3.5" weight="fill" />
             {response.kind === 'loading'
-              ? response.attempt ? `Polling ${response.attempt}/${MAX_POLL_ATTEMPTS}â€¦` : 'Queuingâ€¦'
+              ? response.attempt ? `Polling ${response.attempt}/${MAX_POLL_ATTEMPTS}...` : 'Queuing...'
               : 'Run'}
           </button>
         </div>
 
-        {/* Right â€” response panel */}
+        {/* Right - response panel */}
         <div className="space-y-1.5">
           <label className="text-[10px] font-mono uppercase tracking-widest text-brand-muted">Response</label>
           <div className="bg-brand-bg border border-brand-border rounded-sm p-4 min-h-[280px] max-h-[500px] overflow-y-auto">
@@ -433,8 +425,8 @@ export function ApiPlayground() {
               <div className="space-y-2">
                 <p className="text-xs font-mono text-brand-muted animate-pulse">
                   {response.attempt
-                    ? `Polling resultâ€¦ (${response.attempt}/${MAX_POLL_ATTEMPTS})`
-                    : 'Queuing jobâ€¦'}
+                    ? `Polling result... (${response.attempt}/${MAX_POLL_ATTEMPTS})`
+                    : 'Queuing job...'}
                 </p>
                 {response.attempt && (
                   <div className="w-full bg-brand-border rounded-full h-0.5">
