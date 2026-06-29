@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useAuth } from '@clerk/nextjs'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useToast } from '@/components/Providers'
+import { IntegrationLogo } from '@/app/(dashboard)/dashboard/integrations/IntegrationLogo'
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
@@ -209,11 +210,7 @@ function QuickActions({ doc, toolId, onAbort }: QuickActionsProps) {
           style={{ backgroundColor: 'rgba(66,133,244,0.07)', borderColor: 'rgba(66,133,244,0.28)' }}
           className="flex items-center gap-1.5 text-[10px] font-mono px-3 py-1.5 rounded-sm border text-brand-secondary hover:opacity-80 transition-opacity disabled:opacity-40"
         >
-          <svg width="11" height="10" viewBox="0 0 24 21" fill="none" aria-hidden>
-            <path d="M12 0L0 21L12 14Z" fill="#34A853"/>
-            <path d="M0 21L12 14L24 21Z" fill="#FBBC04"/>
-            <path d="M12 0L12 14L24 21Z" fill="#4285F4"/>
-          </svg>
+          <IntegrationLogo slug="google-drive" size={13} />
           {actionLoading === 'google-drive' ? '…' : 'Export to Drive'}
         </button>
         <button
@@ -223,11 +220,7 @@ function QuickActions({ doc, toolId, onAbort }: QuickActionsProps) {
           style={{ backgroundColor: 'rgba(0,97,255,0.07)', borderColor: 'rgba(0,97,255,0.28)' }}
           className="flex items-center gap-1.5 text-[10px] font-mono px-3 py-1.5 rounded-sm border text-brand-secondary hover:opacity-80 transition-opacity disabled:opacity-40"
         >
-          <svg width="10" height="10" viewBox="0 0 43 40" fill="#0061FF" aria-hidden>
-            <path d="M12.5 0L0 8l8.5 7L21 7l12.5 8 8.5-7L29.5 0 21 6.3z"/>
-            <path d="M0 22.5l12.5 8L21 24l8.5 6.5 12.5-8-8.5-7L21 22.5l-8.5-7z"/>
-            <path d="M12.5 32.5L21 39l8.5-6.5v-6.5L21 32.5l-8.5-6.5z"/>
-          </svg>
+          <IntegrationLogo slug="dropbox" size={13} />
           {actionLoading === 'dropbox' ? '…' : 'Export to Dropbox'}
         </button>
         <button
@@ -430,40 +423,11 @@ function DocumentRow({ doc, toolId, onAbort }: DocumentRowProps) {
   )
 }
 
-const CLOUD_SOURCES: { id: string; label: string }[] = [
-  { id: 'google_drive', label: 'Google Drive' },
-  { id: 'dropbox',      label: 'Dropbox' },
-  { id: 'onedrive',     label: 'OneDrive' },
+const CLOUD_SOURCES: { id: string; label: string; logoSlug: string }[] = [
+  { id: 'google_drive', label: 'Google Drive', logoSlug: 'google-drive' },
+  { id: 'dropbox',      label: 'Dropbox',      logoSlug: 'dropbox' },
+  { id: 'onedrive',     label: 'OneDrive',     logoSlug: 'onedrive' },
 ]
-
-function CloudProviderIcon({ id }: { id: string }) {
-  if (id === 'google_drive') {
-    return (
-      <svg width="13" height="12" viewBox="0 0 24 21" fill="none" className="shrink-0" aria-hidden>
-        <path d="M12 0L0 21L12 14Z" fill="#34A853"/>
-        <path d="M0 21L12 14L24 21Z" fill="#FBBC04"/>
-        <path d="M12 0L12 14L24 21Z" fill="#4285F4"/>
-      </svg>
-    )
-  }
-  if (id === 'dropbox') {
-    return (
-      <svg width="12" height="12" viewBox="0 0 43 40" fill="#0061FF" className="shrink-0" aria-hidden>
-        <path d="M12.5 0L0 8l8.5 7L21 7l12.5 8 8.5-7L29.5 0 21 6.3z"/>
-        <path d="M0 22.5l12.5 8L21 24l8.5 6.5 12.5-8-8.5-7L21 22.5l-8.5-7z"/>
-        <path d="M12.5 32.5L21 39l8.5-6.5v-6.5L21 32.5l-8.5-6.5z"/>
-      </svg>
-    )
-  }
-  if (id === 'onedrive') {
-    return (
-      <svg width="16" height="11" viewBox="0 0 30 20" fill="none" className="shrink-0" aria-hidden>
-        <path d="M3 18C3 14.7 5.7 12 9 12 9 8.7 11.7 6 15 6c3.3 0 6 2.7 6 6 3.3 0 6 2.7 6 6z" fill="#0078D4"/>
-      </svg>
-    )
-  }
-  return null
-}
 
 function CloudImport({ toolId, onImported }: { toolId: string; onImported: () => void }) {
   const { getToken } = useAuth()
@@ -508,7 +472,7 @@ function CloudImport({ toolId, onImported }: { toolId: string; onImported: () =>
           disabled={loading !== null}
           className="flex items-center gap-1.5 text-[10px] font-mono px-2.5 py-1.5 rounded-sm border border-brand-border bg-brand-surface hover:bg-brand-bg text-brand-secondary transition-colors disabled:opacity-40"
         >
-          <CloudProviderIcon id={s.id} />
+          <IntegrationLogo slug={s.logoSlug} size={13} />
           {loading === s.id ? 'Importing…' : s.label}
         </button>
       ))}
