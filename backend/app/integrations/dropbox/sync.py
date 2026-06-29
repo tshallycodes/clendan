@@ -14,7 +14,7 @@ from app.integrations.dropbox import client as dropbox
 logger = get_logger(__name__)
 
 
-async def sync_dropbox_connection(ctx: dict, integration_id: str, tenant_id: str) -> dict:
+async def sync_dropbox_connection(_ctx: dict, integration_id: str, tenant_id: str) -> dict:
     """
     arq job: list PDF files in Dropbox, emit receipt_received events (idempotent),
     write sync log, mark integration as connected.
@@ -96,7 +96,7 @@ async def sync_dropbox_connection(ctx: dict, integration_id: str, tenant_id: str
         return {"status": "skipped", "reason": "disconnected_during_sync"}
 
     if sync_status == "success":
-        from prisma.types import Json
+        from prisma import Json
         await db.integration.update(
             where={"id": integration_id},
             data={

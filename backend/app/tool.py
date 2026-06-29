@@ -28,6 +28,7 @@ from app.integrations.codat.sync import poll_codat_status
 from app.integrations.hubspot.sync import sync_hubspot_connection
 from app.integrations.google.sync_gmail import sync_gmail_connection
 from app.integrations.google.sync_drive import sync_drive_connection
+from app.integrations.dropbox.sync import sync_dropbox_connection
 from app.integrations.outlook.sync import sync_outlook_connection
 from app.integrations.outlook.sync import renew_outlook_subscriptions
 from app.integrations.sage.sync import sync_sage_connection
@@ -1113,6 +1114,7 @@ class ToolSettings:
         sync_hubspot_connection,
         sync_gmail_connection,
         sync_drive_connection,
+        sync_dropbox_connection,
         sync_outlook_connection,
         renew_outlook_subscriptions,
         sync_sage_connection,

@@ -90,7 +90,7 @@ async def sync_drive_connection(ctx: dict, integration_id: str, tenant_id: str) 
     })
 
     if sync_status == "success":
-        from prisma.types import Json
+        from prisma import Json
         await db.integration.update(
             where={"id": integration_id},
             data={

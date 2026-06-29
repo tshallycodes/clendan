@@ -158,7 +158,7 @@ class Settings(BaseSettings):
             "freshbooks_redirect_uri": f"{base}/v1/integrations/freshbooks/callback",
             "sage_redirect_uri": f"{base}/v1/integrations/sage/callback",
             "salesforce_redirect_uri": f"{base}/v1/integrations/salesforce/callback",
-            "dropbox_redirect_uri": f"{base}/v1/integrations/dropbox/callback",
+            "dropbox_redirect_uri": f"{self.frontend_url.rstrip('/')}/auth/dropbox/callback",
             "onedrive_redirect_uri": f"{base}/v1/integrations/onedrive/callback",
             "netsuite_redirect_uri": f"{base}/v1/integrations/netsuite/callback",
             "dynamics_redirect_uri": f"{base}/v1/integrations/dynamics/callback",
