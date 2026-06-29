@@ -428,18 +428,10 @@ function DocumentRow({ doc, toolId, onAbort }: DocumentRowProps) {
   )
 }
 
-interface CloudSource {
-  id: string
-  label: string
-  bg: string
-  bgHover: string
-  border: string
-}
-
-const CLOUD_SOURCES: CloudSource[] = [
-  { id: 'google_drive', label: 'Google Drive', bg: 'rgba(66,133,244,0.07)',  bgHover: 'rgba(66,133,244,0.14)', border: 'rgba(66,133,244,0.28)' },
-  { id: 'dropbox',      label: 'Dropbox',      bg: 'rgba(0,97,255,0.07)',    bgHover: 'rgba(0,97,255,0.14)',   border: 'rgba(0,97,255,0.28)' },
-  { id: 'onedrive',     label: 'OneDrive',     bg: 'rgba(0,120,212,0.07)',   bgHover: 'rgba(0,120,212,0.14)', border: 'rgba(0,120,212,0.28)' },
+const CLOUD_SOURCES: { id: string; label: string }[] = [
+  { id: 'google_drive', label: 'Google Drive' },
+  { id: 'dropbox',      label: 'Dropbox' },
+  { id: 'onedrive',     label: 'OneDrive' },
 ]
 
 function CloudProviderIcon({ id }: { id: string }) {
@@ -475,7 +467,6 @@ function CloudImport({ toolId, onImported }: { toolId: string; onImported: () =>
   const { getToken } = useAuth()
   const { toast } = useToast()
   const [loading, setLoading] = useState<string | null>(null)
-  const [hovered, setHovered] = useState<string | null>(null)
 
   async function handleImport(source: string, label: string) {
     setLoading(source)
@@ -512,14 +503,8 @@ function CloudImport({ toolId, onImported }: { toolId: string; onImported: () =>
           key={s.id}
           type="button"
           onClick={() => handleImport(s.id, s.label)}
-          onMouseEnter={() => setHovered(s.id)}
-          onMouseLeave={() => setHovered(null)}
           disabled={loading !== null}
-          style={{
-            backgroundColor: hovered === s.id || loading === s.id ? s.bgHover : s.bg,
-            borderColor: s.border,
-          }}
-          className="flex items-center gap-1.5 text-[10px] font-mono px-2.5 py-1.5 rounded-sm border text-brand-secondary transition-colors disabled:opacity-40"
+          className="flex items-center gap-1.5 text-[10px] font-mono px-2.5 py-1.5 rounded-sm border border-brand-border bg-brand-surface hover:bg-brand-elevated text-brand-secondary transition-colors disabled:opacity-40"
         >
           <CloudProviderIcon id={s.id} />
           {loading === s.id ? 'Importing…' : s.label}
