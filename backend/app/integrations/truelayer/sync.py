@@ -389,9 +389,6 @@ async def _do_sync_truelayer_connection(integration_id: str, tenant_id: str) -> 
 
 
 async def enqueue_truelayer_sync(integration_id: str, tenant_id: str) -> None:
-    import arq
-    from app.core.config import get_settings
-    settings = get_settings()
-    redis = await arq.create_pool(arq.connections.RedisSettings.from_dsn(settings.redis_public_url))
-    await redis.enqueue_job("sync_truelayer_connection", integration_id, tenant_id)
-    await redis.aclose()
+    from app.queue.pool import get_queue_pool
+    pool = await get_queue_pool()
+    await pool.enqueue_job("sync_truelayer_connection", integration_id, tenant_id)
