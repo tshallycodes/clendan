@@ -4,6 +4,7 @@ All routes require RequireOrgAuth. All queries scoped to current_user.tenant_id.
 """
 from __future__ import annotations
 
+import json as _json
 from datetime import UTC, datetime
 from typing import Any, Optional
 
@@ -76,9 +77,22 @@ def _default_tasks() -> list[dict[str, Any]]:
     ]
 
 
+def _parse_json_list(value: Any) -> list:
+    """Return value as a Python list regardless of whether Prisma stored it as a list or a JSON-encoded string."""
+    if isinstance(value, list):
+        return value
+    if isinstance(value, str):
+        try:
+            parsed = _json.loads(value)
+            return parsed if isinstance(parsed, list) else []
+        except (_json.JSONDecodeError, ValueError):
+            return []
+    return []
+
+
 def _serialise_run(run: Any) -> dict[str, Any]:
-    tasks = run.tasks_json if isinstance(run.tasks_json, list) else []
-    sign_offs = run.sign_offs_json if isinstance(run.sign_offs_json, list) else []
+    tasks = _parse_json_list(run.tasks_json)
+    sign_offs = _parse_json_list(run.sign_offs_json)
     return {
         "id": run.id,
         "tenant_id": run.tenant_id,
@@ -243,9 +257,8 @@ async def complete_task(
             detail=f"Task {task_key} is auto-evaluated and cannot be manually completed",
         )
 
-    tasks: list[dict[str, Any]] = (
-        run.tasks_json if isinstance(run.tasks_json, list) else _default_tasks()
-    )
+    raw_tasks = _parse_json_list(run.tasks_json)
+    tasks: list[dict[str, Any]] = raw_tasks if raw_tasks else _default_tasks()
     now_iso = datetime.now(UTC).isoformat()
     updated = False
     for task in tasks:
@@ -307,9 +320,7 @@ async def add_sign_off(
     if run.status == "closed":
         raise HTTPException(status_code=409, detail="Close run is already closed")
 
-    sign_offs: list[dict[str, Any]] = (
-        run.sign_offs_json if isinstance(run.sign_offs_json, list) else []
-    )
+    sign_offs: list[dict[str, Any]] = _parse_json_list(run.sign_offs_json)
     email = current_user.email
     if any(s.get("email") == email for s in sign_offs):
         raise HTTPException(status_code=409, detail="You have already signed off on this run")
@@ -317,9 +328,8 @@ async def add_sign_off(
     sign_offs.append({"email": email, "signed_at": datetime.now(UTC).isoformat()})
 
     # Check if sign_offs_collected task should be marked complete
-    tasks: list[dict[str, Any]] = (
-        run.tasks_json if isinstance(run.tasks_json, list) else _default_tasks()
-    )
+    raw_tasks = _parse_json_list(run.tasks_json)
+    tasks: list[dict[str, Any]] = raw_tasks if raw_tasks else _default_tasks()
     for task in tasks:
         if task["task_key"] == "sign_offs_collected":
             task["status"] = "complete"

@@ -129,11 +129,9 @@ export function MonthEndCloseTab({ toolId }: Props) {
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({}),
       })
-      const j = await res.json()
+      const j = await res.json().catch(() => null)
       if (res.ok) { setRun(j.data); toast('Task marked complete', 'success') }
-      else { toast(j.detail ?? 'Failed to update task', 'error') }
-    } catch {
-      toast('Failed to update task', 'error')
+      else { toast(j?.detail ?? `Failed to update task (${res.status})`, 'error') }
     } finally {
       setCompletingTask(null)
     }
