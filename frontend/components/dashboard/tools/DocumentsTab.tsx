@@ -164,7 +164,7 @@ function QuickActions({ doc, toolId, onAbort }: QuickActionsProps) {
     finally { setActionLoading(null) }
   }
 
-  async function handleExport(destination: 'google-drive' | 'dropbox') {
+  async function handleExport(destination: 'google-drive' | 'dropbox' | 'onedrive') {
     setActionLoading(destination)
     try {
       const token = await getToken()
