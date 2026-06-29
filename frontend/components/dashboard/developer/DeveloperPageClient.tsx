@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState, useEffect } from 'react'
 import { useAuth } from '@clerk/nextjs'
@@ -9,7 +9,7 @@ import { CodeBlock } from '@/components/dashboard/api/CodeBlock'
 import { ApiPlayground } from './ApiPlayground'
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
-const BASE_URL = 'https://api.clendan.com/v1'
+const BASE_URL = 'https://api.clendan.com'
 const DOCS_URL = 'https://clendan.mintlify.app'
 
 const RESPONSE_SHAPE = `{
@@ -25,7 +25,7 @@ const SNIPPETS: Record<Lang, string> = {
   python: `import requests
 
 response = requests.post(
-    "https://api.clendan.com/v1/execute",
+    "https://api.clendan.com/execute",
     headers={
         "Authorization": "ck_live_...",
         "Idempotency-Key": "unique-key-here",
@@ -38,7 +38,7 @@ response = requests.post(
 print(response.json())`,
 
   javascript: `const response = await fetch(
-  "https://api.clendan.com/v1/execute",
+  "https://api.clendan.com/execute",
   {
     method: "POST",
     headers: {
@@ -55,7 +55,7 @@ print(response.json())`,
 
 const data = await response.json();`,
 
-  curl: `curl -X POST https://api.clendan.com/v1/execute \\
+  curl: `curl -X POST https://api.clendan.com/execute \\
   -H "Authorization: ck_live_..." \\
   -H "Idempotency-Key: $(uuidgen)" \\
   -H "Content-Type: application/json" \\
@@ -125,14 +125,14 @@ function ApiKeysSection({ keys, loading, showForm, setShowForm, newName, setNewN
     <div className="space-y-3">
       {revealedKey && (
         <div className="border border-[rgba(0,200,83,0.4)] bg-[rgba(0,200,83,0.05)] rounded-sm p-4 space-y-3">
-          <p className="text-[10px] font-mono uppercase tracking-widest text-[#00C853]">New key — copy it now. It will not be shown again.</p>
+          <p className="text-[10px] font-mono uppercase tracking-widest text-[#00C853]">New key â€” copy it now. It will not be shown again.</p>
           <div className="flex items-center gap-3 bg-brand-bg border border-brand-border rounded-sm px-3 py-2">
             <code className="flex-1 text-xs font-mono text-brand-text break-all">{revealedKey}</code>
             <button type="button" onClick={copyKey} className="shrink-0 text-brand-muted hover:text-brand-text transition-colors">
               {copiedKey ? <Check className="w-4 h-4 text-[#00C853]" /> : <Copy className="w-4 h-4" />}
             </button>
           </div>
-          <button type="button" onClick={() => setRevealedKey(null)} className="text-xs font-mono text-brand-muted hover:text-brand-text transition-colors">I&apos;ve copied it — dismiss</button>
+          <button type="button" onClick={() => setRevealedKey(null)} className="text-xs font-mono text-brand-muted hover:text-brand-text transition-colors">I&apos;ve copied it â€” dismiss</button>
         </div>
       )}
       {showForm && (
@@ -142,22 +142,22 @@ function ApiKeysSection({ keys, loading, showForm, setShowForm, newName, setNewN
             className="flex-1 bg-brand-bg border border-brand-border focus:border-[#00C853] text-brand-text placeholder:text-brand-muted rounded-sm px-3 py-2 text-xs font-mono outline-none" />
           <button type="button" onClick={handleCreate} disabled={creating || !newName.trim()}
             className="bg-[#00C853] text-black hover:bg-[#00a844] rounded-sm px-4 py-2 text-xs font-mono disabled:opacity-40 transition-colors active:scale-[0.97]">
-            {creating ? 'Generating…' : 'Generate'}
+            {creating ? 'Generatingâ€¦' : 'Generate'}
           </button>
           <button type="button" onClick={() => { setShowForm(false); setNewName('') }} className="text-brand-muted hover:text-brand-text transition-colors"><X className="w-4 h-4" /></button>
         </div>
       )}
       {loading ? (
-        <p className="text-xs font-mono text-brand-muted py-4">Loading…</p>
+        <p className="text-xs font-mono text-brand-muted py-4">Loadingâ€¦</p>
       ) : keys.length === 0 && !showForm ? (
-        <p className="text-xs font-mono text-brand-muted py-2">No API keys yet — generate one to start.</p>
+        <p className="text-xs font-mono text-brand-muted py-2">No API keys yet â€” generate one to start.</p>
       ) : (
         <div className="divide-y divide-brand-border border border-brand-border rounded-sm overflow-hidden">
           {keys.map((k) => (
             <div key={k.id} className="bg-brand-surface px-4 py-3 flex items-center gap-4">
               <div className="flex-1 min-w-0">
                 <span className="text-xs font-mono text-brand-text">{k.name}</span>
-                <code className="ml-3 text-[10px] font-mono text-brand-muted">{k.key_prefix}••••••••</code>
+                <code className="ml-3 text-[10px] font-mono text-brand-muted">{k.key_prefix}â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢</code>
               </div>
               <span className={`text-[10px] font-mono px-2 py-0.5 rounded-sm border ${k.status === 'active' ? 'text-[#00C853] border-[rgba(0,200,83,0.3)] bg-[rgba(0,200,83,0.08)]' : 'text-brand-muted border-brand-border'}`}>{k.status}</span>
               <span className="text-[10px] font-mono text-brand-muted hidden sm:block">{new Date(k.created_at).toLocaleDateString()}</span>
@@ -199,7 +199,7 @@ export function DeveloperPageClient() {
   async function fetchKeys() {
     try {
       const token = await getToken()
-      const res = await fetch(`${API}/v1/api-keys`, { headers: { Authorization: `Bearer ${token}` } })
+      const res = await fetch(`${API}/api-keys`, { headers: { Authorization: `Bearer ${token}` } })
       if (res.ok) { const json = await res.json(); setKeys(json.data.api_keys ?? []) }
       else toast('Failed to load API keys', 'error')
     } finally { setLoading(false) }
@@ -212,12 +212,12 @@ export function DeveloperPageClient() {
     setCreating(true)
     try {
       const token = await getToken()
-      const res = await fetch(`${API}/v1/api-keys`, {
+      const res = await fetch(`${API}/api-keys`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: newName.trim() }),
       })
-      if (res.ok) { const json = await res.json(); setRevealedKey(json.data.key); toast('API key generated — copy it now', 'success'); setNewName(''); setShowForm(false); await fetchKeys() }
+      if (res.ok) { const json = await res.json(); setRevealedKey(json.data.key); toast('API key generated â€” copy it now', 'success'); setNewName(''); setShowForm(false); await fetchKeys() }
       else toast('Failed to generate API key', 'error')
     } finally { setCreating(false) }
   }
@@ -225,7 +225,7 @@ export function DeveloperPageClient() {
   async function handleRevoke(id: string) {
     try {
       const token = await getToken()
-      await fetch(`${API}/v1/api-keys/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } })
+      await fetch(`${API}/api-keys/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } })
       await fetchKeys(); toast('API key revoked', 'success')
     } catch { toast('Failed to revoke key', 'error') }
   }
@@ -233,7 +233,7 @@ export function DeveloperPageClient() {
   async function handleDelete(id: string) {
     try {
       const token = await getToken()
-      await fetch(`${API}/v1/api-keys/${id}/permanent`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } })
+      await fetch(`${API}/api-keys/${id}/permanent`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } })
       await fetchKeys(); toast('API key deleted', 'success')
     } catch { toast('Failed to delete key', 'error') }
   }
@@ -246,7 +246,7 @@ export function DeveloperPageClient() {
         <div>
           <h1 className="font-heading font-bold text-2xl text-brand-text">Developer</h1>
           <p className="text-xs font-mono text-brand-muted mt-1">
-            Connect external systems to Clendan — execute tools, receive webhooks, query audit logs.
+            Connect external systems to Clendan â€” execute tools, receive webhooks, query audit logs.
           </p>
         </div>
         <a href={DOCS_URL} target="_blank" rel="noopener noreferrer"
@@ -273,7 +273,7 @@ export function DeveloperPageClient() {
         </div>
         <div className="bg-brand-surface border border-brand-border rounded-sm p-4 space-y-1">
           <p className="text-[10px] font-mono uppercase tracking-widest text-brand-muted">Rate Limit</p>
-          <code className="text-xs font-mono text-brand-text">60–200 req / min</code>
+          <code className="text-xs font-mono text-brand-text">60â€“200 req / min</code>
         </div>
         <div className="bg-brand-surface border border-brand-border rounded-sm p-4 space-y-1">
           <p className="text-[10px] font-mono uppercase tracking-widest text-brand-muted">Idempotency</p>

@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState } from 'react'
 import { useAuth } from '@clerk/nextjs'
@@ -45,7 +45,7 @@ export function Step2({ onNext, onSkip }: Step2Props) {
     setError(null)
     try {
       const token = await getToken()
-      const res = await fetch(`${API}/v1/onboarding/invite-team`, {
+      const res = await fetch(`${API}/onboarding/invite-team`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ invitations: filled }),
@@ -99,7 +99,7 @@ export function Step2({ onNext, onSkip }: Step2Props) {
         disabled={loading}
         className="w-full bg-brand-green text-black hover:bg-[#00a844] active:scale-[0.97] rounded-sm px-4 py-2.5 text-xs font-mono font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
       >
-        {loading ? 'Sending invites…' : 'Send Invites →'}
+        {loading ? 'Sending invitesâ€¦' : 'Send Invites â†’'}
       </button>
       <button
         type="button"

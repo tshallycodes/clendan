@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useEffect, useState } from 'react'
 import { useAuth } from '@clerk/nextjs'
@@ -41,7 +41,7 @@ export function TeamSection() {
     async function load() {
       try {
         const token = await getToken()
-        const res = await fetch(`${API}/v1/tenants/me/members`, {
+        const res = await fetch(`${API}/tenants/me/members`, {
           headers: { Authorization: `Bearer ${token}` },
         })
         if (res.ok) {
@@ -78,7 +78,7 @@ export function TeamSection() {
       {members.map((m) => (
         <div key={m.id} className="bg-brand-surface px-4 py-3 flex items-center gap-3">
           <span className="w-32 shrink-0 text-xs font-mono text-brand-text truncate">
-            {m.email ? nameFromEmail(m.email) : <span className="text-brand-muted">—</span>}
+            {m.email ? nameFromEmail(m.email) : <span className="text-brand-muted">â€”</span>}
           </span>
           <span className="flex-1 text-xs font-mono text-brand-muted truncate">
             {m.email || <span className="text-brand-muted italic">no email</span>}

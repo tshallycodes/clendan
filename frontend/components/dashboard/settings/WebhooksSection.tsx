@@ -1,8 +1,8 @@
-'use client'
+﻿'use client'
 
 import Link from 'next/link'
 
-const WEBHOOK_SNIPPET = `POST /v1/webhooks
+const WEBHOOK_SNIPPET = `POST /webhooks
 Authorization: ck_live_...
 Content-Type: application/json
 
@@ -43,7 +43,7 @@ export function WebhooksSection() {
         href="/developer"
         className="inline-flex text-xs font-mono text-brand-text hover:text-[#00C853] transition-colors"
       >
-        Get your API key →
+        Get your API key â†’
       </Link>
     </div>
   )

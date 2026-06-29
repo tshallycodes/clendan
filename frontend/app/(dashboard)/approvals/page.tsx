@@ -1,4 +1,4 @@
-import type { Metadata } from 'next'
+﻿import type { Metadata } from 'next'
 import { getBackendToken } from '@/lib/auth'
 import { apiGet } from '@/lib/api'
 import { ApprovalsClient, type Approval } from '@/components/dashboard/approvals/ApprovalsClient'
@@ -12,7 +12,7 @@ export default async function ApprovalsPage() {
   try {
     const token = await getBackendToken()
     if (token) {
-      const data = await apiGet<ApprovalsData>('/v1/dashboard/approvals?limit=100', token)
+      const data = await apiGet<ApprovalsData>('/dashboard/approvals?limit=100', token)
       approvals = data.approvals ?? []
     }
   } catch { /* backend not running */ }

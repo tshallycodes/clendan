@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
@@ -59,7 +59,7 @@ export function IntegrationsSection() {
     const token = await getToken()
     const results = await Promise.allSettled(
       STATUSABLE_SLUGS.map(async (slug) => {
-        const res = await fetch(`${API}/v1/integrations/${slug}/status`, {
+        const res = await fetch(`${API}/integrations/${slug}/status`, {
           headers: { Authorization: `Bearer ${token}` },
         })
         if (!res.ok) return { slug, status: 'not_connected' as const, connected_at: null, last_synced_at: null, institution_name: null }
@@ -95,7 +95,7 @@ export function IntegrationsSection() {
       )
       await Promise.allSettled(
         toSync.map(({ slug }) =>
-          fetch(`${API}/v1/integrations/${slug}/sync`, {
+          fetch(`${API}/integrations/${slug}/sync`, {
             method: 'POST',
             headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
           })
@@ -104,7 +104,7 @@ export function IntegrationsSection() {
       await fetchStatuses()
       toast('Bank and accounting integrations resynced', 'success')
     } catch {
-      toast('Resync failed — check individual integrations', 'error')
+      toast('Resync failed â€” check individual integrations', 'error')
     } finally {
       setResyncing(false)
     }
@@ -114,12 +114,12 @@ export function IntegrationsSection() {
     setResettingSync(true)
     try {
       const token = await getToken()
-      await fetch(`${API}/v1/integrations/reset-syncing`, {
+      await fetch(`${API}/integrations/reset-syncing`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
       })
       await fetchStatuses()
-      toast('Sync status reset — integrations marked connected', 'success')
+      toast('Sync status reset â€” integrations marked connected', 'success')
     } catch {
       toast('Reset failed', 'error')
     } finally {
@@ -132,7 +132,7 @@ export function IntegrationsSection() {
     setConfirmSlug(null)
     try {
       const token = await getToken()
-      await fetch(`${API}/v1/integrations/${slug}/disconnect`, {
+      await fetch(`${API}/integrations/${slug}/disconnect`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       })
@@ -165,7 +165,7 @@ export function IntegrationsSection() {
           href="/dashboard/integrations"
           className="text-[10px] font-mono text-brand-secondary hover:text-brand-text transition-colors"
         >
-          Connect integrations →
+          Connect integrations â†’
         </Link>
       </div>
     )
@@ -202,7 +202,7 @@ export function IntegrationsSection() {
                 <p className="text-[10px] font-mono text-brand-muted">
                   Connected {new Date(connected_at).toLocaleDateString('en-GB')}
                   {last_synced_at
-                    ? ` · Last sync ${new Date(last_synced_at).toLocaleDateString('en-GB')}`
+                    ? ` Â· Last sync ${new Date(last_synced_at).toLocaleDateString('en-GB')}`
                     : ''}
                 </p>
               )}
@@ -216,7 +216,7 @@ export function IntegrationsSection() {
                     disabled={disconnecting === slug}
                     className="text-[10px] font-mono text-[#ff4d6d] border border-[#ff4d6d]/30 bg-[rgba(255,77,109,0.08)] hover:bg-[rgba(255,77,109,0.15)] rounded-sm px-2 py-1 transition-colors disabled:opacity-50"
                   >
-                    {disconnecting === slug ? 'Disconnecting…' : 'Confirm'}
+                    {disconnecting === slug ? 'Disconnectingâ€¦' : 'Confirm'}
                   </button>
                   <button
                     onClick={() => setConfirmSlug(null)}
@@ -244,7 +244,7 @@ export function IntegrationsSection() {
           href="/dashboard/integrations"
           className="text-[10px] font-mono text-brand-muted hover:text-brand-text transition-colors"
         >
-          Manage all integrations →
+          Manage all integrations â†’
         </Link>
         <div className="flex items-center gap-2">
           {connected.some((i) => i.status === 'syncing') && (
@@ -253,7 +253,7 @@ export function IntegrationsSection() {
               disabled={resettingSync}
               className="text-[10px] font-mono text-[#f5a623] border border-[#f5a623]/30 bg-[rgba(245,166,35,0.08)] hover:bg-[rgba(245,166,35,0.12)] rounded-sm px-2 py-1 transition-colors disabled:opacity-50"
             >
-              {resettingSync ? 'Resetting…' : 'Reset Syncing'}
+              {resettingSync ? 'Resettingâ€¦' : 'Reset Syncing'}
             </button>
           )}
           <button
@@ -261,7 +261,7 @@ export function IntegrationsSection() {
             disabled={resyncing}
             className="text-[10px] font-mono text-brand-secondary border border-brand-border bg-transparent hover:bg-brand-bg rounded-sm px-2 py-1 transition-colors disabled:opacity-50"
           >
-            {resyncing ? 'Syncing…' : 'Resync All'}
+            {resyncing ? 'Syncingâ€¦' : 'Resync All'}
           </button>
         </div>
       </div>

@@ -1,4 +1,4 @@
-import type { Metadata } from 'next'
+﻿import type { Metadata } from 'next'
 import { getBackendToken } from '@/lib/auth'
 import { apiGet } from '@/lib/api'
 import { slugToTool } from '../tools-data'
@@ -16,7 +16,7 @@ export default async function FinancialReportingPage() {
   try {
     const token = await getBackendToken()
     if (token) {
-      const res = await apiGet<{ tools: Tool[] }>('/v1/tools', token)
+      const res = await apiGet<{ tools: Tool[] }>('/tools', token)
       const tools = res.tools ?? []
       deployed = tools.find((w) => w.type === tool.type) ?? null
     }

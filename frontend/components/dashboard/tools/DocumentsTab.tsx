@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useEffect, useRef, useState } from 'react'
 import { useAuth } from '@clerk/nextjs'
@@ -39,7 +39,7 @@ const DECISION_CONFIG: Record<string, { label: string; color: string; bg: string
 
 const DOC_TYPE_LABEL: Record<string, string> = {
   document: 'Document',
-  pending:  'Analysing…',
+  pending:  'Analysingâ€¦',
 }
 
 function formatBytes(bytes: number): string {
@@ -61,7 +61,7 @@ function AccordionSection({ title, items, color = 'text-brand-secondary' }: { ti
         <span className="text-[10px] font-mono text-brand-muted uppercase tracking-widest">
           {title} <span className="text-brand-secondary normal-case tracking-normal">({items.length})</span>
         </span>
-        <span className="text-[10px] font-mono text-brand-muted">{open ? '▲' : '▼'}</span>
+        <span className="text-[10px] font-mono text-brand-muted">{open ? 'â–²' : 'â–¼'}</span>
       </button>
       <AnimatePresence>
         {open && (
@@ -75,7 +75,7 @@ function AccordionSection({ title, items, color = 'text-brand-secondary' }: { ti
             <div className="border-t border-brand-border divide-y divide-brand-border-subtle">
               {items.map((item, i) => (
                 <div key={i} className="flex gap-2 px-3 py-2">
-                  <span className="text-[10px] font-mono text-brand-muted shrink-0 mt-0.5">→</span>
+                  <span className="text-[10px] font-mono text-brand-muted shrink-0 mt-0.5">â†’</span>
                   <p className={`text-[11px] font-mono leading-relaxed ${color}`}>{item}</p>
                 </div>
               ))}
@@ -146,7 +146,7 @@ function QuickActions({ doc, toolId, onAbort }: QuickActionsProps) {
     try {
       const token = await getToken()
       const res = await fetch(
-        `${API}/v1/document-intelligence/${toolId}/documents/${doc.id}/pdf`,
+        `${API}/document-intelligence/${toolId}/documents/${doc.id}/pdf`,
         { headers: { Authorization: `Bearer ${token}` } },
       )
       if (!res.ok) { toast('PDF generation failed', 'error'); return }
@@ -169,7 +169,7 @@ function QuickActions({ doc, toolId, onAbort }: QuickActionsProps) {
     try {
       const token = await getToken()
       const res = await fetch(
-        `${API}/v1/document-intelligence/${toolId}/documents/${doc.id}/export/${destination}`,
+        `${API}/document-intelligence/${toolId}/documents/${doc.id}/export/${destination}`,
         { method: 'POST', headers: { Authorization: `Bearer ${token}` } },
       )
       const json = await res.json()
@@ -187,7 +187,7 @@ function QuickActions({ doc, toolId, onAbort }: QuickActionsProps) {
     setActionLoading('delete')
     try {
       const token = await getToken()
-      const res = await fetch(`${API}/v1/document-intelligence/${toolId}/documents/${doc.id}/abort`, { method: 'POST', headers: { Authorization: `Bearer ${token}` } })
+      const res = await fetch(`${API}/document-intelligence/${toolId}/documents/${doc.id}/abort`, { method: 'POST', headers: { Authorization: `Bearer ${token}` } })
       if (res.ok) { toast('Document deleted', 'success'); onAbort(doc.id) }
       else { const j = await res.json().catch(() => ({})); toast((j as { detail?: string }).detail ?? 'Failed', 'error') }
     } catch { toast('Network error', 'error') }
@@ -201,7 +201,7 @@ function QuickActions({ doc, toolId, onAbort }: QuickActionsProps) {
       <p className="text-[10px] font-mono text-brand-muted uppercase tracking-widest mb-2">Quick actions</p>
       <div className="flex flex-wrap gap-2">
         <button type="button" onClick={handleDownloadPdf} disabled={actionLoading !== null} className={btn}>
-          {actionLoading === 'pdf' ? '…' : 'Download PDF'}
+          {actionLoading === 'pdf' ? 'â€¦' : 'Download PDF'}
         </button>
         <button
           type="button"
@@ -210,7 +210,7 @@ function QuickActions({ doc, toolId, onAbort }: QuickActionsProps) {
           className="flex items-center gap-1.5 text-[10px] font-mono px-2.5 py-1.5 rounded-sm border border-brand-border bg-brand-surface hover:bg-brand-bg text-brand-secondary transition-colors disabled:opacity-40"
         >
           <IntegrationLogo slug="google-drive" size={13} />
-          {actionLoading === 'google-drive' ? '…' : 'Export to Drive'}
+          {actionLoading === 'google-drive' ? 'â€¦' : 'Export to Drive'}
         </button>
         <button
           type="button"
@@ -219,7 +219,7 @@ function QuickActions({ doc, toolId, onAbort }: QuickActionsProps) {
           className="flex items-center gap-1.5 text-[10px] font-mono px-2.5 py-1.5 rounded-sm border border-brand-border bg-brand-surface hover:bg-brand-bg text-brand-secondary transition-colors disabled:opacity-40"
         >
           <IntegrationLogo slug="dropbox" size={13} />
-          {actionLoading === 'dropbox' ? '…' : 'Export to Dropbox'}
+          {actionLoading === 'dropbox' ? 'â€¦' : 'Export to Dropbox'}
         </button>
         <button
           type="button"
@@ -228,7 +228,7 @@ function QuickActions({ doc, toolId, onAbort }: QuickActionsProps) {
           className="flex items-center gap-1.5 text-[10px] font-mono px-2.5 py-1.5 rounded-sm border border-brand-border bg-brand-surface hover:bg-brand-bg text-brand-secondary transition-colors disabled:opacity-40"
         >
           <IntegrationLogo slug="onedrive" size={13} />
-          {actionLoading === 'onedrive' ? '…' : 'Export to OneDrive'}
+          {actionLoading === 'onedrive' ? 'â€¦' : 'Export to OneDrive'}
         </button>
         <button
           type="button"
@@ -236,7 +236,7 @@ function QuickActions({ doc, toolId, onAbort }: QuickActionsProps) {
           disabled={actionLoading !== null}
           className="text-[10px] font-mono px-3 py-1.5 rounded-sm border border-[#ff4d6d] text-[#ff4d6d] bg-[rgba(255,77,109,0.1)] hover:bg-[rgba(255,77,109,0.16)] transition-colors disabled:opacity-50"
         >
-          {actionLoading === 'delete' ? '…' : 'Delete'}
+          {actionLoading === 'delete' ? 'â€¦' : 'Delete'}
         </button>
       </div>
     </div>
@@ -262,7 +262,7 @@ function DocumentRow({ doc, toolId, onAbort }: DocumentRowProps) {
     try {
       const token = await getToken()
       const res = await fetch(
-        `${API}/v1/document-intelligence/${toolId}/documents/${doc.id}/abort`,
+        `${API}/document-intelligence/${toolId}/documents/${doc.id}/abort`,
         { method: 'POST', headers: { Authorization: `Bearer ${token}` } },
       )
       if (res.ok) {
@@ -332,7 +332,7 @@ function DocumentRow({ doc, toolId, onAbort }: DocumentRowProps) {
                       ? 'text-[#ff4d6d] bg-[rgba(255,77,109,0.08)] border-[rgba(255,77,109,0.2)]'
                       : 'text-[#f5a623] bg-[rgba(245,166,35,0.08)] border-[rgba(245,166,35,0.2)]'
                   }`}>
-                    {doc.id.startsWith('temp-') ? 'Uploading…' : timedOut ? 'Timed out' : 'Processing…'}
+                    {doc.id.startsWith('temp-') ? 'Uploadingâ€¦' : timedOut ? 'Timed out' : 'Processingâ€¦'}
                   </span>
                   {!doc.id.startsWith('temp-') && (
                     <button
@@ -341,7 +341,7 @@ function DocumentRow({ doc, toolId, onAbort }: DocumentRowProps) {
                       disabled={aborting}
                       className="text-[10px] font-mono text-[#ff4d6d] bg-[rgba(255,77,109,0.06)] border border-[rgba(255,77,109,0.3)] hover:bg-[rgba(255,77,109,0.12)] rounded-sm px-2 py-0.5 transition-colors disabled:opacity-50"
                     >
-                      {aborting ? 'Deleting…' : timedOut ? 'Delete' : 'Abort'}
+                      {aborting ? 'Deletingâ€¦' : timedOut ? 'Delete' : 'Abort'}
                     </button>
                   )}
                 </>
@@ -357,7 +357,7 @@ function DocumentRow({ doc, toolId, onAbort }: DocumentRowProps) {
                     disabled={aborting}
                     className="text-[10px] font-mono text-[#ff4d6d] bg-[rgba(255,77,109,0.06)] border border-[rgba(255,77,109,0.3)] hover:bg-[rgba(255,77,109,0.12)] rounded-sm px-2 py-0.5 transition-colors disabled:opacity-50"
                   >
-                    {aborting ? 'Deleting…' : 'Delete'}
+                    {aborting ? 'Deletingâ€¦' : 'Delete'}
                   </button>
                 </>
               )}
@@ -368,7 +368,7 @@ function DocumentRow({ doc, toolId, onAbort }: DocumentRowProps) {
                   disabled={aborting}
                   className="text-[10px] font-mono text-[#ff4d6d] bg-[rgba(255,77,109,0.06)] border border-[rgba(255,77,109,0.3)] hover:bg-[rgba(255,77,109,0.12)] rounded-sm px-2 py-0.5 transition-colors disabled:opacity-50"
                 >
-                  {aborting ? 'Deleting…' : 'Delete'}
+                  {aborting ? 'Deletingâ€¦' : 'Delete'}
                 </button>
               )}
               {dc && (
@@ -381,7 +381,7 @@ function DocumentRow({ doc, toolId, onAbort }: DocumentRowProps) {
                   {Math.round(doc.confidence * 100)}%
                 </span>
               )}
-              <span className="text-[10px] font-mono text-brand-muted">{expanded ? '▲' : '▼'}</span>
+              <span className="text-[10px] font-mono text-brand-muted">{expanded ? 'â–²' : 'â–¼'}</span>
             </div>
           </div>
 
@@ -407,7 +407,7 @@ function DocumentRow({ doc, toolId, onAbort }: DocumentRowProps) {
                     Analysis
                     {!!doc.extracted_json?.document_subtype && (
                       <span className="ml-2 normal-case tracking-normal text-brand-secondary">
-                        — {String(doc.extracted_json.document_subtype).replace(/_/g, ' ')}
+                        â€” {String(doc.extracted_json.document_subtype).replace(/_/g, ' ')}
                       </span>
                     )}
                   </p>
@@ -462,7 +462,7 @@ function CloudImport({ toolId, onImported }: { toolId: string; onImported: () =>
     try {
       const token = await getToken()
       const res = await fetch(
-        `${API}/v1/document-intelligence/${toolId}/browse/${source.id}`,
+        `${API}/document-intelligence/${toolId}/browse/${source.id}`,
         { headers: { Authorization: `Bearer ${token}` } },
       )
       const json = await res.json()
@@ -495,7 +495,7 @@ function CloudImport({ toolId, onImported }: { toolId: string; onImported: () =>
     try {
       const token = await getToken()
       const res = await fetch(
-        `${API}/v1/document-intelligence/${toolId}/import/${activePicker.id}`,
+        `${API}/document-intelligence/${toolId}/import/${activePicker.id}`,
         {
           method: 'POST',
           headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
@@ -508,7 +508,7 @@ function CloudImport({ toolId, onImported }: { toolId: string; onImported: () =>
         return
       }
       const { queued } = (json as { data: { queued: number; skipped: number } }).data
-      toast(queued > 0 ? `Importing ${queued} file${queued !== 1 ? 's' : ''}…` : 'Already imported', 'success')
+      toast(queued > 0 ? `Importing ${queued} file${queued !== 1 ? 's' : ''}â€¦` : 'Already imported', 'success')
       if (queued > 0) onImported()
       setActivePicker(null)
     } catch {
@@ -534,7 +534,7 @@ function CloudImport({ toolId, onImported }: { toolId: string; onImported: () =>
             }`}
           >
             <IntegrationLogo slug={s.logoSlug} size={13} />
-            {activePicker?.id === s.id && filesLoading ? 'Loading…' : s.label}
+            {activePicker?.id === s.id && filesLoading ? 'Loadingâ€¦' : s.label}
           </button>
         ))}
       </div>
@@ -545,7 +545,7 @@ function CloudImport({ toolId, onImported }: { toolId: string; onImported: () =>
             <div className="flex items-center gap-2">
               <IntegrationLogo slug={activePicker.logoSlug} size={13} />
               <span className="text-[10px] font-mono text-brand-muted uppercase tracking-widest">
-                {activePicker.label} · {files.length} file{files.length !== 1 ? 's' : ''}
+                {activePicker.label} Â· {files.length} file{files.length !== 1 ? 's' : ''}
               </span>
             </div>
             <button
@@ -553,7 +553,7 @@ function CloudImport({ toolId, onImported }: { toolId: string; onImported: () =>
               onClick={() => setActivePicker(null)}
               className="text-[10px] font-mono text-brand-muted hover:text-brand-text transition-colors"
             >
-              ✕
+              âœ•
             </button>
           </div>
 
@@ -612,7 +612,7 @@ function CloudImport({ toolId, onImported }: { toolId: string; onImported: () =>
               className="w-full bg-[#00C853] text-black text-[10px] font-mono py-1.5 rounded-sm hover:bg-[#00a844] active:scale-[0.97] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
             >
               {importing
-                ? 'Importing…'
+                ? 'Importingâ€¦'
                 : selected.size === 0
                 ? 'Select files to import'
                 : `Import ${selected.size} file${selected.size !== 1 ? 's' : ''}`}
@@ -649,7 +649,7 @@ function UploadArea({ uploading, onFiles }: { uploading: boolean; onFiles: (file
       {uploading ? (
         <div className="space-y-1.5">
           <div className="w-5 h-5 border-2 border-[#00C853] border-t-transparent rounded-full animate-spin mx-auto" />
-          <p className="text-xs font-mono text-brand-muted">Uploading…</p>
+          <p className="text-xs font-mono text-brand-muted">Uploadingâ€¦</p>
         </div>
       ) : (
         <div className="space-y-1.5">
@@ -657,7 +657,7 @@ function UploadArea({ uploading, onFiles }: { uploading: boolean; onFiles: (file
             Drop files here or click to browse
           </p>
           <p className="text-[10px] font-mono text-brand-muted">
-            PDF · Word · PNG · JPG · WebP · max 10 MB
+            PDF Â· Word Â· PNG Â· JPG Â· WebP Â· max 10 MB
           </p>
           <p className="text-[10px] font-mono text-brand-muted mt-1">
             Clen analyses and extracts summary, risks, loopholes, and improvements
@@ -684,7 +684,7 @@ export function DocumentsTab({ toolId }: { toolId: string | null }) {
     try {
       const token = await getToken()
       const res = await fetch(
-        `${API}/v1/document-intelligence/${toolId}/documents?limit=${limit}&offset=${off}`,
+        `${API}/document-intelligence/${toolId}/documents?limit=${limit}&offset=${off}`,
         { headers: { Authorization: `Bearer ${token}` } },
       )
       if (res.ok) {
@@ -707,7 +707,7 @@ export function DocumentsTab({ toolId }: { toolId: string | null }) {
       try {
         const token = await getToken()
         const res = await fetch(
-          `${API}/v1/document-intelligence/${toolId}/documents?limit=${limit}&offset=0`,
+          `${API}/document-intelligence/${toolId}/documents?limit=${limit}&offset=0`,
           { headers: { Authorization: `Bearer ${token}` } },
         )
         if (!res.ok) return
@@ -768,7 +768,7 @@ export function DocumentsTab({ toolId }: { toolId: string | null }) {
         const form = new FormData()
         form.append('file', file)
         const res = await fetch(
-          `${API}/v1/document-intelligence/${toolId}/upload`,
+          `${API}/document-intelligence/${toolId}/upload`,
           { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: form },
         )
         const json = await res.json()
@@ -778,7 +778,7 @@ export function DocumentsTab({ toolId }: { toolId: string | null }) {
           setTotal(t => t - 1)
           continue
         }
-        toast(`${file.name} uploaded — analysing…`, 'success')
+        toast(`${file.name} uploaded â€” analysingâ€¦`, 'success')
         setDocuments(prev => prev.map(d => d.id === tempId ? {
           id: json.data.document_id,
           document_type: 'pending' as DocumentType,
@@ -797,7 +797,7 @@ export function DocumentsTab({ toolId }: { toolId: string | null }) {
           created_at: now,
         } : d))
       } catch {
-        toast('Network error — please try again', 'error')
+        toast('Network error â€” please try again', 'error')
         setDocuments(prev => prev.filter(d => d.id !== tempId))
         setTotal(t => t - 1)
       } finally {
@@ -830,7 +830,7 @@ export function DocumentsTab({ toolId }: { toolId: string | null }) {
       <div>
         <div className="flex items-center justify-between mb-2">
           <p className="text-[10px] font-mono text-brand-muted uppercase tracking-widest">
-            Documents · {total}
+            Documents Â· {total}
           </p>
           <button
             type="button"
@@ -843,11 +843,11 @@ export function DocumentsTab({ toolId }: { toolId: string | null }) {
 
         {loading && documents.length === 0 ? (
           <div className="bg-brand-surface border border-brand-border rounded-sm p-8 text-center">
-            <p className="text-xs font-mono text-brand-muted">Loading…</p>
+            <p className="text-xs font-mono text-brand-muted">Loadingâ€¦</p>
           </div>
         ) : documents.length === 0 ? (
           <div className="bg-brand-surface border border-brand-border rounded-sm p-8 text-center">
-            <p className="text-xs font-mono text-brand-muted">No documents yet — upload one above.</p>
+            <p className="text-xs font-mono text-brand-muted">No documents yet â€” upload one above.</p>
           </div>
         ) : (
           <>
@@ -869,7 +869,7 @@ export function DocumentsTab({ toolId }: { toolId: string | null }) {
                 disabled={loading}
                 className="w-full mt-2 text-xs font-mono text-brand-muted border border-brand-border rounded-sm py-2 hover:bg-brand-bg transition-colors disabled:opacity-50"
               >
-                {loading ? 'Loading…' : `Load more (${total - documents.length} remaining)`}
+                {loading ? 'Loadingâ€¦' : `Load more (${total - documents.length} remaining)`}
               </button>
             )}
           </>

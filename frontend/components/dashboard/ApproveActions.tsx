@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
@@ -18,7 +18,7 @@ export function ApproveActions({ approvalId, token }: Props) {
     setLoading(action)
     try {
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/v1/approvals/${approvalId}/respond`,
+        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/approvals/${approvalId}/respond`,
         {
           method: 'POST',
           headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
@@ -29,7 +29,7 @@ export function ApproveActions({ approvalId, token }: Props) {
         toast(action === 'approve' ? 'Approved' : 'Rejected', action === 'approve' ? 'success' : 'info')
         router.refresh()
       } else {
-        toast('Action failed — try again', 'error')
+        toast('Action failed â€” try again', 'error')
       }
     } finally {
       setLoading(null)

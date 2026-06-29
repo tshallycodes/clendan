@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState } from 'react'
 import { useAuth } from '@clerk/nextjs'
@@ -35,7 +35,7 @@ export function MembersTable({ members, isCurrentUserOwner, onChanged }: Props) 
     setLoadingId(id)
     try {
       const token = await getToken()
-      await fetch(`${API}/v1/organisations/me/members/${id}`, {
+      await fetch(`${API}/organisations/me/members/${id}`, {
         method: 'PATCH',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ role }),
@@ -53,7 +53,7 @@ export function MembersTable({ members, isCurrentUserOwner, onChanged }: Props) 
     setLoadingId(id)
     try {
       const token = await getToken()
-      await fetch(`${API}/v1/organisations/me/members/${id}`, {
+      await fetch(`${API}/organisations/me/members/${id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       })
@@ -71,7 +71,7 @@ export function MembersTable({ members, isCurrentUserOwner, onChanged }: Props) 
     setTransferConfirmId(null)
     try {
       const token = await getToken()
-      await fetch(`${API}/v1/organisations/me/transfer-ownership`, {
+      await fetch(`${API}/organisations/me/transfer-ownership`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ new_owner_id: id }),
@@ -168,7 +168,7 @@ export function MembersTable({ members, isCurrentUserOwner, onChanged }: Props) 
                       onClick={() => handleRemove(m.id)}
                       className="text-[10px] font-mono text-brand-danger border border-brand-danger/30 bg-[rgba(255,77,109,0.08)] hover:bg-[rgba(255,77,109,0.15)] rounded-sm px-2 py-0.5 transition-colors disabled:opacity-40"
                     >
-                      {busy ? '…' : 'Remove'}
+                      {busy ? 'â€¦' : 'Remove'}
                     </button>
                   </>
                 )}

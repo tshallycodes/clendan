@@ -1,4 +1,4 @@
-import { getBackendToken } from '@/lib/auth'
+﻿import { getBackendToken } from '@/lib/auth'
 import { apiGet } from '@/lib/api'
 
 interface IntegrationStatus {
@@ -33,8 +33,8 @@ export async function SystemStatusBar() {
     const token = await getBackendToken()
     if (token) {
       const [qb, plaid] = await Promise.allSettled([
-        apiGet<IntegrationStatus>('/v1/integrations/quickbooks/status', token),
-        apiGet<IntegrationStatus>('/v1/integrations/plaid/status', token),
+        apiGet<IntegrationStatus>('/integrations/quickbooks/status', token),
+        apiGet<IntegrationStatus>('/integrations/plaid/status', token),
       ])
       if (qb.status === 'fulfilled')    qbStatus    = qb.value
       if (plaid.status === 'fulfilled') plaidStatus = plaid.value

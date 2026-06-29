@@ -24,7 +24,7 @@ export default async function SettingsPage() {
   let data: TenantData | null = null
   try {
     const token = await getBackendToken()
-    if (token) data = await apiGet<TenantData>('/v1/tenants/me', token)
+    if (token) data = await apiGet<TenantData>('/tenants/me', token)
   } catch { /* backend not running — show empty state */ }
 
   const ROLE_COLORS: Record<string, string> = {

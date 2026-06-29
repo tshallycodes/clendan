@@ -34,7 +34,7 @@ export function SyncLogDrawer({ slug, integrationName, onClose }: SyncLogDrawerP
     async function fetchLog() {
       try {
         const token = await getToken()
-        const res = await fetch(`${API}/v1/integrations/${slug}/sync-log`, {
+        const res = await fetch(`${API}/integrations/${slug}/sync-log`, {
           headers: { Authorization: `Bearer ${token}` },
         })
         if (res.status === 404 || res.status === 501) {

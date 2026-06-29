@@ -101,7 +101,7 @@ export function IntegrationDetailDrawer({ slug, intg, status, lastSyncedAt, onCl
       try {
         const token = await getToken()
 
-        const logsRes = await fetch(`${API}/v1/integrations/${slug}/sync-log?limit=5`, {
+        const logsRes = await fetch(`${API}/integrations/${slug}/sync-log?limit=5`, {
           headers: { Authorization: `Bearer ${token}` },
         })
         if (logsRes.ok) {
@@ -110,7 +110,7 @@ export function IntegrationDetailDrawer({ slug, intg, status, lastSyncedAt, onCl
         }
 
         if (slug && ALL_SUMMARY_SLUGS.has(slug)) {
-          const sumRes = await fetch(`${API}/v1/integrations/${slug}/status`, {
+          const sumRes = await fetch(`${API}/integrations/${slug}/status`, {
             headers: { Authorization: `Bearer ${token}` },
           })
           if (sumRes.ok) {

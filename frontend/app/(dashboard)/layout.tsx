@@ -1,4 +1,4 @@
-import { auth } from '@clerk/nextjs/server'
+﻿import { auth } from '@clerk/nextjs/server'
 import { redirect } from 'next/navigation'
 import { Sidebar } from '@/components/dashboard/Sidebar'
 import { MobileNav } from '@/components/dashboard/MobileNav'
@@ -15,13 +15,13 @@ export default async function DashboardLayout({ children }: { children: React.Re
   try {
     const token = await getBackendToken()
     if (token) {
-      const res = await fetch(`${API_BASE}/v1/tenants/me`, {
+      const res = await fetch(`${API_BASE}/tenants/me`, {
         headers: { Authorization: `Bearer ${token}` },
         cache: 'no-store',
       })
       if (res.status === 404 || res.status === 403) needsOnboarding = true
     }
-  } catch { /* backend unreachable — proceed to dashboard */ }
+  } catch { /* backend unreachable â€” proceed to dashboard */ }
   if (needsOnboarding) redirect('/onboarding')
 
   return (

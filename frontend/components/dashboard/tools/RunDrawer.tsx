@@ -45,7 +45,7 @@ export function RunDrawer({ tool, onClose, onQueued }: RunDrawerProps) {
     setSubmitting(true)
     try {
       const token = await getToken()
-      const res = await fetch(`${API}/v1/agents/${tool.id}/trigger`, {
+      const res = await fetch(`${API}/agents/${tool.id}/trigger`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,

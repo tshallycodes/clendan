@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState, useEffect, useRef } from 'react'
 import { Eye, EyeSlash, ArrowCounterClockwise, Play } from '@phosphor-icons/react'
@@ -63,7 +63,7 @@ const RELATED_ENDPOINTS: EndpointDef[] = [
   {
     id: 'get-transactions',
     method: 'GET',
-    path: '/v1/execute/transactions?status=pending&limit=50',
+    path: '/execute/transactions?status=pending&limit=50',
     description: 'List bank transactions for your tenant. Filtered by status (pending, categorised, matched) and paginated.',
     defaultBody: null,
     defaultPathParam: null,
@@ -78,7 +78,7 @@ const METHOD_COLORS: Record<HttpMethod, string> = {
 }
 
 // ---------------------------------------------------------------------------
-// EndpointRow — expandable row for a single API endpoint
+// EndpointRow â€” expandable row for a single API endpoint
 // ---------------------------------------------------------------------------
 interface EndpointRowProps {
   endpoint: EndpointDef
@@ -132,7 +132,7 @@ function EndpointRow({ endpoint, apiKey, idempotencyKey }: EndpointRowProps) {
       const json: unknown = await res.json()
       setResp({ kind: 'result', data: json })
     } catch {
-      setResp({ kind: 'result', data: { error: 'Request failed — check API URL and key' } })
+      setResp({ kind: 'result', data: { error: 'Request failed â€” check API URL and key' } })
     }
   }
 
@@ -148,7 +148,7 @@ function EndpointRow({ endpoint, apiKey, idempotencyKey }: EndpointRowProps) {
           {endpoint.method}
         </span>
         <span className="flex-1 min-w-0 text-xs font-mono text-brand-text truncate">{endpoint.path}</span>
-        <span className="shrink-0 text-[10px] font-mono text-brand-muted hidden sm:block">{endpoint.description.split('—')[0].trim()}</span>
+        <span className="shrink-0 text-[10px] font-mono text-brand-muted hidden sm:block">{endpoint.description.split('â€”')[0].trim()}</span>
       </button>
 
       {/* Expanded body */}
@@ -192,7 +192,7 @@ function EndpointRow({ endpoint, apiKey, idempotencyKey }: EndpointRowProps) {
               className="flex items-center gap-1.5 bg-[#00C853] text-black hover:bg-[#00a844] active:scale-[0.97] rounded-sm px-3 py-1.5 text-xs font-mono font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Play className="w-3 h-3" weight="fill" />
-              {resp.kind === 'loading' ? 'Running…' : 'Run'}
+              {resp.kind === 'loading' ? 'Runningâ€¦' : 'Run'}
             </button>
             {resp.kind === 'result' && (
               <button
@@ -206,7 +206,7 @@ function EndpointRow({ endpoint, apiKey, idempotencyKey }: EndpointRowProps) {
           </div>
 
           {resp.kind === 'loading' && (
-            <p className="text-xs font-mono text-brand-muted animate-pulse">Waiting for response…</p>
+            <p className="text-xs font-mono text-brand-muted animate-pulse">Waiting for responseâ€¦</p>
           )}
           {resp.kind === 'result' && (
             <div className="bg-brand-bg border border-brand-border rounded-sm p-3 max-h-60 overflow-y-auto">
@@ -222,7 +222,7 @@ function EndpointRow({ endpoint, apiKey, idempotencyKey }: EndpointRowProps) {
 }
 
 // ---------------------------------------------------------------------------
-// ApiPlayground — main export
+// ApiPlayground â€” main export
 // ---------------------------------------------------------------------------
 export function ApiPlayground() {
   const [selectedTool, setSelectedTool] = useState<ToolName>('invoice_processing')
@@ -250,7 +250,7 @@ export function ApiPlayground() {
     setResponse({ kind: 'loading', attempt: attempt + 1 })
     pollRef.current = setTimeout(async () => {
       try {
-        const res = await fetch(`${API}/v1/execute/${executionId}`, {
+        const res = await fetch(`${API}/execute/${executionId}`, {
           headers: { Authorization: apiKey },
         })
         const json: unknown = await res.json()
@@ -281,7 +281,7 @@ export function ApiPlayground() {
     setResponse({ kind: 'loading' })
 
     try {
-      const res = await fetch(`${API}/v1/execute`, {
+      const res = await fetch(`${API}/execute`, {
         method: 'POST',
         headers: {
           Authorization: apiKey,
@@ -301,7 +301,7 @@ export function ApiPlayground() {
         setResponse({ kind: 'result', data: json })
       }
     } catch {
-      setResponse({ kind: 'result', data: { error: 'Request failed — check API URL and key' } })
+      setResponse({ kind: 'result', data: { error: 'Request failed â€” check API URL and key' } })
     }
   }
 
@@ -340,7 +340,7 @@ export function ApiPlayground() {
 
       {/* Execute */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Left — inputs */}
+        {/* Left â€” inputs */}
         <div className="space-y-4">
           {/* Tool selector */}
           <div className="space-y-1.5">
@@ -400,12 +400,12 @@ export function ApiPlayground() {
           >
             <Play className="w-3.5 h-3.5" weight="fill" />
             {response.kind === 'loading'
-              ? response.attempt ? `Polling ${response.attempt}/${MAX_POLL_ATTEMPTS}…` : 'Queuing…'
+              ? response.attempt ? `Polling ${response.attempt}/${MAX_POLL_ATTEMPTS}â€¦` : 'Queuingâ€¦'
               : 'Run'}
           </button>
         </div>
 
-        {/* Right — response panel */}
+        {/* Right â€” response panel */}
         <div className="space-y-1.5">
           <label className="text-[10px] font-mono uppercase tracking-widest text-brand-muted">Response</label>
           <div className="bg-brand-bg border border-brand-border rounded-sm p-4 min-h-[280px] max-h-[500px] overflow-y-auto">
@@ -416,8 +416,8 @@ export function ApiPlayground() {
               <div className="space-y-2">
                 <p className="text-xs font-mono text-brand-muted animate-pulse">
                   {response.attempt
-                    ? `Polling result… (${response.attempt}/${MAX_POLL_ATTEMPTS})`
-                    : 'Queuing job…'}
+                    ? `Polling resultâ€¦ (${response.attempt}/${MAX_POLL_ATTEMPTS})`
+                    : 'Queuing jobâ€¦'}
                 </p>
                 {response.attempt && (
                   <div className="w-full bg-brand-border rounded-full h-0.5">

@@ -35,7 +35,7 @@ export function Step4({ onBack }: Step4Props) {
     setError(null)
     try {
       const token = await getToken()
-      const toolRes = await fetch(`${API}/v1/tools`, {
+      const toolRes = await fetch(`${API}/tools`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ type: 'invoice_processing', autonomy_level: autonomy }),
@@ -45,7 +45,7 @@ export function Step4({ onBack }: Step4Props) {
         setError((json as { error?: string }).error ?? 'Tool deploy failed.')
         return
       }
-      const completeRes = await fetch(`${API}/v1/onboarding/complete`, {
+      const completeRes = await fetch(`${API}/onboarding/complete`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
       })

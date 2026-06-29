@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useEffect, useMemo, useState } from 'react'
 import { useAuth } from '@clerk/nextjs'
@@ -39,7 +39,7 @@ function ReconciliationTrace({ trace }: { trace: Record<string, unknown> }) {
   const reviews = assessments.filter(a => a.action === 'review')
 
   const decisionConfig = {
-    flagged:           { label: 'Flagged — issues found',  color: 'text-[#ff4d6d]', bg: 'bg-[rgba(255,77,109,0.08)]', border: 'border-[rgba(255,77,109,0.2)]' },
+    flagged:           { label: 'Flagged â€” issues found',  color: 'text-[#ff4d6d]', bg: 'bg-[rgba(255,77,109,0.08)]', border: 'border-[rgba(255,77,109,0.2)]' },
     approval_required: { label: 'Approval required',       color: 'text-[#00a8cc]', bg: 'bg-[rgba(0,168,204,0.08)]', border: 'border-[rgba(0,168,204,0.2)]' },
     auto_approved:     { label: 'Auto-approved',           color: 'text-[#00C853]', bg: 'bg-[rgba(0,200,83,0.08)]',  border: 'border-[rgba(0,200,83,0.2)]' },
   }
@@ -55,7 +55,7 @@ function ReconciliationTrace({ trace }: { trace: Record<string, unknown> }) {
         <div className="bg-brand-bg border border-brand-border rounded-sm p-3">
           <p className="text-[10px] font-mono text-brand-muted uppercase tracking-widest">Transactions reviewed</p>
           <p className="text-xl font-heading font-bold text-brand-text mt-1">{txnCount}</p>
-          <p className="text-[10px] font-mono text-brand-muted mt-0.5">{matchedTxns} matched · {unmatchedTxns} unmatched</p>
+          <p className="text-[10px] font-mono text-brand-muted mt-0.5">{matchedTxns} matched Â· {unmatchedTxns} unmatched</p>
         </div>
         <div className="bg-brand-bg border border-brand-border rounded-sm p-3">
           <p className="text-[10px] font-mono text-brand-muted uppercase tracking-widest">Bills / Invoices</p>
@@ -78,12 +78,12 @@ function ReconciliationTrace({ trace }: { trace: Record<string, unknown> }) {
       {flagged.length > 0 && (
         <div className="space-y-1.5">
           <p className="text-[10px] font-mono uppercase tracking-widest text-[#ff4d6d]">
-            Flagged items · {flagged.length}
+            Flagged items Â· {flagged.length}
           </p>
           {flagged.map((a, i) => (
             <div key={i} className="bg-[rgba(255,77,109,0.04)] border border-[rgba(255,77,109,0.15)] rounded-sm px-3 py-2.5">
               <p className="text-[11px] font-mono text-brand-secondary leading-relaxed">{a.reasoning}</p>
-              <p className="text-[10px] font-mono text-brand-muted mt-1 capitalize">{a.item_type} · {a.severity} severity</p>
+              <p className="text-[10px] font-mono text-brand-muted mt-1 capitalize">{a.item_type} Â· {a.severity} severity</p>
             </div>
           ))}
         </div>
@@ -92,12 +92,12 @@ function ReconciliationTrace({ trace }: { trace: Record<string, unknown> }) {
       {reviews.length > 0 && (
         <div className="space-y-1.5">
           <p className="text-[10px] font-mono uppercase tracking-widest text-[#00a8cc]">
-            Needs review · {reviews.length}
+            Needs review Â· {reviews.length}
           </p>
           {reviews.map((a, i) => (
             <div key={i} className="bg-[rgba(0,168,204,0.04)] border border-[rgba(0,168,204,0.15)] rounded-sm px-3 py-2.5">
               <p className="text-[11px] font-mono text-brand-secondary leading-relaxed">{a.reasoning}</p>
-              <p className="text-[10px] font-mono text-brand-muted mt-1 capitalize">{a.item_type} · {a.severity} severity</p>
+              <p className="text-[10px] font-mono text-brand-muted mt-1 capitalize">{a.item_type} Â· {a.severity} severity</p>
             </div>
           ))}
         </div>
@@ -131,12 +131,12 @@ function DocumentIntelligenceTrace({ trace }: { trace: Record<string, unknown> }
         <div className="bg-brand-bg border border-brand-border rounded-sm p-3">
           <p className="text-[10px] font-mono text-brand-muted uppercase tracking-widest">Confidence</p>
           <p className={`text-xl font-heading font-bold mt-1 ${(confidence ?? 0) >= 0.9 ? 'text-[#00C853]' : 'text-brand-text'}`}>
-            {confidence != null ? `${Math.round(confidence * 100)}%` : '—'}
+            {confidence != null ? `${Math.round(confidence * 100)}%` : 'â€”'}
           </p>
         </div>
         <div className="bg-brand-bg border border-brand-border rounded-sm p-3">
           <p className="text-[10px] font-mono text-brand-muted uppercase tracking-widest">Document type</p>
-          <p className="text-xs font-mono text-brand-text mt-1 capitalize">{documentType.replace(/_/g, ' ') || '—'}</p>
+          <p className="text-xs font-mono text-brand-text mt-1 capitalize">{documentType.replace(/_/g, ' ') || 'â€”'}</p>
         </div>
         <div className="bg-brand-bg border border-brand-border rounded-sm p-3">
           <p className="text-[10px] font-mono text-brand-muted uppercase tracking-widest">Policy flags</p>
@@ -193,18 +193,18 @@ function OrchestratorTrace({ trace }: { trace: Record<string, unknown> }) {
       <div className="grid grid-cols-3 gap-2">
         <div className="bg-brand-bg border border-brand-border rounded-sm p-3">
           <p className="text-[10px] font-mono text-brand-muted uppercase tracking-widest">Event type</p>
-          <p className="text-xs font-mono text-brand-text mt-1">{eventType ?? '—'}</p>
+          <p className="text-xs font-mono text-brand-text mt-1">{eventType ?? 'â€”'}</p>
         </div>
         <div className="bg-brand-bg border border-brand-border rounded-sm p-3">
           <p className="text-[10px] font-mono text-brand-muted uppercase tracking-widest">Confidence</p>
           <p className={`text-xl font-heading font-bold mt-1 ${(confidence ?? 0) >= 0.9 ? 'text-[#00C853]' : 'text-brand-text'}`}>
-            {confidence != null ? `${Math.round(confidence * 100)}%` : '—'}
+            {confidence != null ? `${Math.round(confidence * 100)}%` : 'â€”'}
           </p>
         </div>
         <div className="bg-brand-bg border border-brand-border rounded-sm p-3">
           <p className="text-[10px] font-mono text-brand-muted uppercase tracking-widest">Duration</p>
           <p className="text-xl font-heading font-bold text-brand-text mt-1">
-            {durationMs != null ? `${durationMs}ms` : '—'}
+            {durationMs != null ? `${durationMs}ms` : 'â€”'}
           </p>
         </div>
       </div>
@@ -284,7 +284,7 @@ export function ToolAuditTab({ toolId }: { toolId: string | null }) {
       setLoading(true)
       try {
         const token = await getToken()
-        const res = await fetch(`${API}/v1/dashboard/audit?tool_id=${toolId}&limit=50`, {
+        const res = await fetch(`${API}/dashboard/audit?tool_id=${toolId}&limit=50`, {
           headers: { Authorization: `Bearer ${token}` },
         })
         if (res.ok) {
@@ -309,7 +309,7 @@ export function ToolAuditTab({ toolId }: { toolId: string | null }) {
   }, [entries, search])
 
   if (loading) {
-    return <div className="py-12 text-center text-xs font-mono text-brand-muted">Loading…</div>
+    return <div className="py-12 text-center text-xs font-mono text-brand-muted">Loadingâ€¦</div>
   }
 
   return (
@@ -318,7 +318,7 @@ export function ToolAuditTab({ toolId }: { toolId: string | null }) {
         type="text"
         value={search}
         onChange={e => setSearch(e.target.value)}
-        placeholder="Search by actor, action…"
+        placeholder="Search by actor, actionâ€¦"
         className="w-full max-w-xs bg-brand-bg border border-brand-border focus:border-[#00C853] rounded-sm px-3 py-1.5 text-xs font-mono text-brand-text placeholder:text-brand-muted outline-none transition-colors"
       />
 
@@ -345,7 +345,7 @@ export function ToolAuditTab({ toolId }: { toolId: string | null }) {
                 </div>
                 <div className="flex items-center gap-3 shrink-0 ml-4">
                   <span className="text-[10px] font-mono text-brand-muted">{e.actor}</span>
-                  <span className="text-[10px] font-mono text-brand-muted">{expanded === e.id ? '▲' : '▼'}</span>
+                  <span className="text-[10px] font-mono text-brand-muted">{expanded === e.id ? 'â–²' : 'â–¼'}</span>
                 </div>
               </button>
               {expanded === e.id && (

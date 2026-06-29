@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useEffect, useState } from 'react'
 import { useAuth } from '@clerk/nextjs'
@@ -64,8 +64,8 @@ export function ConfigDrawer({ tool, toolType, onClose, onSaved }: Props) {
       try {
         const token = await getToken()
         const [accountsRes, intRes] = await Promise.all([
-          fetch(`${API}/v1/reconciliation/accounts`, { headers: { Authorization: `Bearer ${token}` } }),
-          fetch(`${API}/v1/reconciliation/integrations`, { headers: { Authorization: `Bearer ${token}` } }),
+          fetch(`${API}/reconciliation/accounts`, { headers: { Authorization: `Bearer ${token}` } }),
+          fetch(`${API}/reconciliation/integrations`, { headers: { Authorization: `Bearer ${token}` } }),
         ])
         if (accountsRes.ok) {
           const json = await accountsRes.json()
@@ -91,13 +91,13 @@ export function ConfigDrawer({ tool, toolType, onClose, onSaved }: Props) {
     async function fetchConnectedIntegrations() {
       try {
         const token = await getToken()
-        const res = await fetch(`${API}/v1/reconciliation/integrations`, { headers: { Authorization: `Bearer ${token}` } })
+        const res = await fetch(`${API}/reconciliation/integrations`, { headers: { Authorization: `Bearer ${token}` } })
         if (res.ok) {
           const json = await res.json()
           setConnectedAccountingSources(json.data?.accounting_sources ?? [])
         }
       } catch {
-        // leave as empty — multiselect will show "no connected integrations"
+        // leave as empty â€” multiselect will show "no connected integrations"
       }
     }
     fetchConnectedIntegrations()
@@ -111,12 +111,12 @@ export function ConfigDrawer({ tool, toolType, onClose, onSaved }: Props) {
         ? { ...config, account_ids: selectedAccountIds, integration_sources: selectedIntegrationSources }
         : config
       const res = tool
-        ? await fetch(`${API}/v1/tools/${tool.id}`, {
+        ? await fetch(`${API}/tools/${tool.id}`, {
             method: 'PATCH',
             headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
             body: JSON.stringify({ autonomy_level: autonomy, config: fullConfig }),
           })
-        : await fetch(`${API}/v1/tools`, {
+        : await fetch(`${API}/tools`, {
             method: 'POST',
             headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
             body: JSON.stringify({ type: toolType, autonomy_level: autonomy, config: fullConfig }),
@@ -150,12 +150,12 @@ export function ConfigDrawer({ tool, toolType, onClose, onSaved }: Props) {
               <p className="text-[10px] font-mono text-brand-muted mt-1">
                 Last configured by{' '}
                 <span className="text-brand-secondary">
-                  {tool.last_configured_by_email ? tool.last_configured_by_email.split('@')[0] : '—'}
+                  {tool.last_configured_by_email ? tool.last_configured_by_email.split('@')[0] : 'â€”'}
                 </span>
               </p>
             )}
           </div>
-          <button type="button" onClick={onClose} className="text-brand-muted hover:text-brand-text transition-colors text-lg leading-none">✕</button>
+          <button type="button" onClick={onClose} className="text-brand-muted hover:text-brand-text transition-colors text-lg leading-none">âœ•</button>
         </div>
 
         <div className="space-y-5">
@@ -165,8 +165,8 @@ export function ConfigDrawer({ tool, toolType, onClose, onSaved }: Props) {
               value={autonomy}
               onChange={setAutonomy}
               options={[
-                { value: 'auto', label: 'Auto — executes without approval' },
-                { value: 'approve', label: 'Approve — requires human approval above threshold' },
+                { value: 'auto', label: 'Auto â€” executes without approval' },
+                { value: 'approve', label: 'Approve â€” requires human approval above threshold' },
               ]}
             />
             {toolType === 'document_intelligence' && (
@@ -186,7 +186,7 @@ export function ConfigDrawer({ tool, toolType, onClose, onSaved }: Props) {
               <label className={labelClass}>Bank Accounts</label>
               {accountsLoading ? (
                 <div className="bg-brand-bg border border-brand-border rounded-sm px-3 py-3">
-                  <p className="text-[10px] font-mono text-brand-muted">Loading accounts…</p>
+                  <p className="text-[10px] font-mono text-brand-muted">Loading accountsâ€¦</p>
                 </div>
               ) : accounts.length === 0 ? (
                 <div className="bg-brand-bg border border-brand-border rounded-sm px-3 py-3">
@@ -222,7 +222,7 @@ export function ConfigDrawer({ tool, toolType, onClose, onSaved }: Props) {
                           </span>
                           <div className="min-w-0">
                             <p className="text-xs font-mono text-brand-text truncate">{a.name}</p>
-                            <p className="text-[10px] font-mono text-brand-muted">{a.source}{a.subtype ? ` · ${a.subtype}` : ''}</p>
+                            <p className="text-[10px] font-mono text-brand-muted">{a.source}{a.subtype ? ` Â· ${a.subtype}` : ''}</p>
                           </div>
                         </button>
                       )
@@ -286,7 +286,7 @@ export function ConfigDrawer({ tool, toolType, onClose, onSaved }: Props) {
             disabled={saving || saved}
             className="w-full bg-[#00C853] text-black hover:bg-[#00a844] active:scale-[0.97] rounded-sm px-4 py-2 text-xs font-mono font-medium transition-all disabled:opacity-50"
           >
-            {saved ? 'Saved ✓' : saving ? 'Saving…' : tool ? 'Save Changes' : 'Deploy Tool'}
+            {saved ? 'Saved âœ“' : saving ? 'Savingâ€¦' : tool ? 'Save Changes' : 'Deploy Tool'}
           </button>
         </div>
       </div>

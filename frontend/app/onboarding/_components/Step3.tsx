@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState } from 'react'
 import { useAuth } from '@clerk/nextjs'
@@ -20,7 +20,7 @@ export function Step3({ onNext, onSkip }: Step3Props) {
     setError(null)
     try {
       const token = await getToken()
-      const res = await fetch(`${API}/v1/integrations/quickbooks/connect`, {
+      const res = await fetch(`${API}/integrations/quickbooks/connect`, {
         headers: { Authorization: `Bearer ${token}` },
       })
       if (!res.ok) {
@@ -62,7 +62,7 @@ export function Step3({ onNext, onSkip }: Step3Props) {
             disabled={connecting}
             className="border border-brand-border text-brand-text hover:bg-brand-surface rounded-sm px-4 py-2 text-xs font-mono transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {connecting ? 'Connecting…' : 'Connect QuickBooks'}
+            {connecting ? 'Connectingâ€¦' : 'Connect QuickBooks'}
           </button>
         </div>
         <div className="relative bg-brand-surface border border-brand-border rounded-sm p-5 opacity-50">
@@ -88,7 +88,7 @@ export function Step3({ onNext, onSkip }: Step3Props) {
         onClick={onSkip}
         className="w-full text-xs font-mono text-brand-muted hover:text-brand-text transition-colors py-1"
       >
-        Skip for now — I'll connect later
+        Skip for now â€” I'll connect later
       </button>
     </div>
   )

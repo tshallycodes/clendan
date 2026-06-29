@@ -1,4 +1,4 @@
-import type { Metadata } from 'next'
+﻿import type { Metadata } from 'next'
 import { getBackendToken } from '@/lib/auth'
 import { apiGet } from '@/lib/api'
 import { ExecutionsClient, type Execution } from '@/components/dashboard/executions/ExecutionsClient'
@@ -16,7 +16,7 @@ export default async function ExecutionsPage() {
   try {
     const token = await getBackendToken()
     if (token) {
-      const data = await apiGet<ExecutionsData>('/v1/dashboard/executions?limit=50', token)
+      const data = await apiGet<ExecutionsData>('/dashboard/executions?limit=50', token)
       executions = data.executions ?? []
       total = data.total ?? executions.length
     }

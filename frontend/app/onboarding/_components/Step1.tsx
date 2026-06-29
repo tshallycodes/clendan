@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState, useEffect } from 'react'
 import { useAuth, useUser } from '@clerk/nextjs'
@@ -6,7 +6,7 @@ import { useAuth, useUser } from '@clerk/nextjs'
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
 const INDUSTRIES = ['Technology', 'Finance', 'Healthcare', 'Retail', 'Manufacturing', 'Professional Services', 'Other']
-const COMPANY_SIZES = ['1–10', '11–50', '51–200', '201–1000', '1000+']
+const COMPANY_SIZES = ['1â€“10', '11â€“50', '51â€“200', '201â€“1000', '1000+']
 const USE_CASES = ['Invoice Processing', 'Expense Management', 'Financial Reporting', 'All of the above']
 
 interface Step1Data {
@@ -36,13 +36,13 @@ export function Step1({ onNext }: Step1Props) {
       try {
         const token = await getToken()
         const email = user?.primaryEmailAddress?.emailAddress ?? ''
-        await fetch(`${API}/v1/organisations`, {
+        await fetch(`${API}/organisations`, {
           method: 'POST',
           headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
           body: JSON.stringify({ email }),
         })
       } catch {
-        // idempotent provision — ignore errors on mount
+        // idempotent provision â€” ignore errors on mount
       }
     }
     provisionOrg()
@@ -54,7 +54,7 @@ export function Step1({ onNext }: Step1Props) {
     setError(null)
     try {
       const token = await getToken()
-      const res = await fetch(`${API}/v1/onboarding/organisation`, {
+      const res = await fetch(`${API}/onboarding/organisation`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: data.name.trim(), industry: data.industry, size: data.size }),
@@ -114,7 +114,7 @@ export function Step1({ onNext }: Step1Props) {
           onClick={handleSubmit}
           className="w-full bg-brand-green text-black hover:bg-[#00a844] active:scale-[0.97] rounded-sm px-4 py-2.5 text-xs font-mono font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {loading ? 'Setting up…' : 'Next →'}
+          {loading ? 'Setting upâ€¦' : 'Next â†’'}
         </button>
       </div>
     </div>

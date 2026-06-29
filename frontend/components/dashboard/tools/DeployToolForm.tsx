@@ -58,7 +58,7 @@ export function DeployToolForm({ fixedType, onDeployed }: DeployToolFormProps) {
     setLoading(true)
     try {
       const token = await getToken()
-      const res = await fetch(`${API_BASE}/v1/tools`, {
+      const res = await fetch(`${API_BASE}/tools`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ type: toolType, autonomy_level: autonomyLevel, config }),

@@ -1,4 +1,4 @@
-import type { Metadata } from 'next'
+﻿import type { Metadata } from 'next'
 import { getBackendToken } from '@/lib/auth'
 import { apiGet } from '@/lib/api'
 import { StatCard } from '@/components/dashboard/StatCard'
@@ -54,10 +54,10 @@ export default async function DashboardPage() {
 
   if (token) {
     const [statsResult, toolsResult, ...integrationResults] = await Promise.allSettled([
-      apiGet<Stats>('/v1/dashboard/stats', token),
-      apiGet<{ tools: DeployedTool[] }>('/v1/tools', token),
+      apiGet<Stats>('/dashboard/stats', token),
+      apiGet<{ tools: DeployedTool[] }>('/tools', token),
       ...INTEGRATION_SLUGS.map(({ slug }) =>
-        fetch(`${API_BASE}/v1/integrations/${slug}/status`, {
+        fetch(`${API_BASE}/integrations/${slug}/status`, {
           headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
           cache: 'no-store',
         }).then((r) => r.json()),
@@ -82,9 +82,9 @@ export default async function DashboardPage() {
   const s = stats ?? { executions: 0, pending_approvals: 0, active_tools: 0, invoices: 0, transactions: 0 }
 
   const statusMessage = (() => {
-    if (s.active_tools === 0) return 'No tools deployed yet — deploy your first AI agent to begin automating.'
+    if (s.active_tools === 0) return 'No tools deployed yet â€” deploy your first AI agent to begin automating.'
     if (s.pending_approvals > 0) return `${s.pending_approvals} decision${s.pending_approvals > 1 ? 's' : ''} need${s.pending_approvals === 1 ? 's' : ''} your review before agents can proceed.`
-    return `All systems running — ${s.active_tools} tool${s.active_tools > 1 ? 's' : ''} active, no action required.`
+    return `All systems running â€” ${s.active_tools} tool${s.active_tools > 1 ? 's' : ''} active, no action required.`
   })()
 
   const statusColor = s.active_tools === 0

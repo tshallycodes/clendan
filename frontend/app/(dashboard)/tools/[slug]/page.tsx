@@ -26,7 +26,7 @@ export default async function ToolSlugPage({ params }: PageProps) {
   try {
     const token = await getBackendToken()
     if (token) {
-      const res = await apiGet<{ tools: Tool[] }>('/v1/tools', token)
+      const res = await apiGet<{ tools: Tool[] }>('/tools', token)
       const tools = res.tools ?? []
       deployed = tools.find((w) => w.type === tool.type) ?? null
     }

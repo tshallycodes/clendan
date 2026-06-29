@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useCallback, useEffect, useState } from 'react'
 import { MonthPicker } from './MonthPicker'
@@ -67,7 +67,7 @@ export function MonthEndCloseTab({ toolId }: Props) {
     setError(null)
     try {
       const token = await getToken()
-      const res = await fetch(`${API}/v1/close-runs`, {
+      const res = await fetch(`${API}/close-runs`, {
         headers: { Authorization: `Bearer ${token}` },
       })
       if (!res.ok) throw new Error('Failed to load close runs')
@@ -89,7 +89,7 @@ export function MonthEndCloseTab({ toolId }: Props) {
     setError(null)
     try {
       const token = await getToken()
-      const res = await fetch(`${API}/v1/close-runs`, {
+      const res = await fetch(`${API}/close-runs`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ period }),
@@ -108,11 +108,11 @@ export function MonthEndCloseTab({ toolId }: Props) {
     setRefreshing(true)
     try {
       const token = await getToken()
-      const res = await fetch(`${API}/v1/close-runs/${run.id}/refresh`, {
+      const res = await fetch(`${API}/close-runs/${run.id}/refresh`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
       })
-      if (!res.ok) { toast('Refresh failed — please try again', 'error'); return }
+      if (!res.ok) { toast('Refresh failed â€” please try again', 'error'); return }
       setTimeout(() => fetchRun(period), 2000)
     } finally {
       setRefreshing(false)
@@ -124,7 +124,7 @@ export function MonthEndCloseTab({ toolId }: Props) {
     setCompletingTask(taskKey)
     try {
       const token = await getToken()
-      const res = await fetch(`${API}/v1/close-runs/${run.id}/task/${taskKey}/complete`, {
+      const res = await fetch(`${API}/close-runs/${run.id}/task/${taskKey}/complete`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({}),
@@ -143,13 +143,13 @@ export function MonthEndCloseTab({ toolId }: Props) {
   async function handleSignOff() {
     if (!run) return
     if (!autoTasksResolved) {
-      toast('Resolve all auto-checked tasks before signing off — click Refresh to re-evaluate', 'error')
+      toast('Resolve all auto-checked tasks before signing off â€” click Refresh to re-evaluate', 'error')
       return
     }
     setSigningOff(true)
     try {
       const token = await getToken()
-      const res = await fetch(`${API}/v1/close-runs/${run.id}/sign-off`, {
+      const res = await fetch(`${API}/close-runs/${run.id}/sign-off`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
       })
@@ -188,7 +188,7 @@ export function MonthEndCloseTab({ toolId }: Props) {
             disabled={opening}
             className="mt-5 bg-[#00C853] text-black hover:bg-[#00a844] active:scale-[0.97] text-xs font-mono rounded-sm px-4 py-1.5 transition-all disabled:opacity-50"
           >
-            {opening ? 'Opening…' : 'Open Close Run'}
+            {opening ? 'Openingâ€¦' : 'Open Close Run'}
           </button>
         )}
         {run && (
@@ -198,7 +198,7 @@ export function MonthEndCloseTab({ toolId }: Props) {
             disabled={refreshing || run.status === 'closed'}
             className="mt-5 text-xs font-mono border border-brand-border text-brand-text hover:bg-brand-bg rounded-sm px-3 py-1.5 transition-colors disabled:opacity-50"
           >
-            {refreshing ? 'Refreshing…' : 'Refresh'}
+            {refreshing ? 'Refreshingâ€¦' : 'Refresh'}
           </button>
         )}
       </div>
@@ -222,7 +222,7 @@ export function MonthEndCloseTab({ toolId }: Props) {
           <p className="text-xs font-mono text-brand-text">No close run for {period}</p>
           <p className="text-[11px] font-mono text-brand-muted">
             Opening a close run starts the checklist for this period. Clendan will automatically
-            evaluate data readiness — you only need to manually confirm payroll and sign-offs.
+            evaluate data readiness â€” you only need to manually confirm payroll and sign-offs.
           </p>
         </div>
       )}
@@ -290,7 +290,7 @@ function CloseRunSignOffs({ signOffs, onSignOff, signingOff, autoTasksResolved, 
             title={!autoTasksResolved ? 'All auto-checked tasks must pass before signing off' : undefined}
             className="text-[10px] font-mono bg-[#00C853] text-black hover:bg-[#00a844] active:scale-[0.97] rounded-sm px-3 py-1 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            {signingOff ? 'Signing off…' : 'Sign Off'}
+            {signingOff ? 'Signing offâ€¦' : 'Sign Off'}
           </button>
         )}
       </div>

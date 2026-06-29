@@ -59,7 +59,7 @@ export async function RecentExecutionsTable() {
   try {
     const token = await getBackendToken()
     if (token) {
-      const data = await apiGet<ExecutionsResponse>('/v1/dashboard/executions?limit=10', token)
+      const data = await apiGet<ExecutionsResponse>('/dashboard/executions?limit=10', token)
       executions = data?.executions ?? []
     }
   } catch { /* backend not running — show empty state */ }

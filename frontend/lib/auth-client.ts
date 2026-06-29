@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState, useEffect } from 'react'
 import { useAuth } from '@clerk/nextjs'
@@ -12,7 +12,7 @@ export function useCurrentUserRole(): string {
   useEffect(() => {
     getToken().then((token) => {
       if (!token) return
-      fetch(`${API}/v1/tenants/me`, { headers: { Authorization: `Bearer ${token}` } })
+      fetch(`${API}/tenants/me`, { headers: { Authorization: `Bearer ${token}` } })
         .then((r) => (r.ok ? r.json() : null))
         .then((j) => { if (j?.data?.user?.role) setRole(j.data.user.role) })
         .catch(() => {})

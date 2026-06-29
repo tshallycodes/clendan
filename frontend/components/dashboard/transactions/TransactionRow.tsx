@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useRef, useState, useEffect } from 'react'
 import { useAuth } from '@clerk/nextjs'
@@ -76,7 +76,7 @@ export function TransactionRow({ transaction: t, onCategoryUpdate, categories }:
     try {
       const token = await getToken()
       if (!token) return
-      const res = await fetch(`${API_BASE}/v1/transactions/${t.id}/category`, {
+      const res = await fetch(`${API_BASE}/transactions/${t.id}/category`, {
         method: 'PATCH',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ category }),
@@ -103,17 +103,17 @@ export function TransactionRow({ transaction: t, onCategoryUpdate, categories }:
       {/* Account */}
       <td className="px-5 py-3 max-w-[140px]">
         <span className="text-xs font-mono text-brand-secondary block truncate">
-          {t.account_name ?? '—'}
+          {t.account_name ?? 'â€”'}
         </span>
         <span className="text-[9px] font-mono text-brand-muted uppercase tracking-wider">
-          {t.account_subtype ? `${t.account_subtype} · ` : ''}{t.institution_name ?? SOURCE_LABELS[t.source] ?? t.source.toUpperCase()}
+          {t.account_subtype ? `${t.account_subtype} Â· ` : ''}{t.institution_name ?? SOURCE_LABELS[t.source] ?? t.source.toUpperCase()}
         </span>
       </td>
 
       {/* Merchant */}
       <td className="px-5 py-3 max-w-[200px]">
         <span className="text-xs font-mono text-brand-text block truncate">
-          {t.merchant_name ?? t.description ?? '—'}
+          {t.merchant_name ?? t.description ?? 'â€”'}
         </span>
         {t.merchant_name && t.description && t.description !== t.merchant_name && (
           <span className="text-[10px] font-mono text-brand-muted block truncate">{t.description}</span>
@@ -126,7 +126,7 @@ export function TransactionRow({ transaction: t, onCategoryUpdate, categories }:
           'text-xs font-mono font-medium',
           isDebit ? 'text-[#ff4d6d]' : 'text-[#00C853]',
         )}>
-          {isDebit ? '−' : '+'}{convert(Math.abs(t.amount_minor), t.currency)}
+          {isDebit ? 'âˆ’' : '+'}{convert(Math.abs(t.amount_minor), t.currency)}
         </span>
       </td>
 
@@ -134,7 +134,7 @@ export function TransactionRow({ transaction: t, onCategoryUpdate, categories }:
       <td ref={ref} className="px-5 py-3 relative">
         <div className="flex items-center gap-1.5">
           {saving ? (
-            <span className="text-[10px] font-mono text-brand-muted">saving…</span>
+            <span className="text-[10px] font-mono text-brand-muted">savingâ€¦</span>
           ) : (
             <button
               onClick={() => setOpen(v => !v)}
@@ -197,7 +197,7 @@ export function TransactionRow({ transaction: t, onCategoryUpdate, categories }:
       <td className="px-5 py-3 text-xs font-mono text-brand-muted">
         {t.matched_invoice_id ? (
           <span className="text-[10px] font-mono text-[#00C853]">matched</span>
-        ) : '—'}
+        ) : 'â€”'}
       </td>
 
       {/* Status */}

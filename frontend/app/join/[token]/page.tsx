@@ -36,7 +36,7 @@ export default function JoinPage() {
 
   useEffect(() => {
     if (!token) return
-    fetch(`${API}/v1/organisations/join/${token}`)
+    fetch(`${API}/organisations/join/${token}`)
       .then(async (res) => {
         if (res.status === 404) return setPageState('not_found')
         if (res.status === 410) return setPageState('expired')
@@ -52,7 +52,7 @@ export default function JoinPage() {
     setPageState('accepting')
     try {
       const authToken = await getToken()
-      const res = await fetch(`${API}/v1/organisations/join/${token}`, {
+      const res = await fetch(`${API}/organisations/join/${token}`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${authToken}`, 'Content-Type': 'application/json' },
       })

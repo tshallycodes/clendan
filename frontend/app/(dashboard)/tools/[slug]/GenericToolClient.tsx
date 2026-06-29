@@ -86,7 +86,7 @@ export function GenericToolClient({ tool, deployed }: Props) {
     setToggling(true)
     try {
       const token = await getToken()
-      await fetch(`${API}/v1/tools/${deployed.id}/pause`, {
+      await fetch(`${API}/tools/${deployed.id}/pause`, {
         method: 'PATCH',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
       })
@@ -101,13 +101,13 @@ export function GenericToolClient({ tool, deployed }: Props) {
     try {
       const token = await getToken()
       if (deployed) {
-        await fetch(`${API}/v1/tools/${deployed.id}/pause`, {
+        await fetch(`${API}/tools/${deployed.id}/pause`, {
           method: 'PATCH',
           headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
         })
       } else {
         const { getDefaultConfig } = await import('@/components/dashboard/tools/ToolConfigFields')
-        await fetch(`${API}/v1/tools`, {
+        await fetch(`${API}/tools`, {
           method: 'POST',
           headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
           body: JSON.stringify({ type: tool.type, autonomy_level: 'approve', config: getDefaultConfig(tool.type) }),

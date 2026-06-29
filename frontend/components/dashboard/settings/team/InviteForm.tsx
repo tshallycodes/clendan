@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState } from 'react'
 import { useAuth } from '@clerk/nextjs'
@@ -31,7 +31,7 @@ export function InviteForm({ onInvited }: Props) {
     setError(null)
     try {
       const token = await getToken()
-      const res = await fetch(`${API}/v1/organisations/me/invitations`, {
+      const res = await fetch(`${API}/organisations/me/invitations`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: email.trim(), role }),
@@ -79,7 +79,7 @@ export function InviteForm({ onInvited }: Props) {
       >
         {success ? (
           <><Check className="w-3.5 h-3.5" /> Sent</>
-        ) : sending ? 'Sending…' : 'Send invite'}
+        ) : sending ? 'Sendingâ€¦' : 'Send invite'}
       </button>
       {error && <p className="w-full text-[10px] font-mono text-brand-danger">{error}</p>}
     </form>

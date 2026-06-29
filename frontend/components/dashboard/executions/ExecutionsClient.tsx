@@ -257,7 +257,7 @@ export function ExecutionsClient({ initialExecutions, total }: Props) {
     try {
       const token = await getToken()
       if (!token) return
-      const res = await fetch(`${API_BASE}/v1/approvals/${approvalId}/respond`, {
+      const res = await fetch(`${API_BASE}/approvals/${approvalId}/respond`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ action }),
@@ -285,7 +285,7 @@ export function ExecutionsClient({ initialExecutions, total }: Props) {
       const token = await getToken()
       if (!token) return
       const res = await fetch(
-        `${API_BASE}/v1/dashboard/executions?limit=${PAGE_SIZE}&offset=${offset}`,
+        `${API_BASE}/dashboard/executions?limit=${PAGE_SIZE}&offset=${offset}`,
         { headers: { Authorization: `Bearer ${token}` } },
       )
       if (!res.ok) { toast('Failed to load more executions', 'error'); return }

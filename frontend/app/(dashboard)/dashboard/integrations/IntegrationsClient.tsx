@@ -87,7 +87,7 @@ export function IntegrationsClient() {
       setConnecting(null)
       try {
         const authToken = await getToken()
-        const res = await fetch(`${API}/v1/integrations/plaid/exchange-token`, {
+        const res = await fetch(`${API}/integrations/plaid/exchange-token`, {
           method: 'POST',
           headers: { Authorization: `Bearer ${authToken}`, 'Content-Type': 'application/json' },
           body: JSON.stringify({ public_token, institution_id, institution_name }),
@@ -119,7 +119,7 @@ export function IntegrationsClient() {
     const token = await getToken()
     const results = await Promise.allSettled(
       STATUSABLE_SLUGS.map(async (slug) => {
-        const res = await fetch(`${API}/v1/integrations/${slug}/status`, {
+        const res = await fetch(`${API}/integrations/${slug}/status`, {
           headers: { Authorization: `Bearer ${token}` },
         })
         if (!res.ok) return { slug, status: 'not_connected' as IntegrationStatus, last_synced_at: null, institution_id: null }
@@ -191,7 +191,7 @@ export function IntegrationsClient() {
         if (xeroSelect) {
           try {
             const authToken = await getToken()
-            const res = await fetch(`${API}/v1/integrations/xero/pending-orgs/${xeroSelect}`, {
+            const res = await fetch(`${API}/integrations/xero/pending-orgs/${xeroSelect}`, {
               headers: { Authorization: `Bearer ${authToken}` },
             })
             if (res.ok) {
@@ -263,7 +263,7 @@ export function IntegrationsClient() {
       setConnecting(intg.slug)
       try {
         const token = await getToken()
-        const res = await fetch(`${API}/v1/integrations/codat/connect`, {
+        const res = await fetch(`${API}/integrations/codat/connect`, {
           method: 'POST',
           headers: { Authorization: `Bearer ${token}` },
         })
@@ -284,7 +284,7 @@ export function IntegrationsClient() {
     setConnecting(intg.slug)
     try {
       const token = await getToken()
-      const res = await fetch(`${API}/v1/integrations/${intg.slug}/connect`, {
+      const res = await fetch(`${API}/integrations/${intg.slug}/connect`, {
         headers: { Authorization: `Bearer ${token}` },
       })
       if (!res.ok) throw new Error('Failed to get auth URL')
@@ -320,7 +320,7 @@ export function IntegrationsClient() {
       setConnecting('truelayer')
       try {
         const authToken = await getToken()
-        const res = await fetch(`${API}/v1/integrations/truelayer/connect`, {
+        const res = await fetch(`${API}/integrations/truelayer/connect`, {
           headers: { Authorization: `Bearer ${authToken}` },
         })
         if (!res.ok) {
@@ -344,7 +344,7 @@ export function IntegrationsClient() {
       setConnecting('mono')
       try {
         const authToken = await getToken()
-        const res = await fetch(`${API}/v1/integrations/mono/connect`, {
+        const res = await fetch(`${API}/integrations/mono/connect`, {
           headers: { Authorization: `Bearer ${authToken}` },
         })
         if (!res.ok) {
@@ -367,7 +367,7 @@ export function IntegrationsClient() {
     setConnecting('plaid')
     try {
       const authToken = await getToken()
-      const res = await fetch(`${API}/v1/integrations/plaid/link-token`, {
+      const res = await fetch(`${API}/integrations/plaid/link-token`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${authToken}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ institution_id: bank.institution_id ?? null }),
@@ -387,7 +387,7 @@ export function IntegrationsClient() {
   async function handleDisconnectDirect(slug: string) {
     try {
       const token = await getToken()
-      const res = await fetch(`${API}/v1/integrations/${slug}/disconnect`, {
+      const res = await fetch(`${API}/integrations/${slug}/disconnect`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       })
@@ -404,7 +404,7 @@ export function IntegrationsClient() {
   async function handleDisconnectConnection(provider: string, integrationId: string) {
     try {
       const token = await getToken()
-      const res = await fetch(`${API}/v1/integrations/${provider}/connections/${integrationId}`, {
+      const res = await fetch(`${API}/integrations/${provider}/connections/${integrationId}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       })
@@ -427,7 +427,7 @@ export function IntegrationsClient() {
   async function handleResyncConnection(provider: string, integrationId: string) {
     try {
       const token = await getToken()
-      const res = await fetch(`${API}/v1/integrations/${provider}/connections/${integrationId}/sync`, {
+      const res = await fetch(`${API}/integrations/${provider}/connections/${integrationId}/sync`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
       })
@@ -444,7 +444,7 @@ export function IntegrationsClient() {
 
   async function handleCredentialsSubmit(slug: string, credentials: Record<string, string>) {
     const token = await getToken()
-    const res = await fetch(`${API}/v1/integrations/${slug}/connect`, {
+    const res = await fetch(`${API}/integrations/${slug}/connect`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
       body: JSON.stringify(credentials),
@@ -462,7 +462,7 @@ export function IntegrationsClient() {
   async function handleXeroOrgConfirm(xeroTenantId: string) {
     if (!pendingXeroIntegrationId) return
     const token = await getToken()
-    const res = await fetch(`${API}/v1/integrations/xero/select-tenant`, {
+    const res = await fetch(`${API}/integrations/xero/select-tenant`, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${token}`,
@@ -484,7 +484,7 @@ export function IntegrationsClient() {
   async function handleResync(slug: string) {
     try {
       const token = await getToken()
-      const res = await fetch(`${API}/v1/integrations/${slug}/sync`, {
+      const res = await fetch(`${API}/integrations/${slug}/sync`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
       })

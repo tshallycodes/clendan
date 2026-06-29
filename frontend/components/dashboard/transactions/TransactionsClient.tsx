@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState, useMemo, useEffect } from 'react'
 import { useAuth } from '@clerk/nextjs'
@@ -58,7 +58,7 @@ export function TransactionsClient({ initialTransactions, total, totalOutMinor, 
       const token = await getToken()
       if (!token || !active) return
       try {
-        const res = await fetch(`${API_BASE}/v1/transactions/categories`, {
+        const res = await fetch(`${API_BASE}/transactions/categories`, {
           headers: { Authorization: `Bearer ${token}` },
         })
         const json = await res.json()
@@ -133,7 +133,7 @@ export function TransactionsClient({ initialTransactions, total, totalOutMinor, 
       const token = await getToken()
       if (!token) return
       const res = await fetch(
-        `${API_BASE}/v1/transactions?limit=${PAGE_SIZE}&offset=${offset}`,
+        `${API_BASE}/transactions?limit=${PAGE_SIZE}&offset=${offset}`,
         { headers: { Authorization: `Bearer ${token}` } },
       )
       if (!res.ok) return
@@ -154,12 +154,12 @@ export function TransactionsClient({ initialTransactions, total, totalOutMinor, 
         <div>
           <h1 className="font-heading font-bold text-2xl text-brand-text">Transactions</h1>
           <p className="text-brand-muted text-xs font-mono mt-1">
-            {total} total · {transactions.length} loaded
+            {total} total Â· {transactions.length} loaded
           </p>
         </div>
         <input
           type="text"
-          placeholder="Search merchant or description…"
+          placeholder="Search merchant or descriptionâ€¦"
           value={search}
           onChange={e => setSearch(e.target.value)}
           className="bg-brand-bg border border-brand-border focus:border-[#00C853] text-brand-text placeholder:text-brand-muted rounded-sm px-3 py-1.5 text-xs font-mono w-64 outline-none transition-colors"
@@ -193,10 +193,10 @@ export function TransactionsClient({ initialTransactions, total, totalOutMinor, 
               'text-xl font-mono font-semibold mt-1',
               summary.net >= 0 ? 'text-[#00C853]' : 'text-[#ff4d6d]',
             )}>
-              {summary.net >= 0 ? '+' : '−'}{convert(Math.abs(summary.net), summary.currency)}
+              {summary.net >= 0 ? '+' : 'âˆ’'}{convert(Math.abs(summary.net), summary.currency)}
             </p>
             <p className="text-[10px] font-mono text-brand-muted mt-1">
-              {counts.pending} pending · {counts.matched} matched
+              {counts.pending} pending Â· {counts.matched} matched
             </p>
           </div>
         </motion.div>
@@ -260,7 +260,7 @@ export function TransactionsClient({ initialTransactions, total, totalOutMinor, 
           <div className="px-5 py-16 text-center">
             <p className="text-xs font-mono text-brand-muted">
               {transactions.length === 0
-                ? 'No transactions yet — connect a bank account via Integrations to import data.'
+                ? 'No transactions yet â€” connect a bank account via Integrations to import data.'
                 : search.trim()
                 ? `No results for "${search}"`
                 : 'No transactions match the selected filter.'}
@@ -301,7 +301,7 @@ export function TransactionsClient({ initialTransactions, total, totalOutMinor, 
             disabled={loadingMore}
             className="text-[10px] font-mono px-4 py-2 border border-brand-border text-brand-muted hover:text-brand-text transition-colors rounded-sm disabled:opacity-60"
           >
-            {loadingMore ? 'Loading…' : `Load more (${total - transactions.length} remaining)`}
+            {loadingMore ? 'Loadingâ€¦' : `Load more (${total - transactions.length} remaining)`}
           </button>
         )}
       </motion.div>

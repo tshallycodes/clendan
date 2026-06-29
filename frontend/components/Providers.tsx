@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
@@ -67,7 +67,7 @@ function ToastItem({ item, onDismiss }: { item: ToastItem; onDismiss: (id: strin
     >
       {accent && (
         <span className="mt-0.5 shrink-0 text-xs font-mono font-bold leading-none" style={{ color: accent }}>
-          {item.type === 'error' ? '✕' : '✓'}
+          {item.type === 'error' ? 'âœ•' : 'âœ“'}
         </span>
       )}
       <p className="text-xs font-mono text-brand-text leading-relaxed flex-1">{item.message}</p>
@@ -76,7 +76,7 @@ function ToastItem({ item, onDismiss }: { item: ToastItem; onDismiss: (id: strin
         className="shrink-0 text-brand-muted hover:text-brand-text transition-colors text-xs leading-none mt-0.5"
         aria-label="Dismiss"
       >
-        ✕
+        âœ•
       </button>
     </motion.div>
   )
@@ -159,9 +159,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
       if (!token || cancelled) return
       try {
         const [ratesRes, prefRes, tenantRes] = await Promise.all([
-          fetch(`${API_BASE}/v1/currency/rates`, { headers: { Authorization: `Bearer ${token}` } }),
-          fetch(`${API_BASE}/v1/currency/preferences`, { headers: { Authorization: `Bearer ${token}` } }),
-          fetch(`${API_BASE}/v1/tenants/me`, { headers: { Authorization: `Bearer ${token}` } }),
+          fetch(`${API_BASE}/currency/rates`, { headers: { Authorization: `Bearer ${token}` } }),
+          fetch(`${API_BASE}/currency/preferences`, { headers: { Authorization: `Bearer ${token}` } }),
+          fetch(`${API_BASE}/tenants/me`, { headers: { Authorization: `Bearer ${token}` } }),
         ])
         if (ratesRes.ok) {
           const ratesJson = await ratesRes.json()
@@ -188,7 +188,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
           }
         }
       } catch {
-        // Network error — use localStorage fallbacks
+        // Network error â€” use localStorage fallbacks
         const localCurrency = localStorage.getItem('preferredCurrency')
         if (!cancelled && localCurrency) setCurrencyState(localCurrency)
         const localTz = localStorage.getItem('timezone')
@@ -210,7 +210,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
     localStorage.setItem('preferredCurrency', code)
     const token = await getToken().catch(() => null)
     if (!token) return
-    await fetch(`${API_BASE}/v1/currency/preferences`, {
+    await fetch(`${API_BASE}/currency/preferences`, {
       method: 'PATCH',
       headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ currency: code }),
@@ -222,7 +222,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
     localStorage.setItem('timezone', tz)
     const token = await getToken().catch(() => null)
     if (!token) return
-    await fetch(`${API_BASE}/v1/tenants/me`, {
+    await fetch(`${API_BASE}/tenants/me`, {
       method: 'PATCH',
       headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ timezone: tz }),

@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState } from 'react'
 import { useAuth } from '@clerk/nextjs'
@@ -23,7 +23,7 @@ export function InvitationsTable({ invitations, onChanged }: Props) {
     setRevoking(id)
     try {
       const token = await getToken()
-      const res = await fetch(`${API}/v1/organisations/me/invitations/${id}`, {
+      const res = await fetch(`${API}/organisations/me/invitations/${id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       })
@@ -65,7 +65,7 @@ export function InvitationsTable({ invitations, onChanged }: Props) {
               onClick={() => handleRevoke(inv.id)}
               className="text-[10px] font-mono text-brand-danger border border-brand-danger/30 bg-brand-danger/08 hover:bg-brand-danger/15 rounded-sm px-2 py-0.5 transition-colors disabled:opacity-40"
             >
-              {revoking === inv.id ? '…' : 'Revoke'}
+              {revoking === inv.id ? 'â€¦' : 'Revoke'}
             </button>
           ) : (
             <span />

@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
@@ -36,15 +36,15 @@ const HOW_IT_WORKS = [
   { step: '01', label: 'Ingest',       desc: 'Every new bank transaction is pulled from connected accounts and queued for classification.' },
   { step: '02', label: 'Classify',     desc: 'Claude assigns a chart-of-accounts category with a confidence score. Low-confidence items are flagged for review.' },
   { step: '03', label: 'Policy check', desc: 'Policy engine validates the classification before any write. Blocked items are never committed without human sign-off.' },
-  { step: '04', label: 'Audit',        desc: 'Every categorisation decision — including reasoning and confidence — is written to the immutable audit log.' },
+  { step: '04', label: 'Audit',        desc: 'Every categorisation decision â€” including reasoning and confidence â€” is written to the immutable audit log.' },
 ]
 
 const CAPABILITIES = [
   'Automatic transaction categorisation with confidence scoring',
   'Human review queue for low-confidence categorisations',
-  'Learns from your team\'s manual corrections — configurable example window',
-  'Strict chart-of-accounts enforcement — only codes that exist in your COA',
-  'Month-end close orchestration — auto-triggered on your configured day each month',
+  'Learns from your team\'s manual corrections â€” configurable example window',
+  'Strict chart-of-accounts enforcement â€” only codes that exist in your COA',
+  'Month-end close orchestration â€” auto-triggered on your configured day each month',
   'Payroll reconciliation with keyword-matched transaction detection and ghost employee flagging',
   'Payroll journal entry posting with automated approval routing',
   'Batch processing for high-volume transaction periods',
@@ -55,7 +55,7 @@ const AUTONOMY_BADGE: Record<string, { label: string; className: string }> = {
   approve: { label: 'Approve', className: 'bg-[rgba(0,168,204,0.08)] text-[#00a8cc] border border-[rgba(0,168,204,0.2)]' },
 }
 const AUTONOMY_DESC: Record<string, string> = {
-  auto:    'Executes automatically — no approval required before acting.',
+  auto:    'Executes automatically â€” no approval required before acting.',
   approve: 'Every decision is routed to you for review before the agent acts.',
 }
 
@@ -95,7 +95,7 @@ export function AiAccountantClient() {
 
   const fetchDeployed = useCallback(async () => {
     const token = await getToken()
-    const res = await fetch(`${API}/v1/tools`, { headers: { Authorization: `Bearer ${token}` } })
+    const res = await fetch(`${API}/tools`, { headers: { Authorization: `Bearer ${token}` } })
     if (!res.ok) return
     const json = await res.json()
     const tools: Tool[] = json.data?.tools ?? json.data ?? []
@@ -105,7 +105,7 @@ export function AiAccountantClient() {
   const fetchTransactions = useCallback(async (fromOffset = 0, replace = true) => {
     const token = await getToken()
     const res = await fetch(
-      `${API}/v1/transactions?limit=${PAGE_SIZE}&offset=${fromOffset}`,
+      `${API}/transactions?limit=${PAGE_SIZE}&offset=${fromOffset}`,
       { headers: { Authorization: `Bearer ${token}` } },
     )
     if (!res.ok) return
@@ -125,7 +125,7 @@ export function AiAccountantClient() {
 
   const fetchCategories = useCallback(async () => {
     const token = await getToken()
-    const res = await fetch(`${API}/v1/transactions/categories`, { headers: { Authorization: `Bearer ${token}` } })
+    const res = await fetch(`${API}/transactions/categories`, { headers: { Authorization: `Bearer ${token}` } })
     if (!res.ok) return
     const json = await res.json()
     if (json.data) setCategories(json.data)
@@ -166,7 +166,7 @@ export function AiAccountantClient() {
     setToggling(true)
     try {
       const token = await getToken()
-      await fetch(`${API}/v1/tools/${deployed.id}/pause`, {
+      await fetch(`${API}/tools/${deployed.id}/pause`, {
         method: 'PATCH',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
       })
@@ -181,13 +181,13 @@ export function AiAccountantClient() {
     try {
       const token = await getToken()
       if (deployed) {
-        await fetch(`${API}/v1/tools/${deployed.id}/pause`, {
+        await fetch(`${API}/tools/${deployed.id}/pause`, {
           method: 'PATCH',
           headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
         })
       } else {
         const { getDefaultConfig } = await import('@/components/dashboard/tools/ToolConfigFields')
-        await fetch(`${API}/v1/tools`, {
+        await fetch(`${API}/tools`, {
           method: 'POST',
           headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
           body: JSON.stringify({ type: 'ai_accountant', autonomy_level: 'approve', config: getDefaultConfig('ai_accountant') }),
@@ -208,7 +208,7 @@ export function AiAccountantClient() {
     pollStartCategorisedRef.current = categorisedCount + matchedCount
     try {
       const token = await getToken()
-      const res = await fetch(`${API}/v1/agents/${deployed.id}/trigger`, {
+      const res = await fetch(`${API}/agents/${deployed.id}/trigger`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -234,10 +234,10 @@ export function AiAccountantClient() {
     const token = await getToken()
     const params = new URLSearchParams()
     if (filter !== 'all') params.set('status', filter)
-    const res = await fetch(`${API}/v1/transactions/export?${params}`, {
+    const res = await fetch(`${API}/transactions/export?${params}`, {
       headers: { Authorization: `Bearer ${token}` },
     })
-    if (!res.ok) { toast('Export failed — please try again', 'error'); return }
+    if (!res.ok) { toast('Export failed â€” please try again', 'error'); return }
     const blob = await res.blob()
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
@@ -269,7 +269,7 @@ export function AiAccountantClient() {
     <motion.div variants={pageVariants} initial="hidden" animate="show" className="p-6 space-y-6">
       <motion.div variants={sectionVariants}>
         <Link href="/tools" className="text-[11px] font-mono text-brand-muted hover:text-brand-secondary transition-colors">
-          ← Tools
+          â† Tools
         </Link>
       </motion.div>
 
@@ -295,7 +295,7 @@ export function AiAccountantClient() {
                   ? 'border border-brand-border text-brand-text hover:bg-brand-bg'
                   : 'bg-[#00C853] text-black hover:bg-[#00a844] active:scale-[0.97]'
               }`}>
-              {toggling ? 'Pausing…' : deploying ? 'Deploying…' : isActive ? 'Pause' : 'Deploy'}
+              {toggling ? 'Pausingâ€¦' : deploying ? 'Deployingâ€¦' : isActive ? 'Pause' : 'Deploy'}
             </button>
           </div>
         )}
@@ -382,7 +382,7 @@ export function AiAccountantClient() {
                     disabled={running}
                     className="shrink-0 text-xs font-mono bg-[#00C853] text-black hover:bg-[#00a844] active:scale-[0.97] rounded-sm px-4 py-1.5 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                   >
-                    {running ? 'Categorising…' : 'Categorise Now'}
+                    {running ? 'Categorisingâ€¦' : 'Categorise Now'}
                   </button>
                 </div>
               )}
@@ -391,7 +391,7 @@ export function AiAccountantClient() {
               <div className="bg-brand-surface border border-brand-border rounded-sm overflow-hidden">
                 <div className="px-4 py-3 border-b border-brand-border">
                   <p className="text-[10px] font-mono uppercase tracking-widest text-brand-muted">How it works</p>
-                  <p className="text-[10px] font-mono text-brand-muted mt-0.5">Every transaction follows this fixed execution flow — no step can be skipped</p>
+                  <p className="text-[10px] font-mono text-brand-muted mt-0.5">Every transaction follows this fixed execution flow â€” no step can be skipped</p>
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-4 divide-x divide-brand-border">
                   {HOW_IT_WORKS.map(({ step, label, desc }) => (
@@ -413,7 +413,7 @@ export function AiAccountantClient() {
                 <motion.ul variants={capabilityVariants} initial="hidden" animate="show" className="divide-y divide-brand-border">
                   {CAPABILITIES.map(cap => (
                     <motion.li key={cap} variants={capItemVariants} className="flex items-start gap-3 px-4 py-3">
-                      <span className="text-brand-muted font-mono text-[10px] mt-0.5 shrink-0">→</span>
+                      <span className="text-brand-muted font-mono text-[10px] mt-0.5 shrink-0">â†’</span>
                       <span className="text-xs font-mono text-brand-secondary">{cap}</span>
                     </motion.li>
                   ))}
@@ -441,7 +441,7 @@ export function AiAccountantClient() {
                       <p className="text-[10px] font-mono text-brand-muted uppercase tracking-widest">Status</p>
                       <p className="text-xs font-mono text-brand-text">{deployed.status === 'active' ? 'Running' : 'Paused'}</p>
                       <p className="text-[10px] font-mono text-brand-muted">
-                        {deployed.status === 'active' ? 'Agent is live and processing' : 'Agent is paused — no runs will fire'}
+                        {deployed.status === 'active' ? 'Agent is live and processing' : 'Agent is paused â€” no runs will fire'}
                       </p>
                     </div>
                   </div>

@@ -1,4 +1,4 @@
-import { auth } from '@clerk/nextjs/server'
+﻿import { auth } from '@clerk/nextjs/server'
 import { redirect } from 'next/navigation'
 import { getBackendToken } from '@/lib/auth'
 
@@ -12,13 +12,13 @@ export default async function OnboardingLayout({ children }: { children: React.R
   try {
     const token = await getBackendToken()
     if (token) {
-      const res = await fetch(`${API_BASE}/v1/tenants/me`, {
+      const res = await fetch(`${API_BASE}/tenants/me`, {
         headers: { Authorization: `Bearer ${token}` },
         cache: 'no-store',
       })
       if (res.ok) redirect('/dashboard')
     }
-  } catch { /* backend down — let them through to complete onboarding */ }
+  } catch { /* backend down â€” let them through to complete onboarding */ }
 
   return <>{children}</>
 }

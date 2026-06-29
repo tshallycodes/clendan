@@ -55,7 +55,7 @@ export function ToolCard({ tool, onConfigure, onStatusChange }: Props) {
     setToggling(true)
     try {
       const token = await getToken()
-      const res = await fetch(`${API}/v1/tools/${tool.id}/pause`, {
+      const res = await fetch(`${API}/tools/${tool.id}/pause`, {
         method: 'PATCH',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
       })
@@ -73,7 +73,7 @@ export function ToolCard({ tool, onConfigure, onStatusChange }: Props) {
     setDeleting(true)
     try {
       const token = await getToken()
-      const res = await fetch(`${API}/v1/tools/${tool.id}`, {
+      const res = await fetch(`${API}/tools/${tool.id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       })

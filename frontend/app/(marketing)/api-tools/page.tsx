@@ -33,13 +33,13 @@ function CodeBlock({ children }: { children: React.ReactNode }) {
 function InvoiceParserSection() {
   return (
     <ApiSection
-      endpoint="POST /v1/parse/invoice"
+      endpoint="POST /parse/invoice"
       title="Invoice Parser API"
       desc="Extracts vendor, amount, line items, due date, and VAT from any invoice format — PDF, image, or structured data."
       useCases={['Automated invoice ingestion', 'AP workflow automation', 'ERP data entry elimination']}
       curl={
         <>
-          <K>curl</K> <S>-X POST</S> https://api.clendan.com/v1/parse/invoice \{'\n'}
+          <K>curl</K> <S>-X POST</S> https://api.clendan.com/parse/invoice \{'\n'}
           {'  '}<K>-H</K> <S>&quot;Authorization: Bearer $TOKEN&quot;</S> \{'\n'}
           {'  '}<K>-H</K> <S>&quot;Content-Type: application/json&quot;</S> \{'\n'}
           {'  '}<K>-d</K> <S>&apos;&#123;&quot;file_url&quot;: &quot;https://storage.example.com/inv-4821.pdf&quot;&#125;&apos;</S>
@@ -70,13 +70,13 @@ function InvoiceParserSection() {
 function ReceiptOcrSection() {
   return (
     <ApiSection
-      endpoint="POST /v1/parse/receipt"
+      endpoint="POST /parse/receipt"
       title="Receipt OCR + Policy Check"
       desc="Extracts merchant, amount, category, and date from any receipt image, then validates the spend against your configured expense policy."
       useCases={['Expense claim automation', 'Policy violation detection', 'Receipt data extraction at scale']}
       curl={
         <>
-          <K>curl</K> <S>-X POST</S> https://api.clendan.com/v1/parse/receipt \{'\n'}
+          <K>curl</K> <S>-X POST</S> https://api.clendan.com/parse/receipt \{'\n'}
           {'  '}<K>-H</K> <S>&quot;Authorization: Bearer $TOKEN&quot;</S> \{'\n'}
           {'  '}<K>-H</K> <S>&quot;Content-Type: application/json&quot;</S> \{'\n'}
           {'  '}<K>-d</K> <S>&apos;&#123;&quot;image_url&quot;: &quot;https://...&quot;, &quot;policy_id&quot;: &quot;pol_abc&quot;&#125;&apos;</S>
@@ -104,13 +104,13 @@ function ReceiptOcrSection() {
 function ReconcileSection() {
   return (
     <ApiSection
-      endpoint="POST /v1/reconcile"
+      endpoint="POST /reconcile"
       title="Document Reconciliation"
       desc="Matches two financial datasets — bank transactions vs ledger entries, invoices vs payments — and returns matched, unmatched, and flagged rows."
       useCases={['Month-end close automation', 'Bank statement reconciliation', 'AP/AR mismatch detection']}
       curl={
         <>
-          <K>curl</K> <S>-X POST</S> https://api.clendan.com/v1/reconcile \{'\n'}
+          <K>curl</K> <S>-X POST</S> https://api.clendan.com/reconcile \{'\n'}
           {'  '}<K>-H</K> <S>&quot;Authorization: Bearer $TOKEN&quot;</S> \{'\n'}
           {'  '}<K>-H</K> <S>&quot;Idempotency-Key: idem_xyz&quot;</S> \{'\n'}
           {'  '}<K>-d</K> <S>&apos;&#123;&quot;source_a_id&quot;: &quot;bank_stmt_jun&quot;, &quot;source_b_id&quot;: &quot;ledger_jun&quot;&#125;&apos;</S>
@@ -139,13 +139,13 @@ function ReconcileSection() {
 function FraudSection() {
   return (
     <ApiSection
-      endpoint="POST /v1/fraud/score"
+      endpoint="POST /fraud/score"
       title="Fraud Signal API"
       desc="Returns a risk score between 0 and 1 with structured reasoning for any transaction. Integrates into your approval flow or triggers automatic blocks."
       useCases={['Real-time payment fraud screening', 'Anomaly detection in expense claims', 'Pre-authorisation risk scoring']}
       curl={
         <>
-          <K>curl</K> <S>-X POST</S> https://api.clendan.com/v1/fraud/score \{'\n'}
+          <K>curl</K> <S>-X POST</S> https://api.clendan.com/fraud/score \{'\n'}
           {'  '}<K>-H</K> <S>&quot;Authorization: Bearer $TOKEN&quot;</S> \{'\n'}
           {'  '}<K>-d</K> <S>&apos;&#123;&quot;transaction_id&quot;: &quot;tx_44f1&quot;, &quot;amount_pence&quot;: 95000, &quot;vendor&quot;: &quot;Unknown Ltd&quot;&#125;&apos;</S>
         </>
@@ -176,13 +176,13 @@ function FraudSection() {
 function ContractSection() {
   return (
     <ApiSection
-      endpoint="POST /v1/parse/contract"
+      endpoint="POST /parse/contract"
       title="Contract Extraction"
       desc="Extracts counterparty, payment terms, renewal dates, and key obligations from any contract PDF. Structured output ready for your workflow."
       useCases={['Contract management automation', 'Renewal date alerting', 'Payment terms extraction for AP']}
       curl={
         <>
-          <K>curl</K> <S>-X POST</S> https://api.clendan.com/v1/parse/contract \{'\n'}
+          <K>curl</K> <S>-X POST</S> https://api.clendan.com/parse/contract \{'\n'}
           {'  '}<K>-H</K> <S>&quot;Authorization: Bearer $TOKEN&quot;</S> \{'\n'}
           {'  '}<K>-d</K> <S>&apos;&#123;&quot;file_url&quot;: &quot;https://storage.example.com/contract-2026.pdf&quot;&#125;&apos;</S>
         </>

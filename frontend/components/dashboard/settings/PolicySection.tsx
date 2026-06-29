@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
@@ -24,7 +24,7 @@ export function PolicySection() {
 
   async function fetchTools() {
     const token = await getToken()
-    const res = await fetch(`${API}/v1/tools`, {
+    const res = await fetch(`${API}/tools`, {
       headers: { Authorization: `Bearer ${token}` },
     })
     if (res.ok) {
@@ -56,7 +56,7 @@ export function PolicySection() {
           href="/tools"
           className="text-[10px] font-mono text-brand-secondary hover:text-brand-text transition-colors"
         >
-          Go to Tools →
+          Go to Tools â†’
         </Link>
       </div>
     )

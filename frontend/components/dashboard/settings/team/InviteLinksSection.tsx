@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '@clerk/nextjs'
@@ -55,7 +55,7 @@ export function InviteLinksSection() {
   const fetchLinks = useCallback(async () => {
     try {
       const token = await getToken()
-      const res = await fetch(`${API}/v1/organisations/me/invite-links`, {
+      const res = await fetch(`${API}/organisations/me/invite-links`, {
         headers: { Authorization: `Bearer ${token}` },
       })
       if (res.ok) {
@@ -76,7 +76,7 @@ export function InviteLinksSection() {
     setError(null)
     try {
       const token = await getToken()
-      const res = await fetch(`${API}/v1/organisations/me/invite-links`, {
+      const res = await fetch(`${API}/organisations/me/invite-links`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -99,7 +99,7 @@ export function InviteLinksSection() {
 
   async function handleDelete(id: string) {
     const token = await getToken()
-    const res = await fetch(`${API}/v1/organisations/me/invite-links/${id}`, {
+    const res = await fetch(`${API}/organisations/me/invite-links/${id}`, {
       method: 'DELETE',
       headers: { Authorization: `Bearer ${token}` },
     })
@@ -154,7 +154,7 @@ export function InviteLinksSection() {
           disabled={creating}
           className="bg-brand-green text-black hover:bg-[#00a844] active:scale-[0.97] rounded-sm px-3 py-1.5 text-xs font-mono font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {creating ? 'Generating…' : '+ Generate link'}
+          {creating ? 'Generatingâ€¦' : '+ Generate link'}
         </button>
       </div>
 

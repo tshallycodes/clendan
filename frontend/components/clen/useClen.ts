@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState, useEffect } from 'react'
 import { useAuth } from '@clerk/nextjs'
@@ -52,7 +52,7 @@ export function useClen(mode: ClenMode) {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(messages))
     } catch {
-      // localStorage unavailable — silently skip
+      // localStorage unavailable â€” silently skip
     }
   }, [messages])
 
@@ -90,7 +90,7 @@ export function useClen(mode: ClenMode) {
         content: m.content,
       }))
 
-      const response = await fetch(`${API_BASE}/v1/clen/chat`, {
+      const response = await fetch(`${API_BASE}/clen/chat`, {
         method: 'POST',
         headers,
         body: JSON.stringify({ messages: history, mode }),
@@ -127,7 +127,7 @@ export function useClen(mode: ClenMode) {
                 return updated
               })
             } else if (event.type === 'error') {
-              setError(event.content ?? 'Clen encountered an error — please try again')
+              setError(event.content ?? 'Clen encountered an error â€” please try again')
               setMessages(prev => {
                 const updated = [...prev]
                 updated.pop()
@@ -156,15 +156,15 @@ export function useClen(mode: ClenMode) {
               })
             }
           } catch {
-            /* malformed event — skip */
+            /* malformed event â€” skip */
           }
         }
       }
-      // Stream ended without [DONE] — remove orphaned empty assistant message
+      // Stream ended without [DONE] â€” remove orphaned empty assistant message
       setMessages(prev => {
         const last = prev[prev.length - 1]
         if (last?.role === 'assistant' && !last.content && !last.toolCalls?.length) {
-          setError('Connection lost — please try again')
+          setError('Connection lost â€” please try again')
           return prev.slice(0, -1)
         }
         return prev

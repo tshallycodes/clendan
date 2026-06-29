@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useCallback, useEffect, useState } from 'react'
 import { useAuth } from '@clerk/nextjs'
@@ -53,7 +53,7 @@ const STATUS_LABEL: Record<string, string> = {
   draft: 'Draft',
   pending_approval: 'Pending Approval',
   approved: 'Approved',
-  posted: 'Posted ✓',
+  posted: 'Posted âœ“',
   voided: 'Voided',
 }
 
@@ -89,10 +89,10 @@ function LineItemsTable({ lines }: { lines: JournalLine[] }) {
             <td className="text-[11px] font-mono text-brand-muted px-3 py-2">{ln.account_code}</td>
             <td className="text-[11px] font-mono text-brand-text px-3 py-2">{ln.account_name}</td>
             <td className="text-[11px] font-mono text-brand-text px-3 py-2">
-              {ln.debit_minor > 0 ? fmt(ln.debit_minor) : '—'}
+              {ln.debit_minor > 0 ? fmt(ln.debit_minor) : 'â€”'}
             </td>
             <td className="text-[11px] font-mono text-brand-text px-3 py-2">
-              {ln.credit_minor > 0 ? fmt(ln.credit_minor) : '—'}
+              {ln.credit_minor > 0 ? fmt(ln.credit_minor) : 'â€”'}
             </td>
           </tr>
         ))}
@@ -143,7 +143,7 @@ function JournalEntryCard({
           <span className={`text-[10px] font-mono px-2 py-0.5 rounded-sm border ${statusClass}`}>
             {statusLabel}
           </span>
-          <span className="text-brand-muted text-xs">{expanded ? '▲' : '▼'}</span>
+          <span className="text-brand-muted text-xs">{expanded ? 'â–²' : 'â–¼'}</span>
         </div>
       </button>
 
@@ -167,7 +167,7 @@ function JournalEntryCard({
                     disabled={posting}
                     className="text-[11px] font-mono bg-[#00C853] text-black hover:bg-[#00a844] active:scale-[0.97] rounded-sm px-3 py-1.5 transition-all disabled:opacity-50"
                   >
-                    {posting ? 'Posting…' : 'Post Entry'}
+                    {posting ? 'Postingâ€¦' : 'Post Entry'}
                   </button>
                 )}
                 {entry.status === 'draft' && (
@@ -177,7 +177,7 @@ function JournalEntryCard({
                     disabled={voiding}
                     className="text-[11px] font-mono bg-[rgba(255,77,109,0.1)] border border-[#ff4d6d] text-[#ff4d6d] rounded-sm px-3 py-1.5 transition-colors disabled:opacity-50"
                   >
-                    {voiding ? 'Voiding…' : 'Void'}
+                    {voiding ? 'Voidingâ€¦' : 'Void'}
                   </button>
                 )}
                 {entry.posted_at && (
@@ -233,7 +233,7 @@ export function JournalEntriesTab({ toolId }: Props) {
 
   const fetchEntries = useCallback(async () => {
     const token = await getToken()
-    const res = await fetch(`${API}/v1/journal-entries`, {
+    const res = await fetch(`${API}/journal-entries`, {
       headers: { Authorization: `Bearer ${token}` },
     })
     if (!res.ok) return
@@ -274,7 +274,7 @@ export function JournalEntriesTab({ toolId }: Props) {
           description: ln.description || undefined,
         }))
 
-      const res = await fetch(`${API}/v1/journal-entries`, {
+      const res = await fetch(`${API}/journal-entries`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -292,7 +292,7 @@ export function JournalEntriesTab({ toolId }: Props) {
       setLineInputs([EMPTY_LINE(), EMPTY_LINE()])
       await fetchEntries()
     } catch {
-      toast('Network error — please try again', 'error')
+      toast('Network error â€” please try again', 'error')
     } finally {
       setSubmitting(false)
     }
@@ -302,7 +302,7 @@ export function JournalEntriesTab({ toolId }: Props) {
     setPostingId(entryId)
     try {
       const token = await getToken()
-      const res = await fetch(`${API}/v1/journal-entries/${entryId}/post`, {
+      const res = await fetch(`${API}/journal-entries/${entryId}/post`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
       })
@@ -310,7 +310,7 @@ export function JournalEntriesTab({ toolId }: Props) {
       toast('Entry posted', 'success')
       await fetchEntries()
     } catch {
-      toast('Network error — please try again', 'error')
+      toast('Network error â€” please try again', 'error')
     } finally {
       setPostingId(null)
     }
@@ -320,7 +320,7 @@ export function JournalEntriesTab({ toolId }: Props) {
     setVoidingId(entryId)
     try {
       const token = await getToken()
-      const res = await fetch(`${API}/v1/journal-entries/${entryId}`, {
+      const res = await fetch(`${API}/journal-entries/${entryId}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       })
@@ -328,7 +328,7 @@ export function JournalEntriesTab({ toolId }: Props) {
       toast('Entry voided', 'success')
       await fetchEntries()
     } catch {
-      toast('Network error — please try again', 'error')
+      toast('Network error â€” please try again', 'error')
     } finally {
       setVoidingId(null)
     }
@@ -388,7 +388,7 @@ export function JournalEntriesTab({ toolId }: Props) {
                 <table className="w-full">
                   <thead>
                     <tr className="border-b border-brand-border bg-brand-elevated">
-                      {['Code', 'Account Name', 'Debit (£)', 'Credit (£)', ''].map((h) => (
+                      {['Code', 'Account Name', 'Debit (Â£)', 'Credit (Â£)', ''].map((h) => (
                         <th
                           key={h}
                           className="text-left text-[10px] font-mono text-brand-muted uppercase tracking-widest px-3 py-2"
@@ -413,7 +413,7 @@ export function JournalEntriesTab({ toolId }: Props) {
                           <input
                             value={ln.account_name}
                             onChange={(e) => updateLine(idx, 'account_name', e.target.value)}
-                            placeholder="Payroll — Engineering"
+                            placeholder="Payroll â€” Engineering"
                             className="w-full bg-brand-bg border border-brand-border focus:border-[#00C853] text-brand-text placeholder:text-brand-muted rounded-sm px-2 py-1 text-[11px] font-mono outline-none"
                           />
                         </td>
@@ -442,7 +442,7 @@ export function JournalEntriesTab({ toolId }: Props) {
                             disabled={lineInputs.length <= 2}
                             className="text-brand-muted hover:text-[#ff4d6d] text-xs transition-colors disabled:opacity-30"
                           >
-                            ×
+                            Ã—
                           </button>
                         </td>
                       </tr>
@@ -465,7 +465,7 @@ export function JournalEntriesTab({ toolId }: Props) {
                     Dr {fmt(totalDebits)} / Cr {fmt(totalCredits)}
                   </span>
                   <span className={balanced ? 'text-[#00C853]' : 'text-[#ff4d6d]'}>
-                    {balanced ? '✓ Balanced' : '✗ Unbalanced'}
+                    {balanced ? 'âœ“ Balanced' : 'âœ— Unbalanced'}
                   </span>
                 </div>
               </div>
@@ -477,7 +477,7 @@ export function JournalEntriesTab({ toolId }: Props) {
                   disabled={!balanced || !period || !description || submitting}
                   className="text-xs font-mono bg-[#00C853] text-black hover:bg-[#00a844] active:scale-[0.97] rounded-sm px-4 py-1.5 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                 >
-                  {submitting ? 'Creating…' : 'Post Entry'}
+                  {submitting ? 'Creatingâ€¦' : 'Post Entry'}
                 </button>
               </div>
             </div>
@@ -495,7 +495,7 @@ export function JournalEntriesTab({ toolId }: Props) {
       ) : entries.length === 0 ? (
         <div className="bg-brand-surface border border-brand-border rounded-sm px-5 py-12 text-center">
           <p className="text-xs font-mono text-brand-muted">
-            No journal entries yet — create one above.
+            No journal entries yet â€” create one above.
           </p>
         </div>
       ) : (

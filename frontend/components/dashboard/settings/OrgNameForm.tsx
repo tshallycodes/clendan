@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState } from 'react'
 import { useAuth } from '@clerk/nextjs'
@@ -23,7 +23,7 @@ export function OrgNameForm({ initialName }: Props) {
     setErrorMsg('')
     try {
       const token = await getToken()
-      const res = await fetch(`${API}/v1/tenants/me`, {
+      const res = await fetch(`${API}/tenants/me`, {
         method: 'PATCH',
         headers: {
           Authorization: `Bearer ${token}`,

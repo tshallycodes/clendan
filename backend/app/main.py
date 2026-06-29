@@ -195,7 +195,7 @@ def create_app() -> FastAPI:
         )
 
     from app.api.v1.router import v1_router  # noqa: E402 — imported here to avoid circular deps
-    app.include_router(v1_router, prefix="/v1")
+    app.include_router(v1_router)
 
     return app
 

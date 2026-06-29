@@ -11,7 +11,7 @@ export default async function ToolsPage() {
   try {
     const token = await getBackendToken()
     if (token) {
-      const res = await apiGet<{ tools: Tool[] }>('/v1/tools', token)
+      const res = await apiGet<{ tools: Tool[] }>('/tools', token)
       tools = res.tools ?? []
     }
   } catch { /* backend not running */ }

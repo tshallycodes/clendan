@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useEffect, useState } from 'react'
 import { useAuth } from '@clerk/nextjs'
@@ -28,7 +28,7 @@ export function ApiKeysSection() {
   async function fetchKeys() {
     try {
       const token = await getToken()
-      const res = await fetch(`${API}/v1/api-keys`, { headers: { Authorization: `Bearer ${token}` } })
+      const res = await fetch(`${API}/api-keys`, { headers: { Authorization: `Bearer ${token}` } })
       if (res.ok) {
         const json = await res.json()
         setKeys(json.data?.api_keys ?? [])
@@ -45,7 +45,7 @@ export function ApiKeysSection() {
     setCreating(true)
     try {
       const token = await getToken()
-      const res = await fetch(`${API}/v1/api-keys`, {
+      const res = await fetch(`${API}/api-keys`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: newName.trim() }),
@@ -67,7 +67,7 @@ export function ApiKeysSection() {
   async function handleRevoke(id: string) {
     try {
       const token = await getToken()
-      const res = await fetch(`${API}/v1/api-keys/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } })
+      const res = await fetch(`${API}/api-keys/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } })
       if (!res.ok) { toast('Failed to revoke API key', 'error'); return }
       toast('API key revoked', 'success')
       await fetchKeys()
@@ -79,7 +79,7 @@ export function ApiKeysSection() {
   async function handleDelete(id: string) {
     try {
       const token = await getToken()
-      const res = await fetch(`${API}/v1/api-keys/${id}/permanent`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } })
+      const res = await fetch(`${API}/api-keys/${id}/permanent`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } })
       if (!res.ok) { toast('Failed to delete API key', 'error'); return }
       toast('API key deleted', 'success')
       await fetchKeys()
@@ -99,7 +99,7 @@ export function ApiKeysSection() {
     <div className="space-y-4">
       {revealedKey && (
         <div className="border border-brand-green/40 bg-brand-green/05 rounded-sm p-4 space-y-3">
-          <p className="text-[10px] font-mono uppercase tracking-widest text-brand-green">New API key — copy it now. It will not be shown again.</p>
+          <p className="text-[10px] font-mono uppercase tracking-widest text-brand-green">New API key â€” copy it now. It will not be shown again.</p>
           <div className="flex items-center gap-3 bg-brand-bg border border-brand-border rounded-sm px-3 py-2">
             <code className="flex-1 text-xs font-mono text-brand-text break-all">{revealedKey}</code>
             <button type="button" onClick={copyKey} aria-label="Copy API key" className="shrink-0 text-brand-muted hover:text-brand-text transition-colors">
@@ -107,7 +107,7 @@ export function ApiKeysSection() {
             </button>
           </div>
           <button type="button" onClick={() => setRevealedKey(null)} className="text-xs font-mono text-brand-muted hover:text-brand-text transition-colors">
-            I've copied it — dismiss
+            I've copied it â€” dismiss
           </button>
         </div>
       )}
@@ -133,14 +133,14 @@ export function ApiKeysSection() {
       {loading ? (
         <p className="text-xs font-mono text-brand-muted py-4">Loading...</p>
       ) : keys.length === 0 && !showForm ? (
-        <p className="text-xs font-mono text-brand-muted py-4">No API keys — generate your first key to connect external systems.</p>
+        <p className="text-xs font-mono text-brand-muted py-4">No API keys â€” generate your first key to connect external systems.</p>
       ) : (
         <div className="divide-y divide-brand-border border border-brand-border rounded-sm overflow-hidden">
           {keys.map((k) => (
             <div key={k.id} className="bg-brand-surface px-4 py-3 flex items-center gap-4">
               <div className="flex-1 min-w-0">
                 <span className="text-xs font-mono text-brand-text">{k.name}</span>
-                <code className="ml-3 text-[10px] font-mono text-brand-muted">{k.key_prefix}••••••••</code>
+                <code className="ml-3 text-[10px] font-mono text-brand-muted">{k.key_prefix}â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢</code>
               </div>
               <span className={`text-[10px] font-mono px-2 py-0.5 rounded-sm border ${k.status === 'active' ? 'text-brand-green border-brand-green/30 bg-brand-green/08' : 'text-brand-muted border-brand-border'}`}>
                 {k.status}

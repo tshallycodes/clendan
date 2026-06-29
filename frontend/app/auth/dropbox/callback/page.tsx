@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { Suspense, useEffect, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
@@ -23,7 +23,7 @@ function DropboxExchange() {
     }
 
     const params = new URLSearchParams({ code, state })
-    fetch(`${API}/v1/integrations/dropbox/exchange?${params}`)
+    fetch(`${API}/integrations/dropbox/exchange?${params}`)
       .then(res => {
         router.replace(res.ok
           ? '/dashboard/integrations?connected=dropbox'
@@ -41,7 +41,7 @@ export default function DropboxCallbackPage() {
     <div className="min-h-screen flex items-center justify-center bg-brand-bg">
       <div className="text-center space-y-3">
         <div className="w-5 h-5 border-2 border-[#0061FF] border-t-transparent rounded-full animate-spin mx-auto" />
-        <p className="text-xs font-mono text-brand-muted">Connecting Dropbox…</p>
+        <p className="text-xs font-mono text-brand-muted">Connecting Dropboxâ€¦</p>
         <Suspense>
           <DropboxExchange />
         </Suspense>

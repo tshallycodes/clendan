@@ -203,8 +203,8 @@ export function BankDetailDrawer({ bank, onClose, onConnect, onDisconnect, onRes
       // provider" — don't filter by name or we'll miss connections with a different institution_name
       const isGeneric = bankDef.id.endsWith('-generic')
       const url = isGeneric
-        ? `${API}/v1/integrations/${bankDef.provider}/connections`
-        : `${API}/v1/integrations/${bankDef.provider}/connections?institution_name=${encodeURIComponent(bankDef.name)}`
+        ? `${API}/integrations/${bankDef.provider}/connections`
+        : `${API}/integrations/${bankDef.provider}/connections?institution_name=${encodeURIComponent(bankDef.name)}`
       const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } })
       if (res.ok) {
         const json = await res.json()

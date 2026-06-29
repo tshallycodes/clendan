@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useEffect, useState, useCallback } from 'react'
 import { useAuth } from '@clerk/nextjs'
@@ -56,7 +56,7 @@ export function TeamPageClient() {
     setLoadingMembers(true)
     try {
       const token = await getToken()
-      const res = await fetch(`${API}/v1/organisations/me/members`, {
+      const res = await fetch(`${API}/organisations/me/members`, {
         headers: { Authorization: `Bearer ${token}` },
       })
       if (res.ok) {
@@ -72,7 +72,7 @@ export function TeamPageClient() {
     setLoadingInvites(true)
     try {
       const token = await getToken()
-      const res = await fetch(`${API}/v1/organisations/me/invitations`, {
+      const res = await fetch(`${API}/organisations/me/invitations`, {
         headers: { Authorization: `Bearer ${token}` },
       })
       if (res.ok) {
@@ -91,7 +91,7 @@ export function TeamPageClient() {
     async function fetchSettings() {
       try {
         const token = await getToken()
-        const res = await fetch(`${API}/v1/organisations/me/settings`, {
+        const res = await fetch(`${API}/organisations/me/settings`, {
           headers: { Authorization: `Bearer ${token}` },
         })
         if (res.ok) {
@@ -99,7 +99,7 @@ export function TeamPageClient() {
           setSettings((json.data ?? json) as OrgSettings)
         }
       } catch {
-        // settings unavailable — hide domain toggle
+        // settings unavailable â€” hide domain toggle
       }
     }
     fetchSettings()

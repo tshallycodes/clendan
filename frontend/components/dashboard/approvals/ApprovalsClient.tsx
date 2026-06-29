@@ -235,7 +235,7 @@ export function ApprovalsClient({ initialApprovals }: Props) {
     try {
       const token = await getToken()
       if (!token) return
-      const res = await fetch(`${API_BASE}/v1/approvals/${id}/respond`, {
+      const res = await fetch(`${API_BASE}/approvals/${id}/respond`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ action }),

@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState } from 'react'
 import { useAuth } from '@clerk/nextjs'
@@ -22,7 +22,7 @@ export function DomainMatchingToggle({ initialEnabled, domain }: Props) {
     setSaving(true)
     try {
       const token = await getToken()
-      const res = await fetch(`${API}/v1/organisations/me/settings`, {
+      const res = await fetch(`${API}/organisations/me/settings`, {
         method: 'PATCH',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ domain_matching: next }),

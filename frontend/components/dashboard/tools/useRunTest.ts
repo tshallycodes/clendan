@@ -22,7 +22,7 @@ export function useRunTest(toolId: string, toolType: string) {
         setResult({ decision: 'failed', confidence: null, error: 'No test payload defined for this tool type.' })
         return
       }
-      const res = await fetch(`${API}/v1/events`, {
+      const res = await fetch(`${API}/events`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,

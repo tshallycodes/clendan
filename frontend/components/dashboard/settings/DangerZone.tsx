@@ -22,13 +22,13 @@ export function DangerZone() {
     setPausing(true)
     try {
       const token = await getToken()
-      const res = await fetch(`${API}/v1/tools`, { headers: { Authorization: `Bearer ${token}` } })
+      const res = await fetch(`${API}/tools`, { headers: { Authorization: `Bearer ${token}` } })
       if (res.ok) {
         const json = await res.json()
         const tools: { id: string }[] = json.data ?? json ?? []
         await Promise.all(
           tools.map((w) =>
-            fetch(`${API}/v1/tools/${w.id}`, {
+            fetch(`${API}/tools/${w.id}`, {
               method: 'PATCH',
               headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
               body: JSON.stringify({ status: 'inactive' }),
