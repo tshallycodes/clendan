@@ -28,3 +28,31 @@ export const clerkDarkAppearance = {
     footerActionLink: 'text-[#00C853] hover:text-[#00a844]',
   },
 }
+
+export const clerkLightAppearance = {
+  variables: {
+    colorBackground: '#ffffff',
+    colorText: '#0d1117',
+    colorTextSecondary: '#5d6b7a',
+    colorPrimary: '#00C853',
+    colorTextOnPrimaryBackground: '#000000',
+    colorInputBackground: '#f5f5f5',
+    colorInputText: '#0d1117',
+    colorNeutral: '#3d4754',
+    borderRadius: '4px',
+    fontSize: '14px',
+  },
+  elements: {
+    card: 'bg-white border border-[#e0e0e0] shadow-none',
+    headerTitle: 'text-[#0d1117]',
+    headerSubtitle: 'text-[#5d6b7a]',
+    socialButtonsBlockButton: 'bg-[#f5f5f5] border border-[#e0e0e0] text-[#0d1117] hover:bg-[#f4f6fb]',
+    socialButtonsBlockButtonText: 'text-[#0d1117] font-medium',
+    dividerLine: 'bg-[#e0e0e0]',
+    dividerText: 'text-[#5d6b7a]',
+    formFieldLabel: 'text-[#3d4754]',
+    formButtonPrimary: 'bg-[#00C853] text-black hover:bg-[#00a844]',
+    footerActionText: 'text-[#5d6b7a]',
+    footerActionLink: 'text-[#00C853] hover:text-[#00a844]',
+  },
+}
