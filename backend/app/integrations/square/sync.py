@@ -4,8 +4,8 @@ Fetches recent payments and invoices for a connected Square integration.
 Writes sync log entries per entity type.
 """
 import time
+from datetime import datetime, UTC
 
-from app.core.config import get_settings
 from app.core.db import get_db
 from app.core.logging import get_logger
 from app.integrations.encryption import decrypt_credentials
@@ -162,11 +162,15 @@ async def sync_square_connection(ctx: dict, integration_id: str, tenant_id: str)
         logger.info("Square sync aborted — integration %s was disconnected during run", integration_id)
         return {"status": "skipped", "reason": "disconnected_during_sync"}
 
-    import json
+    from prisma import Json
     sync_metadata = {k: v for k, v in results.items() if isinstance(v, int)}
     await db.integration.update(
         where={"id": integration_id},
-        data={"status": "connected", "sync_metadata": json.dumps(sync_metadata)},
+        data={
+            "status": "connected",
+            "last_synced_at": datetime.now(UTC),
+            "sync_metadata": Json(sync_metadata),
+        },
     )
 
     return {"status": overall_status, **results}
@@ -174,8 +178,6 @@ async def sync_square_connection(ctx: dict, integration_id: str, tenant_id: str)
 
 async def enqueue_square_sync(integration_id: str, tenant_id: str) -> None:
     """Enqueues a Square sync job onto the arq Redis queue."""
-    import arq
-    settings = get_settings()
-    redis = await arq.create_pool(arq.connections.RedisSettings.from_dsn(settings.redis_public_url))
-    await redis.enqueue_job("sync_square_connection", integration_id, tenant_id)
-    await redis.aclose()
+    from app.queue.pool import get_queue_pool
+    pool = await get_queue_pool()
+    await pool.enqueue_job("sync_square_connection", integration_id, tenant_id)
