@@ -383,16 +383,54 @@ function DocumentRow({ doc, toolId, onAbort }: DocumentRowProps) {
   )
 }
 
-const CLOUD_SOURCES = [
-  { id: 'google_drive', label: 'Google Drive' },
-  { id: 'dropbox',      label: 'Dropbox' },
-  { id: 'onedrive',     label: 'OneDrive' },
-] as const
+interface CloudSource {
+  id: string
+  label: string
+  bg: string
+  bgHover: string
+  border: string
+}
+
+const CLOUD_SOURCES: CloudSource[] = [
+  { id: 'google_drive', label: 'Google Drive', bg: 'rgba(66,133,244,0.07)',  bgHover: 'rgba(66,133,244,0.14)', border: 'rgba(66,133,244,0.28)' },
+  { id: 'dropbox',      label: 'Dropbox',      bg: 'rgba(0,97,255,0.07)',    bgHover: 'rgba(0,97,255,0.14)',   border: 'rgba(0,97,255,0.28)' },
+  { id: 'onedrive',     label: 'OneDrive',     bg: 'rgba(0,120,212,0.07)',   bgHover: 'rgba(0,120,212,0.14)', border: 'rgba(0,120,212,0.28)' },
+]
+
+function CloudProviderIcon({ id }: { id: string }) {
+  if (id === 'google_drive') {
+    return (
+      <svg width="13" height="12" viewBox="0 0 24 20" fill="none" className="shrink-0" aria-hidden>
+        <path d="M12 2 0 20h8z" fill="#34A853"/>
+        <path d="M12 2 8 20h8z" fill="#FBBC04"/>
+        <path d="M12 2 16 20h8z" fill="#4285F4"/>
+      </svg>
+    )
+  }
+  if (id === 'dropbox') {
+    return (
+      <svg width="12" height="12" viewBox="0 0 43 40" fill="#0061FF" className="shrink-0" aria-hidden>
+        <path d="M12.5 0L0 8l8.5 7L21 7l12.5 8 8.5-7L29.5 0 21 6.3z"/>
+        <path d="M0 22.5l12.5 8L21 24l8.5 6.5 12.5-8-8.5-7L21 22.5l-8.5-7z"/>
+        <path d="M12.5 32.5L21 39l8.5-6.5v-6.5L21 32.5l-8.5-6.5z"/>
+      </svg>
+    )
+  }
+  if (id === 'onedrive') {
+    return (
+      <svg width="16" height="11" viewBox="0 0 30 20" fill="none" className="shrink-0" aria-hidden>
+        <path d="M3 18C3 14.7 5.7 12 9 12 9 8.7 11.7 6 15 6c3.3 0 6 2.7 6 6 3.3 0 6 2.7 6 6z" fill="#0078D4"/>
+      </svg>
+    )
+  }
+  return null
+}
 
 function CloudImport({ toolId, onImported }: { toolId: string; onImported: () => void }) {
   const { getToken } = useAuth()
   const { toast } = useToast()
   const [loading, setLoading] = useState<string | null>(null)
+  const [hovered, setHovered] = useState<string | null>(null)
 
   async function handleImport(source: string, label: string) {
     setLoading(source)
@@ -422,17 +460,24 @@ function CloudImport({ toolId, onImported }: { toolId: string; onImported: () =>
   }
 
   return (
-    <div className="flex items-center gap-2.5 flex-wrap">
+    <div className="flex items-center gap-2 flex-wrap">
       <span className="text-[10px] font-mono text-brand-muted">Import from:</span>
       {CLOUD_SOURCES.map(s => (
         <button
           key={s.id}
           type="button"
           onClick={() => handleImport(s.id, s.label)}
+          onMouseEnter={() => setHovered(s.id)}
+          onMouseLeave={() => setHovered(null)}
           disabled={loading !== null}
-          className="text-[10px] font-mono px-2.5 py-1 rounded-sm border border-brand-border text-brand-secondary hover:bg-brand-elevated hover:text-brand-text transition-colors disabled:opacity-40"
+          style={{
+            backgroundColor: hovered === s.id || loading === s.id ? s.bgHover : s.bg,
+            borderColor: s.border,
+          }}
+          className="flex items-center gap-1.5 text-[10px] font-mono px-2.5 py-1.5 rounded-sm border text-brand-secondary transition-colors disabled:opacity-40"
         >
-          {loading === s.id ? '…' : s.label}
+          <CloudProviderIcon id={s.id} />
+          {loading === s.id ? 'Importing…' : s.label}
         </button>
       ))}
     </div>
