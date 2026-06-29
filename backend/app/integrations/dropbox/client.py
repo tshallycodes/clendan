@@ -177,6 +177,32 @@ async def download_file(access_token: str, path: str) -> bytes:
     return await _circuit.call(_retry, _call)
 
 
+async def upload_file(access_token: str, pdf_bytes: bytes, filename: str) -> dict:
+    """Upload a PDF to Dropbox under /Clendan/{filename} (autorenames on conflict). Returns file metadata."""
+    import json as _json
+
+    async def _call():
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                f"{DB_CONTENT_BASE}/files/upload",
+                headers={
+                    "Authorization": f"Bearer {access_token}",
+                    "Content-Type": "application/octet-stream",
+                    "Dropbox-API-Arg": _json.dumps({
+                        "path": f"/Clendan/{filename}",
+                        "mode": "add",
+                        "autorename": True,
+                    }),
+                },
+                content=pdf_bytes,
+                timeout=120.0,
+            )
+            response.raise_for_status()
+            return response.json()
+
+    return await _circuit.call(_retry, _call)
+
+
 async def revoke_token(access_token: str) -> None:
     """Revokes a Dropbox access token."""
     async def _call():

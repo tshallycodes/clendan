@@ -132,10 +132,11 @@ function DocumentAnalysis({ extracted }: { extracted: Record<string, unknown> })
 interface QuickActionsProps {
   doc: ProcessedDocument
   toolId: string
+  connectedClouds: string[]
   onAbort: (id: string) => void
 }
 
-function QuickActions({ doc, toolId, onAbort }: QuickActionsProps) {
+function QuickActions({ doc, toolId, connectedClouds, onAbort }: QuickActionsProps) {
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const { getToken } = useAuth()
   const { toast } = useToast()
@@ -163,6 +164,25 @@ function QuickActions({ doc, toolId, onAbort }: QuickActionsProps) {
     finally { setActionLoading(null) }
   }
 
+  async function handleExport(destination: 'google-drive' | 'dropbox') {
+    setActionLoading(destination)
+    try {
+      const token = await getToken()
+      const res = await fetch(
+        `${API}/v1/document-intelligence/${toolId}/documents/${doc.id}/export/${destination}`,
+        { method: 'POST', headers: { Authorization: `Bearer ${token}` } },
+      )
+      const json = await res.json()
+      if (!res.ok) {
+        toast((json as { detail?: string }).detail ?? 'Export failed', 'error')
+        return
+      }
+      const label = destination === 'google-drive' ? 'Google Drive' : 'Dropbox'
+      toast(`Uploaded to ${label}`, 'success')
+    } catch { toast('Network error', 'error') }
+    finally { setActionLoading(null) }
+  }
+
   async function handleDelete() {
     setActionLoading('delete')
     try {
@@ -183,6 +203,36 @@ function QuickActions({ doc, toolId, onAbort }: QuickActionsProps) {
         <button type="button" onClick={handleDownloadPdf} disabled={actionLoading !== null} className={btn}>
           {actionLoading === 'pdf' ? '…' : 'Download PDF'}
         </button>
+        {connectedClouds.includes('google_drive') && (
+          <button
+            type="button"
+            onClick={() => handleExport('google-drive')}
+            disabled={actionLoading !== null}
+            style={{ backgroundColor: 'rgba(66,133,244,0.07)', borderColor: 'rgba(66,133,244,0.28)' }}
+            className="flex items-center gap-1.5 text-[10px] font-mono px-3 py-1.5 rounded-sm border text-brand-secondary hover:opacity-80 transition-opacity disabled:opacity-40"
+          >
+            <svg width="11" height="10" viewBox="0 0 24 20" fill="none" aria-hidden>
+              <path d="M12 2 0 20h8z" fill="#34A853"/><path d="M12 2 8 20h8z" fill="#FBBC04"/><path d="M12 2 16 20h8z" fill="#4285F4"/>
+            </svg>
+            {actionLoading === 'google-drive' ? '…' : 'Export to Drive'}
+          </button>
+        )}
+        {connectedClouds.includes('dropbox') && (
+          <button
+            type="button"
+            onClick={() => handleExport('dropbox')}
+            disabled={actionLoading !== null}
+            style={{ backgroundColor: 'rgba(0,97,255,0.07)', borderColor: 'rgba(0,97,255,0.28)' }}
+            className="flex items-center gap-1.5 text-[10px] font-mono px-3 py-1.5 rounded-sm border text-brand-secondary hover:opacity-80 transition-opacity disabled:opacity-40"
+          >
+            <svg width="10" height="10" viewBox="0 0 43 40" fill="#0061FF" aria-hidden>
+              <path d="M12.5 0L0 8l8.5 7L21 7l12.5 8 8.5-7L29.5 0 21 6.3z"/>
+              <path d="M0 22.5l12.5 8L21 24l8.5 6.5 12.5-8-8.5-7L21 22.5l-8.5-7z"/>
+              <path d="M12.5 32.5L21 39l8.5-6.5v-6.5L21 32.5l-8.5-6.5z"/>
+            </svg>
+            {actionLoading === 'dropbox' ? '…' : 'Export to Dropbox'}
+          </button>
+        )}
         <button
           type="button"
           onClick={handleDelete}
@@ -199,10 +249,11 @@ function QuickActions({ doc, toolId, onAbort }: QuickActionsProps) {
 interface DocumentRowProps {
   doc: ProcessedDocument
   toolId: string
+  connectedClouds: string[]
   onAbort: (id: string) => void
 }
 
-function DocumentRow({ doc, toolId, onAbort }: DocumentRowProps) {
+function DocumentRow({ doc, toolId, connectedClouds, onAbort }: DocumentRowProps) {
   const [expanded, setExpanded] = useState(false)
   const [aborting, setAborting] = useState(false)
   const { getToken } = useAuth()
@@ -372,6 +423,7 @@ function DocumentRow({ doc, toolId, onAbort }: DocumentRowProps) {
                 <QuickActions
                   doc={doc}
                   toolId={toolId}
+                  connectedClouds={connectedClouds}
                   onAbort={onAbort}
                 />
               )}
@@ -536,7 +588,34 @@ export function DocumentsTab({ toolId }: { toolId: string | null }) {
   const [uploading, setUploading] = useState(false)
   const [total, setTotal] = useState(0)
   const [offset, setOffset] = useState(0)
+  const [connectedClouds, setConnectedClouds] = useState<string[]>([])
   const limit = 20
+
+  useEffect(() => {
+    async function fetchCloudStatus() {
+      if (!toolId) return
+      try {
+        const token = await getToken()
+        const [driveRes, dropboxRes] = await Promise.all([
+          fetch(`${API}/v1/integrations/google-drive/status`, { headers: { Authorization: `Bearer ${token}` } }),
+          fetch(`${API}/v1/integrations/dropbox/status`, { headers: { Authorization: `Bearer ${token}` } }),
+        ])
+        const connected: string[] = []
+        if (driveRes.ok) {
+          const j = await driveRes.json()
+          if ((j as { data?: { status?: string } }).data?.status === 'connected') connected.push('google_drive')
+        }
+        if (dropboxRes.ok) {
+          const j = await dropboxRes.json()
+          if ((j as { data?: { status?: string } }).data?.status === 'connected') connected.push('dropbox')
+        }
+        setConnectedClouds(connected)
+      } catch {
+        // non-fatal
+      }
+    }
+    fetchCloudStatus()
+  }, [toolId])
 
   async function load(off = 0) {
     if (!toolId) return
@@ -717,6 +796,7 @@ export function DocumentsTab({ toolId }: { toolId: string | null }) {
                   key={doc.id}
                   doc={doc}
                   toolId={toolId}
+                  connectedClouds={connectedClouds}
                   onAbort={handleAborted}
                 />
               ))}

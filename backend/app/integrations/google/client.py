@@ -26,7 +26,7 @@ GMAIL_API_BASE = "https://gmail.googleapis.com/gmail/v1/users/me"
 DRIVE_API_BASE = "https://www.googleapis.com/drive/v3"
 
 GMAIL_SCOPE = "https://www.googleapis.com/auth/gmail.readonly"
-DRIVE_SCOPE = "https://www.googleapis.com/auth/drive.readonly"
+DRIVE_SCOPE = "https://www.googleapis.com/auth/drive"
 
 TOKEN_TTL_SECONDS = 3600
 TOKEN_EARLY_REFRESH_SECONDS = 60
@@ -41,7 +41,7 @@ BACKOFF_SECONDS = 1.0
 
 async def _retry(fn, *args, **kwargs):
     """Exponential backoff with jitter. Raises on final failure."""
-    last_exc = None
+    last_exc: Exception | None = None
     for attempt in range(MAX_ATTEMPTS):
         try:
             return await fn(*args, **kwargs)
@@ -54,6 +54,7 @@ async def _retry(fn, *args, **kwargs):
                     attempt + 1, MAX_ATTEMPTS, wait,
                 )
                 await asyncio.sleep(wait)
+    assert last_exc is not None
     raise last_exc
 
 
@@ -409,3 +410,38 @@ async def list_pdf_files(access_token: str) -> list:
     if not isinstance(files, list):
         raise ValueError("Drive files list returned unexpected format")
     return files
+
+
+async def upload_file_to_drive(access_token: str, pdf_bytes: bytes, filename: str) -> str:
+    """Upload a PDF to Google Drive via multipart upload. Returns the created file's Drive ID."""
+    import json as _json
+
+    boundary = "clendan_upload"
+    metadata = _json.dumps({"name": filename, "mimeType": "application/pdf"}).encode()
+    body = (
+        f"--{boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n".encode()
+        + metadata
+        + f"\r\n--{boundary}\r\nContent-Type: application/pdf\r\n\r\n".encode()
+        + pdf_bytes
+        + f"\r\n--{boundary}--".encode()
+    )
+
+    async def _call():
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart",
+                headers={
+                    "Authorization": f"Bearer {access_token}",
+                    "Content-Type": f"multipart/related; boundary={boundary}",
+                },
+                content=body,
+                timeout=120.0,
+            )
+            response.raise_for_status()
+            return response.json()
+
+    data = await _circuit.call(_retry, _call)
+    file_id = data.get("id", "")
+    if not file_id:
+        raise ValueError("Drive upload returned no file ID")
+    return file_id
