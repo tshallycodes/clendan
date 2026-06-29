@@ -22,6 +22,7 @@ interface CloseTask {
 interface Props {
   tasks: CloseTask[]
   onCompleteTask: (taskKey: string) => void
+  completingTask: string | null
   runClosed: boolean
 }
 
@@ -37,7 +38,7 @@ const STATUS_BADGE_CLS: Record<string, string> = {
   blocked:  'bg-[rgba(255,77,109,0.08)] text-[#ff4d6d] border border-[rgba(255,77,109,0.2)]',
 }
 
-export function CloseRunChecklist({ tasks, onCompleteTask, runClosed }: Props) {
+export function CloseRunChecklist({ tasks, onCompleteTask, completingTask, runClosed }: Props) {
   return (
     <div className="bg-brand-surface border border-brand-border rounded-sm overflow-hidden">
       <div className="px-4 py-3 border-b border-brand-border">
@@ -48,6 +49,7 @@ export function CloseRunChecklist({ tasks, onCompleteTask, runClosed }: Props) {
           const { icon, cls } = STATUS_ICON[task.status] ?? STATUS_ICON.pending
           const isManual = MANUAL_TASKS.has(task.task_key)
           const canComplete = isManual && task.status !== 'complete' && !runClosed
+          const isCompleting = completingTask === task.task_key
 
           return (
             <div key={task.task_key} className="px-4 py-3 flex items-center justify-between gap-4">
@@ -76,9 +78,10 @@ export function CloseRunChecklist({ tasks, onCompleteTask, runClosed }: Props) {
                   <button
                     type="button"
                     onClick={() => onCompleteTask(task.task_key)}
-                    className="text-[10px] font-mono border border-brand-border text-brand-text hover:bg-brand-elevated rounded-sm px-2 py-0.5 transition-colors"
+                    disabled={isCompleting}
+                    className="text-[10px] font-mono border border-brand-border text-brand-text hover:bg-brand-elevated rounded-sm px-2 py-0.5 transition-colors disabled:opacity-40"
                   >
-                    Mark Complete
+                    {isCompleting ? 'Saving…' : 'Mark Complete'}
                   </button>
                 )}
               </div>

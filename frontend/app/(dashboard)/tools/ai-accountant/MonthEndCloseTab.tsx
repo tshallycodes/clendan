@@ -59,6 +59,8 @@ export function MonthEndCloseTab({ toolId }: Props) {
   const [opening, setOpening] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [completingTask, setCompletingTask] = useState<string | null>(null)
+  const [signingOff, setSigningOff] = useState(false)
 
   const fetchRun = useCallback(async (p: string) => {
     setLoading(true)
@@ -119,25 +121,48 @@ export function MonthEndCloseTab({ toolId }: Props) {
 
   async function handleCompleteTask(taskKey: string) {
     if (!run) return
-    const token = await getToken()
-    const res = await fetch(`${API}/v1/close-runs/${run.id}/task/${taskKey}/complete`, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({}),
-    })
-    if (res.ok) { const j = await res.json(); setRun(j.data) }
-    else { const j = await res.json().catch(() => null); toast((j as { detail?: string })?.detail ?? 'Failed to update task', 'error') }
+    setCompletingTask(taskKey)
+    try {
+      const token = await getToken()
+      const res = await fetch(`${API}/v1/close-runs/${run.id}/task/${taskKey}/complete`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      })
+      const j = await res.json()
+      if (res.ok) { setRun(j.data); toast('Task marked complete', 'success') }
+      else { toast(j.detail ?? 'Failed to update task', 'error') }
+    } catch {
+      toast('Failed to update task', 'error')
+    } finally {
+      setCompletingTask(null)
+    }
   }
+
+  const AUTO_TASKS = new Set(['all_transactions_categorised', 'reconciliation_complete', 'approvals_resolved'])
+  const autoTasksResolved = run?.tasks.filter(t => AUTO_TASKS.has(t.task_key)).every(t => t.status === 'complete') ?? false
 
   async function handleSignOff() {
     if (!run) return
-    const token = await getToken()
-    const res = await fetch(`${API}/v1/close-runs/${run.id}/sign-off`, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${token}` },
-    })
-    if (res.ok) { const j = await res.json(); setRun(j.data); toast('Month-end close signed off', 'success') }
-    else { const j = await res.json().catch(() => null); toast((j as { detail?: string })?.detail ?? 'Failed to sign off', 'error') }
+    if (!autoTasksResolved) {
+      toast('Resolve all auto-checked tasks before signing off — click Refresh to re-evaluate', 'error')
+      return
+    }
+    setSigningOff(true)
+    try {
+      const token = await getToken()
+      const res = await fetch(`${API}/v1/close-runs/${run.id}/sign-off`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      const j = await res.json()
+      if (res.ok) { setRun(j.data); toast('Month-end close signed off', 'success') }
+      else { toast(j.detail ?? 'Failed to sign off', 'error') }
+    } catch {
+      toast('Failed to sign off', 'error')
+    } finally {
+      setSigningOff(false)
+    }
   }
 
   return (
@@ -226,12 +251,15 @@ export function MonthEndCloseTab({ toolId }: Props) {
             <CloseRunChecklist
               tasks={run.tasks}
               onCompleteTask={handleCompleteTask}
+              completingTask={completingTask}
               runClosed={run.status === 'closed'}
             />
 
             <CloseRunSignOffs
               signOffs={run.sign_offs}
               onSignOff={handleSignOff}
+              signingOff={signingOff}
+              autoTasksResolved={autoTasksResolved}
               runClosed={run.status === 'closed'}
             />
 
@@ -246,10 +274,12 @@ export function MonthEndCloseTab({ toolId }: Props) {
 interface SignOffsProps {
   signOffs: SignOff[]
   onSignOff: () => void
+  signingOff: boolean
+  autoTasksResolved: boolean
   runClosed: boolean
 }
 
-function CloseRunSignOffs({ signOffs, onSignOff, runClosed }: SignOffsProps) {
+function CloseRunSignOffs({ signOffs, onSignOff, signingOff, autoTasksResolved, runClosed }: SignOffsProps) {
   return (
     <div className="bg-brand-surface border border-brand-border rounded-sm overflow-hidden">
       <div className="px-4 py-3 border-b border-brand-border flex items-center justify-between">
@@ -258,9 +288,11 @@ function CloseRunSignOffs({ signOffs, onSignOff, runClosed }: SignOffsProps) {
           <button
             type="button"
             onClick={onSignOff}
-            className="text-[10px] font-mono bg-[#00C853] text-black hover:bg-[#00a844] active:scale-[0.97] rounded-sm px-3 py-1 transition-all"
+            disabled={signingOff || !autoTasksResolved}
+            title={!autoTasksResolved ? 'All auto-checked tasks must pass before signing off' : undefined}
+            className="text-[10px] font-mono bg-[#00C853] text-black hover:bg-[#00a844] active:scale-[0.97] rounded-sm px-3 py-1 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            Sign Off
+            {signingOff ? 'Signing off…' : 'Sign Off'}
           </button>
         )}
       </div>

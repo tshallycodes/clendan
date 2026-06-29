@@ -4,7 +4,6 @@ All routes require RequireOrgAuth. All queries scoped to current_user.tenant_id.
 """
 from __future__ import annotations
 
-import json
 from datetime import UTC, datetime
 from typing import Any, Optional
 
@@ -142,8 +141,8 @@ async def create_close_run(
             "tenant_id": tenant_id,
             "period": body.period,
             "status": "open",
-            "tasks_json": json.dumps(_default_tasks()),
-            "sign_offs_json": json.dumps([]),
+            "tasks_json": _default_tasks(),
+            "sign_offs_json": [],
         }
     )
 
