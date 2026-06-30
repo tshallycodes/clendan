@@ -9,7 +9,7 @@ function OAuthMockup() {
       {['QuickBooks', 'Xero'].map((tool) => (
         <button
           key={tool}
-          className="w-full flex items-center justify-between border border-brand-border rounded-sm px-3 py-2 text-brand-text hover:bg-brand-surface transition-colors cursor-default"
+          className="w-full flex items-center justify-between border border-brand-border rounded-sm px-3 py-2 text-brand-text hover:bg-brand-elevated transition-colors cursor-default"
         >
           <span>{tool}</span>
           <span className="text-brand-muted">Connect →</span>

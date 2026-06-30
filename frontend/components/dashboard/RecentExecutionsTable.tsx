@@ -90,7 +90,7 @@ export async function RecentExecutionsTable() {
               {executions.map((ex) => {
                 const variant = statusVariant(ex.status)
                 return (
-                  <tr key={ex.id} className="hover:bg-brand-bg transition-colors">
+                  <tr key={ex.id} className="hover:bg-brand-elevated transition-colors">
                     <td className="px-5 py-3 text-brand-muted whitespace-nowrap">{formatTimestamp(ex.created_at)}</td>
                     <td className="px-5 py-3 text-brand-text">{ex.tool_type}</td>
                     <td className="px-5 py-3 text-brand-secondary">{decisionLabel(ex.decision)}</td>

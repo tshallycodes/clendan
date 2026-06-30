@@ -179,7 +179,7 @@ function ApiKeysSection({ keys, loading, showForm, setShowForm, newName, setNewN
       )}
       {!showForm && (
         <button type="button" onClick={() => setShowForm(true)}
-          className="flex items-center gap-2 text-xs font-body border border-brand-border text-brand-text hover:bg-brand-surface rounded-sm px-3 py-2 transition-colors">
+          className="flex items-center gap-2 text-xs font-body border border-brand-border text-brand-text hover:bg-brand-elevated rounded-sm px-3 py-2 transition-colors">
           <Plus className="w-3.5 h-3.5" /> Generate API Key
         </button>
       )}
@@ -252,7 +252,7 @@ export function DeveloperPageClient() {
           </p>
         </div>
         <a href={DOCS_URL} target="_blank" rel="noopener noreferrer"
-          className="shrink-0 flex items-center gap-1.5 text-xs font-body border border-brand-border text-brand-text hover:bg-brand-bg rounded-sm px-3 py-1.5 transition-colors">
+          className="shrink-0 flex items-center gap-1.5 text-xs font-body border border-brand-border text-brand-text hover:bg-brand-elevated rounded-sm px-3 py-1.5 transition-colors">
           API Reference <ArrowSquareOut className="w-3 h-3" />
         </a>
       </motion.div>

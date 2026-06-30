@@ -72,7 +72,7 @@ export default function ApiDocsPage() {
                 ['/parse/*',                         '20 req / min'],
                 ['All other /* endpoints',           '200 req / min'],
               ].map(([endpoint, limit]) => (
-                <tr key={endpoint} className="hover:bg-brand-bg">
+                <tr key={endpoint} className="hover:bg-brand-elevated">
                   <td className="px-3 py-2 text-brand-text">{endpoint}</td>
                   <td className="px-3 py-2 text-brand-secondary">{limit}</td>
                 </tr>
@@ -414,7 +414,7 @@ for r in trace["results"]:
                   ['policy.partial_match_enabled',      'boolean',   'true', 'Allow partial amount matches'],
                   ['policy.period_lock_respect',        'boolean',   'true', 'Reject edits to locked accounting periods'],
                 ].map(([field, type, def, desc]) => (
-                  <tr key={field} className="hover:bg-brand-bg">
+                  <tr key={field} className="hover:bg-brand-elevated">
                     <td className="px-3 py-2 text-[#00C853]">{field}</td>
                     <td className="px-3 py-2 text-brand-muted">{type}</td>
                     <td className="px-3 py-2 text-brand-muted">{def}</td>
@@ -462,7 +462,7 @@ for r in trace["results"]:
                   ['policy.strict_coa_mode',                 'boolean',       'true', 'Restrict output to predefined chart-of-accounts categories only'],
                   ['policy.max_correction_examples',         'integer',       '10',   'Maximum number of correction examples passed to Claude per run'],
                 ].map(([field, type, def, desc]) => (
-                  <tr key={field} className="hover:bg-brand-bg">
+                  <tr key={field} className="hover:bg-brand-elevated">
                     <td className="px-3 py-2 text-[#00C853]">{field}</td>
                     <td className="px-3 py-2 text-brand-muted">{type}</td>
                     <td className="px-3 py-2 text-brand-muted">{def}</td>
@@ -508,7 +508,7 @@ for r in trace["results"]:
                   ['employee_id',   'string',  'Employee reference (expense_control, spend_control)'],
                   ['category',      'string',  'Expense category (travel, software, meals, etc.)'],
                 ].map(([field, type, desc]) => (
-                  <tr key={field} className="hover:bg-brand-bg">
+                  <tr key={field} className="hover:bg-brand-elevated">
                     <td className="px-3 py-2 text-[#00C853]">{field}</td>
                     <td className="px-3 py-2 text-brand-muted">{type}</td>
                     <td className="px-3 py-2 text-brand-secondary">{desc}</td>

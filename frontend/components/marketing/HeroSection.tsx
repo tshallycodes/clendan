@@ -82,7 +82,7 @@ export function HeroSection() {
           </Link>
           <Link
             href="/how-it-works"
-            className="border border-brand-border text-brand-text hover:bg-brand-surface rounded-sm px-5 py-2.5 text-sm font-body transition-colors"
+            className="border border-brand-border text-brand-text hover:bg-brand-elevated rounded-sm px-5 py-2.5 text-sm font-body transition-colors"
           >
             See How It Works
           </Link>

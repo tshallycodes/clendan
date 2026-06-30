@@ -168,7 +168,7 @@ export function ApiKeysSection() {
 
       {!showForm && canConfigure && (
         <button type="button" onClick={() => setShowForm(true)}
-          className="flex items-center gap-2 text-xs font-body border border-brand-border text-brand-text hover:bg-brand-surface rounded-sm px-3 py-2 transition-colors">
+          className="flex items-center gap-2 text-xs font-body border border-brand-border text-brand-text hover:bg-brand-elevated rounded-sm px-3 py-2 transition-colors">
           <Plus className="w-3.5 h-3.5" />
           Generate API Key
         </button>

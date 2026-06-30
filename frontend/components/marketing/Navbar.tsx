@@ -41,7 +41,7 @@ function MobileMenu({ open, isSignedIn }: { open: boolean; isSignedIn: boolean |
             <>
               <Link
                 href="/sign-in"
-                className="text-center border border-brand-border text-brand-text hover:bg-brand-surface rounded-sm px-5 py-2.5 text-sm font-body transition-colors"
+                className="text-center border border-brand-border text-brand-text hover:bg-brand-elevated rounded-sm px-5 py-2.5 text-sm font-body transition-colors"
               >
                 Sign in
               </Link>

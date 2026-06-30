@@ -70,7 +70,7 @@ export function CurrencySelector() {
         <button
           onClick={() => setOpen((v) => !v)}
           disabled={saving}
-          className="w-full flex items-center justify-between gap-3 bg-brand-bg border border-brand-border rounded-sm px-3 py-2 text-xs font-body text-brand-text hover:bg-brand-bg transition-colors disabled:opacity-50"
+          className="w-full flex items-center justify-between gap-3 bg-brand-bg border border-brand-border rounded-sm px-3 py-2 text-xs font-body text-brand-text hover:bg-brand-elevated transition-colors disabled:opacity-50"
         >
           <span className="flex items-center gap-2 min-w-0">
             <span className="text-brand-muted shrink-0">{selected.symbol}</span>

@@ -184,7 +184,7 @@ export function ToolExecutionsTab({ toolId }: { toolId: string | null }) {
                 <Fragment key={e.id}>
                   <tr
                     onClick={() => { if (isExpandable) setExpanded(isExpanded ? null : e.id) }}
-                    className={`border-t border-brand-border transition-colors ${isExpandable ? 'cursor-pointer' : ''} hover:bg-brand-bg`}
+                    className={`border-t border-brand-border transition-colors ${isExpandable ? 'cursor-pointer' : ''} hover:bg-brand-elevated`}
                   >
                     <td className="px-4 py-2.5 text-brand-muted">
                       {new Date(e.created_at).toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
@@ -233,7 +233,7 @@ export function ToolExecutionsTab({ toolId }: { toolId: string | null }) {
           type="button"
           onClick={loadMore}
           disabled={loadingMore}
-          className="w-full py-2 text-[11px] font-body text-brand-muted border border-brand-border rounded-sm hover:text-brand-secondary hover:bg-brand-bg transition-colors disabled:opacity-50"
+          className="w-full py-2 text-[11px] font-body text-brand-muted border border-brand-border rounded-sm hover:text-brand-secondary hover:bg-brand-elevated transition-colors disabled:opacity-50"
         >
           {loadingMore ? 'Loading…' : `Load more · ${executions.length} of ${total}`}
         </button>

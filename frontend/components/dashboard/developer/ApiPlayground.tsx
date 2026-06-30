@@ -150,7 +150,7 @@ function EndpointRow({ endpoint, apiKey, idempotencyKey }: EndpointRowProps) {
       <button
         type="button"
         onClick={() => setExpanded((v) => !v)}
-        className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-brand-bg transition-colors text-left"
+        className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-brand-elevated transition-colors text-left"
       >
         <span className={`shrink-0 text-[11px] font-body font-semibold uppercase tracking-wider w-10 ${METHOD_COLORS[endpoint.method]}`}>
           {endpoint.method}
@@ -367,7 +367,7 @@ export function ApiPlayground() {
           <button
             type="button"
             onClick={() => setShowApiKey((v) => !v)}
-            className="shrink-0 border border-brand-border text-brand-muted hover:text-brand-text hover:bg-brand-bg rounded-sm p-2 transition-colors"
+            className="shrink-0 border border-brand-border text-brand-muted hover:text-brand-text hover:bg-brand-elevated rounded-sm p-2 transition-colors"
             aria-label={showApiKey ? 'Hide API key' : 'Show API key'}
           >
             {showApiKey ? <EyeSlash className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -447,7 +447,7 @@ export function ApiPlayground() {
               <button
                 type="button"
                 onClick={regenerateKey}
-                className="shrink-0 flex items-center gap-1 border border-brand-border text-brand-text hover:bg-brand-bg rounded-sm px-2.5 py-2 text-xs font-body transition-colors"
+                className="shrink-0 flex items-center gap-1 border border-brand-border text-brand-text hover:bg-brand-elevated rounded-sm px-2.5 py-2 text-xs font-body transition-colors"
               >
                 <ArrowCounterClockwise className="w-3.5 h-3.5" /> Regenerate
               </button>

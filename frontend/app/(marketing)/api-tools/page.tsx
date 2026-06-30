@@ -302,7 +302,7 @@ export default function ApiToolsPage() {
           </div>
           <Link
             href="/pricing"
-            className="border border-brand-border text-brand-text hover:bg-brand-bg rounded-sm px-5 py-2.5 text-sm font-body transition-colors whitespace-nowrap"
+            className="border border-brand-border text-brand-text hover:bg-brand-elevated rounded-sm px-5 py-2.5 text-sm font-body transition-colors whitespace-nowrap"
           >
             View Pricing →
           </Link>
@@ -330,7 +330,7 @@ export default function ApiToolsPage() {
           </Link>
           <Link
             href="/docs"
-            className="inline-block border border-brand-border text-brand-text hover:bg-brand-surface rounded-sm px-6 py-3 text-sm font-body transition-colors"
+            className="inline-block border border-brand-border text-brand-text hover:bg-brand-elevated rounded-sm px-6 py-3 text-sm font-body transition-colors"
           >
             View Docs
           </Link>

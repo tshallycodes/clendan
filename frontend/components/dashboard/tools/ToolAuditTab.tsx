@@ -381,7 +381,7 @@ export function ToolAuditTab({ toolId }: { toolId: string | null }) {
               <button
                 type="button"
                 onClick={() => setExpanded(expanded === e.id ? null : e.id)}
-                className="w-full flex items-center justify-between px-4 py-3 hover:bg-brand-bg transition-colors text-left"
+                className="w-full flex items-center justify-between px-4 py-3 hover:bg-brand-elevated transition-colors text-left"
               >
                 <div className="flex items-center gap-4 min-w-0">
                   <span className="text-[11px] font-body text-brand-muted shrink-0">

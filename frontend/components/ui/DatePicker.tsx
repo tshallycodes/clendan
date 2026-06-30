@@ -71,7 +71,7 @@ export function DatePicker({ value, onChange, className }: Props) {
       <button
         type="button"
         onClick={() => setOpen(v => !v)}
-        className="flex items-center gap-2 bg-brand-bg border border-brand-border rounded-sm text-brand-text px-3 py-2 text-xs font-body focus:outline-none focus:border-[#00C853] w-full hover:bg-brand-bg transition-colors"
+        className="flex items-center gap-2 bg-brand-bg border border-brand-border rounded-sm text-brand-text px-3 py-2 text-xs font-body focus:outline-none focus:border-[#00C853] w-full hover:bg-brand-elevated transition-colors"
       >
         <span className="flex-1 text-left">{displayValue || <span className="text-brand-muted">Select date</span>}</span>
         <CalendarIcon />
@@ -84,14 +84,14 @@ export function DatePicker({ value, onChange, className }: Props) {
         >
           <div className="flex items-center justify-between mb-3">
             <button type="button" onClick={prevMonth}
-              className="text-brand-secondary hover:text-brand-text transition-colors w-7 h-7 flex items-center justify-center rounded-sm hover:bg-brand-bg">
+              className="text-brand-secondary hover:text-brand-text transition-colors w-7 h-7 flex items-center justify-center rounded-sm hover:bg-brand-elevated">
               ↑
             </button>
             <span className="text-xs font-body text-brand-text font-medium">
               {MONTHS[viewMonth]} {viewYear}
             </span>
             <button type="button" onClick={nextMonth}
-              className="text-brand-secondary hover:text-brand-text transition-colors w-7 h-7 flex items-center justify-center rounded-sm hover:bg-brand-bg">
+              className="text-brand-secondary hover:text-brand-text transition-colors w-7 h-7 flex items-center justify-center rounded-sm hover:bg-brand-elevated">
               ↓
             </button>
           </div>
@@ -117,8 +117,8 @@ export function DatePicker({ value, onChange, className }: Props) {
                     isSelected
                       ? 'bg-[#00C853] text-black font-medium'
                       : isToday
-                      ? 'border border-brand-border text-brand-text hover:bg-brand-bg'
-                      : 'text-brand-secondary hover:bg-brand-bg hover:text-brand-text'
+                      ? 'border border-brand-border text-brand-text hover:bg-brand-elevated'
+                      : 'text-brand-secondary hover:bg-brand-elevated hover:text-brand-text'
                   }`}
                 >
                   {day}

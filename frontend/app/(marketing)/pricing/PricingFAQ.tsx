@@ -41,7 +41,7 @@ export function PricingFAQ() {
           <div key={i} className="bg-brand-surface border border-brand-border rounded-sm overflow-hidden">
             <button
               onClick={() => setOpenIndex(isOpen ? null : i)}
-              className="w-full flex items-center justify-between px-5 py-4 text-left gap-4 hover:bg-brand-bg transition-colors"
+              className="w-full flex items-center justify-between px-5 py-4 text-left gap-4 hover:bg-brand-elevated transition-colors"
               aria-expanded={isOpen}
             >
               <span className="font-heading font-semibold text-[16px] text-brand-text">

@@ -141,13 +141,13 @@ export function GenericToolClient({ tool, deployed }: Props) {
         {canConfigure && (
           <div className="flex items-center gap-2">
             <button type="button" onClick={() => setShowConfig(true)}
-              className="text-xs font-body border border-brand-border text-brand-text hover:bg-brand-bg rounded-sm px-3 py-1.5 transition-colors">
+              className="text-xs font-body border border-brand-border text-brand-text hover:bg-brand-elevated rounded-sm px-3 py-1.5 transition-colors">
               Configure
             </button>
             <button type="button" onClick={isActive ? handleToggle : handleDeploy} disabled={actionLoading}
               className={`text-xs font-body rounded-sm px-3 py-1.5 transition-all disabled:opacity-50 ${
                 isActive
-                  ? 'border border-brand-border text-brand-text hover:bg-brand-bg'
+                  ? 'border border-brand-border text-brand-text hover:bg-brand-elevated'
                   : 'bg-[#00C853] text-black hover:bg-[#00a844] active:scale-[0.97]'
               }`}>
               {toggling ? 'Pausing…' : deploying ? 'Deploying…' : isActive ? 'Pause' : 'Deploy'}

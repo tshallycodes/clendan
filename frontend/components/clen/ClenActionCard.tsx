@@ -57,7 +57,7 @@ export function ClenActionCard({ action, onConfirm, onCancel }: Props) {
           </button>
           <button
             onClick={onCancel}
-            className="flex-1 h-7 text-[12px] font-body text-brand-secondary border border-brand-border rounded-sm hover:bg-brand-bg transition-colors"
+            className="flex-1 h-7 text-[12px] font-body text-brand-secondary border border-brand-border rounded-sm hover:bg-brand-elevated transition-colors"
           >
             Cancel
           </button>

@@ -38,7 +38,7 @@ export function AuditClient({ entries }: Props) {
         />
         <button
           onClick={() => exportCsv(entries)}
-          className="shrink-0 bg-transparent border border-brand-border text-brand-text hover:bg-brand-surface
+          className="shrink-0 bg-transparent border border-brand-border text-brand-text hover:bg-brand-elevated
             text-xs font-body px-4 py-2 rounded-sm transition-colors"
         >
           Export CSV

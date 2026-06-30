@@ -65,7 +65,7 @@ function PlanCard({ plan }: { plan: Plan }) {
           className={`text-center font-body text-[13px] font-medium px-4 py-3 rounded-sm transition-all active:scale-[0.97] ${
             plan.highlight
               ? 'bg-brand-green text-black hover:bg-[#00a844]'
-              : 'border border-brand-border text-brand-text hover:bg-brand-bg'
+              : 'border border-brand-border text-brand-text hover:bg-brand-elevated'
           }`}
         >
           {plan.cta}
@@ -76,7 +76,7 @@ function PlanCard({ plan }: { plan: Plan }) {
           className={`text-center font-body text-[13px] font-medium px-4 py-3 rounded-sm transition-all active:scale-[0.97] ${
             plan.highlight
               ? 'bg-brand-green text-black hover:bg-[#00a844]'
-              : 'border border-brand-border text-brand-text hover:bg-brand-bg'
+              : 'border border-brand-border text-brand-text hover:bg-brand-elevated'
           }`}
         >
           {plan.cta}

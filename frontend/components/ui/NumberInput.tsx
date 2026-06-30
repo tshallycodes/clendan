@@ -45,14 +45,14 @@ export function NumberInput({ value, min, max, step = 1, onChange, className }: 
         <button
           type="button"
           onClick={increment}
-          className="flex-1 w-7 flex items-center justify-center text-brand-muted hover:text-brand-text hover:bg-brand-bg border-b border-brand-border transition-colors"
+          className="flex-1 w-7 flex items-center justify-center text-brand-muted hover:text-brand-text hover:bg-brand-elevated border-b border-brand-border transition-colors"
         >
           <CaretUp size={10} />
         </button>
         <button
           type="button"
           onClick={decrement}
-          className="flex-1 w-7 flex items-center justify-center text-brand-muted hover:text-brand-text hover:bg-brand-bg transition-colors"
+          className="flex-1 w-7 flex items-center justify-center text-brand-muted hover:text-brand-text hover:bg-brand-elevated transition-colors"
         >
           <CaretDown size={10} />
         </button>

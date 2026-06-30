@@ -79,7 +79,7 @@ export function CloseRunChecklist({ tasks, onCompleteTask, completingTask, runCl
                     type="button"
                     onClick={() => onCompleteTask(task.task_key)}
                     disabled={isCompleting}
-                    className="text-[11px] font-body border border-brand-border text-brand-text hover:bg-brand-bg rounded-sm px-2 py-0.5 transition-colors disabled:opacity-40"
+                    className="text-[11px] font-body border border-brand-border text-brand-text hover:bg-brand-elevated rounded-sm px-2 py-0.5 transition-colors disabled:opacity-40"
                   >
                     {isCompleting ? 'Saving…' : 'Mark Complete'}
                   </button>

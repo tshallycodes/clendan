@@ -81,7 +81,7 @@ export function RunHistory({ runs, loading, selectedId, onSelect }: RunHistoryPr
               } ${
                 run.id === selectedId
                   ? 'bg-brand-elevated text-brand-text'
-                  : 'bg-brand-surface hover:bg-brand-bg text-brand-secondary'
+                  : 'bg-brand-surface hover:bg-brand-elevated text-brand-secondary'
               }`}
             >
               <span className="flex items-center gap-2 min-w-0">

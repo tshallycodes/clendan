@@ -60,7 +60,7 @@ export function Step3({ onNext, onSkip }: Step3Props) {
             type="button"
             onClick={handleQuickBooks}
             disabled={connecting}
-            className="border border-brand-border text-brand-text hover:bg-brand-surface rounded-sm px-4 py-2 text-xs font-body transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="border border-brand-border text-brand-text hover:bg-brand-elevated rounded-sm px-4 py-2 text-xs font-body transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {connecting ? 'Connecting…' : 'Connect QuickBooks'}
           </button>
