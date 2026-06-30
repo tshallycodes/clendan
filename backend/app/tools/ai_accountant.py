@@ -234,9 +234,9 @@ class AIAccountantTool:
                 overall_confidence = max(0.0, overall_confidence - 0.05)
                 significant_shift_penalty_applied = True
             if overall_confidence >= policy.auto_confidence_threshold:
-                overall_decision = "auto"
+                overall_decision = "auto_approved"
             elif overall_confidence >= policy.approve_confidence_threshold:
-                overall_decision = "pending"
+                overall_decision = "approval_required"
             else:
                 overall_decision = "blocked"
 
