@@ -230,14 +230,58 @@ function OrchestratorTrace({ trace }: { trace: Record<string, unknown> }) {
   )
 }
 
+function ApprovalTrace({ entry, trace }: { entry: AuditEntry; trace: Record<string, unknown> }) {
+  const isApproved = entry.action === 'approval_approved'
+  const actor = entry.actor.startsWith('user:') ? entry.actor.slice(5) : entry.actor
+  const approvalId = trace.approval_id as string | undefined
+  const executionId = trace.execution_id as string | undefined
+
+  const dc = isApproved
+    ? { label: 'Approved', color: 'text-[#00C853]', bg: 'bg-[rgba(0,200,83,0.08)]', border: 'border-[rgba(0,200,83,0.2)]' }
+    : { label: 'Rejected', color: 'text-[#ff4d6d]', bg: 'bg-[rgba(255,77,109,0.08)]', border: 'border-[rgba(255,77,109,0.2)]' }
+
+  return (
+    <div className="space-y-4 pt-2">
+      <div className={`inline-flex px-3 py-1.5 rounded-sm border ${dc.bg} ${dc.border}`}>
+        <span className={`text-xs font-mono font-medium ${dc.color}`}>{dc.label}</span>
+      </div>
+
+      <div className="grid grid-cols-2 gap-2">
+        <div className="bg-brand-bg border border-brand-border rounded-sm p-3">
+          <p className="text-[10px] font-mono text-brand-muted uppercase tracking-widest">Actioned by</p>
+          <p className="text-xs font-mono text-brand-text mt-1 truncate">{actor}</p>
+        </div>
+        <div className="bg-brand-bg border border-brand-border rounded-sm p-3">
+          <p className="text-[10px] font-mono text-brand-muted uppercase tracking-widest">Action</p>
+          <p className={`text-xs font-mono font-medium mt-1 ${dc.color}`}>{isApproved ? 'Approved' : 'Rejected'}</p>
+        </div>
+      </div>
+
+      {approvalId && (
+        <div className="bg-brand-bg border border-brand-border rounded-sm px-3 py-2.5">
+          <p className="text-[10px] font-mono text-brand-muted uppercase tracking-widest mb-1">Approval ID</p>
+          <p className="text-[10px] font-mono text-brand-muted break-all">{approvalId}</p>
+        </div>
+      )}
+      {executionId && (
+        <div className="bg-brand-bg border border-brand-border rounded-sm px-3 py-2.5">
+          <p className="text-[10px] font-mono text-brand-muted uppercase tracking-widest mb-1">Execution</p>
+          <p className="text-[10px] font-mono text-brand-muted break-all">{executionId}</p>
+        </div>
+      )}
+    </div>
+  )
+}
+
 function TraceView({ entry }: { entry: AuditEntry }) {
   const [showRaw, setShowRaw] = useState(false)
   const trace = typeof entry.reasoning_trace_json === 'object' ? entry.reasoning_trace_json : null
-  const isReconciliation = entry.action?.startsWith('reconciliation:') && trace && 'overall_decision' in trace
-  const isDocumentIntelligence = !isReconciliation && entry.action?.startsWith('document_processed:') && trace != null
-  const isOrchestrator = !isReconciliation && !isDocumentIntelligence && trace && 'decision' in trace
+  const isApproval = entry.action === 'approval_approved' || entry.action === 'approval_rejected'
+  const isReconciliation = !isApproval && entry.action?.startsWith('reconciliation:') && trace && 'overall_decision' in trace
+  const isDocumentIntelligence = !isApproval && !isReconciliation && entry.action?.startsWith('document_processed:') && trace != null
+  const isOrchestrator = !isApproval && !isReconciliation && !isDocumentIntelligence && trace && 'decision' in trace
 
-  const hasFormatted = isReconciliation || isDocumentIntelligence || isOrchestrator
+  const hasFormatted = isApproval || isReconciliation || isDocumentIntelligence || isOrchestrator
 
   return (
     <div className="space-y-2">
@@ -253,11 +297,13 @@ function TraceView({ entry }: { entry: AuditEntry }) {
         </div>
       )}
       {hasFormatted && !showRaw ? (
-        isReconciliation
-          ? <ReconciliationTrace trace={trace!} />
-          : isDocumentIntelligence
-            ? <DocumentIntelligenceTrace trace={trace!} />
-            : <OrchestratorTrace trace={trace!} />
+        isApproval
+          ? <ApprovalTrace entry={entry} trace={trace ?? {}} />
+          : isReconciliation
+            ? <ReconciliationTrace trace={trace!} />
+            : isDocumentIntelligence
+              ? <DocumentIntelligenceTrace trace={trace!} />
+              : <OrchestratorTrace trace={trace!} />
       ) : (
         entry.reasoning_trace_json && (
           <pre className="text-[10px] font-mono text-brand-secondary whitespace-pre-wrap bg-brand-bg border border-brand-border rounded-sm p-3 overflow-x-auto max-h-64">
