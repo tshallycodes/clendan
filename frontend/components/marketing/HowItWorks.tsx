@@ -14,7 +14,7 @@ export function HowItWorks() {
   return (
     <section className="max-w-6xl mx-auto px-6 md:px-8 py-20">
       <FadeInUp>
-        <p className="text-xs font-mono text-brand-muted uppercase tracking-widest mb-3">How it works</p>
+        <p className="text-xs font-body text-brand-muted uppercase tracking-widest mb-3">How it works</p>
         <h2 className="font-heading text-2xl font-bold text-brand-text mb-12">
           From Invoice to Payment in Under 30 Seconds
         </h2>
@@ -50,7 +50,7 @@ export function HowItWorks() {
                 </motion.div>
                 <div>
                   <h3 className="font-heading text-sm font-semibold text-brand-text mb-1.5">{step.title}</h3>
-                  <p className="text-xs font-mono text-brand-muted leading-relaxed">{step.desc}</p>
+                  <p className="text-xs font-body text-brand-muted leading-relaxed">{step.desc}</p>
                 </div>
               </div>
             </StaggerItem>

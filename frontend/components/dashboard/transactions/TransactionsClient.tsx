@@ -153,7 +153,7 @@ export function TransactionsClient({ initialTransactions, total, totalOutMinor, 
       <motion.div variants={sectionVariants} className="flex items-start justify-between gap-4 flex-wrap">
         <div>
           <h1 className="font-heading font-bold text-2xl text-brand-text">Transactions</h1>
-          <p className="text-brand-muted text-xs font-mono mt-1">
+          <p className="text-brand-muted text-xs font-body mt-1">
             {total} total · {transactions.length} loaded
           </p>
         </div>
@@ -162,7 +162,7 @@ export function TransactionsClient({ initialTransactions, total, totalOutMinor, 
           placeholder="Search merchant or description…"
           value={search}
           onChange={e => setSearch(e.target.value)}
-          className="bg-brand-bg border border-brand-border focus:border-[#00C853] text-brand-text placeholder:text-brand-muted rounded-sm px-3 py-1.5 text-xs font-mono w-64 outline-none transition-colors"
+          className="bg-brand-bg border border-brand-border focus:border-[#00C853] text-brand-text placeholder:text-brand-muted rounded-sm px-3 py-1.5 text-xs font-body w-64 outline-none transition-colors"
         />
       </motion.div>
 
@@ -170,32 +170,32 @@ export function TransactionsClient({ initialTransactions, total, totalOutMinor, 
       {transactions.length > 0 && (
         <motion.div variants={sectionVariants} className="grid grid-cols-3 gap-3">
           <div className="bg-brand-surface border border-brand-border rounded-sm p-4">
-            <p className="text-[10px] font-mono text-brand-muted uppercase tracking-wider">Total Out</p>
-            <p className="text-xl font-mono font-semibold text-[#ff4d6d] mt-1">
+            <p className="text-[10px] font-body text-brand-muted uppercase tracking-wider">Total Out</p>
+            <p className="text-xl font-body font-semibold text-[#ff4d6d] mt-1">
               {convert(summary.totalOut, summary.currency)}
             </p>
-            <p className="text-[10px] font-mono text-brand-muted mt-1">
+            <p className="text-[10px] font-body text-brand-muted mt-1">
               {summary.debitCount} debit{summary.debitCount !== 1 ? 's' : ''}
             </p>
           </div>
           <div className="bg-brand-surface border border-brand-border rounded-sm p-4">
-            <p className="text-[10px] font-mono text-brand-muted uppercase tracking-wider">Total In</p>
-            <p className="text-xl font-mono font-semibold text-[#00C853] mt-1">
+            <p className="text-[10px] font-body text-brand-muted uppercase tracking-wider">Total In</p>
+            <p className="text-xl font-body font-semibold text-[#00C853] mt-1">
               {convert(summary.totalIn, summary.currency)}
             </p>
-            <p className="text-[10px] font-mono text-brand-muted mt-1">
+            <p className="text-[10px] font-body text-brand-muted mt-1">
               {summary.creditCount} credit{summary.creditCount !== 1 ? 's' : ''}
             </p>
           </div>
           <div className="bg-brand-surface border border-brand-border rounded-sm p-4">
-            <p className="text-[10px] font-mono text-brand-muted uppercase tracking-wider">Net Flow</p>
+            <p className="text-[10px] font-body text-brand-muted uppercase tracking-wider">Net Flow</p>
             <p className={cn(
-              'text-xl font-mono font-semibold mt-1',
+              'text-xl font-body font-semibold mt-1',
               summary.net >= 0 ? 'text-[#00C853]' : 'text-[#ff4d6d]',
             )}>
               {summary.net >= 0 ? '+' : '−'}{convert(Math.abs(summary.net), summary.currency)}
             </p>
-            <p className="text-[10px] font-mono text-brand-muted mt-1">
+            <p className="text-[10px] font-body text-brand-muted mt-1">
               {counts.pending} pending · {counts.matched} matched
             </p>
           </div>
@@ -210,7 +210,7 @@ export function TransactionsClient({ initialTransactions, total, totalOutMinor, 
               key={key}
               onClick={() => setFilter(key)}
               className={cn(
-                'text-[10px] font-mono px-3 py-1.5 rounded-sm border transition-colors tracking-wider uppercase',
+                'text-[10px] font-body px-3 py-1.5 rounded-sm border transition-colors tracking-wider uppercase',
                 filter === key
                   ? 'border-brand-green/30 bg-brand-green/10 text-brand-green'
                   : 'border-brand-border bg-transparent text-brand-muted hover:text-brand-text',
@@ -228,7 +228,7 @@ export function TransactionsClient({ initialTransactions, total, totalOutMinor, 
             <button
               onClick={() => setBankFilter('all')}
               className={cn(
-                'text-[10px] font-mono px-3 py-1.5 rounded-sm border transition-colors tracking-wider uppercase',
+                'text-[10px] font-body px-3 py-1.5 rounded-sm border transition-colors tracking-wider uppercase',
                 bankFilter === 'all'
                   ? 'border-brand-border bg-brand-elevated text-brand-text'
                   : 'border-brand-border bg-transparent text-brand-muted hover:text-brand-text',
@@ -241,7 +241,7 @@ export function TransactionsClient({ initialTransactions, total, totalOutMinor, 
                 key={bank}
                 onClick={() => setBankFilter(bank)}
                 className={cn(
-                  'text-[10px] font-mono px-3 py-1.5 rounded-sm border transition-colors tracking-wider uppercase',
+                  'text-[10px] font-body px-3 py-1.5 rounded-sm border transition-colors tracking-wider uppercase',
                   bankFilter === bank
                     ? 'border-brand-border bg-brand-elevated text-brand-text'
                     : 'border-brand-border bg-transparent text-brand-muted hover:text-brand-text',
@@ -258,7 +258,7 @@ export function TransactionsClient({ initialTransactions, total, totalOutMinor, 
       <motion.div variants={sectionVariants} className="bg-brand-surface border border-brand-border rounded-sm overflow-hidden">
         {filtered.length === 0 ? (
           <div className="px-5 py-16 text-center">
-            <p className="text-xs font-mono text-brand-muted">
+            <p className="text-xs font-body text-brand-muted">
               {transactions.length === 0
                 ? 'No transactions yet — connect a bank account via Integrations to import data.'
                 : search.trim()
@@ -272,7 +272,7 @@ export function TransactionsClient({ initialTransactions, total, totalOutMinor, 
               <thead>
                 <tr className="border-b border-brand-border">
                   {TABLE_COLS.map(h => (
-                    <th key={h} className="text-left text-[10px] font-mono text-brand-muted uppercase tracking-widest px-5 py-3 whitespace-nowrap">
+                    <th key={h} className="text-left text-[10px] font-body text-brand-muted uppercase tracking-widest px-5 py-3 whitespace-nowrap">
                       {h}
                     </th>
                   ))}
@@ -290,7 +290,7 @@ export function TransactionsClient({ initialTransactions, total, totalOutMinor, 
 
       {/* Pagination footer */}
       <motion.div variants={sectionVariants} className="flex items-center justify-between">
-        <p className="text-[10px] font-mono text-brand-muted">
+        <p className="text-[10px] font-body text-brand-muted">
           {search.trim()
             ? `${filtered.length} result${filtered.length !== 1 ? 's' : ''} for "${search}"`
             : `Showing ${filtered.length} of ${total}`}
@@ -299,7 +299,7 @@ export function TransactionsClient({ initialTransactions, total, totalOutMinor, 
           <button
             onClick={loadMore}
             disabled={loadingMore}
-            className="text-[10px] font-mono px-4 py-2 border border-brand-border text-brand-muted hover:text-brand-text transition-colors rounded-sm disabled:opacity-60"
+            className="text-[10px] font-body px-4 py-2 border border-brand-border text-brand-muted hover:text-brand-text transition-colors rounded-sm disabled:opacity-60"
           >
             {loadingMore ? 'Loading…' : `Load more (${total - transactions.length} remaining)`}
           </button>

@@ -97,11 +97,11 @@ export function ToolCard({ tool, onConfigure, onStatusChange }: Props) {
       <div className="flex items-center gap-4">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <Link href={`/tools/${typeToSlug(tool.type)}`} className="text-sm font-mono text-brand-text font-medium hover:text-brand-green transition-colors">
+            <Link href={`/tools/${typeToSlug(tool.type)}`} className="text-sm font-body text-brand-text font-medium hover:text-brand-green transition-colors">
               {formatType(tool.type)}
             </Link>
-            <span className={`text-[10px] font-mono px-2 py-0.5 rounded-sm ${badge.className}`}>{badge.label}</span>
-            <span className="text-[10px] font-mono text-brand-muted">v{tool.version}</span>
+            <span className={`text-[10px] font-body px-2 py-0.5 rounded-sm ${badge.className}`}>{badge.label}</span>
+            <span className="text-[10px] font-body text-brand-muted">v{tool.version}</span>
           </div>
         </div>
 
@@ -115,18 +115,18 @@ export function ToolCard({ tool, onConfigure, onStatusChange }: Props) {
             ) : (
               <span className="h-2 w-2 rounded-full bg-brand-muted" />
             )}
-            <span className={`text-xs font-mono ${isActive ? 'text-brand-green' : 'text-brand-muted'}`}>
+            <span className={`text-xs font-body ${isActive ? 'text-brand-green' : 'text-brand-muted'}`}>
               {isActive ? 'Active' : 'Inactive'}
             </span>
           </div>
 
           {canConfigure && (
-            <button type="button" onClick={onConfigure} className="text-xs font-mono border border-brand-border text-brand-text hover:bg-brand-bg rounded-sm px-2.5 py-1 transition-colors">
+            <button type="button" onClick={onConfigure} className="text-xs font-body border border-brand-border text-brand-text hover:bg-brand-bg rounded-sm px-2.5 py-1 transition-colors">
               Configure
             </button>
           )}
 
-          <button type="button" onClick={() => setShowRun(true)} disabled={!isActive} className="text-xs font-mono border border-brand-border text-brand-text hover:bg-brand-bg rounded-sm px-2.5 py-1 transition-colors disabled:opacity-50">Run</button>
+          <button type="button" onClick={() => setShowRun(true)} disabled={!isActive} className="text-xs font-body border border-brand-border text-brand-text hover:bg-brand-bg rounded-sm px-2.5 py-1 transition-colors disabled:opacity-50">Run</button>
 
           {canConfigure && (
             <button
@@ -134,7 +134,7 @@ export function ToolCard({ tool, onConfigure, onStatusChange }: Props) {
               onClick={handleToggle}
               disabled={toggling}
               className={[
-                'text-xs font-mono rounded-sm px-2.5 py-1 transition-colors disabled:opacity-50',
+                'text-xs font-body rounded-sm px-2.5 py-1 transition-colors disabled:opacity-50',
                 isActive
                   ? 'border border-brand-border text-brand-muted hover:text-brand-text hover:bg-brand-bg'
                   : 'border border-brand-border text-brand-green hover:bg-brand-bg',
@@ -147,16 +147,16 @@ export function ToolCard({ tool, onConfigure, onStatusChange }: Props) {
           {canConfigure && (
             confirmDelete ? (
               <div className="flex items-center gap-1.5">
-                <span className="text-[10px] font-mono text-brand-muted">Delete?</span>
-                <button type="button" onClick={handleDelete} disabled={deleting} className="text-xs font-mono bg-[rgba(255,77,109,0.1)] border border-[#ff4d6d] text-[#ff4d6d] hover:bg-[rgba(255,77,109,0.2)] rounded-sm px-2.5 py-1 transition-colors disabled:opacity-50">
+                <span className="text-[10px] font-body text-brand-muted">Delete?</span>
+                <button type="button" onClick={handleDelete} disabled={deleting} className="text-xs font-body bg-[rgba(255,77,109,0.1)] border border-[#ff4d6d] text-[#ff4d6d] hover:bg-[rgba(255,77,109,0.2)] rounded-sm px-2.5 py-1 transition-colors disabled:opacity-50">
                   {deleting ? '…' : 'Confirm'}
                 </button>
-                <button type="button" onClick={() => setConfirmDelete(false)} className="text-xs font-mono border border-brand-border text-brand-muted hover:text-brand-text rounded-sm px-2.5 py-1 transition-colors">
+                <button type="button" onClick={() => setConfirmDelete(false)} className="text-xs font-body border border-brand-border text-brand-muted hover:text-brand-text rounded-sm px-2.5 py-1 transition-colors">
                   Cancel
                 </button>
               </div>
             ) : (
-              <button type="button" onClick={() => setConfirmDelete(true)} className="text-xs font-mono text-brand-muted hover:text-[#ff4d6d] transition-colors px-1">
+              <button type="button" onClick={() => setConfirmDelete(true)} className="text-xs font-body text-brand-muted hover:text-[#ff4d6d] transition-colors px-1">
                 Delete
               </button>
             )
@@ -168,8 +168,8 @@ export function ToolCard({ tool, onConfigure, onStatusChange }: Props) {
 
     {lastExecutionId && (
       <div className="mt-2 flex items-center gap-3 bg-[rgba(0,200,83,0.08)] border border-[rgba(0,200,83,0.2)] rounded-sm px-3 py-2">
-        <span className="text-[10px] font-mono text-brand-green">Queued — execution {lastExecutionId.slice(0, 8)}…</span>
-        <Link href="/executions" className="text-[10px] font-mono text-brand-green underline underline-offset-2">View</Link>
+        <span className="text-[10px] font-body text-brand-green">Queued — execution {lastExecutionId.slice(0, 8)}…</span>
+        <Link href="/executions" className="text-[10px] font-body text-brand-green underline underline-offset-2">View</Link>
         <button type="button" onClick={() => setLastExecutionId(null)} className="ml-auto text-[#4a6a4a] hover:text-brand-muted text-xs leading-none">✕</button>
       </div>
     )}

@@ -66,11 +66,11 @@ export function Step4({ onBack }: Step4Props) {
     <div className="space-y-6">
       <div className="text-center space-y-1">
         <h1 className="font-heading font-bold text-[28px] text-brand-text">Deploy your first tool</h1>
-        <p className="text-xs font-mono text-brand-muted">Invoice Processing Tool is ready to deploy.</p>
+        <p className="text-xs font-body text-brand-muted">Invoice Processing Tool is ready to deploy.</p>
       </div>
       <div className="bg-brand-surface border-l-[3px] border-l-brand-green border border-brand-border rounded-sm p-4">
-        <p className="text-sm font-mono text-brand-text font-medium">Invoice Processing Tool</p>
-        <p className="text-[10px] font-mono text-brand-muted mt-0.5">
+        <p className="text-sm font-body text-brand-text font-medium">Invoice Processing Tool</p>
+        <p className="text-[10px] font-body text-brand-muted mt-0.5">
           Reads, classifies, and routes incoming invoices.
         </p>
       </div>
@@ -87,20 +87,20 @@ export function Step4({ onBack }: Step4Props) {
           >
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-mono text-brand-text font-medium">{opt.label}</p>
-                <p className="text-[10px] font-mono text-brand-muted mt-0.5">{opt.desc}</p>
+                <p className="text-sm font-body text-brand-text font-medium">{opt.label}</p>
+                <p className="text-[10px] font-body text-brand-muted mt-0.5">{opt.desc}</p>
               </div>
-              {autonomy === opt.level && <span className="text-brand-green text-xs font-mono">✓</span>}
+              {autonomy === opt.level && <span className="text-brand-green text-xs font-body">✓</span>}
             </div>
           </button>
         ))}
       </div>
-      {error && <p className="text-xs font-mono text-brand-danger">{error}</p>}
+      {error && <p className="text-xs font-body text-brand-danger">{error}</p>}
       <button
         type="button"
         onClick={handleDeploy}
         disabled={loading}
-        className="w-full bg-brand-green text-black hover:bg-[#00a844] active:scale-[0.97] rounded-sm px-4 py-2.5 text-xs font-mono font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+        className="w-full bg-brand-green text-black hover:bg-[#00a844] active:scale-[0.97] rounded-sm px-4 py-2.5 text-xs font-body font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {loading ? 'Deploying…' : 'Deploy Tool →'}
       </button>

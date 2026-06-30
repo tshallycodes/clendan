@@ -34,7 +34,7 @@ function PhaseBadge({ phase }: { phase: Phase }) {
   const s = PHASE_STYLES[phase]
   return (
     <span
-      className="text-xs font-mono px-2 py-0.5 rounded-sm shrink-0"
+      className="text-xs font-body px-2 py-0.5 rounded-sm shrink-0"
       style={{ background: s.bg, color: s.text, border: `1px solid ${s.border}` }}
     >
       {phase}
@@ -47,7 +47,7 @@ export function ToolShowcase() {
     <section className="border-y border-brand-border bg-brand-surface">
       <div className="max-w-6xl mx-auto px-6 md:px-8 py-20">
         <FadeInUp>
-          <p className="text-xs font-mono text-brand-muted uppercase tracking-widest mb-3">Tools</p>
+          <p className="text-xs font-body text-brand-muted uppercase tracking-widest mb-3">Tools</p>
           <h2 className="font-heading text-2xl font-bold text-brand-text mb-10">
             10 AI Tools. Every Finance Function Covered.
           </h2>
@@ -64,7 +64,7 @@ export function ToolShowcase() {
                   <h3 className="font-heading text-xs font-semibold text-brand-text leading-snug">{w.name}</h3>
                   <PhaseBadge phase={w.phase} />
                 </div>
-                <p className="text-xs font-mono text-brand-muted leading-relaxed">{w.desc}</p>
+                <p className="text-xs font-body text-brand-muted leading-relaxed">{w.desc}</p>
               </motion.div>
             </StaggerItem>
           ))}

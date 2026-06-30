@@ -81,7 +81,7 @@ function IntegrationIcon({ slug, name }: { slug: string; name: string }) {
       .slice(0, 2)
     return (
       <div className="w-full h-full flex items-center justify-center bg-brand-elevated">
-        <span className="text-sm font-mono font-bold text-brand-text">{initials}</span>
+        <span className="text-sm font-body font-bold text-brand-text">{initials}</span>
       </div>
     )
   }
@@ -133,12 +133,12 @@ export function IntegrationIconGrid({ integrations, statuses, onViewDetail }: Pr
                 <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-[#00C853] border-2 border-brand-bg" />
               )}
               {intg.comingSoon && (
-                <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 text-[8px] font-mono uppercase tracking-wider text-brand-muted bg-brand-elevated border border-brand-border px-1 py-0.5 rounded-sm whitespace-nowrap">
+                <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 text-[8px] font-body uppercase tracking-wider text-brand-muted bg-brand-elevated border border-brand-border px-1 py-0.5 rounded-sm whitespace-nowrap">
                   soon
                 </span>
               )}
             </div>
-            <span className="text-[10px] font-mono text-brand-muted text-center leading-tight max-w-[64px] truncate">
+            <span className="text-[10px] font-body text-brand-muted text-center leading-tight max-w-[64px] truncate">
               {intg.name}
             </span>
           </button>

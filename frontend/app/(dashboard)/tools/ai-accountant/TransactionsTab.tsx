@@ -89,14 +89,14 @@ function ColumnFilterDropdown({
         type="button"
         onClick={() => { setOpen(v => !v); setSearch('') }}
         className={cn(
-          'group inline-flex items-center gap-1 text-left text-[10px] font-mono uppercase tracking-widest transition-colors',
+          'group inline-flex items-center gap-1 text-left text-[10px] font-body uppercase tracking-widest transition-colors',
           active ? 'text-[#00C853]' : 'text-brand-muted hover:text-brand-secondary',
         )}
       >
         {header}
         <FunnelIcon active={active} />
         {active && (
-          <span className="text-[8px] font-mono bg-[rgba(0,200,83,0.12)] text-[#00C853] rounded-full px-1 min-w-[14px] text-center leading-[14px]">
+          <span className="text-[8px] font-body bg-[rgba(0,200,83,0.12)] text-[#00C853] rounded-full px-1 min-w-[14px] text-center leading-[14px]">
             {selected.size}
           </span>
         )}
@@ -112,7 +112,7 @@ function ColumnFilterDropdown({
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 placeholder={`Search ${header.toLowerCase()}…`}
-                className="w-full text-[10px] font-mono bg-brand-surface border border-brand-border rounded-sm px-2 py-1.5 text-brand-text placeholder:text-brand-muted outline-none focus:border-[#00C853] transition-colors"
+                className="w-full text-[10px] font-body bg-brand-surface border border-brand-border rounded-sm px-2 py-1.5 text-brand-text placeholder:text-brand-muted outline-none focus:border-[#00C853] transition-colors"
                 autoFocus
               />
             </div>
@@ -123,7 +123,7 @@ function ColumnFilterDropdown({
             <button
               type="button"
               onClick={onSelectAll}
-              className="text-[9px] font-mono font-normal text-brand-muted hover:text-brand-secondary transition-colors"
+              className="text-[9px] font-body font-normal text-brand-muted hover:text-brand-secondary transition-colors"
             >
               Select all
             </button>
@@ -131,7 +131,7 @@ function ColumnFilterDropdown({
             <button
               type="button"
               onClick={onClear}
-              className="text-[9px] font-mono font-normal text-brand-muted hover:text-brand-secondary transition-colors"
+              className="text-[9px] font-body font-normal text-brand-muted hover:text-brand-secondary transition-colors"
             >
               Clear
             </button>
@@ -140,7 +140,7 @@ function ColumnFilterDropdown({
           {/* Options */}
           <div className="max-h-48 overflow-y-auto">
             {filtered.length === 0 ? (
-              <p className="px-3 py-3 text-[10px] font-mono text-brand-muted text-center">No matches</p>
+              <p className="px-3 py-3 text-[10px] font-body text-brand-muted text-center">No matches</p>
             ) : (
               filtered.map(opt => {
                 const isSelected = selected.has(opt)
@@ -150,7 +150,7 @@ function ColumnFilterDropdown({
                     type="button"
                     onClick={() => onToggle(opt)}
                     className={cn(
-                      'w-full flex items-center gap-2 text-left text-[10px] font-mono font-normal px-3 py-1.5 transition-colors',
+                      'w-full flex items-center gap-2 text-left text-[10px] font-body font-normal px-3 py-1.5 transition-colors',
                       isSelected
                         ? 'text-brand-text bg-brand-elevated'
                         : 'text-brand-secondary hover:text-brand-text hover:bg-brand-elevated',
@@ -298,7 +298,7 @@ export function TransactionsTab({
           {FILTER_KEYS.map(key => (
             <button key={key} type="button" onClick={() => onFilterChange(key)}
               className={cn(
-                'text-[10px] font-mono px-3 py-1.5 rounded-sm border transition-colors uppercase tracking-wider',
+                'text-[10px] font-body px-3 py-1.5 rounded-sm border transition-colors uppercase tracking-wider',
                 filter === key
                   ? 'border-[rgba(0,200,83,0.3)] bg-[rgba(0,200,83,0.08)] text-[#00C853]'
                   : 'border-brand-border text-brand-muted hover:text-brand-text',
@@ -316,7 +316,7 @@ export function TransactionsTab({
             <button
               type="button"
               onClick={clearAllFilters}
-              className="text-[10px] font-mono text-brand-muted hover:text-brand-secondary transition-colors flex items-center gap-1"
+              className="text-[10px] font-body text-brand-muted hover:text-brand-secondary transition-colors flex items-center gap-1"
             >
               <svg width="10" height="10" viewBox="0 0 16 16" fill="none" className="text-current">
                 <path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
@@ -328,7 +328,7 @@ export function TransactionsTab({
             type="button"
             onClick={onExportCsv}
             disabled={transactions.length === 0}
-            className="text-xs font-mono border border-brand-border text-brand-muted hover:text-brand-text rounded-sm px-3 py-1.5 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            className="text-xs font-body border border-brand-border text-brand-muted hover:text-brand-text rounded-sm px-3 py-1.5 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
             Export CSV
           </button>
@@ -336,7 +336,7 @@ export function TransactionsTab({
             type="button"
             onClick={onCategoriseNow}
             disabled={!deployedId || running || pendingCount === 0}
-            className="text-xs font-mono bg-[#00C853] text-black hover:bg-[#00a844] active:scale-[0.97] rounded-sm px-4 py-1.5 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+            className="text-xs font-body bg-[#00C853] text-black hover:bg-[#00a844] active:scale-[0.97] rounded-sm px-4 py-1.5 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
           >
             {running ? 'Categorising…' : `Categorise Now (${pendingCount})`}
           </button>
@@ -347,7 +347,7 @@ export function TransactionsTab({
       <div className="bg-brand-surface border border-brand-border rounded-sm overflow-hidden">
         {filtered.length === 0 && activeFilterCount === 0 ? (
           <div className="px-5 py-16 text-center">
-            <p className="text-xs font-mono text-brand-muted">
+            <p className="text-xs font-body text-brand-muted">
               {filter === 'all'
                 ? 'No transactions yet — connect a bank account via Integrations.'
                 : `No ${filter} transactions.`}
@@ -355,13 +355,13 @@ export function TransactionsTab({
           </div>
         ) : filtered.length === 0 && activeFilterCount > 0 ? (
           <div className="px-5 py-16 text-center space-y-2">
-            <p className="text-xs font-mono text-brand-muted">
+            <p className="text-xs font-body text-brand-muted">
               No transactions match the current column filters.
             </p>
             <button
               type="button"
               onClick={clearAllFilters}
-              className="text-[10px] font-mono text-brand-muted hover:text-brand-secondary transition-colors"
+              className="text-[10px] font-body text-brand-muted hover:text-brand-secondary transition-colors"
             >
               Clear all filters
             </button>
@@ -384,7 +384,7 @@ export function TransactionsTab({
                           onSelectAll={() => selectAllFilter(col.filterKey!, columnOptions[col.filterKey!])}
                         />
                       ) : (
-                        <span className="text-[10px] font-mono text-brand-muted uppercase tracking-widest">
+                        <span className="text-[10px] font-body text-brand-muted uppercase tracking-widest">
                           {col.header}
                         </span>
                       )}
@@ -411,7 +411,7 @@ export function TransactionsTab({
       {offset < total && (
         <div className="flex justify-end">
           <button type="button" onClick={onLoadMore} disabled={loadingMore}
-            className="text-[10px] font-mono px-4 py-2 border border-brand-border text-brand-muted hover:text-brand-text transition-colors rounded-sm disabled:opacity-60">
+            className="text-[10px] font-body px-4 py-2 border border-brand-border text-brand-muted hover:text-brand-text transition-colors rounded-sm disabled:opacity-60">
             {loadingMore ? 'Loading…' : `Load more (${total - offset} remaining)`}
           </button>
         </div>

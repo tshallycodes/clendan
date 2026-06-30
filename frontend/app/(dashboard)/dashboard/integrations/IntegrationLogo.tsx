@@ -120,7 +120,7 @@ function FaviconLogo({ slug, domain, size, siKey }: {
       .join('')
       .slice(0, 2)
     return (
-      <div className="shrink-0 flex items-center justify-center text-brand-muted font-mono font-semibold border border-brand-border rounded-sm bg-brand-surface text-[9px]" style={{ width: size, height: size }}>
+      <div className="shrink-0 flex items-center justify-center text-brand-muted font-body font-semibold border border-brand-border rounded-sm bg-brand-surface text-[9px]" style={{ width: size, height: size }}>
         {initials}
       </div>
     )
@@ -159,7 +159,7 @@ export function IntegrationLogo({ slug, size = 16 }: Props) {
     .slice(0, 2)
 
   return (
-    <div className="shrink-0 flex items-center justify-center text-brand-muted font-mono font-semibold border border-brand-border rounded-sm bg-brand-surface w-5 h-5 text-[9px]">
+    <div className="shrink-0 flex items-center justify-center text-brand-muted font-body font-semibold border border-brand-border rounded-sm bg-brand-surface w-5 h-5 text-[9px]">
       {initials}
     </div>
   )

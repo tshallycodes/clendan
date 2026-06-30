@@ -82,7 +82,7 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
         {/* Back */}
         <Link
           href="/blog"
-          className="inline-flex items-center gap-1 font-mono text-xs text-brand-muted hover:text-brand-text transition-colors mb-10"
+          className="inline-flex items-center gap-1 font-body text-xs text-brand-muted hover:text-brand-text transition-colors mb-10"
         >
           ← Back to Blog
         </Link>
@@ -90,7 +90,7 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
         {/* Meta */}
         <div className="flex items-center gap-3 mb-6">
           <span
-            className="text-[10px] font-mono uppercase tracking-widest px-2 py-0.5 rounded-sm"
+            className="text-[10px] font-body uppercase tracking-widest px-2 py-0.5 rounded-sm"
             style={{
               background: CATEGORY_COLORS[post.category],
               color: CATEGORY_TEXT[post.category],
@@ -99,8 +99,8 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
           >
             {post.category}
           </span>
-          <span className="text-[10px] font-mono text-brand-muted">{post.readTime}</span>
-          <span className="text-[10px] font-mono text-brand-muted">{formatDate(post.date)}</span>
+          <span className="text-[10px] font-body text-brand-muted">{post.readTime}</span>
+          <span className="text-[10px] font-body text-brand-muted">{formatDate(post.date)}</span>
         </div>
 
         {/* Title */}
@@ -115,11 +115,11 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
         <div className="border-t border-brand-border mb-10" />
 
         {/* Body */}
-        <p className="font-mono text-sm text-brand-secondary leading-relaxed italic text-center mb-10">
+        <p className="font-body text-sm text-brand-secondary leading-relaxed italic text-center mb-10">
           {post.excerpt}
         </p>
 
-        <p className="font-mono text-sm text-brand-muted text-center">
+        <p className="font-body text-sm text-brand-muted text-center">
           This post is being written. Check back soon.
         </p>
 
@@ -127,7 +127,7 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
         <div className="mt-16 pt-8 border-t border-brand-border text-center">
           <Link
             href="/sign-up"
-            className="inline-block rounded-sm px-6 py-3 text-sm font-mono font-medium transition-colors hover:bg-[#00a844]"
+            className="inline-block rounded-sm px-6 py-3 text-sm font-body font-medium transition-colors hover:bg-[#00a844]"
             style={{ background: '#00C853', color: '#000' }}
           >
             See how Clendan automates this →

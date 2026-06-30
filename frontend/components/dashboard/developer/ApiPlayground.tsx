@@ -152,28 +152,28 @@ function EndpointRow({ endpoint, apiKey, idempotencyKey }: EndpointRowProps) {
         onClick={() => setExpanded((v) => !v)}
         className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-brand-bg transition-colors text-left"
       >
-        <span className={`shrink-0 text-[10px] font-mono font-semibold uppercase tracking-wider w-10 ${METHOD_COLORS[endpoint.method]}`}>
+        <span className={`shrink-0 text-[10px] font-body font-semibold uppercase tracking-wider w-10 ${METHOD_COLORS[endpoint.method]}`}>
           {endpoint.method}
         </span>
-        <span className="flex-1 min-w-0 text-xs font-mono text-brand-text truncate">{endpoint.path}</span>
-        <span className="shrink-0 text-[10px] font-mono text-brand-muted hidden sm:block">{endpoint.shortDesc}</span>
+        <span className="flex-1 min-w-0 text-xs font-body text-brand-text truncate">{endpoint.path}</span>
+        <span className="shrink-0 text-[10px] font-body text-brand-muted hidden sm:block">{endpoint.shortDesc}</span>
         <CaretRight className={`w-3.5 h-3.5 text-brand-muted shrink-0 transition-transform duration-150 ${expanded ? 'rotate-90' : ''}`} />
       </button>
 
       {/* Expanded body */}
       {expanded && (
         <div className="border-t border-brand-border px-3 pb-3 pt-3 space-y-3">
-          <p className="text-[10px] font-mono text-brand-muted">{endpoint.description}</p>
+          <p className="text-[10px] font-body text-brand-muted">{endpoint.description}</p>
 
           {/* Path param input (only for PATCH with {transaction_id}) */}
           {endpoint.defaultPathParam !== null && (
             <div className="space-y-1">
-              <label className="text-[10px] font-mono uppercase tracking-widest text-brand-muted">transaction_id</label>
+              <label className="text-[10px] font-body uppercase tracking-widest text-brand-muted">transaction_id</label>
               <input
                 value={pathParam}
                 onChange={(e) => setPathParam(e.target.value)}
                 placeholder="txn_abc123"
-                className="w-full bg-brand-bg border border-brand-border focus:border-[#00C853] text-brand-text placeholder:text-brand-muted rounded-sm px-3 py-2 text-xs font-mono outline-none"
+                className="w-full bg-brand-bg border border-brand-border focus:border-[#00C853] text-brand-text placeholder:text-brand-muted rounded-sm px-3 py-2 text-xs font-body outline-none"
               />
             </div>
           )}
@@ -181,13 +181,13 @@ function EndpointRow({ endpoint, apiKey, idempotencyKey }: EndpointRowProps) {
           {/* Body editor */}
           {endpoint.defaultBody !== null && (
             <div className="space-y-1">
-              <label className="text-[10px] font-mono uppercase tracking-widest text-brand-muted">Body (JSON)</label>
+              <label className="text-[10px] font-body uppercase tracking-widest text-brand-muted">Body (JSON)</label>
               <textarea
                 value={bodyText}
                 onChange={(e) => setBodyText(e.target.value)}
                 rows={Math.min(bodyText.split('\n').length + 1, 12)}
                 spellCheck={false}
-                className="w-full bg-brand-bg border border-brand-border focus:border-[#00C853] text-brand-text placeholder:text-brand-muted rounded-sm px-3 py-2 text-xs font-mono outline-none resize-none"
+                className="w-full bg-brand-bg border border-brand-border focus:border-[#00C853] text-brand-text placeholder:text-brand-muted rounded-sm px-3 py-2 text-xs font-body outline-none resize-none"
               />
             </div>
           )}
@@ -198,7 +198,7 @@ function EndpointRow({ endpoint, apiKey, idempotencyKey }: EndpointRowProps) {
               type="button"
               onClick={run}
               disabled={resp.kind === 'loading'}
-              className="flex items-center gap-1.5 bg-[#00C853] text-black hover:bg-[#00a844] active:scale-[0.97] rounded-sm px-3 py-1.5 text-xs font-mono font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center gap-1.5 bg-[#00C853] text-black hover:bg-[#00a844] active:scale-[0.97] rounded-sm px-3 py-1.5 text-xs font-body font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Play className="w-3 h-3" weight="fill" />
               {resp.kind === 'loading' ? 'Running...' : 'Run'}
@@ -207,7 +207,7 @@ function EndpointRow({ endpoint, apiKey, idempotencyKey }: EndpointRowProps) {
               <button
                 type="button"
                 onClick={() => setResp({ kind: 'idle' })}
-                className="text-[10px] font-mono text-brand-muted hover:text-brand-text transition-colors"
+                className="text-[10px] font-body text-brand-muted hover:text-brand-text transition-colors"
               >
                 Clear
               </button>
@@ -215,11 +215,11 @@ function EndpointRow({ endpoint, apiKey, idempotencyKey }: EndpointRowProps) {
           </div>
 
           {resp.kind === 'loading' && (
-            <p className="text-xs font-mono text-brand-muted animate-pulse">Waiting for response...</p>
+            <p className="text-xs font-body text-brand-muted animate-pulse">Waiting for response...</p>
           )}
           {resp.kind === 'result' && (
             <div className="bg-brand-bg border border-brand-border rounded-sm p-3 max-h-60 overflow-y-auto">
-              <pre className="text-xs font-mono text-brand-text whitespace-pre-wrap break-all">
+              <pre className="text-xs font-body text-brand-text whitespace-pre-wrap break-all">
                 {JSON.stringify(resp.data, null, 2)}
               </pre>
             </div>
@@ -349,11 +349,11 @@ export function ApiPlayground() {
       transition={{ duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}
       className="bg-brand-surface border border-brand-border rounded-sm p-4 space-y-4"
     >
-      <p className="text-[10px] font-mono uppercase tracking-widest text-brand-muted">API Playground</p>
+      <p className="text-[10px] font-body uppercase tracking-widest text-brand-muted">API Playground</p>
 
       {/* API Key */}
       <div className="space-y-1.5">
-        <label className="text-[10px] font-mono uppercase tracking-widest text-brand-muted">API Key</label>
+        <label className="text-[10px] font-body uppercase tracking-widest text-brand-muted">API Key</label>
         <div className="flex items-center gap-2">
           <input
             type={showApiKey ? 'text' : 'password'}
@@ -362,7 +362,7 @@ export function ApiPlayground() {
             placeholder="ck_live_..."
             autoComplete="new-password"
             name="playground-api-key"
-            className="flex-1 min-w-0 bg-brand-bg border border-brand-border focus:border-[#00C853] text-brand-text placeholder:text-brand-muted rounded-sm px-3 py-2 text-xs font-mono outline-none"
+            className="flex-1 min-w-0 bg-brand-bg border border-brand-border focus:border-[#00C853] text-brand-text placeholder:text-brand-muted rounded-sm px-3 py-2 text-xs font-body outline-none"
           />
           <button
             type="button"
@@ -381,7 +381,7 @@ export function ApiPlayground() {
         <div className="space-y-4">
           {/* Tool selector */}
           <div className="space-y-1.5">
-            <label className="text-[10px] font-mono uppercase tracking-widest text-brand-muted">Tool</label>
+            <label className="text-[10px] font-body uppercase tracking-widest text-brand-muted">Tool</label>
             <select
               value={selectedTool}
               onChange={(e) => {
@@ -390,7 +390,7 @@ export function ApiPlayground() {
                 setPayloadText(JSON.stringify(DEFAULT_PAYLOADS[tool], null, 2))
                 setSelectedFile(null)
               }}
-              className="w-full bg-brand-bg border border-brand-border focus:border-[#00C853] text-brand-text rounded-sm px-3 py-2 text-xs font-mono outline-none appearance-none cursor-pointer"
+              className="w-full bg-brand-bg border border-brand-border focus:border-[#00C853] text-brand-text rounded-sm px-3 py-2 text-xs font-body outline-none appearance-none cursor-pointer"
             >
               {TOOLS.map((t) => (
                 <option key={t} value={t}>{t}</option>
@@ -401,7 +401,7 @@ export function ApiPlayground() {
           {/* Payload — file picker for document_intelligence, JSON editor for everything else */}
           {selectedTool === 'document_intelligence' ? (
             <div className="space-y-1.5">
-              <label className="text-[10px] font-mono uppercase tracking-widest text-brand-muted">File</label>
+              <label className="text-[10px] font-body uppercase tracking-widest text-brand-muted">File</label>
               <label className="flex flex-col items-center justify-center w-full h-24 bg-brand-bg border border-dashed border-brand-border rounded-sm cursor-pointer hover:border-[#00C853] transition-colors group">
                 <input
                   type="file"
@@ -411,43 +411,43 @@ export function ApiPlayground() {
                 />
                 {selectedFile ? (
                   <div className="text-center">
-                    <p className="text-xs font-mono text-brand-text">{selectedFile.name}</p>
-                    <p className="text-[10px] font-mono text-brand-muted mt-0.5">{(selectedFile.size / 1024).toFixed(1)} KB — click to change</p>
+                    <p className="text-xs font-body text-brand-text">{selectedFile.name}</p>
+                    <p className="text-[10px] font-body text-brand-muted mt-0.5">{(selectedFile.size / 1024).toFixed(1)} KB — click to change</p>
                   </div>
                 ) : (
                   <div className="text-center">
-                    <p className="text-xs font-mono text-brand-muted group-hover:text-brand-text transition-colors">Click to select a file</p>
-                    <p className="text-[10px] font-mono text-brand-muted mt-0.5">PDF, Word, PNG, JPG, WebP — max 10 MB</p>
+                    <p className="text-xs font-body text-brand-muted group-hover:text-brand-text transition-colors">Click to select a file</p>
+                    <p className="text-[10px] font-body text-brand-muted mt-0.5">PDF, Word, PNG, JPG, WebP — max 10 MB</p>
                   </div>
                 )}
               </label>
             </div>
           ) : (
             <div className="space-y-1.5">
-              <label className="text-[10px] font-mono uppercase tracking-widest text-brand-muted">Payload (JSON)</label>
+              <label className="text-[10px] font-body uppercase tracking-widest text-brand-muted">Payload (JSON)</label>
               <textarea
                 value={payloadText}
                 onChange={(e) => setPayloadText(e.target.value)}
                 rows={6}
                 spellCheck={false}
-                className="w-full bg-brand-bg border border-brand-border focus:border-[#00C853] text-brand-text placeholder:text-brand-muted rounded-sm px-3 py-2 text-xs font-mono outline-none resize-none"
+                className="w-full bg-brand-bg border border-brand-border focus:border-[#00C853] text-brand-text placeholder:text-brand-muted rounded-sm px-3 py-2 text-xs font-body outline-none resize-none"
               />
             </div>
           )}
 
           {/* Idempotency Key */}
           <div className="space-y-1.5">
-            <label className="text-[10px] font-mono uppercase tracking-widest text-brand-muted">Idempotency Key</label>
+            <label className="text-[10px] font-body uppercase tracking-widest text-brand-muted">Idempotency Key</label>
             <div className="flex items-center gap-2">
               <input
                 readOnly
                 value={idempotencyKey}
-                className="flex-1 min-w-0 bg-brand-bg border border-brand-border text-brand-muted rounded-sm px-3 py-2 text-xs font-mono outline-none cursor-default"
+                className="flex-1 min-w-0 bg-brand-bg border border-brand-border text-brand-muted rounded-sm px-3 py-2 text-xs font-body outline-none cursor-default"
               />
               <button
                 type="button"
                 onClick={regenerateKey}
-                className="shrink-0 flex items-center gap-1 border border-brand-border text-brand-text hover:bg-brand-bg rounded-sm px-2.5 py-2 text-xs font-mono transition-colors"
+                className="shrink-0 flex items-center gap-1 border border-brand-border text-brand-text hover:bg-brand-bg rounded-sm px-2.5 py-2 text-xs font-body transition-colors"
               >
                 <ArrowCounterClockwise className="w-3.5 h-3.5" /> Regenerate
               </button>
@@ -459,7 +459,7 @@ export function ApiPlayground() {
             type="button"
             onClick={handleRun}
             disabled={response.kind === 'loading'}
-            className="flex items-center gap-2 bg-[#00C853] text-black hover:bg-[#00a844] active:scale-[0.97] rounded-sm px-4 py-2 text-xs font-mono font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex items-center gap-2 bg-[#00C853] text-black hover:bg-[#00a844] active:scale-[0.97] rounded-sm px-4 py-2 text-xs font-body font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Play className="w-3.5 h-3.5" weight="fill" />
             {response.kind === 'loading'
@@ -470,14 +470,14 @@ export function ApiPlayground() {
 
         {/* Right - response panel */}
         <div className="space-y-1.5">
-          <label className="text-[10px] font-mono uppercase tracking-widest text-brand-muted">Response</label>
+          <label className="text-[10px] font-body uppercase tracking-widest text-brand-muted">Response</label>
           <div className="bg-brand-bg border border-brand-border rounded-sm p-4 min-h-[280px] max-h-[500px] overflow-y-auto">
             {response.kind === 'idle' && (
-              <p className="text-xs font-mono text-brand-muted">Response will appear here</p>
+              <p className="text-xs font-body text-brand-muted">Response will appear here</p>
             )}
             {response.kind === 'loading' && (
               <div className="space-y-2">
-                <p className="text-xs font-mono text-brand-muted animate-pulse">
+                <p className="text-xs font-body text-brand-muted animate-pulse">
                   {response.attempt
                     ? `Polling result... (${response.attempt}/${MAX_POLL_ATTEMPTS})`
                     : 'Queuing job...'}
@@ -493,7 +493,7 @@ export function ApiPlayground() {
               </div>
             )}
             {response.kind === 'result' && (
-              <pre className="text-xs font-mono text-brand-text whitespace-pre-wrap break-all">
+              <pre className="text-xs font-body text-brand-text whitespace-pre-wrap break-all">
                 {JSON.stringify(response.data, null, 2)}
               </pre>
             )}
@@ -504,7 +504,7 @@ export function ApiPlayground() {
       {/* Related endpoints */}
       {(RELATED_ENDPOINTS[selectedTool] ?? []).length > 0 && (
         <div className="space-y-2">
-          <p className="text-[10px] font-mono uppercase tracking-widest text-brand-muted">Related endpoints</p>
+          <p className="text-[10px] font-body uppercase tracking-widest text-brand-muted">Related endpoints</p>
           {RELATED_ENDPOINTS[selectedTool]!.map((ep) => (
             <EndpointRow
               key={ep.id}

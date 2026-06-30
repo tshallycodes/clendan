@@ -50,7 +50,7 @@ export function NotificationsSection() {
     <div className="space-y-3">
       {ROWS.map((row) => (
         <div key={row.id} className="flex items-center justify-between py-1">
-          <span className="text-xs font-mono text-brand-text">{row.label}</span>
+          <span className="text-xs font-body text-brand-text">{row.label}</span>
           <button
             type="button"
             role="switch"

@@ -4,7 +4,7 @@
 
 function OAuthMockup() {
   return (
-    <div className="bg-brand-bg border border-brand-border rounded-sm p-4 space-y-2 font-mono text-xs">
+    <div className="bg-brand-bg border border-brand-border rounded-sm p-4 space-y-2 font-body text-xs">
       <p className="text-brand-muted uppercase tracking-widest text-[10px]">Connect a tool</p>
       {['QuickBooks', 'Xero'].map((tool) => (
         <button
@@ -25,7 +25,7 @@ function OAuthMockup() {
 
 function ToolConfigMockup() {
   return (
-    <div className="bg-brand-bg border border-brand-border rounded-sm p-4 font-mono text-xs space-y-3">
+    <div className="bg-brand-bg border border-brand-border rounded-sm p-4 font-body text-xs space-y-3">
       <p className="text-brand-muted uppercase tracking-widest text-[10px]">Tool config</p>
       <div className="space-y-1">
         <div className="flex justify-between">
@@ -55,7 +55,7 @@ function PolicyMockup() {
     { label: 'Block', range: '> £5,000', color: '#ff4d6d' },
   ]
   return (
-    <div className="bg-brand-bg border border-brand-border rounded-sm p-4 font-mono text-xs space-y-2">
+    <div className="bg-brand-bg border border-brand-border rounded-sm p-4 font-body text-xs space-y-2">
       <p className="text-brand-muted uppercase tracking-widest text-[10px]">Policy thresholds</p>
       {rows.map((r) => (
         <div key={r.label} className="flex items-center justify-between py-1 border-b border-brand-border last:border-0">
@@ -76,7 +76,7 @@ function TerminalMockup() {
     { text: '✔ Payment scheduled for 2026-06-10', color: '#00C853' },
   ]
   return (
-    <div className="bg-brand-bg border border-brand-border rounded-sm p-4 font-mono text-xs space-y-1">
+    <div className="bg-brand-bg border border-brand-border rounded-sm p-4 font-body text-xs space-y-1">
       <p className="text-brand-muted uppercase tracking-widest text-[10px] mb-2">Execution log</p>
       {lines.map((l, i) => (
         <p key={i} style={{ color: l.color }}>{l.text}</p>
@@ -87,7 +87,7 @@ function TerminalMockup() {
 
 function ApprovalMockup() {
   return (
-    <div className="bg-brand-bg border border-brand-border rounded-sm p-4 font-mono text-xs space-y-3">
+    <div className="bg-brand-bg border border-brand-border rounded-sm p-4 font-body text-xs space-y-3">
       <div className="flex items-center justify-between">
         <p className="text-brand-muted uppercase tracking-widest text-[10px]">Approval required</p>
         <span className="text-[10px] px-2 py-0.5 rounded-sm" style={{ background: 'rgba(0,168,204,0.08)', color: '#00a8cc', border: '1px solid rgba(0,168,204,0.2)' }}>Pending</span>
@@ -107,7 +107,7 @@ function ApprovalMockup() {
 
 function AuditMockup() {
   return (
-    <div className="bg-brand-bg border border-brand-border rounded-sm p-4 font-mono text-xs space-y-2">
+    <div className="bg-brand-bg border border-brand-border rounded-sm p-4 font-body text-xs space-y-2">
       <p className="text-brand-muted uppercase tracking-widest text-[10px]">Audit entry</p>
       <div className="space-y-1">
         <div className="flex justify-between"><span className="text-brand-muted">Action</span><span className="text-brand-text">payment.scheduled</span></div>
@@ -177,7 +177,7 @@ export default function HowItWorksPage() {
 
       {/* Hero */}
       <section className="max-w-6xl mx-auto px-6 md:px-8 pt-20 pb-16">
-        <p className="font-mono text-[10px] uppercase tracking-widest text-brand-muted mb-4">How it works</p>
+        <p className="font-body text-[10px] uppercase tracking-widest text-brand-muted mb-4">How it works</p>
         <h1
           className="text-4xl md:text-5xl font-heading font-extrabold leading-tight mb-4"
           style={{ fontFamily: 'var(--font-heading)' }}
@@ -185,7 +185,7 @@ export default function HowItWorksPage() {
           From Invoice to Payment.<br />
           <span className="text-brand-green">Zero Manual Work.</span>
         </h1>
-        <p className="font-mono text-sm text-brand-secondary max-w-xl">
+        <p className="font-body text-sm text-brand-secondary max-w-xl">
           Here&apos;s exactly how Clendan handles your financial operations end to end.
         </p>
       </section>
@@ -212,7 +212,7 @@ export default function HowItWorksPage() {
                 >
                   {step.title}
                 </h2>
-                <p className="font-mono text-sm text-brand-secondary leading-relaxed">
+                <p className="font-body text-sm text-brand-secondary leading-relaxed">
                   {step.desc}
                 </p>
               </div>
@@ -227,16 +227,16 @@ export default function HowItWorksPage() {
       {/* Results */}
       <section className="border-t border-brand-border bg-brand-surface">
         <div className="max-w-6xl mx-auto px-6 md:px-8 py-16">
-          <p className="font-mono text-[10px] uppercase tracking-widest text-brand-muted mb-6">Results</p>
+          <p className="font-body text-[10px] uppercase tracking-widest text-brand-muted mb-6">Results</p>
           <div className="grid md:grid-cols-3 gap-4">
             {RESULTS.map((r) => (
               <div key={r.metric} className="bg-brand-bg border border-brand-border rounded-sm p-6">
-                <p className="font-mono text-xs text-brand-muted mb-3">{r.metric}</p>
+                <p className="font-body text-xs text-brand-muted mb-3">{r.metric}</p>
                 <div className="flex items-baseline gap-2">
                   {r.before && (
                     <>
                       <span className="font-heading font-bold text-xl line-through text-brand-muted" style={{ fontFamily: 'var(--font-heading)' }}>{r.before}</span>
-                      <span className="text-brand-muted font-mono text-sm">→</span>
+                      <span className="text-brand-muted font-body text-sm">→</span>
                     </>
                   )}
                   <span className="font-heading font-extrabold text-3xl text-brand-green" style={{ fontFamily: 'var(--font-heading)' }}>{r.after}</span>
@@ -255,12 +255,12 @@ export default function HowItWorksPage() {
         >
           Start Automating in 10 Minutes
         </h2>
-        <p className="font-mono text-sm text-brand-secondary mb-8">
+        <p className="font-body text-sm text-brand-secondary mb-8">
           Connect your tools, deploy a tool, set your policies. Done.
         </p>
         <Link
           href="/sign-up"
-          className="inline-block rounded-sm px-6 py-3 text-sm font-mono font-medium transition-colors hover:bg-[#00a844]"
+          className="inline-block rounded-sm px-6 py-3 text-sm font-body font-medium transition-colors hover:bg-[#00a844]"
           style={{ background: '#00C853', color: '#000' }}
         >
           Start Automating in 10 Minutes →

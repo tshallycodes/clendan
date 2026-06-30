@@ -48,20 +48,20 @@ export function OrgNameForm({ initialName }: Props) {
         type="text"
         value={name}
         onChange={(e) => { setName(e.target.value); setStatus('idle') }}
-        className="bg-brand-bg border border-brand-border focus:border-brand-green text-brand-text placeholder:text-brand-muted rounded-sm px-3 py-2 text-xs font-mono outline-none w-56"
+        className="bg-brand-bg border border-brand-border focus:border-brand-green text-brand-text placeholder:text-brand-muted rounded-sm px-3 py-2 text-xs font-body outline-none w-56"
       />
       <button
         onClick={handleSave}
         disabled={status === 'saving' || !name.trim() || name.trim() === initialName}
-        className="bg-brand-green text-black hover:bg-[#00a844] rounded-sm px-4 py-2 text-xs font-mono disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+        className="bg-brand-green text-black hover:bg-[#00a844] rounded-sm px-4 py-2 text-xs font-body disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
       >
         {status === 'saving' ? 'Saving...' : 'Save'}
       </button>
       {status === 'success' && (
-        <span className="text-xs font-mono text-brand-green">Saved</span>
+        <span className="text-xs font-body text-brand-green">Saved</span>
       )}
       {status === 'error' && (
-        <span className="text-xs font-mono text-brand-danger">Error: {errorMsg}</span>
+        <span className="text-xs font-body text-brand-danger">Error: {errorMsg}</span>
       )}
     </div>
   )

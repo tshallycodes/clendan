@@ -102,7 +102,7 @@ export function AuditTable({ entries, searchQuery, dateFrom, dateTo }: Props) {
 
   if (filtered.length === 0) {
     return (
-      <div className="px-5 py-12 text-xs font-mono text-brand-muted text-center">
+      <div className="px-5 py-12 text-xs font-body text-brand-muted text-center">
         No audit entries match your filters
       </div>
     )
@@ -110,15 +110,15 @@ export function AuditTable({ entries, searchQuery, dateFrom, dateTo }: Props) {
 
   return (
     <div className="overflow-x-auto">
-      <table className="w-full text-xs font-mono">
+      <table className="w-full text-xs font-body">
         <thead>
           <tr className="border-b border-brand-border">
-            <th className="px-5 py-3 text-left text-[10px] font-mono text-brand-muted uppercase tracking-widest">Timestamp</th>
-            <th className="px-5 py-3 text-left text-[10px] font-mono text-brand-muted uppercase tracking-widest">Actor</th>
-            <th className="px-5 py-3 text-left text-[10px] font-mono text-brand-muted uppercase tracking-widest">Action</th>
-            <th className="px-5 py-3 text-left text-[10px] font-mono text-brand-muted uppercase tracking-widest">Decision</th>
-            <th className="px-5 py-3 text-left text-[10px] font-mono text-brand-muted uppercase tracking-widest">Trace ID</th>
-            <th className="px-5 py-3 text-right text-[10px] font-mono text-brand-muted uppercase tracking-widest" aria-label="Expand row" />
+            <th className="px-5 py-3 text-left text-[10px] font-body text-brand-muted uppercase tracking-widest">Timestamp</th>
+            <th className="px-5 py-3 text-left text-[10px] font-body text-brand-muted uppercase tracking-widest">Actor</th>
+            <th className="px-5 py-3 text-left text-[10px] font-body text-brand-muted uppercase tracking-widest">Action</th>
+            <th className="px-5 py-3 text-left text-[10px] font-body text-brand-muted uppercase tracking-widest">Decision</th>
+            <th className="px-5 py-3 text-left text-[10px] font-body text-brand-muted uppercase tracking-widest">Trace ID</th>
+            <th className="px-5 py-3 text-right text-[10px] font-body text-brand-muted uppercase tracking-widest" aria-label="Expand row" />
           </tr>
         </thead>
         <motion.tbody
@@ -175,7 +175,7 @@ export function AuditTable({ entries, searchQuery, dateFrom, dateTo }: Props) {
                           transition={{ duration: 0.22, ease: 'easeOut' }}
                           className="overflow-hidden"
                         >
-                          <pre className="bg-brand-bg border border-brand-border rounded-sm p-4 text-xs font-mono text-brand-secondary overflow-x-auto whitespace-pre-wrap break-all">
+                          <pre className="bg-brand-bg border border-brand-border rounded-sm p-4 text-xs font-body text-brand-secondary overflow-x-auto whitespace-pre-wrap break-all">
                             {e.reasoning_trace_json
                               ? JSON.stringify(e.reasoning_trace_json, null, 2)
                               : '— no reasoning trace recorded —'}

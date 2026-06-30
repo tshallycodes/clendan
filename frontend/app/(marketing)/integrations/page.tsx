@@ -12,10 +12,10 @@ function IntegrationCard({ integration }: { integration: Integration }) {
           <p className="font-heading font-semibold text-brand-text text-[16px] leading-tight">
             {integration.name}
           </p>
-          <p className="font-mono text-[12px] text-brand-secondary mt-1">{integration.desc}</p>
+          <p className="font-body text-[12px] text-brand-secondary mt-1">{integration.desc}</p>
         </div>
         <span
-          className={`font-mono text-[10px] font-medium uppercase tracking-wider whitespace-nowrap mt-0.5 ${
+          className={`font-body text-[10px] font-medium uppercase tracking-wider whitespace-nowrap mt-0.5 ${
             isAvailable ? 'text-brand-green' : 'text-brand-muted'
           }`}
         >
@@ -25,12 +25,12 @@ function IntegrationCard({ integration }: { integration: Integration }) {
       {isAvailable ? (
         <Link
           href="/sign-up"
-          className="inline-block text-center bg-brand-green text-black font-mono text-[12px] font-medium px-3 py-1.5 rounded-sm hover:bg-[#00a844] active:scale-[0.97] transition-all"
+          className="inline-block text-center bg-brand-green text-black font-body text-[12px] font-medium px-3 py-1.5 rounded-sm hover:bg-[#00a844] active:scale-[0.97] transition-all"
         >
           Connect
         </Link>
       ) : (
-        <span className="inline-block text-center border border-brand-border text-brand-muted font-mono text-[12px] px-3 py-1.5 rounded-sm cursor-not-allowed">
+        <span className="inline-block text-center border border-brand-border text-brand-muted font-body text-[12px] px-3 py-1.5 rounded-sm cursor-not-allowed">
           Connect
         </span>
       )}
@@ -55,11 +55,11 @@ function HowItWorksStep({ step, title, desc }: { step: string; title: string; de
   return (
     <div className="flex gap-4">
       <div className="flex-shrink-0 w-8 h-8 rounded-sm bg-[rgba(0,200,83,0.08)] border border-[rgba(0,200,83,0.2)] flex items-center justify-center">
-        <span className="font-mono text-brand-green text-[12px] font-medium">{step}</span>
+        <span className="font-body text-brand-green text-[12px] font-medium">{step}</span>
       </div>
       <div>
         <p className="font-heading font-semibold text-brand-text text-[16px]">{title}</p>
-        <p className="font-mono text-[12px] text-brand-secondary mt-1">{desc}</p>
+        <p className="font-body text-[12px] text-brand-secondary mt-1">{desc}</p>
       </div>
     </div>
   )
@@ -72,13 +72,13 @@ export default function IntegrationsPage() {
     <div className="bg-brand-bg min-h-screen">
       {/* Hero */}
       <section className="max-w-6xl mx-auto px-6 md:px-8 pt-20 pb-14 border-b border-brand-border">
-        <p className="font-mono text-[10px] uppercase tracking-widest text-brand-muted mb-4">
+        <p className="font-body text-[10px] uppercase tracking-widest text-brand-muted mb-4">
           Integrations
         </p>
         <h1 className="font-heading font-extrabold text-[48px] leading-[1.1] text-brand-text max-w-3xl">
           Clendan Works Where You <span className="text-brand-green">Already Work</span>
         </h1>
-        <p className="font-mono text-[14px] text-brand-secondary mt-4 max-w-xl">
+        <p className="font-body text-[14px] text-brand-secondary mt-4 max-w-xl">
           Connect your existing financial stack in one click.
         </p>
       </section>
@@ -93,7 +93,7 @@ export default function IntegrationsPage() {
       {/* How integrations work */}
       <section className="border-t border-brand-border">
         <div className="max-w-6xl mx-auto px-6 md:px-8 py-14">
-          <p className="font-mono text-[10px] uppercase tracking-widest text-brand-muted mb-3">
+          <p className="font-body text-[10px] uppercase tracking-widest text-brand-muted mb-3">
             How it works
           </p>
           <h2 className="font-heading font-bold text-[32px] text-brand-text mb-8">
@@ -125,10 +125,10 @@ export default function IntegrationsPage() {
       <section className="border-t border-brand-border">
         <div className="max-w-6xl mx-auto px-6 md:px-8 py-10">
           <div className="bg-brand-surface border border-brand-border rounded-sm p-6 flex flex-col sm:flex-row gap-4 items-start">
-            <div className="flex-shrink-0 font-mono text-[10px] uppercase tracking-widest text-brand-muted pt-0.5">
+            <div className="flex-shrink-0 font-body text-[10px] uppercase tracking-widest text-brand-muted pt-0.5">
               Security
             </div>
-            <p className="font-mono text-[13px] text-brand-secondary">
+            <p className="font-body text-[13px] text-brand-secondary">
               Credentials encrypted at rest. Never stored in plaintext. Full permission scoping —
               Clendan only requests access it actively uses. OAuth tokens are stored with
               tenant-level encryption keys and are never logged or exposed in API responses.
@@ -143,12 +143,12 @@ export default function IntegrationsPage() {
           <h2 className="font-heading font-bold text-[32px] text-brand-text mb-3">
             Need a custom integration?
           </h2>
-          <p className="font-mono text-[14px] text-brand-secondary mb-6">
+          <p className="font-body text-[14px] text-brand-secondary mb-6">
             We can connect Clendan to any system with an API.
           </p>
           <a
             href="mailto:hello@clendan.com"
-            className="inline-block bg-brand-green text-black font-mono text-[13px] font-medium px-6 py-3 rounded-sm hover:bg-[#00a844] active:scale-[0.97] transition-all"
+            className="inline-block bg-brand-green text-black font-body text-[13px] font-medium px-6 py-3 rounded-sm hover:bg-[#00a844] active:scale-[0.97] transition-all"
           >
             Get in touch
           </a>

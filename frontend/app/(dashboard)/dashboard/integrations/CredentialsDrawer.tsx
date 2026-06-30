@@ -112,19 +112,19 @@ export function CredentialsDrawer({ slug, open, onClose, onSubmit }: Props) {
     <div className="fixed inset-0 z-50 flex justify-end" onClick={(e) => { if (e.target === e.currentTarget) handleClose() }}>
       <div className="w-full max-w-sm bg-brand-surface border-l border-brand-border h-full flex flex-col shadow-2xl">
         <div className="flex items-center justify-between px-5 py-4 border-b border-brand-border">
-          <h2 className="text-sm font-mono font-medium text-brand-text">Connect {cfg.title}</h2>
+          <h2 className="text-sm font-body font-medium text-brand-text">Connect {cfg.title}</h2>
           <button type="button" onClick={handleClose} className="text-brand-muted hover:text-brand-text transition-colors text-lg leading-none">×</button>
         </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4 p-5 flex-1 overflow-y-auto">
           {cfg.fields.map((field) => (
             <label key={field.name} className="flex flex-col gap-1.5">
-              <span className="text-[10px] font-mono uppercase tracking-widest text-brand-muted">{field.label}</span>
+              <span className="text-[10px] font-body uppercase tracking-widest text-brand-muted">{field.label}</span>
               {field.type === 'select' ? (
                 <select
                   value={values[field.name] ?? field.options?.[0] ?? ''}
                   onChange={(e) => setValues((v) => ({ ...v, [field.name]: e.target.value }))}
-                  className="bg-brand-bg border border-brand-border focus:border-[#00C853] text-brand-text rounded-sm px-3 py-2 text-xs font-mono outline-none transition-colors"
+                  className="bg-brand-bg border border-brand-border focus:border-[#00C853] text-brand-text rounded-sm px-3 py-2 text-xs font-body outline-none transition-colors"
                 >
                   {field.options?.map((o) => <option key={o} value={o}>{o}</option>)}
                 </select>
@@ -136,14 +136,14 @@ export function CredentialsDrawer({ slug, open, onClose, onSubmit }: Props) {
                   placeholder={field.placeholder}
                   autoComplete="off"
                   required
-                  className="bg-brand-bg border border-brand-border focus:border-[#00C853] text-brand-text rounded-sm px-3 py-2 text-xs font-mono outline-none placeholder-brand-muted transition-colors"
+                  className="bg-brand-bg border border-brand-border focus:border-[#00C853] text-brand-text rounded-sm px-3 py-2 text-xs font-body outline-none placeholder-brand-muted transition-colors"
                 />
               )}
             </label>
           ))}
 
           {error && (
-            <p className="text-[10px] font-mono text-[#ff4d6d] bg-[rgba(255,77,109,0.08)] border border-[rgba(255,77,109,0.2)] rounded-sm px-3 py-2">
+            <p className="text-[10px] font-body text-[#ff4d6d] bg-[rgba(255,77,109,0.08)] border border-[rgba(255,77,109,0.2)] rounded-sm px-3 py-2">
               {error}
             </p>
           )}
@@ -152,14 +152,14 @@ export function CredentialsDrawer({ slug, open, onClose, onSubmit }: Props) {
             <button
               type="submit"
               disabled={submitting}
-              className="flex-1 text-xs font-mono bg-[#00C853] text-black hover:bg-[#00a844] active:scale-[0.97] rounded-sm px-3 py-2 transition-all disabled:opacity-50"
+              className="flex-1 text-xs font-body bg-[#00C853] text-black hover:bg-[#00a844] active:scale-[0.97] rounded-sm px-3 py-2 transition-all disabled:opacity-50"
             >
               {submitting ? 'Connecting...' : 'Connect'}
             </button>
             <button
               type="button"
               onClick={handleClose}
-              className="text-xs font-mono border border-brand-border text-brand-muted rounded-sm px-3 py-2 hover:text-brand-text transition-colors"
+              className="text-xs font-body border border-brand-border text-brand-muted rounded-sm px-3 py-2 hover:text-brand-text transition-colors"
             >
               Cancel
             </button>

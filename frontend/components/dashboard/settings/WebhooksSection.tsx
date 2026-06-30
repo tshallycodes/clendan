@@ -18,15 +18,15 @@ Content-Type: application/json
 export function WebhooksSection() {
   return (
     <div className="space-y-4">
-      <p className="text-xs font-mono text-brand-text">
+      <p className="text-xs font-body text-brand-text">
         Register a URL to receive real-time events when your tools execute, require approval, or are blocked.
       </p>
 
-      <pre className="bg-brand-bg border border-brand-border rounded-sm px-4 py-3 font-mono text-xs text-brand-text whitespace-pre overflow-x-auto">
+      <pre className="bg-brand-bg border border-brand-border rounded-sm px-4 py-3 font-body text-xs text-brand-text whitespace-pre overflow-x-auto">
         {WEBHOOK_SNIPPET}
       </pre>
 
-      <p className="text-xs font-mono text-brand-secondary">
+      <p className="text-xs font-body text-brand-secondary">
         Register and manage webhooks via the API.{' '}
         <a
           href="https://docs.clendan.com/api-reference"
@@ -41,7 +41,7 @@ export function WebhooksSection() {
 
       <Link
         href="/developer"
-        className="inline-flex text-xs font-mono text-brand-text hover:text-[#00C853] transition-colors"
+        className="inline-flex text-xs font-body text-brand-text hover:text-[#00C853] transition-colors"
       >
         Get your API key →
       </Link>

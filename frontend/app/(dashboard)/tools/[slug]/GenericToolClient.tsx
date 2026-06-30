@@ -124,7 +124,7 @@ export function GenericToolClient({ tool, deployed }: Props) {
   return (
     <motion.div variants={pageVariants} initial="hidden" animate="show" className="p-6 space-y-6">
       <motion.div variants={sectionVariants}>
-        <Link href="/tools" className="text-[11px] font-mono text-brand-muted hover:text-brand-secondary transition-colors">
+        <Link href="/tools" className="text-[11px] font-body text-brand-muted hover:text-brand-secondary transition-colors">
           ← Tools
         </Link>
       </motion.div>
@@ -133,19 +133,19 @@ export function GenericToolClient({ tool, deployed }: Props) {
         <div className="space-y-1">
           <div className="flex items-center gap-2 flex-wrap">
             <h1 className="font-heading font-bold text-2xl text-brand-text">{tool.name}</h1>
-            {badge && tool.type !== 'document_intelligence' && <span className={`text-[10px] font-mono px-2 py-0.5 rounded-sm ${badge.className}`}>{badge.label}</span>}
+            {badge && tool.type !== 'document_intelligence' && <span className={`text-[10px] font-body px-2 py-0.5 rounded-sm ${badge.className}`}>{badge.label}</span>}
           </div>
-          <p className="text-xs font-mono text-brand-muted max-w-xl">{tool.desc}</p>
+          <p className="text-xs font-body text-brand-muted max-w-xl">{tool.desc}</p>
         </div>
 
         {canConfigure && (
           <div className="flex items-center gap-2">
             <button type="button" onClick={() => setShowConfig(true)}
-              className="text-xs font-mono border border-brand-border text-brand-text hover:bg-brand-bg rounded-sm px-3 py-1.5 transition-colors">
+              className="text-xs font-body border border-brand-border text-brand-text hover:bg-brand-bg rounded-sm px-3 py-1.5 transition-colors">
               Configure
             </button>
             <button type="button" onClick={isActive ? handleToggle : handleDeploy} disabled={actionLoading}
-              className={`text-xs font-mono rounded-sm px-3 py-1.5 transition-all disabled:opacity-50 ${
+              className={`text-xs font-body rounded-sm px-3 py-1.5 transition-all disabled:opacity-50 ${
                 isActive
                   ? 'border border-brand-border text-brand-text hover:bg-brand-bg'
                   : 'bg-[#00C853] text-black hover:bg-[#00a844] active:scale-[0.97]'
@@ -163,12 +163,12 @@ export function GenericToolClient({ tool, deployed }: Props) {
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#00C853] opacity-60" />
               <span className="relative inline-flex rounded-full h-2 w-2 bg-[#00C853]" />
             </span>
-            <span className="text-xs font-mono text-[#00C853]">Active</span>
+            <span className="text-xs font-body text-[#00C853]">Active</span>
           </>
         ) : (
           <>
             <span className="h-2 w-2 rounded-full bg-brand-muted" />
-            <span className="text-xs font-mono text-brand-muted">{deployed ? 'Paused' : 'Not deployed'}</span>
+            <span className="text-xs font-body text-brand-muted">{deployed ? 'Paused' : 'Not deployed'}</span>
           </>
         )}
       </motion.div>
@@ -176,7 +176,7 @@ export function GenericToolClient({ tool, deployed }: Props) {
       <motion.div variants={sectionVariants} className="flex gap-1 border-b border-brand-border">
         {tabs.map(t => (
           <button key={t.key} type="button" onClick={() => setActiveTab(t.key)}
-            className={`text-xs font-mono px-4 py-2.5 border-b-2 transition-colors -mb-px ${
+            className={`text-xs font-body px-4 py-2.5 border-b-2 transition-colors -mb-px ${
               activeTab === t.key
                 ? 'border-[#00C853] text-brand-text'
                 : 'border-transparent text-brand-muted hover:text-brand-secondary'
@@ -199,8 +199,8 @@ export function GenericToolClient({ tool, deployed }: Props) {
               {/* How it works */}
               <div className="bg-brand-surface border border-brand-border rounded-sm overflow-hidden">
                 <div className="px-4 py-3 border-b border-brand-border">
-                  <p className="text-[10px] font-mono uppercase tracking-widest text-brand-muted">How it works</p>
-                  <p className="text-[10px] font-mono text-brand-muted mt-0.5">
+                  <p className="text-[10px] font-body uppercase tracking-widest text-brand-muted">How it works</p>
+                  <p className="text-[10px] font-body text-brand-muted mt-0.5">
                     {tool.howItWorks
                       ? 'Every upload follows this fixed processing flow — no step can be skipped'
                       : 'Every run follows this fixed execution flow — no step can be skipped'}
@@ -209,9 +209,9 @@ export function GenericToolClient({ tool, deployed }: Props) {
                 <div className="grid grid-cols-2 sm:grid-cols-4 divide-x divide-brand-border">
                   {(tool.howItWorks ?? DEFAULT_HOW_IT_WORKS).map(({ step, label, desc }) => (
                     <div key={step} className="px-4 py-4 space-y-1.5">
-                      <p className="text-[10px] font-mono text-brand-muted">{step}</p>
-                      <p className="text-xs font-mono font-medium text-brand-text">{label}</p>
-                      <p className="text-[10px] font-mono text-brand-muted leading-relaxed">{desc}</p>
+                      <p className="text-[10px] font-body text-brand-muted">{step}</p>
+                      <p className="text-xs font-body font-medium text-brand-text">{label}</p>
+                      <p className="text-[10px] font-body text-brand-muted leading-relaxed">{desc}</p>
                     </div>
                   ))}
                 </div>
@@ -221,20 +221,20 @@ export function GenericToolClient({ tool, deployed }: Props) {
               {deployed && (
                 <div className="bg-brand-surface border border-brand-border rounded-sm overflow-hidden">
                   <div className="px-4 py-3 border-b border-brand-border">
-                    <p className="text-[10px] font-mono uppercase tracking-widest text-brand-muted">Configuration</p>
+                    <p className="text-[10px] font-body uppercase tracking-widest text-brand-muted">Configuration</p>
                   </div>
                   <div className="px-4 py-4 grid grid-cols-2 gap-6">
                     {tool.type !== 'document_intelligence' && (
                       <div className="space-y-1.5">
-                        <p className="text-[10px] font-mono text-brand-muted uppercase tracking-widest">Autonomy</p>
-                        {badge && <span className={`text-[10px] font-mono px-2 py-0.5 rounded-sm inline-block ${badge.className}`}>{badge.label}</span>}
-                        <p className="text-[10px] font-mono text-brand-muted leading-relaxed">{AUTONOMY_DESC[deployed.autonomy_level] ?? ''}</p>
+                        <p className="text-[10px] font-body text-brand-muted uppercase tracking-widest">Autonomy</p>
+                        {badge && <span className={`text-[10px] font-body px-2 py-0.5 rounded-sm inline-block ${badge.className}`}>{badge.label}</span>}
+                        <p className="text-[10px] font-body text-brand-muted leading-relaxed">{AUTONOMY_DESC[deployed.autonomy_level] ?? ''}</p>
                       </div>
                     )}
                     <div className="space-y-1.5">
-                      <p className="text-[10px] font-mono text-brand-muted uppercase tracking-widest">Status</p>
-                      <p className="text-xs font-mono text-brand-text">{deployed.status === 'active' ? 'Running' : 'Paused'}</p>
-                      <p className="text-[10px] font-mono text-brand-muted">{deployed.status === 'active' ? 'Agent is live and processing' : 'Agent is paused — no runs will fire'}</p>
+                      <p className="text-[10px] font-body text-brand-muted uppercase tracking-widest">Status</p>
+                      <p className="text-xs font-body text-brand-text">{deployed.status === 'active' ? 'Running' : 'Paused'}</p>
+                      <p className="text-[10px] font-body text-brand-muted">{deployed.status === 'active' ? 'Agent is live and processing' : 'Agent is paused — no runs will fire'}</p>
                     </div>
                   </div>
                 </div>
@@ -243,19 +243,19 @@ export function GenericToolClient({ tool, deployed }: Props) {
               {/* Capabilities */}
               <div className="bg-brand-surface border border-brand-border rounded-sm overflow-hidden">
                 <div className="px-4 py-3 border-b border-brand-border">
-                  <p className="text-[10px] font-mono uppercase tracking-widest text-brand-muted">Capabilities</p>
-                  <p className="text-[10px] font-mono text-brand-muted mt-0.5">What this agent does once deployed and connected to your data</p>
+                  <p className="text-[10px] font-body uppercase tracking-widest text-brand-muted">Capabilities</p>
+                  <p className="text-[10px] font-body text-brand-muted mt-0.5">What this agent does once deployed and connected to your data</p>
                 </div>
                 {tool.capabilities.length > 0
                   ? <motion.ul variants={capabilityVariants} initial="hidden" animate="show" className="divide-y divide-brand-border">
                       {tool.capabilities.map(cap => (
                         <motion.li key={cap} variants={capItemVariants} className="flex items-start gap-3 px-4 py-3">
-                          <span className="text-brand-muted font-mono text-[10px] mt-0.5 shrink-0">→</span>
-                          <span className="text-xs font-mono text-brand-secondary">{cap}</span>
+                          <span className="text-brand-muted font-body text-[10px] mt-0.5 shrink-0">→</span>
+                          <span className="text-xs font-body text-brand-secondary">{cap}</span>
                         </motion.li>
                       ))}
                     </motion.ul>
-                  : <p className="px-4 py-8 text-xs font-mono text-brand-muted text-center">No capabilities listed.</p>
+                  : <p className="px-4 py-8 text-xs font-body text-brand-muted text-center">No capabilities listed.</p>
                 }
               </div>
             </div>

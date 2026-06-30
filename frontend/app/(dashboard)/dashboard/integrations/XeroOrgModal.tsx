@@ -55,7 +55,7 @@ export function XeroOrgModal({ open, orgs, onConfirm, onClose }: XeroOrgModalPro
                 <h2 className="font-heading font-bold text-base text-[#e8f0e8]">
                   Select Xero Organisation
                 </h2>
-                <p className="text-[10px] font-mono text-brand-muted mt-0.5">
+                <p className="text-[10px] font-body text-brand-muted mt-0.5">
                   Which organisation do you want to connect?
                 </p>
               </div>
@@ -75,17 +75,17 @@ export function XeroOrgModal({ open, orgs, onConfirm, onClose }: XeroOrgModalPro
                       disabled={loading}
                       className="accent-[#00C853]"
                     />
-                    <span className="text-sm font-mono text-[#e8f0e8]">{org.tenantName}</span>
+                    <span className="text-sm font-body text-[#e8f0e8]">{org.tenantName}</span>
                   </label>
                 ))}
                 {orgs.length === 0 && (
-                  <p className="text-xs font-mono text-brand-muted">No organisations found</p>
+                  <p className="text-xs font-body text-brand-muted">No organisations found</p>
                 )}
               </div>
 
               {error && (
                 <div className="px-6 pb-2">
-                  <p className="text-xs font-mono text-[#ff4d6d] bg-[rgba(255,77,109,0.08)] border border-[rgba(255,77,109,0.2)] rounded-sm px-3 py-2">
+                  <p className="text-xs font-body text-[#ff4d6d] bg-[rgba(255,77,109,0.08)] border border-[rgba(255,77,109,0.2)] rounded-sm px-3 py-2">
                     {error}
                   </p>
                 </div>
@@ -95,14 +95,14 @@ export function XeroOrgModal({ open, orgs, onConfirm, onClose }: XeroOrgModalPro
                 <button
                   onClick={handleConfirm}
                   disabled={loading || !selected}
-                  className="flex-1 bg-[#00C853] text-black font-mono text-sm font-medium rounded-sm py-2 hover:bg-[#00a844] active:scale-[0.97] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="flex-1 bg-[#00C853] text-black font-body text-sm font-medium rounded-sm py-2 hover:bg-[#00a844] active:scale-[0.97] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   {loading ? 'Connecting...' : 'Confirm'}
                 </button>
                 <button
                   onClick={onClose}
                   disabled={loading}
-                  className="flex-1 border border-brand-border text-[#e8f0e8] font-mono text-sm rounded-sm py-2 hover:bg-[#1a1a1a] transition-colors disabled:opacity-40"
+                  className="flex-1 border border-brand-border text-[#e8f0e8] font-body text-sm rounded-sm py-2 hover:bg-[#1a1a1a] transition-colors disabled:opacity-40"
                 >
                   Cancel
                 </button>

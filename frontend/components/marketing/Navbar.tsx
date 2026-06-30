@@ -23,7 +23,7 @@ function MobileMenu({ open, isSignedIn }: { open: boolean; isSignedIn: boolean |
           <Link
             key={link.href}
             href={link.href}
-            className="py-2.5 text-sm font-mono text-brand-muted hover:text-brand-text transition-colors"
+            className="py-2.5 text-sm font-body text-brand-muted hover:text-brand-text transition-colors"
           >
             {link.label}
           </Link>
@@ -32,7 +32,7 @@ function MobileMenu({ open, isSignedIn }: { open: boolean; isSignedIn: boolean |
           {isSignedIn ? (
             <Link
               href="/dashboard"
-              className="text-center rounded-sm px-5 py-2.5 text-sm font-mono font-medium transition-colors"
+              className="text-center rounded-sm px-5 py-2.5 text-sm font-body font-medium transition-colors"
               style={{ background: '#00C853', color: '#000' }}
             >
               Dashboard →
@@ -41,13 +41,13 @@ function MobileMenu({ open, isSignedIn }: { open: boolean; isSignedIn: boolean |
             <>
               <Link
                 href="/sign-in"
-                className="text-center border border-brand-border text-brand-text hover:bg-brand-surface rounded-sm px-5 py-2.5 text-sm font-mono transition-colors"
+                className="text-center border border-brand-border text-brand-text hover:bg-brand-surface rounded-sm px-5 py-2.5 text-sm font-body transition-colors"
               >
                 Sign in
               </Link>
               <Link
                 href="/sign-up"
-                className="text-center rounded-sm px-5 py-2.5 text-sm font-mono font-medium transition-colors"
+                className="text-center rounded-sm px-5 py-2.5 text-sm font-body font-medium transition-colors"
                 style={{ background: '#00C853', color: '#000' }}
               >
                 Get started
@@ -95,7 +95,7 @@ export function Navbar() {
               <Link
                 key={link.href}
                 href={link.href}
-                className="text-sm font-mono text-brand-muted hover:text-brand-text transition-colors"
+                className="text-sm font-body text-brand-muted hover:text-brand-text transition-colors"
               >
                 {link.label}
               </Link>
@@ -107,7 +107,7 @@ export function Navbar() {
             {isSignedIn ? (
               <Link
                 href="/dashboard"
-                className="rounded-sm px-5 py-2.5 text-sm font-mono font-medium transition-colors"
+                className="rounded-sm px-5 py-2.5 text-sm font-body font-medium transition-colors"
                 style={{ background: '#00C853', color: '#000' }}
               >
                 Dashboard →
@@ -116,13 +116,13 @@ export function Navbar() {
               <>
                 <Link
                   href="/sign-in"
-                  className="text-sm font-mono text-brand-muted hover:text-brand-text transition-colors px-3 py-2.5"
+                  className="text-sm font-body text-brand-muted hover:text-brand-text transition-colors px-3 py-2.5"
                 >
                   Sign in
                 </Link>
                 <Link
                   href="/sign-up"
-                  className="rounded-sm px-5 py-2.5 text-sm font-mono font-medium transition-colors"
+                  className="rounded-sm px-5 py-2.5 text-sm font-body font-medium transition-colors"
                   style={{ background: '#00C853', color: '#000' }}
                 >
                   Get started

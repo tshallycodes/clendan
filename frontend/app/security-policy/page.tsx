@@ -41,7 +41,7 @@ export default function SecurityPolicyPage() {
       <Navbar />
       <main className="flex-1">
         <div className="max-w-3xl mx-auto px-6 md:px-8 pt-20 pb-24">
-          <p className="font-mono text-[10px] uppercase tracking-widest text-brand-muted mb-4">
+          <p className="font-body text-[10px] uppercase tracking-widest text-brand-muted mb-4">
             Security
           </p>
           <h1
@@ -50,7 +50,7 @@ export default function SecurityPolicyPage() {
           >
             Responsible Disclosure Policy
           </h1>
-          <p className="font-mono text-xs text-brand-muted mb-12">
+          <p className="font-body text-xs text-brand-muted mb-12">
             Last updated: 2026-06-05
           </p>
 
@@ -62,15 +62,15 @@ export default function SecurityPolicyPage() {
             >
               Scope
             </h2>
-            <p className="font-mono text-sm text-brand-secondary leading-relaxed mb-4">
+            <p className="font-body text-sm text-brand-secondary leading-relaxed mb-4">
               This policy applies to security vulnerabilities found in the following Clendan-owned
               systems:
             </p>
             <ul className="flex flex-col gap-3">
               {SCOPE_DOMAINS.map((item) => (
                 <li key={item} className="flex items-start gap-3">
-                  <span className="text-brand-green font-mono text-xs mt-0.5 shrink-0">—</span>
-                  <span className="font-mono text-sm text-brand-secondary leading-relaxed">
+                  <span className="text-brand-green font-body text-xs mt-0.5 shrink-0">—</span>
+                  <span className="font-body text-sm text-brand-secondary leading-relaxed">
                     {item}
                   </span>
                 </li>
@@ -86,7 +86,7 @@ export default function SecurityPolicyPage() {
             >
               How to Report
             </h2>
-            <p className="font-mono text-sm text-brand-secondary leading-relaxed mb-4">
+            <p className="font-body text-sm text-brand-secondary leading-relaxed mb-4">
               Email{' '}
               <a
                 href="mailto:security@clendan.com"
@@ -105,8 +105,8 @@ export default function SecurityPolicyPage() {
                   'Any relevant screenshots, HTTP logs, or proof-of-concept code',
                 ].map((item) => (
                   <li key={item} className="flex items-start gap-3">
-                    <span className="text-brand-muted font-mono text-xs mt-0.5 shrink-0">—</span>
-                    <span className="font-mono text-sm text-brand-secondary leading-relaxed">
+                    <span className="text-brand-muted font-body text-xs mt-0.5 shrink-0">—</span>
+                    <span className="font-body text-sm text-brand-secondary leading-relaxed">
                       {item}
                     </span>
                   </li>
@@ -126,8 +126,8 @@ export default function SecurityPolicyPage() {
             <ul className="flex flex-col gap-3">
               {CLENDAN_COMMITS.map((item) => (
                 <li key={item} className="flex items-start gap-3">
-                  <span className="text-brand-green font-mono text-xs mt-0.5 shrink-0">—</span>
-                  <span className="font-mono text-sm text-brand-secondary leading-relaxed">
+                  <span className="text-brand-green font-body text-xs mt-0.5 shrink-0">—</span>
+                  <span className="font-body text-sm text-brand-secondary leading-relaxed">
                     {item}
                   </span>
                 </li>
@@ -147,12 +147,12 @@ export default function SecurityPolicyPage() {
               {DO_NOT.map((item) => (
                 <li key={item} className="flex items-start gap-3">
                   <span
-                    className="font-mono text-xs mt-0.5 shrink-0"
+                    className="font-body text-xs mt-0.5 shrink-0"
                     style={{ color: '#ff4d6d' }}
                   >
                     —
                   </span>
-                  <span className="font-mono text-sm text-brand-secondary leading-relaxed">
+                  <span className="font-body text-sm text-brand-secondary leading-relaxed">
                     {item}
                   </span>
                 </li>
@@ -171,8 +171,8 @@ export default function SecurityPolicyPage() {
             <ul className="flex flex-col gap-3">
               {OUT_OF_SCOPE.map((item) => (
                 <li key={item} className="flex items-start gap-3">
-                  <span className="text-brand-muted font-mono text-xs mt-0.5 shrink-0">—</span>
-                  <span className="font-mono text-sm text-brand-secondary leading-relaxed">
+                  <span className="text-brand-muted font-body text-xs mt-0.5 shrink-0">—</span>
+                  <span className="font-body text-sm text-brand-secondary leading-relaxed">
                     {item}
                   </span>
                 </li>

@@ -87,7 +87,7 @@ export default function TermsPage() {
       <Navbar />
       <main className="flex-1">
         <div className="max-w-3xl mx-auto px-6 md:px-8 pt-20 pb-24">
-          <p className="font-mono text-[10px] uppercase tracking-widest text-brand-muted mb-4">
+          <p className="font-body text-[10px] uppercase tracking-widest text-brand-muted mb-4">
             Legal
           </p>
           <h1
@@ -96,7 +96,7 @@ export default function TermsPage() {
           >
             Terms of Service
           </h1>
-          <p className="font-mono text-xs text-brand-muted mb-12">
+          <p className="font-body text-xs text-brand-muted mb-12">
             Last updated: 2026-06-05
           </p>
 
@@ -112,8 +112,8 @@ export default function TermsPage() {
                 <ul className="flex flex-col gap-3">
                   {section.body.map((item, i) => (
                     <li key={i} className="flex items-start gap-3">
-                      <span className="text-brand-muted font-mono text-xs mt-0.5 shrink-0">—</span>
-                      <span className="font-mono text-sm text-brand-secondary leading-relaxed">
+                      <span className="text-brand-muted font-body text-xs mt-0.5 shrink-0">—</span>
+                      <span className="font-body text-sm text-brand-secondary leading-relaxed">
                         {item}
                       </span>
                     </li>

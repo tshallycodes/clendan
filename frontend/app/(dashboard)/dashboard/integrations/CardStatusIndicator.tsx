@@ -27,16 +27,16 @@ export function StatusDot({ status }: { status: IntegrationStatus }) {
 
 export function StatusLabel({ status }: { status: IntegrationStatus }) {
   if (status === 'connected') {
-    return <span className="text-[10px] font-mono text-[#00C853] tracking-wider">CONNECTED</span>
+    return <span className="text-[10px] font-body text-[#00C853] tracking-wider">CONNECTED</span>
   }
   if (status === 'syncing') {
-    return <span className="text-[10px] font-mono text-[#00a8cc] tracking-wider">SYNCING</span>
+    return <span className="text-[10px] font-body text-[#00a8cc] tracking-wider">SYNCING</span>
   }
   if (status === 'connecting') {
-    return <span className="text-[10px] font-mono text-[#00a8cc] tracking-wider">CONNECTING</span>
+    return <span className="text-[10px] font-body text-[#00a8cc] tracking-wider">CONNECTING</span>
   }
   if (status === 'error') {
-    return <span className="text-[10px] font-mono text-[#ff4d6d] tracking-wider">ERROR</span>
+    return <span className="text-[10px] font-body text-[#ff4d6d] tracking-wider">ERROR</span>
   }
   return null
 }

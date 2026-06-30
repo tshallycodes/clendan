@@ -49,7 +49,7 @@ export function HeroSection() {
       >
         <motion.p
           variants={item}
-          className="text-xs font-mono text-brand-muted uppercase tracking-widest mb-6"
+          className="text-xs font-body text-brand-muted uppercase tracking-widest mb-6"
         >
           AI Financial Agent OS
         </motion.p>
@@ -66,7 +66,7 @@ export function HeroSection() {
 
         <motion.p
           variants={item}
-          className="text-base font-mono text-brand-secondary max-w-xl leading-relaxed mb-8"
+          className="text-base font-body text-brand-secondary max-w-xl leading-relaxed mb-8"
         >
           Deploy AI tools that connect to your financial systems, execute tasks autonomously,
           and produce full audit trails for every action. Not a dashboard. Execution infrastructure.
@@ -75,14 +75,14 @@ export function HeroSection() {
         <motion.div variants={item} className="flex flex-col sm:flex-row items-center gap-3">
           <Link
             href="/sign-up"
-            className="rounded-sm px-5 py-2.5 text-sm font-mono font-medium transition-colors active:scale-[0.97]"
+            className="rounded-sm px-5 py-2.5 text-sm font-body font-medium transition-colors active:scale-[0.97]"
             style={{ background: '#00C853', color: '#000' }}
           >
             Deploy Your First Tool
           </Link>
           <Link
             href="/how-it-works"
-            className="border border-brand-border text-brand-text hover:bg-brand-surface rounded-sm px-5 py-2.5 text-sm font-mono transition-colors"
+            className="border border-brand-border text-brand-text hover:bg-brand-surface rounded-sm px-5 py-2.5 text-sm font-body transition-colors"
           >
             See How It Works
           </Link>

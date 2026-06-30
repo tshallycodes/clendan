@@ -22,7 +22,7 @@ export function ClenSuggestions({ onSelect }: Props) {
       transition={{ duration: 0.2 }}
       className="px-4 pb-4"
     >
-      <p className="text-[10px] font-mono text-brand-muted uppercase tracking-wider mb-3">
+      <p className="text-[10px] font-body text-brand-muted uppercase tracking-wider mb-3">
         Suggestions
       </p>
       <div className="grid grid-cols-2 gap-2">
@@ -33,7 +33,7 @@ export function ClenSuggestions({ onSelect }: Props) {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.15, delay: i * 0.04 }}
             onClick={() => onSelect(text)}
-            className="border border-brand-border bg-transparent text-[10px] font-mono text-brand-secondary px-3 py-2 rounded-sm hover:border-brand-green/30 hover:text-brand-text transition-colors text-left leading-snug"
+            className="border border-brand-border bg-transparent text-[10px] font-body text-brand-secondary px-3 py-2 rounded-sm hover:border-brand-green/30 hover:text-brand-text transition-colors text-left leading-snug"
           >
             {text}
           </motion.button>

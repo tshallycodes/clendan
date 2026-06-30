@@ -29,7 +29,7 @@ export default function OnboardingPage() {
           <button
             type="button"
             onClick={back}
-            className="text-xs font-mono text-brand-muted hover:text-brand-text transition-colors"
+            className="text-xs font-body text-brand-muted hover:text-brand-text transition-colors"
           >
             ← Back
           </button>

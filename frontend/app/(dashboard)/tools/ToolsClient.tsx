@@ -40,27 +40,27 @@ function ToolCard({ tool, deployed }: { tool: ToolDef; deployed: Tool | undefine
         }`}
       >
         <div className="flex items-start justify-between gap-2">
-          <p className="text-sm font-mono font-medium text-brand-text group-hover:text-[#00C853] transition-colors leading-tight">
+          <p className="text-sm font-body font-medium text-brand-text group-hover:text-[#00C853] transition-colors leading-tight">
             {tool.name}
           </p>
           {isActive ? (
-            <span className="text-[10px] font-mono px-2 py-0.5 rounded-sm shrink-0 bg-[rgba(0,200,83,0.08)] text-[#00C853] border border-[rgba(0,200,83,0.2)]">
+            <span className="text-[10px] font-body px-2 py-0.5 rounded-sm shrink-0 bg-[rgba(0,200,83,0.08)] text-[#00C853] border border-[rgba(0,200,83,0.2)]">
               Active
             </span>
           ) : isInactive ? (
-            <span className="text-[10px] font-mono px-2 py-0.5 rounded-sm shrink-0 bg-brand-elevated text-brand-muted border border-brand-border">
+            <span className="text-[10px] font-body px-2 py-0.5 rounded-sm shrink-0 bg-brand-elevated text-brand-muted border border-brand-border">
               Inactive
             </span>
           ) : null}
         </div>
 
-        <p className="text-[11px] font-mono text-brand-muted leading-relaxed flex-1">{tool.desc}</p>
+        <p className="text-[11px] font-body text-brand-muted leading-relaxed flex-1">{tool.desc}</p>
 
         <div className="flex items-center justify-between">
-          <span className="text-[10px] font-mono text-brand-muted">
+          <span className="text-[10px] font-body text-brand-muted">
             {tool.capabilities.length} capabilities
           </span>
-          <span className="flex items-center gap-1 text-[10px] font-mono text-brand-muted group-hover:text-brand-secondary transition-colors">
+          <span className="flex items-center gap-1 text-[10px] font-body text-brand-muted group-hover:text-brand-secondary transition-colors">
             {deployed ? 'Configure' : 'Deploy'} <ArrowRight className="w-3 h-3" />
           </span>
         </div>
@@ -78,10 +78,10 @@ export function ToolsClient({ deployedTools }: Props) {
     <motion.div variants={pageVariants} initial="hidden" animate="show" className="p-6 space-y-8">
       <motion.div variants={sectionVariants}>
         <h1 className="font-heading font-bold text-2xl text-brand-text">Tools</h1>
-        <p className="text-xs font-mono text-brand-muted mt-1 leading-relaxed max-w-xl">
+        <p className="text-xs font-body text-brand-muted mt-1 leading-relaxed max-w-xl">
           Autonomous AI agents that connect to your financial systems, execute tasks, enforce policy, and produce full audit trails. Each tool runs independently and routes decisions through the policy engine before taking any action.
         </p>
-        <p className="text-[10px] font-mono text-brand-muted mt-2">
+        <p className="text-[10px] font-body text-brand-muted mt-2">
           {deployedCount} of {TOOLS.length} deployed
         </p>
       </motion.div>
@@ -89,8 +89,8 @@ export function ToolsClient({ deployedTools }: Props) {
       {activeTools.length > 0 && (
         <motion.div variants={sectionVariants} className="space-y-3">
           <div>
-            <p className="text-[10px] font-mono text-brand-muted uppercase tracking-widest">Deployed</p>
-            <p className="text-[10px] font-mono text-brand-muted mt-0.5">Running on your financial data — click to configure or view executions</p>
+            <p className="text-[10px] font-body text-brand-muted uppercase tracking-widest">Deployed</p>
+            <p className="text-[10px] font-body text-brand-muted mt-0.5">Running on your financial data — click to configure or view executions</p>
           </div>
           <motion.div variants={gridVariants} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {activeTools.map((tool) => (
@@ -102,10 +102,10 @@ export function ToolsClient({ deployedTools }: Props) {
 
       <motion.div variants={sectionVariants} className="space-y-3">
         <div>
-          <p className="text-[10px] font-mono text-brand-muted uppercase tracking-widest">
+          <p className="text-[10px] font-body text-brand-muted uppercase tracking-widest">
             {activeTools.length > 0 ? 'Available to Deploy' : 'All Tools'}
           </p>
-          <p className="text-[10px] font-mono text-brand-muted mt-0.5">
+          <p className="text-[10px] font-body text-brand-muted mt-0.5">
             {activeTools.length > 0
               ? 'Connect your integrations and deploy additional agents to your workflow'
               : 'Deploy an agent to start automating — each tool connects to your accounting software and bank accounts'}

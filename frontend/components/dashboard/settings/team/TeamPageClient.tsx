@@ -109,18 +109,18 @@ export function TeamPageClient() {
     <motion.div variants={pageVariants} initial="hidden" animate="show" className="p-6 max-w-3xl space-y-10">
       <motion.div variants={sectionVariants}>
         <h1 className="font-heading font-bold text-2xl text-brand-text">Team</h1>
-        <p className="text-brand-muted text-xs font-mono mt-1">Manage members, roles, and invitations</p>
+        <p className="text-brand-muted text-xs font-body mt-1">Manage members, roles, and invitations</p>
       </motion.div>
 
       <motion.div variants={sectionVariants}>
         <section className="space-y-4">
-          <h2 className="text-[10px] font-mono uppercase tracking-widest text-brand-muted border-b border-brand-border pb-2">
+          <h2 className="text-[10px] font-body uppercase tracking-widest text-brand-muted border-b border-brand-border pb-2">
             Members
           </h2>
           {loadingMembers ? (
             <SectionSkeleton />
           ) : members.length === 0 ? (
-            <p className="text-xs font-mono text-brand-muted">No members found.</p>
+            <p className="text-xs font-body text-brand-muted">No members found.</p>
           ) : (
             <MembersTable members={members} isCurrentUserOwner={isOwner} onChanged={fetchMembers} />
           )}
@@ -129,7 +129,7 @@ export function TeamPageClient() {
 
       <motion.div variants={sectionVariants}>
         <section className="space-y-4">
-          <h2 className="text-[10px] font-mono uppercase tracking-widest text-brand-muted border-b border-brand-border pb-2">
+          <h2 className="text-[10px] font-body uppercase tracking-widest text-brand-muted border-b border-brand-border pb-2">
             Pending Invitations
           </h2>
           {loadingInvites ? (
@@ -143,7 +143,7 @@ export function TeamPageClient() {
       {canConfigure && (
         <motion.div variants={sectionVariants}>
           <section className="space-y-4">
-            <h2 className="text-[10px] font-mono uppercase tracking-widest text-brand-muted border-b border-brand-border pb-2">
+            <h2 className="text-[10px] font-body uppercase tracking-widest text-brand-muted border-b border-brand-border pb-2">
               Invite Team Member
             </h2>
             <InviteForm onInvited={fetchInvitations} />
@@ -154,7 +154,7 @@ export function TeamPageClient() {
       {canConfigure && (
         <motion.div variants={sectionVariants}>
           <section className="space-y-4">
-            <h2 className="text-[10px] font-mono uppercase tracking-widest text-brand-muted border-b border-brand-border pb-2">
+            <h2 className="text-[10px] font-body uppercase tracking-widest text-brand-muted border-b border-brand-border pb-2">
               Invite Links
             </h2>
             <InviteLinksSection />
@@ -165,7 +165,7 @@ export function TeamPageClient() {
       {isOwner && settings && (
         <motion.div variants={sectionVariants}>
           <section className="space-y-4">
-            <h2 className="text-[10px] font-mono uppercase tracking-widest text-brand-muted border-b border-brand-border pb-2">
+            <h2 className="text-[10px] font-body uppercase tracking-widest text-brand-muted border-b border-brand-border pb-2">
               Google SSO Domain Matching
             </h2>
             <DomainMatchingToggle

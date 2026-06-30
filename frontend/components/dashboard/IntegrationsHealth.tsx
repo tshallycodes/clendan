@@ -30,10 +30,10 @@ export function IntegrationsHealth({ integrations }: { integrations: Integration
     <div className="bg-brand-surface border border-brand-border rounded-sm overflow-hidden">
       <div className="px-5 py-4 border-b border-brand-border">
         <h2 className="font-heading font-semibold text-brand-text text-sm">Integrations</h2>
-        <p className="text-[10px] font-mono text-brand-muted mt-0.5">Connected data sources your agents pull from — sync status and last activity</p>
+        <p className="text-[10px] font-body text-brand-muted mt-0.5">Connected data sources your agents pull from — sync status and last activity</p>
       </div>
       {visible.length === 0 ? (
-        <p className="px-5 py-8 text-xs font-mono text-brand-muted text-center">
+        <p className="px-5 py-8 text-xs font-body text-brand-muted text-center">
           No integrations connected — connect your accounting software and bank accounts
         </p>
       ) : (
@@ -43,15 +43,15 @@ export function IntegrationsHealth({ integrations }: { integrations: Integration
             return (
               <div key={integration.slug} className="px-5 py-3 flex items-center gap-4">
                 <div className="flex-1 min-w-0">
-                  <div className="text-xs font-mono text-brand-text truncate">{integration.name}</div>
+                  <div className="text-xs font-body text-brand-text truncate">{integration.name}</div>
                   {integration.summary && (
-                    <div className="text-[10px] font-mono text-brand-muted">{integration.summary}</div>
+                    <div className="text-[10px] font-body text-brand-muted">{integration.summary}</div>
                   )}
                 </div>
-                <span className={`text-[10px] font-mono px-2 py-0.5 rounded-sm border shrink-0 ${style.bg} ${style.text} ${style.border}`}>
+                <span className={`text-[10px] font-body px-2 py-0.5 rounded-sm border shrink-0 ${style.bg} ${style.text} ${style.border}`}>
                   {style.label}
                 </span>
-                <span className="text-[10px] font-mono text-brand-muted shrink-0">
+                <span className="text-[10px] font-body text-brand-muted shrink-0">
                   {integration.last_synced_at ? relativeTime(integration.last_synced_at) : '—'}
                 </span>
               </div>

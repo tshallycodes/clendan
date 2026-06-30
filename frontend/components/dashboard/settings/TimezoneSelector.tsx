@@ -80,7 +80,7 @@ export function TimezoneSelector() {
       <button
         onClick={() => { setOpen(v => !v); setTimeout(() => searchRef.current?.focus(), 50) }}
         disabled={saving}
-        className="w-full flex items-center justify-between gap-3 bg-brand-bg border border-brand-border rounded-sm px-3 py-2 text-xs font-mono text-brand-text hover:bg-brand-bg transition-colors disabled:opacity-50"
+        className="w-full flex items-center justify-between gap-3 bg-brand-bg border border-brand-border rounded-sm px-3 py-2 text-xs font-body text-brand-text hover:bg-brand-bg transition-colors disabled:opacity-50"
       >
         <span className="truncate">{selected.label}</span>
         <motion.span animate={{ rotate: open ? 180 : 0 }} transition={{ duration: 0.15 }} className="text-brand-muted shrink-0 text-[10px]">▼</motion.span>
@@ -102,13 +102,13 @@ export function TimezoneSelector() {
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 placeholder="Search timezones…"
-                className="w-full bg-brand-bg border border-brand-border rounded-sm px-3 py-1.5 text-xs font-mono text-brand-text placeholder:text-brand-muted focus:border-[#00C853] focus:outline-none"
+                className="w-full bg-brand-bg border border-brand-border rounded-sm px-3 py-1.5 text-xs font-body text-brand-text placeholder:text-brand-muted focus:border-[#00C853] focus:outline-none"
               />
             </div>
             <div className="max-h-64 overflow-y-auto">
               {filtered ? (
                 filtered.length === 0 ? (
-                  <p className="px-3 py-4 text-xs font-mono text-brand-muted text-center">No results for &ldquo;{search}&rdquo;</p>
+                  <p className="px-3 py-4 text-xs font-body text-brand-muted text-center">No results for &ldquo;{search}&rdquo;</p>
                 ) : (
                   filtered.map(tz => (
                     <TzOption key={tz.value} tz={tz} selected={tz.value === timezone} onSelect={handleSelect} />
@@ -120,7 +120,7 @@ export function TimezoneSelector() {
                   if (!group.length) return null
                   return (
                     <div key={region}>
-                      <p className="px-3 pt-3 pb-1 text-[10px] font-mono uppercase tracking-widest text-brand-muted">{region}</p>
+                      <p className="px-3 pt-3 pb-1 text-[10px] font-body uppercase tracking-widest text-brand-muted">{region}</p>
                       {group.map(tz => (
                         <TzOption key={tz.value} tz={tz} selected={tz.value === timezone} onSelect={handleSelect} />
                       ))}
@@ -140,12 +140,12 @@ function TzOption({ tz, selected, onSelect }: { tz: typeof TIMEZONES[0]; selecte
   return (
     <button
       onClick={() => onSelect(tz.value)}
-      className={`w-full flex items-center gap-3 px-3 py-2 text-left text-xs font-mono transition-colors ${
+      className={`w-full flex items-center gap-3 px-3 py-2 text-left text-xs font-body transition-colors ${
         selected ? 'bg-[rgba(0,200,83,0.08)] text-[#00C853]' : 'text-brand-text hover:bg-brand-surface'
       }`}
     >
       <span className="flex-1 truncate">{tz.label}</span>
-      <span className="text-brand-muted text-[10px] font-mono shrink-0">{tz.value}</span>
+      <span className="text-brand-muted text-[10px] font-body shrink-0">{tz.value}</span>
       {selected && <span className="text-[#00C853] text-[10px] shrink-0">✓</span>}
     </button>
   )

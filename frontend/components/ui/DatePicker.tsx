@@ -71,7 +71,7 @@ export function DatePicker({ value, onChange, className }: Props) {
       <button
         type="button"
         onClick={() => setOpen(v => !v)}
-        className="flex items-center gap-2 bg-brand-bg border border-brand-border rounded-sm text-brand-text px-3 py-2 text-xs font-mono focus:outline-none focus:border-[#00C853] w-full hover:bg-brand-bg transition-colors"
+        className="flex items-center gap-2 bg-brand-bg border border-brand-border rounded-sm text-brand-text px-3 py-2 text-xs font-body focus:outline-none focus:border-[#00C853] w-full hover:bg-brand-bg transition-colors"
       >
         <span className="flex-1 text-left">{displayValue || <span className="text-brand-muted">Select date</span>}</span>
         <CalendarIcon />
@@ -87,7 +87,7 @@ export function DatePicker({ value, onChange, className }: Props) {
               className="text-brand-secondary hover:text-brand-text transition-colors w-7 h-7 flex items-center justify-center rounded-sm hover:bg-brand-bg">
               ↑
             </button>
-            <span className="text-xs font-mono text-brand-text font-medium">
+            <span className="text-xs font-body text-brand-text font-medium">
               {MONTHS[viewMonth]} {viewYear}
             </span>
             <button type="button" onClick={nextMonth}
@@ -98,7 +98,7 @@ export function DatePicker({ value, onChange, className }: Props) {
 
           <div className="grid grid-cols-7 mb-1">
             {DAYS.map(d => (
-              <div key={d} className="text-[10px] font-mono text-brand-muted text-center py-1">{d}</div>
+              <div key={d} className="text-[10px] font-body text-brand-muted text-center py-1">{d}</div>
             ))}
           </div>
 
@@ -113,7 +113,7 @@ export function DatePicker({ value, onChange, className }: Props) {
                   key={i}
                   type="button"
                   onClick={() => select(day)}
-                  className={`text-[11px] font-mono h-7 w-full rounded-sm transition-colors ${
+                  className={`text-[11px] font-body h-7 w-full rounded-sm transition-colors ${
                     isSelected
                       ? 'bg-[#00C853] text-black font-medium'
                       : isToday
@@ -129,11 +129,11 @@ export function DatePicker({ value, onChange, className }: Props) {
 
           <div className="flex justify-between mt-3 pt-2 border-t border-brand-border">
             <button type="button" onClick={() => { onChange(''); setOpen(false) }}
-              className="text-[10px] font-mono text-brand-muted hover:text-brand-secondary transition-colors">
+              className="text-[10px] font-body text-brand-muted hover:text-brand-secondary transition-colors">
               Clear
             </button>
             <button type="button" onClick={() => { onChange(todayStr); setOpen(false) }}
-              className="text-[10px] font-mono text-brand-muted hover:text-brand-secondary transition-colors">
+              className="text-[10px] font-body text-brand-muted hover:text-brand-secondary transition-colors">
               Today
             </button>
           </div>

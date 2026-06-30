@@ -18,7 +18,7 @@ export function ClenButton() {
         style={{ background: '#00C853' }}
       >
         <span
-          className="text-black font-mono font-bold text-lg leading-none"
+          className="text-black font-body font-bold text-lg leading-none"
           aria-hidden="true"
         >
           C

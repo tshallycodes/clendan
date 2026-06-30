@@ -58,20 +58,20 @@ export function ClenPanel({ mode, isOpen, onClose, position, pathname = '/dashbo
         >
           {/* Header */}
           <div className="flex items-center gap-3 px-4 py-3 border-b border-brand-border shrink-0">
-            <span className="text-[#00C853] font-mono font-bold text-sm leading-none">C</span>
+            <span className="text-[#00C853] font-body font-bold text-sm leading-none">C</span>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
                 <span className="text-sm font-bold text-brand-text" style={{ fontFamily: 'var(--font-heading, sans-serif)' }}>
                   Clen
                 </span>
                 {mode === 'account' && (
-                  <span className="flex items-center gap-1 text-[10px] font-mono text-brand-muted">
+                  <span className="flex items-center gap-1 text-[10px] font-body text-brand-muted">
                     <span className="w-1.5 h-1.5 rounded-full bg-[#00C853] inline-block" />
                     Connected to your account
                   </span>
                 )}
               </div>
-              <p className="text-[11px] font-mono text-brand-muted">Clendan Assistant</p>
+              <p className="text-[11px] font-body text-brand-muted">Clendan Assistant</p>
             </div>
             <button
               onClick={onClose}
@@ -90,7 +90,7 @@ export function ClenPanel({ mode, isOpen, onClose, position, pathname = '/dashbo
           {/* Messages */}
           <div className="flex-1 overflow-y-auto px-4 pt-4 min-h-0">
             {messages.length === 0 && (
-              <div className="mb-4 text-xs font-mono text-brand-secondary leading-relaxed whitespace-pre-line">
+              <div className="mb-4 text-xs font-body text-brand-secondary leading-relaxed whitespace-pre-line">
                 {WELCOME}
               </div>
             )}
@@ -101,7 +101,7 @@ export function ClenPanel({ mode, isOpen, onClose, position, pathname = '/dashbo
               <LoadingDots />
             )}
             {error && (
-              <p className="text-[11px] font-mono text-brand-danger mb-3">{error}</p>
+              <p className="text-[11px] font-body text-brand-danger mb-3">{error}</p>
             )}
             <div ref={bottomRef} />
           </div>

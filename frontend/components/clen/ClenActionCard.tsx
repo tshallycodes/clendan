@@ -26,19 +26,19 @@ export function ClenActionCard({ action, onConfirm, onCancel }: Props) {
     >
       <div className="flex items-center gap-2 px-3 py-2 border-b border-brand-border bg-brand-bg">
         <span className="text-brand-warning text-xs">⚡</span>
-        <span className="text-[10px] font-mono text-brand-secondary uppercase tracking-wider">
+        <span className="text-[10px] font-body text-brand-secondary uppercase tracking-wider">
           About to execute
         </span>
-        <span className="ml-auto text-[10px] font-mono text-brand-muted">{action.tool}</span>
+        <span className="ml-auto text-[10px] font-body text-brand-muted">{action.tool}</span>
       </div>
 
       <div className="px-3 py-2">
-        <p className="text-xs font-mono text-brand-text mb-2">{action.description}</p>
+        <p className="text-xs font-body text-brand-text mb-2">{action.description}</p>
 
         {paramEntries.length > 0 && (
           <div className="space-y-1 mb-3">
             {paramEntries.map(([key, val]) => (
-              <div key={key} className="flex gap-2 text-[10px] font-mono">
+              <div key={key} className="flex gap-2 text-[10px] font-body">
                 <span className="text-brand-muted shrink-0">{key}</span>
                 <span className="text-brand-secondary truncate">
                   {typeof val === 'object' ? JSON.stringify(val) : String(val)}
@@ -51,13 +51,13 @@ export function ClenActionCard({ action, onConfirm, onCancel }: Props) {
         <div className="flex gap-2">
           <button
             onClick={onConfirm}
-            className="flex-1 h-7 text-[11px] font-mono font-medium rounded-sm bg-brand-green text-black hover:bg-[#00a844] transition-colors active:scale-[0.97]"
+            className="flex-1 h-7 text-[11px] font-body font-medium rounded-sm bg-brand-green text-black hover:bg-[#00a844] transition-colors active:scale-[0.97]"
           >
             Confirm
           </button>
           <button
             onClick={onCancel}
-            className="flex-1 h-7 text-[11px] font-mono text-brand-secondary border border-brand-border rounded-sm hover:bg-brand-bg transition-colors"
+            className="flex-1 h-7 text-[11px] font-body text-brand-secondary border border-brand-border rounded-sm hover:bg-brand-bg transition-colors"
           >
             Cancel
           </button>

@@ -98,7 +98,7 @@ export default async function DashboardPage() {
       <AnimatedSection>
         <div>
           <h1 className="font-heading font-bold text-2xl text-brand-text">Dashboard</h1>
-          <p className={`text-xs font-mono mt-1 ${statusColor}`}>{statusMessage}</p>
+          <p className={`text-xs font-body mt-1 ${statusColor}`}>{statusMessage}</p>
         </div>
       </AnimatedSection>
 

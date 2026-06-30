@@ -76,7 +76,7 @@ export function MobileNav() {
                 {NAV.map(({ icon: Icon, label, href, external }) => {
                   const active = !external && (pathname === href || (href !== '/dashboard' && pathname.startsWith(href)))
                   const cls = cn(
-                    'flex items-center gap-3 px-5 py-2.5 text-xs font-mono transition-colors relative',
+                    'flex items-center gap-3 px-5 py-2.5 text-xs font-body transition-colors relative',
                     active ? 'text-brand-text bg-brand-elevated' : 'text-brand-muted hover:text-brand-text hover:bg-brand-bg/50',
                   )
                   return external ? (
@@ -99,7 +99,7 @@ export function MobileNav() {
                   <Link
                     href="/"
                     onClick={() => setOpen(false)}
-                    className="flex-1 text-xs font-mono text-brand-muted hover:text-brand-text transition-colors flex items-center justify-center gap-2 border border-brand-border px-3 py-2 rounded-sm"
+                    className="flex-1 text-xs font-body text-brand-muted hover:text-brand-text transition-colors flex items-center justify-center gap-2 border border-brand-border px-3 py-2 rounded-sm"
                   >
                     ← Back to site
                   </Link>
@@ -108,7 +108,7 @@ export function MobileNav() {
                 <button
                   type="button"
                   onClick={() => signOut({ redirectUrl: '/sign-in' })}
-                  className="w-full text-xs font-mono text-brand-muted hover:text-[#ff4d6d] transition-colors flex items-center justify-center gap-2 border border-brand-border px-3 py-2 rounded-sm"
+                  className="w-full text-xs font-body text-brand-muted hover:text-[#ff4d6d] transition-colors flex items-center justify-center gap-2 border border-brand-border px-3 py-2 rounded-sm"
                 >
                   <SignOut className="w-3 h-3" />
                   Sign out

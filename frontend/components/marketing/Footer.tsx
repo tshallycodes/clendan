@@ -46,14 +46,14 @@ export function Footer() {
         <div className="flex flex-col md:flex-row gap-10 md:gap-16">
           <div className="flex flex-col gap-3 md:w-48 shrink-0">
             <Logo size="md" href={null} />
-            <p className="text-xs font-mono text-brand-muted mt-1">AI Financial Agent OS</p>
+            <p className="text-xs font-body text-brand-muted mt-1">AI Financial Agent OS</p>
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 flex-1">
             {FOOTER_LINKS.map((col) => (
               <div key={col.heading} className="flex flex-col gap-3">
                 <p
-                  className="text-xs font-mono font-medium uppercase tracking-widest"
+                  className="text-xs font-body font-medium uppercase tracking-widest"
                   style={{ color: 'var(--brand-text)', letterSpacing: '0.12em' }}
                 >
                   {col.heading}
@@ -63,7 +63,7 @@ export function Footer() {
                     <li key={link.href}>
                       <Link
                         href={link.href}
-                        className="text-xs font-mono text-brand-muted hover:text-brand-text transition-colors"
+                        className="text-xs font-body text-brand-muted hover:text-brand-text transition-colors"
                       >
                         {link.label}
                       </Link>
@@ -76,7 +76,7 @@ export function Footer() {
         </div>
 
         <div className="mt-12 pt-6 border-t border-brand-border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <p className="text-xs font-mono text-brand-muted">
+          <p className="text-xs font-body text-brand-muted">
             &copy; 2026 Clendan Ltd. All rights reserved.
           </p>
           <div className="flex items-center gap-4">

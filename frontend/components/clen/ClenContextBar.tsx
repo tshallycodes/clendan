@@ -28,7 +28,7 @@ export function ClenContextBar({ pathname }: Props) {
         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#00C853] opacity-40" />
         <span className="relative inline-flex rounded-full h-2 w-2 bg-[#00C853]" />
       </span>
-      <span className="text-[11px] font-mono text-brand-muted">{label}</span>
+      <span className="text-[11px] font-body text-brand-muted">{label}</span>
     </div>
   )
 }

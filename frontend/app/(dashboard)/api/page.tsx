@@ -28,7 +28,7 @@ export default function ApiDocsPage() {
 
       <div>
         <h1 className="font-heading font-bold text-2xl text-brand-text">API Reference</h1>
-        <p className="text-brand-muted text-xs font-mono mt-1">
+        <p className="text-brand-muted text-xs font-body mt-1">
           Trigger tools, poll results, manage approvals, and query audit trails.
         </p>
       </div>
@@ -36,14 +36,14 @@ export default function ApiDocsPage() {
       <section className="space-y-3">
         <h2 className="font-heading font-semibold text-sm text-brand-text uppercase tracking-widest">Base URL</h2>
         <CodeBlock code={BASE_URL} lang="text" />
-        <p className="text-xs font-mono text-brand-muted">
+        <p className="text-xs font-body text-brand-muted">
           All endpoints are versioned under <code className="text-brand-text">/v1</code>.
         </p>
       </section>
 
       <section className="space-y-4">
         <h2 className="font-heading font-semibold text-sm text-brand-text uppercase tracking-widest">Authentication</h2>
-        <p className="text-xs font-mono text-brand-muted">
+        <p className="text-xs font-body text-brand-muted">
           All API calls require an <code className="text-brand-text">Authorization</code> header with a bearer API key.
           Generate keys from the <span className="text-brand-text">Developer</span> page.
         </p>
@@ -53,13 +53,13 @@ export default function ApiDocsPage() {
 
       <section className="space-y-4">
         <h2 className="font-heading font-semibold text-sm text-brand-text uppercase tracking-widest">Rate Limits</h2>
-        <p className="text-xs font-mono text-brand-muted">
+        <p className="text-xs font-body text-brand-muted">
           Limits are per API key, using a sliding 60-second window. Exceeded limits return{' '}
           <code className="text-brand-text">429</code> with a{' '}
           <code className="text-brand-text">Retry-After</code> header.
         </p>
         <div className="overflow-x-auto">
-          <table className="w-full text-xs font-mono border border-brand-border rounded-sm">
+          <table className="w-full text-xs font-body border border-brand-border rounded-sm">
             <thead>
               <tr className="border-b border-brand-border bg-brand-elevated">
                 <th className="text-left px-3 py-2 text-brand-muted font-medium">Endpoint</th>
@@ -94,7 +94,7 @@ export default function ApiDocsPage() {
 
       <section className="space-y-4">
         <h2 className="font-heading font-semibold text-sm text-brand-text uppercase tracking-widest">Idempotency</h2>
-        <p className="text-xs font-mono text-brand-muted">
+        <p className="text-xs font-body text-brand-muted">
           All <code className="text-brand-text">POST</code> requests require an{' '}
           <code className="text-brand-text">Idempotency-Key</code> header. Sending the same key twice returns the
           original result without re-executing. Use a UUID per operation.
@@ -161,7 +161,7 @@ export default function ApiDocsPage() {
 }`} />
 
         <div className="space-y-3">
-          <p className="text-[10px] font-mono uppercase tracking-widest text-brand-muted">reasoning_trace shape — reconciliation</p>
+          <p className="text-[10px] font-body uppercase tracking-widest text-brand-muted">reasoning_trace shape — reconciliation</p>
           <CodeBlock lang="json" code={`{
   "overall_decision":      "flagged",
   "period_start":          "2026-05-01T00:00:00+00:00",
@@ -192,7 +192,7 @@ export default function ApiDocsPage() {
     }
   ]
 }`} />
-          <p className="text-xs font-mono text-brand-muted">
+          <p className="text-xs font-body text-brand-muted">
             <code className="text-brand-text">claude_assessments</code> is a flat array — pipe it directly into a table or CSV.
             Each row has <code className="text-brand-text">item_id</code>, <code className="text-brand-text">item_type</code>,{' '}
             <code className="text-brand-text">action</code> (<code className="text-[#00C853]">ok</code> /{' '}
@@ -223,7 +223,7 @@ with open("assessments.csv", "w", newline="") as f:
         </div>
 
         <div className="space-y-3">
-          <p className="text-[10px] font-mono uppercase tracking-widest text-brand-muted">reasoning_trace shape — ai_accountant</p>
+          <p className="text-[10px] font-body uppercase tracking-widest text-brand-muted">reasoning_trace shape — ai_accountant</p>
           <CodeBlock lang="json" code={`{
   "trace_id": "trc_...",
   "results": [
@@ -248,7 +248,7 @@ with open("assessments.csv", "w", newline="") as f:
   "has_significant_shifts": false,
   "policy_violations":    []
 }`} />
-          <p className="text-xs font-mono text-brand-muted">
+          <p className="text-xs font-body text-brand-muted">
             <code className="text-brand-text">results</code> contains one entry per transaction.{' '}
             <code className="text-brand-text">matched_invoice_id</code> is{' '}
             <code className="text-brand-text">null</code> when no open invoice matches within 10% amount tolerance.
@@ -365,14 +365,14 @@ for r in trace["results"]:
 
       <section className="space-y-4">
         <h2 className="font-heading font-semibold text-sm text-brand-text uppercase tracking-widest">Available Tool Types</h2>
-        <p className="text-xs font-mono text-brand-muted">
+        <p className="text-xs font-body text-brand-muted">
           Pass one of these values as <code className="text-brand-text">tool</code> in the execute body.
         </p>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
           {TOOL_TYPES.map((t) => (
             <div
               key={t}
-              className="bg-brand-bg border border-brand-border rounded-sm px-3 py-2 text-xs font-mono text-brand-text"
+              className="bg-brand-bg border border-brand-border rounded-sm px-3 py-2 text-xs font-body text-brand-text"
             >
               {t}
             </div>
@@ -382,16 +382,16 @@ for r in trace["results"]:
 
       <section className="space-y-4">
         <h2 className="font-heading font-semibold text-sm text-brand-text uppercase tracking-widest">Payload Reference</h2>
-        <p className="text-xs font-mono text-brand-muted">
+        <p className="text-xs font-body text-brand-muted">
           Each tool accepts a <code className="text-brand-text">payload</code> object. Fields are optional — omitted fields
           fall back to what is configured in the tool&apos;s settings drawer.
         </p>
 
         {/* Reconciliation */}
         <div className="space-y-2">
-          <p className="text-xs font-mono text-brand-text font-medium">reconciliation</p>
+          <p className="text-xs font-body text-brand-text font-medium">reconciliation</p>
           <div className="overflow-x-auto">
-            <table className="w-full text-xs font-mono border border-brand-border rounded-sm">
+            <table className="w-full text-xs font-body border border-brand-border rounded-sm">
               <thead>
                 <tr className="border-b border-brand-border bg-brand-elevated">
                   <th className="text-left px-3 py-2 text-brand-muted font-medium">Field</th>
@@ -441,9 +441,9 @@ for r in trace["results"]:
 
         {/* AI Accountant */}
         <div className="space-y-2">
-          <p className="text-xs font-mono text-brand-text font-medium">ai_accountant</p>
+          <p className="text-xs font-body text-brand-text font-medium">ai_accountant</p>
           <div className="overflow-x-auto">
-            <table className="w-full text-xs font-mono border border-brand-border rounded-sm">
+            <table className="w-full text-xs font-body border border-brand-border rounded-sm">
               <thead>
                 <tr className="border-b border-brand-border bg-brand-elevated">
                   <th className="text-left px-3 py-2 text-brand-muted font-medium">Field</th>
@@ -488,9 +488,9 @@ for r in trace["results"]:
 
         {/* Other tools */}
         <div className="space-y-2">
-          <p className="text-xs font-mono text-brand-text font-medium">invoice_processing · receipt_processing · fraud_detection · expense_control · spend_control</p>
+          <p className="text-xs font-body text-brand-text font-medium">invoice_processing · receipt_processing · fraud_detection · expense_control · spend_control</p>
           <div className="overflow-x-auto">
-            <table className="w-full text-xs font-mono border border-brand-border rounded-sm">
+            <table className="w-full text-xs font-body border border-brand-border rounded-sm">
               <thead>
                 <tr className="border-b border-brand-border bg-brand-elevated">
                   <th className="text-left px-3 py-2 text-brand-muted font-medium">Field</th>
@@ -519,7 +519,7 @@ for r in trace["results"]:
           </div>
         </div>
 
-        <p className="text-xs font-mono text-brand-muted">
+        <p className="text-xs font-body text-brand-muted">
           All payload fields are optional. Use the{' '}
           <span className="text-brand-text">API Playground</span> on the Developer page to see pre-filled
           examples for every tool type.

@@ -120,7 +120,7 @@ export function InviteLinksSection() {
     })
   }
 
-  const SELECT = 'bg-brand-bg border border-brand-border rounded-sm px-2 py-1.5 text-xs font-mono text-brand-text focus:border-brand-green outline-none'
+  const SELECT = 'bg-brand-bg border border-brand-border rounded-sm px-2 py-1.5 text-xs font-body text-brand-text focus:border-brand-green outline-none'
 
   return (
     <div className="space-y-4">
@@ -152,13 +152,13 @@ export function InviteLinksSection() {
           type="button"
           onClick={handleCreate}
           disabled={creating}
-          className="bg-brand-green text-black hover:bg-[#00a844] active:scale-[0.97] rounded-sm px-3 py-1.5 text-xs font-mono font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          className="bg-brand-green text-black hover:bg-[#00a844] active:scale-[0.97] rounded-sm px-3 py-1.5 text-xs font-body font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {creating ? 'Generating…' : '+ Generate link'}
         </button>
       </div>
 
-      {error && <p className="text-xs font-mono text-brand-danger">{error}</p>}
+      {error && <p className="text-xs font-body text-brand-danger">{error}</p>}
 
       {/* Link list */}
       {loading ? (
@@ -168,7 +168,7 @@ export function InviteLinksSection() {
           ))}
         </div>
       ) : links.length === 0 ? (
-        <p className="text-xs font-mono text-brand-muted">No active invite links.</p>
+        <p className="text-xs font-body text-brand-muted">No active invite links.</p>
       ) : (
         <div className="divide-y divide-brand-border border border-brand-border rounded-sm overflow-hidden">
           {links.map((link) => {
@@ -177,19 +177,19 @@ export function InviteLinksSection() {
               : `/join/${link.token}`
             return (
               <div key={link.id} className="bg-brand-surface px-4 py-3 flex items-center gap-3">
-                <span className="flex-1 font-mono text-xs text-brand-muted truncate" title={url}>
+                <span className="flex-1 font-body text-xs text-brand-muted truncate" title={url}>
                   {url}
                 </span>
-                <span className="shrink-0 text-[10px] font-mono text-brand-muted">
+                <span className="shrink-0 text-[10px] font-body text-brand-muted">
                   {ROLE_LABEL[link.role.toLowerCase() as InviteLinkRole] ?? link.role}
                 </span>
-                <span className="shrink-0 text-[10px] font-mono text-brand-muted">
+                <span className="shrink-0 text-[10px] font-body text-brand-muted">
                   {formatExpiry(link.expires_at)}
                 </span>
                 <button
                   type="button"
                   onClick={() => handleCopy(link)}
-                  className="shrink-0 text-[10px] font-mono border border-brand-border rounded-sm px-2 py-1 text-brand-text hover:border-brand-green transition-colors"
+                  className="shrink-0 text-[10px] font-body border border-brand-border rounded-sm px-2 py-1 text-brand-text hover:border-brand-green transition-colors"
                 >
                   {copiedId === link.id ? 'Copied!' : 'Copy'}
                 </button>
@@ -197,7 +197,7 @@ export function InviteLinksSection() {
                   type="button"
                   onClick={() => handleDelete(link.id)}
                   aria-label="Delete invite link"
-                  className="shrink-0 text-[10px] font-mono text-brand-danger hover:underline transition-colors"
+                  className="shrink-0 text-[10px] font-body text-brand-danger hover:underline transition-colors"
                 >
                   Delete
                 </button>

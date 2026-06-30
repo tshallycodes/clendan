@@ -18,7 +18,7 @@ export default function MaintenancePage() {
         Clendan is under scheduled maintenance
       </h1>
 
-      <p className="font-mono text-sm text-brand-secondary mb-6 max-w-sm">
+      <p className="font-body text-sm text-brand-secondary mb-6 max-w-sm">
         We&apos;ll be back online shortly. Follow{' '}
         <a
           href="https://x.com/clendan"
@@ -31,7 +31,7 @@ export default function MaintenancePage() {
         for updates.
       </p>
 
-      <div className="bg-brand-surface border border-brand-border rounded-sm px-5 py-3 font-mono text-xs text-brand-muted">
+      <div className="bg-brand-surface border border-brand-border rounded-sm px-5 py-3 font-body text-xs text-brand-muted">
         Expected back: soon
       </div>
     </div>

@@ -8,7 +8,7 @@ export function WarningBanner() {
   if (dismissed) return null
 
   return (
-    <div className="w-full bg-[#f5a623] text-black text-[11px] font-mono font-medium text-center py-1.5 px-4 tracking-wide z-[9999] relative flex items-center justify-center">
+    <div className="w-full bg-[#f5a623] text-black text-[11px] font-body font-medium text-center py-1.5 px-4 tracking-wide z-[9999] relative flex items-center justify-center">
       <span>This platform is under active development — not intended for public use.</span>
       <button
         onClick={() => setDismissed(true)}

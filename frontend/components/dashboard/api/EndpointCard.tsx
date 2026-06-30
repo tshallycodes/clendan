@@ -24,21 +24,21 @@ export function EndpointCard({ method, path, description, headers, example, exam
   return (
     <div className="border border-brand-border rounded-sm overflow-hidden">
       <div className="bg-brand-surface px-5 py-4 flex items-start gap-3">
-        <span className={`shrink-0 mt-0.5 text-[10px] font-mono font-semibold px-2 py-0.5 rounded-sm border ${METHOD_COLORS[method]}`}>
+        <span className={`shrink-0 mt-0.5 text-[10px] font-body font-semibold px-2 py-0.5 rounded-sm border ${METHOD_COLORS[method]}`}>
           {method}
         </span>
         <div className="flex-1 min-w-0">
-          <code className="text-sm font-mono text-brand-text break-all">{path}</code>
-          <p className="text-xs font-mono text-brand-muted mt-1">{description}</p>
+          <code className="text-sm font-body text-brand-text break-all">{path}</code>
+          <p className="text-xs font-body text-brand-muted mt-1">{description}</p>
         </div>
       </div>
 
       {headers && headers.length > 0 && (
         <div className="border-t border-brand-border px-5 py-3 bg-brand-bg">
-          <p className="text-[10px] font-mono uppercase tracking-widest text-brand-muted mb-2">Required headers</p>
+          <p className="text-[10px] font-body uppercase tracking-widest text-brand-muted mb-2">Required headers</p>
           <div className="space-y-1">
             {headers.map(h => (
-              <div key={h.name} className="flex items-baseline gap-3 text-xs font-mono">
+              <div key={h.name} className="flex items-baseline gap-3 text-xs font-body">
                 <code className="text-[#f5a623] shrink-0">{h.name}</code>
                 <span className="text-brand-muted">{h.description}</span>
                 {h.required && <span className="text-[#ff4d6d] text-[10px] shrink-0">required</span>}

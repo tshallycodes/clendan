@@ -77,8 +77,8 @@ export function DeployToolForm({ fixedType, onDeployed }: DeployToolFormProps) {
     }
   }
 
-  const selectClass = 'w-full bg-brand-bg border border-brand-border focus:border-brand-green rounded-sm px-3 py-2 text-xs font-mono text-brand-text outline-none transition-colors'
-  const labelClass = 'text-[10px] font-mono text-brand-muted uppercase tracking-widest'
+  const selectClass = 'w-full bg-brand-bg border border-brand-border focus:border-brand-green rounded-sm px-3 py-2 text-xs font-body text-brand-text outline-none transition-colors'
+  const labelClass = 'text-[10px] font-body text-brand-muted uppercase tracking-widest'
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
@@ -107,7 +107,7 @@ export function DeployToolForm({ fixedType, onDeployed }: DeployToolFormProps) {
       <button
         type="submit"
         disabled={loading}
-        className="w-full bg-brand-green text-black hover:bg-[#00a844] rounded-sm px-4 py-2 text-xs font-mono transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        className="w-full bg-brand-green text-black hover:bg-[#00a844] rounded-sm px-4 py-2 text-xs font-body transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {loading ? 'Deploying…' : 'Deploy Tool'}
       </button>

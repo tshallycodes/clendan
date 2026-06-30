@@ -25,7 +25,7 @@ export default function NotFound() {
         404
       </span>
 
-      <p className="font-mono text-base text-brand-text mt-4 mb-10">
+      <p className="font-body text-base text-brand-text mt-4 mb-10">
         This page doesn&apos;t exist.
       </p>
 
@@ -34,7 +34,7 @@ export default function NotFound() {
           <Link
             key={link.href}
             href={link.href}
-            className="border border-brand-border text-brand-text hover:bg-brand-surface rounded-sm px-4 py-2 text-sm font-mono transition-colors"
+            className="border border-brand-border text-brand-text hover:bg-brand-surface rounded-sm px-4 py-2 text-sm font-body transition-colors"
           >
             {link.label}
           </Link>
@@ -43,7 +43,7 @@ export default function NotFound() {
 
       <Link
         href="/"
-        className="rounded-sm px-6 py-3 text-sm font-mono font-medium transition-colors hover:bg-[#00a844]"
+        className="rounded-sm px-6 py-3 text-sm font-body font-medium transition-colors hover:bg-[#00a844]"
         style={{ background: '#00C853', color: '#000' }}
       >
         ← Back to home

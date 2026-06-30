@@ -48,7 +48,7 @@ const BADGE: Record<BadgeVariant, { bg: string; text: string; border: string }> 
 function StatusBadge({ variant, label }: { variant: BadgeVariant; label: string }) {
   const s = BADGE[variant]
   return (
-    <span className={`text-[10px] font-mono font-medium border px-2 py-0.5 rounded-sm tracking-wider ${s.bg} ${s.text} ${s.border}`}>
+    <span className={`text-[10px] font-body font-medium border px-2 py-0.5 rounded-sm tracking-wider ${s.bg} ${s.text} ${s.border}`}>
       {label}
     </span>
   )
@@ -71,19 +71,19 @@ export async function RecentExecutionsTable() {
       </div>
 
       {executions.length === 0 ? (
-        <p className="px-5 py-8 text-xs font-mono text-brand-muted text-center">
+        <p className="px-5 py-8 text-xs font-body text-brand-muted text-center">
           No executions yet — deploy a tool and submit your first invoice
         </p>
       ) : (
         <div className="overflow-x-auto">
-          <table className="w-full text-xs font-mono">
+          <table className="w-full text-xs font-body">
             <thead>
               <tr className="border-b border-brand-border">
-                <th className="px-5 py-3 text-left text-[10px] font-mono text-brand-muted uppercase tracking-widest">Time</th>
-                <th className="px-5 py-3 text-left text-[10px] font-mono text-brand-muted uppercase tracking-widest">Tool</th>
-                <th className="px-5 py-3 text-left text-[10px] font-mono text-brand-muted uppercase tracking-widest">Decision</th>
-                <th className="px-5 py-3 text-left text-[10px] font-mono text-brand-muted uppercase tracking-widest">Status</th>
-                <th className="px-5 py-3 text-right text-[10px] font-mono text-brand-muted uppercase tracking-widest" />
+                <th className="px-5 py-3 text-left text-[10px] font-body text-brand-muted uppercase tracking-widest">Time</th>
+                <th className="px-5 py-3 text-left text-[10px] font-body text-brand-muted uppercase tracking-widest">Tool</th>
+                <th className="px-5 py-3 text-left text-[10px] font-body text-brand-muted uppercase tracking-widest">Decision</th>
+                <th className="px-5 py-3 text-left text-[10px] font-body text-brand-muted uppercase tracking-widest">Status</th>
+                <th className="px-5 py-3 text-right text-[10px] font-body text-brand-muted uppercase tracking-widest" />
               </tr>
             </thead>
             <tbody className="divide-y divide-brand-border">

@@ -96,34 +96,34 @@ export function TransactionRow({ transaction: t, onCategoryUpdate, categories }:
   return (
     <tr className="border-b border-brand-border last:border-0 hover:bg-brand-bg transition-colors">
       {/* Date */}
-      <td className="px-5 py-3 text-xs font-mono text-brand-muted whitespace-nowrap">
+      <td className="px-5 py-3 text-xs font-body text-brand-muted whitespace-nowrap">
         {formatDate(t.date)}
       </td>
 
       {/* Account */}
       <td className="px-5 py-3 max-w-[140px]">
-        <span className="text-xs font-mono text-brand-secondary block truncate">
+        <span className="text-xs font-body text-brand-secondary block truncate">
           {t.account_name ?? '—'}
         </span>
-        <span className="text-[9px] font-mono text-brand-muted uppercase tracking-wider">
+        <span className="text-[9px] font-body text-brand-muted uppercase tracking-wider">
           {t.account_subtype ? `${t.account_subtype} · ` : ''}{t.institution_name ?? SOURCE_LABELS[t.source] ?? t.source.toUpperCase()}
         </span>
       </td>
 
       {/* Merchant */}
       <td className="px-5 py-3 max-w-[200px]">
-        <span className="text-xs font-mono text-brand-text block truncate">
+        <span className="text-xs font-body text-brand-text block truncate">
           {t.merchant_name ?? t.description ?? '—'}
         </span>
         {t.merchant_name && t.description && t.description !== t.merchant_name && (
-          <span className="text-[10px] font-mono text-brand-muted block truncate">{t.description}</span>
+          <span className="text-[10px] font-body text-brand-muted block truncate">{t.description}</span>
         )}
       </td>
 
       {/* Amount */}
       <td className="px-5 py-3 whitespace-nowrap">
         <span className={cn(
-          'text-xs font-mono font-medium',
+          'text-xs font-body font-medium',
           isDebit ? 'text-[#ff4d6d]' : 'text-[#00C853]',
         )}>
           {isDebit ? '−' : '+'}{convert(Math.abs(t.amount_minor), t.currency)}
@@ -134,12 +134,12 @@ export function TransactionRow({ transaction: t, onCategoryUpdate, categories }:
       <td ref={ref} className="px-5 py-3 relative">
         <div className="flex items-center gap-1.5">
           {saving ? (
-            <span className="text-[10px] font-mono text-brand-muted">saving…</span>
+            <span className="text-[10px] font-body text-brand-muted">saving…</span>
           ) : (
             <button
               onClick={() => setOpen(v => !v)}
               className={cn(
-                'text-[10px] font-mono px-2 py-1 rounded-sm border transition-all max-w-[140px] truncate text-left',
+                'text-[10px] font-body px-2 py-1 rounded-sm border transition-all max-w-[140px] truncate text-left',
                 activeCategory
                   ? 'bg-brand-elevated text-brand-secondary border-brand-border hover:text-brand-text hover:border-brand-border-subtle'
                   : 'bg-transparent text-brand-muted border-dashed border-brand-border hover:text-brand-secondary',
@@ -149,13 +149,13 @@ export function TransactionRow({ transaction: t, onCategoryUpdate, categories }:
             </button>
           )}
           {t.ai_category && !saving && (
-            <span className="text-[9px] font-mono text-brand-muted uppercase tracking-wider">AI</span>
+            <span className="text-[9px] font-body text-brand-muted uppercase tracking-wider">AI</span>
           )}
         </div>
 
         {open && (
           <div className="absolute left-4 top-full mt-1 z-30 w-52 bg-brand-elevated border border-brand-border rounded-sm shadow-lg overflow-hidden max-h-72 overflow-y-auto">
-            <p className="px-3 py-1.5 text-[9px] font-mono text-brand-muted uppercase tracking-widest border-b border-brand-border">
+            <p className="px-3 py-1.5 text-[9px] font-body text-brand-muted uppercase tracking-widest border-b border-brand-border">
               Income
             </p>
             {categories.income.map(cat => (
@@ -163,7 +163,7 @@ export function TransactionRow({ transaction: t, onCategoryUpdate, categories }:
                 key={cat}
                 onClick={() => selectCategory(cat)}
                 className={cn(
-                  'w-full text-left text-[10px] font-mono px-3 py-2 transition-colors',
+                  'w-full text-left text-[10px] font-body px-3 py-2 transition-colors',
                   cat === activeCategory
                     ? 'text-[#00C853] bg-brand-surface'
                     : 'text-brand-secondary hover:text-brand-text hover:bg-brand-surface',
@@ -172,7 +172,7 @@ export function TransactionRow({ transaction: t, onCategoryUpdate, categories }:
                 {formatCategory(cat)}
               </button>
             ))}
-            <p className="px-3 py-1.5 text-[9px] font-mono text-brand-muted uppercase tracking-widest border-y border-brand-border">
+            <p className="px-3 py-1.5 text-[9px] font-body text-brand-muted uppercase tracking-widest border-y border-brand-border">
               Expenses
             </p>
             {categories.expenses.map(cat => (
@@ -180,7 +180,7 @@ export function TransactionRow({ transaction: t, onCategoryUpdate, categories }:
                 key={cat}
                 onClick={() => selectCategory(cat)}
                 className={cn(
-                  'w-full text-left text-[10px] font-mono px-3 py-2 transition-colors',
+                  'w-full text-left text-[10px] font-body px-3 py-2 transition-colors',
                   cat === activeCategory
                     ? 'text-brand-text bg-brand-surface'
                     : 'text-brand-secondary hover:text-brand-text hover:bg-brand-surface',
@@ -194,15 +194,15 @@ export function TransactionRow({ transaction: t, onCategoryUpdate, categories }:
       </td>
 
       {/* Invoice match */}
-      <td className="px-5 py-3 text-xs font-mono text-brand-muted">
+      <td className="px-5 py-3 text-xs font-body text-brand-muted">
         {t.matched_invoice_id ? (
-          <span className="text-[10px] font-mono text-[#00C853]">matched</span>
+          <span className="text-[10px] font-body text-[#00C853]">matched</span>
         ) : '—'}
       </td>
 
       {/* Status */}
       <td className="px-5 py-3">
-        <span className={cn('text-[10px] font-mono px-2 py-1 rounded-sm border', statusStyle)}>
+        <span className={cn('text-[10px] font-body px-2 py-1 rounded-sm border', statusStyle)}>
           {t.status}
         </span>
       </td>

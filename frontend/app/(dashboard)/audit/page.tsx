@@ -24,7 +24,7 @@ export default async function AuditPage() {
         <div className="flex items-start justify-between gap-4">
           <div>
             <h1 className="font-heading font-bold text-2xl text-brand-text">Audit Trail</h1>
-            <p className="text-brand-muted text-xs font-mono mt-1">
+            <p className="text-brand-muted text-xs font-body mt-1">
               Immutable — append only. {entries.length} {entries.length === 1 ? 'entry' : 'entries'}.
             </p>
           </div>
@@ -32,7 +32,7 @@ export default async function AuditPage() {
       </AnimatedSection>
 
       <AnimatedSection>
-        <div className="bg-brand-surface border border-brand-border/50 rounded-sm px-4 py-2 text-xs font-mono text-brand-muted">
+        <div className="bg-brand-surface border border-brand-border/50 rounded-sm px-4 py-2 text-xs font-body text-brand-muted">
           â¬¡ This log is immutable. Records cannot be edited or deleted.
         </div>
       </AnimatedSection>

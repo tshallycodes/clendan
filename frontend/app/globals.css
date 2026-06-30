@@ -48,8 +48,8 @@
   --color-brand-warning: #f5a623;
 
   --font-heading: 'Sora', sans-serif;
-  --font-body:    'Geist Mono', monospace;
-  --font-mono:    var(--font-body);
+  --font-body:    'DM Sans', sans-serif;
+  --font-sans:    var(--font-body);
 
   /* Border radius scale — rounded across the app */
   --radius-xs:  4px;
@@ -88,7 +88,7 @@
 body {
   background-color: var(--brand-bg);
   color: var(--brand-text);
-  font-family: var(--font-body), 'Geist Mono', monospace;
+  font-family: var(--font-body), 'DM Sans', sans-serif;
 }
 
 h1, h2, h3, h4, h5, h6 {

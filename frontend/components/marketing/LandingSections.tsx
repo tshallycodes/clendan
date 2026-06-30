@@ -14,13 +14,13 @@ export function SocialProofStrip() {
   return (
     <div className="border-y border-brand-border bg-brand-surface overflow-hidden">
       <div className="py-5 flex items-center gap-6">
-        <span className="text-xs font-mono text-brand-muted shrink-0 pl-6 md:pl-8">
+        <span className="text-xs font-body text-brand-muted shrink-0 pl-6 md:pl-8">
           Trusted integrations with:
         </span>
         <div className="flex items-center overflow-hidden flex-1 min-w-0">
           <div className="flex items-center gap-10 shrink-0" style={{ animation: 'marquee 18s linear infinite' }}>
             {MARQUEE_ITEMS.map((name, i) => (
-              <span key={i} className="text-sm font-mono text-brand-muted shrink-0">
+              <span key={i} className="text-sm font-body text-brand-muted shrink-0">
                 {name}
               </span>
             ))}
@@ -54,8 +54,8 @@ export function ProblemStatement() {
               transition={{ duration: 0.15, ease: 'easeOut' }}
             >
               <span className="font-heading text-4xl font-bold" style={{ color: '#00C853' }}>{s.figure}</span>
-              <p className="text-sm font-mono text-brand-secondary leading-relaxed">{s.claim}</p>
-              <span className="text-xs font-mono text-brand-muted mt-auto">{s.source}</span>
+              <p className="text-sm font-body text-brand-secondary leading-relaxed">{s.claim}</p>
+              <span className="text-xs font-body text-brand-muted mt-auto">{s.source}</span>
             </motion.div>
           </StaggerItem>
         ))}
@@ -80,7 +80,7 @@ export function SolutionOverview() {
           <h2 className="font-heading text-xl font-bold text-brand-text mb-2 max-w-2xl">
             Deploy AI Tools. Connect Your Stack. Execute With a Full Audit Trail.
           </h2>
-          <p className="text-sm font-mono text-brand-muted mb-10">Infrastructure, not a dashboard.</p>
+          <p className="text-sm font-body text-brand-muted mb-10">Infrastructure, not a dashboard.</p>
         </FadeInUp>
         <StaggerContainer className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {SOLUTIONS.map(({ icon: Icon, title, desc }) => (
@@ -93,7 +93,7 @@ export function SolutionOverview() {
                 <Icon size={18} className="text-brand-secondary" />
                 <div>
                   <h3 className="font-heading text-sm font-semibold text-brand-text mb-1">{title}</h3>
-                  <p className="text-xs font-mono text-brand-muted leading-relaxed">{desc}</p>
+                  <p className="text-xs font-body text-brand-muted leading-relaxed">{desc}</p>
                 </div>
               </motion.div>
             </StaggerItem>
@@ -117,13 +117,13 @@ export function CTABanner() {
           <h2 className="font-heading text-3xl md:text-4xl font-bold text-brand-text">
             Ready to Automate Your Finance Stack?
           </h2>
-          <p className="text-sm font-mono text-brand-secondary max-w-sm">
+          <p className="text-sm font-body text-brand-secondary max-w-sm">
             Deploy your first AI tool in under 10 minutes.
           </p>
           <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }} transition={{ duration: 0.15 }}>
             <Link
               href="/sign-up"
-              className="rounded-sm px-6 py-3 text-sm font-mono font-medium transition-colors inline-block"
+              className="rounded-sm px-6 py-3 text-sm font-body font-medium transition-colors inline-block"
               style={{ background: '#00C853', color: '#000' }}
             >
               Request Early Access

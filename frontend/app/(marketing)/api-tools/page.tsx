@@ -20,7 +20,7 @@ function C({ children }: { children: React.ReactNode }) {
 function CodeBlock({ children }: { children: React.ReactNode }) {
   return (
     <pre
-      className="rounded-sm p-4 text-xs font-mono overflow-x-auto leading-relaxed"
+      className="rounded-sm p-4 text-xs font-body overflow-x-auto leading-relaxed"
       style={{ background: '#0a0a0a', border: '1px solid #1a2a1a' }}
     >
       {children}
@@ -227,7 +227,7 @@ function ApiSection({ endpoint, title, desc, useCases, curl, response }: ApiSect
         {/* Left: info */}
         <div>
           <span
-            className="inline-block font-mono text-xs px-3 py-1 rounded-sm mb-4"
+            className="inline-block font-body text-xs px-3 py-1 rounded-sm mb-4"
             style={{ background: 'rgba(245,166,35,0.08)', border: '1px solid rgba(245,166,35,0.2)', color: '#f5a623' }}
           >
             {endpoint}
@@ -238,10 +238,10 @@ function ApiSection({ endpoint, title, desc, useCases, curl, response }: ApiSect
           >
             {title}
           </h2>
-          <p className="font-mono text-sm text-brand-secondary mb-6 leading-relaxed">{desc}</p>
+          <p className="font-body text-sm text-brand-secondary mb-6 leading-relaxed">{desc}</p>
           <ul className="space-y-1.5">
             {useCases.map((u) => (
-              <li key={u} className="flex items-start gap-2 font-mono text-xs text-brand-secondary">
+              <li key={u} className="flex items-start gap-2 font-body text-xs text-brand-secondary">
                 <span className="text-brand-green mt-0.5">→</span>
                 {u}
               </li>
@@ -251,9 +251,9 @@ function ApiSection({ endpoint, title, desc, useCases, curl, response }: ApiSect
 
         {/* Right: code */}
         <div className="space-y-3">
-          <p className="font-mono text-[10px] uppercase tracking-widest text-brand-muted">Request</p>
+          <p className="font-body text-[10px] uppercase tracking-widest text-brand-muted">Request</p>
           <CodeBlock>{curl}</CodeBlock>
-          <p className="font-mono text-[10px] uppercase tracking-widest text-brand-muted pt-2">Response</p>
+          <p className="font-body text-[10px] uppercase tracking-widest text-brand-muted pt-2">Response</p>
           <CodeBlock>{response}</CodeBlock>
         </div>
       </div>
@@ -269,7 +269,7 @@ export default function ApiToolsPage() {
 
       {/* Hero */}
       <section className="max-w-6xl mx-auto px-6 md:px-8 pt-20 pb-8">
-        <p className="font-mono text-[10px] uppercase tracking-widest text-brand-muted mb-4">API Tools</p>
+        <p className="font-body text-[10px] uppercase tracking-widest text-brand-muted mb-4">API Tools</p>
         <h1
           className="text-4xl md:text-5xl font-heading font-extrabold leading-tight mb-4"
           style={{ fontFamily: 'var(--font-heading)' }}
@@ -277,7 +277,7 @@ export default function ApiToolsPage() {
           5 APIs. Plug Into<br />
           <span className="text-brand-green">Any Stack.</span>
         </h1>
-        <p className="font-mono text-sm text-brand-secondary max-w-xl">
+        <p className="font-body text-sm text-brand-secondary max-w-xl">
           Use them inside Clendan or call them directly. JSON in, JSON out.
         </p>
       </section>
@@ -295,14 +295,14 @@ export default function ApiToolsPage() {
       <section className="border-t border-brand-border bg-brand-surface">
         <div className="max-w-6xl mx-auto px-6 md:px-8 py-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div>
-            <p className="font-mono text-[10px] uppercase tracking-widest text-brand-muted mb-1">Pricing</p>
-            <p className="font-mono text-sm text-brand-secondary">
+            <p className="font-body text-[10px] uppercase tracking-widest text-brand-muted mb-1">Pricing</p>
+            <p className="font-body text-sm text-brand-secondary">
               Standalone API access included in Growth and Enterprise plans.
             </p>
           </div>
           <Link
             href="/pricing"
-            className="border border-brand-border text-brand-text hover:bg-brand-bg rounded-sm px-5 py-2.5 text-sm font-mono transition-colors whitespace-nowrap"
+            className="border border-brand-border text-brand-text hover:bg-brand-bg rounded-sm px-5 py-2.5 text-sm font-body transition-colors whitespace-nowrap"
           >
             View Pricing →
           </Link>
@@ -317,20 +317,20 @@ export default function ApiToolsPage() {
         >
           Start building with Clendan APIs
         </h2>
-        <p className="font-mono text-sm text-brand-secondary mb-8">
+        <p className="font-body text-sm text-brand-secondary mb-8">
           Full API docs, rate limits, and sandbox credentials in the developer portal.
         </p>
         <div className="flex items-center justify-center gap-3 flex-wrap">
           <Link
             href="/sign-up"
-            className="inline-block rounded-sm px-6 py-3 text-sm font-mono font-medium transition-colors hover:bg-[#00a844]"
+            className="inline-block rounded-sm px-6 py-3 text-sm font-body font-medium transition-colors hover:bg-[#00a844]"
             style={{ background: '#00C853', color: '#000' }}
           >
             Get API Access →
           </Link>
           <Link
             href="/docs"
-            className="inline-block border border-brand-border text-brand-text hover:bg-brand-surface rounded-sm px-6 py-3 text-sm font-mono transition-colors"
+            className="inline-block border border-brand-border text-brand-text hover:bg-brand-surface rounded-sm px-6 py-3 text-sm font-body transition-colors"
           >
             View Docs
           </Link>

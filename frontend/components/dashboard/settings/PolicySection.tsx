@@ -49,12 +49,12 @@ export function PolicySection() {
   if (tools.length === 0) {
     return (
       <div className="border border-brand-border rounded-sm px-4 py-6 text-center space-y-2">
-        <p className="text-xs font-mono text-brand-muted">
+        <p className="text-xs font-body text-brand-muted">
           No tools deployed yet. Deploy a tool from the Tools page to configure its policy.
         </p>
         <Link
           href="/tools"
-          className="text-[10px] font-mono text-brand-secondary hover:text-brand-text transition-colors"
+          className="text-[10px] font-body text-brand-secondary hover:text-brand-text transition-colors"
         >
           Go to Tools →
         </Link>
@@ -70,10 +70,10 @@ export function PolicySection() {
           return (
             <div key={tool.id} className="bg-brand-surface px-4 py-3 flex items-center gap-4">
               <div className="flex-1 flex items-center gap-2 min-w-0">
-                <span className="text-xs font-mono text-brand-text font-medium truncate">
+                <span className="text-xs font-body text-brand-text font-medium truncate">
                   {formatType(tool.type)}
                 </span>
-                <span className={`text-[10px] font-mono px-2 py-0.5 rounded-sm ${AUTONOMY_BADGE[tool.autonomy_level]}`}>
+                <span className={`text-[10px] font-body px-2 py-0.5 rounded-sm ${AUTONOMY_BADGE[tool.autonomy_level]}`}>
                   {tool.autonomy_level}
                 </span>
               </div>
@@ -88,7 +88,7 @@ export function PolicySection() {
                   ) : (
                     <span className="h-2 w-2 rounded-full bg-brand-muted" />
                   )}
-                  <span className={`text-[10px] font-mono ${isActive ? 'text-[#00C853]' : 'text-brand-muted'}`}>
+                  <span className={`text-[10px] font-body ${isActive ? 'text-[#00C853]' : 'text-brand-muted'}`}>
                     {isActive ? 'Active' : 'Inactive'}
                   </span>
                 </div>
@@ -97,7 +97,7 @@ export function PolicySection() {
                   <button
                     type="button"
                     onClick={() => setActiveTool(tool)}
-                    className="text-xs font-mono border border-brand-border text-brand-text hover:bg-brand-bg rounded-sm px-2.5 py-1 transition-colors"
+                    className="text-xs font-body border border-brand-border text-brand-text hover:bg-brand-bg rounded-sm px-2.5 py-1 transition-colors"
                   >
                     Configure
                   </button>

@@ -61,12 +61,12 @@ export function InviteForm({ onInvited }: Props) {
         value={email}
         onChange={(e) => setEmail(e.target.value)}
         placeholder="colleague@company.com"
-        className="flex-1 min-w-[200px] bg-brand-bg border border-brand-border focus:border-brand-green text-brand-text placeholder:text-brand-muted rounded-sm px-3 py-2 text-xs font-mono outline-none transition-colors"
+        className="flex-1 min-w-[200px] bg-brand-bg border border-brand-border focus:border-brand-green text-brand-text placeholder:text-brand-muted rounded-sm px-3 py-2 text-xs font-body outline-none transition-colors"
       />
       <select
         value={role}
         onChange={(e) => setRole(e.target.value as InviteRole)}
-        className="bg-brand-bg border border-brand-border focus:border-brand-green text-brand-text rounded-sm px-3 py-2 text-xs font-mono outline-none transition-colors"
+        className="bg-brand-bg border border-brand-border focus:border-brand-green text-brand-text rounded-sm px-3 py-2 text-xs font-body outline-none transition-colors"
       >
         {INVITE_ROLES.map((r) => (
           <option key={r} value={r}>{ROLE_LABEL[r]}</option>
@@ -75,13 +75,13 @@ export function InviteForm({ onInvited }: Props) {
       <button
         type="submit"
         disabled={sending || !email.trim()}
-        className="bg-brand-green text-black hover:bg-[#00a844] active:scale-[0.97] rounded-sm px-4 py-2 text-xs font-mono font-medium transition-all disabled:opacity-40 flex items-center gap-2"
+        className="bg-brand-green text-black hover:bg-[#00a844] active:scale-[0.97] rounded-sm px-4 py-2 text-xs font-body font-medium transition-all disabled:opacity-40 flex items-center gap-2"
       >
         {success ? (
           <><Check className="w-3.5 h-3.5" /> Sent</>
         ) : sending ? 'Sending…' : 'Send invite'}
       </button>
-      {error && <p className="w-full text-[10px] font-mono text-brand-danger">{error}</p>}
+      {error && <p className="w-full text-[10px] font-body text-brand-danger">{error}</p>}
     </form>
   )
 }

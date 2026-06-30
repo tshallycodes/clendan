@@ -160,10 +160,10 @@ export function IntegrationsSection() {
   if (connected.length === 0) {
     return (
       <div className="border border-brand-border rounded-sm px-4 py-6 text-center space-y-2">
-        <p className="text-xs font-mono text-brand-muted">No integrations connected</p>
+        <p className="text-xs font-body text-brand-muted">No integrations connected</p>
         <Link
           href="/dashboard/integrations"
-          className="text-[10px] font-mono text-brand-secondary hover:text-brand-text transition-colors"
+          className="text-[10px] font-body text-brand-secondary hover:text-brand-text transition-colors"
         >
           Connect integrations →
         </Link>
@@ -182,12 +182,12 @@ export function IntegrationsSection() {
           <div key={slug} className="bg-brand-surface px-4 py-4 flex items-start gap-4">
             <div className="flex-1 min-w-0 space-y-1.5">
               <div className="flex items-center gap-3">
-                <span className="text-xs font-mono text-brand-text font-medium">{displayName}</span>
+                <span className="text-xs font-body text-brand-text font-medium">{displayName}</span>
                 {providerLabel && (
-                  <span className="text-[10px] font-mono text-brand-muted">via {providerLabel}</span>
+                  <span className="text-[10px] font-body text-brand-muted">via {providerLabel}</span>
                 )}
                 <span className={[
-                  'text-[10px] font-mono px-2 py-0.5 rounded-sm border',
+                  'text-[10px] font-body px-2 py-0.5 rounded-sm border',
                   isSyncing
                     ? 'text-[#00a8cc] border-[#00a8cc]/30 bg-[rgba(0,168,204,0.08)]'
                     : 'text-brand-green border-brand-green/30 bg-[rgba(0,200,83,0.08)]',
@@ -196,10 +196,10 @@ export function IntegrationsSection() {
                 </span>
               </div>
               {meta.desc && (
-                <p className="text-[10px] font-mono text-brand-muted">{meta.desc}</p>
+                <p className="text-[10px] font-body text-brand-muted">{meta.desc}</p>
               )}
               {connected_at && (
-                <p className="text-[10px] font-mono text-brand-muted">
+                <p className="text-[10px] font-body text-brand-muted">
                   Connected {new Date(connected_at).toLocaleDateString('en-GB')}
                   {last_synced_at
                     ? ` · Last sync ${new Date(last_synced_at).toLocaleDateString('en-GB')}`
@@ -214,13 +214,13 @@ export function IntegrationsSection() {
                   <button
                     onClick={() => disconnect(slug)}
                     disabled={disconnecting === slug}
-                    className="text-[10px] font-mono text-[#ff4d6d] border border-[#ff4d6d]/30 bg-[rgba(255,77,109,0.08)] hover:bg-[rgba(255,77,109,0.15)] rounded-sm px-2 py-1 transition-colors disabled:opacity-50"
+                    className="text-[10px] font-body text-[#ff4d6d] border border-[#ff4d6d]/30 bg-[rgba(255,77,109,0.08)] hover:bg-[rgba(255,77,109,0.15)] rounded-sm px-2 py-1 transition-colors disabled:opacity-50"
                   >
                     {disconnecting === slug ? 'Disconnecting…' : 'Confirm'}
                   </button>
                   <button
                     onClick={() => setConfirmSlug(null)}
-                    className="text-[10px] font-mono text-brand-muted hover:text-brand-text transition-colors"
+                    className="text-[10px] font-body text-brand-muted hover:text-brand-text transition-colors"
                   >
                     Cancel
                   </button>
@@ -229,7 +229,7 @@ export function IntegrationsSection() {
                 <button
                   onClick={() => setConfirmSlug(slug)}
                   disabled={!!disconnecting}
-                  className="text-[10px] font-mono text-[#ff4d6d] border border-[#ff4d6d]/30 bg-[rgba(255,77,109,0.08)] hover:bg-[rgba(255,77,109,0.15)] rounded-sm px-2 py-1 transition-colors disabled:opacity-50"
+                  className="text-[10px] font-body text-[#ff4d6d] border border-[#ff4d6d]/30 bg-[rgba(255,77,109,0.08)] hover:bg-[rgba(255,77,109,0.15)] rounded-sm px-2 py-1 transition-colors disabled:opacity-50"
                 >
                   Disconnect
                 </button>
@@ -242,7 +242,7 @@ export function IntegrationsSection() {
       <div className="bg-brand-surface px-4 py-3 flex items-center justify-between">
         <Link
           href="/dashboard/integrations"
-          className="text-[10px] font-mono text-brand-muted hover:text-brand-text transition-colors"
+          className="text-[10px] font-body text-brand-muted hover:text-brand-text transition-colors"
         >
           Manage all integrations →
         </Link>
@@ -251,7 +251,7 @@ export function IntegrationsSection() {
             <button
               onClick={resetSyncing}
               disabled={resettingSync}
-              className="text-[10px] font-mono text-[#f5a623] border border-[#f5a623]/30 bg-[rgba(245,166,35,0.08)] hover:bg-[rgba(245,166,35,0.12)] rounded-sm px-2 py-1 transition-colors disabled:opacity-50"
+              className="text-[10px] font-body text-[#f5a623] border border-[#f5a623]/30 bg-[rgba(245,166,35,0.08)] hover:bg-[rgba(245,166,35,0.12)] rounded-sm px-2 py-1 transition-colors disabled:opacity-50"
             >
               {resettingSync ? 'Resetting…' : 'Reset Syncing'}
             </button>
@@ -259,7 +259,7 @@ export function IntegrationsSection() {
           <button
             onClick={resyncAll}
             disabled={resyncing}
-            className="text-[10px] font-mono text-brand-secondary border border-brand-border bg-transparent hover:bg-brand-bg rounded-sm px-2 py-1 transition-colors disabled:opacity-50"
+            className="text-[10px] font-body text-brand-secondary border border-brand-border bg-transparent hover:bg-brand-bg rounded-sm px-2 py-1 transition-colors disabled:opacity-50"
           >
             {resyncing ? 'Syncing…' : 'Resync All'}
           </button>

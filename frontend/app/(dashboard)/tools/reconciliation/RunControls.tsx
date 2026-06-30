@@ -25,14 +25,14 @@ export function RunControls({
     <div className="bg-brand-surface border border-brand-border rounded-sm p-4">
       <div className="flex flex-wrap gap-3 items-end">
         <div className="flex flex-col gap-1">
-          <label className="text-[10px] font-mono uppercase tracking-widest text-brand-muted">
+          <label className="text-[10px] font-body uppercase tracking-widest text-brand-muted">
             Period Start
           </label>
           <DatePicker value={periodStart} onChange={onPeriodStartChange} />
         </div>
 
         <div className="flex flex-col gap-1">
-          <label className="text-[10px] font-mono uppercase tracking-widest text-brand-muted">
+          <label className="text-[10px] font-body uppercase tracking-widest text-brand-muted">
             Period End
           </label>
           <DatePicker value={periodEnd} onChange={onPeriodEndChange} />
@@ -43,7 +43,7 @@ export function RunControls({
             type="button"
             onClick={onRun}
             disabled={running}
-            className="flex items-center gap-2 bg-[#00C853] text-black text-xs font-mono px-4 py-2 rounded-sm hover:bg-[#00a844] active:scale-[0.97] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex items-center gap-2 bg-[#00C853] text-black text-xs font-body px-4 py-2 rounded-sm hover:bg-[#00a844] active:scale-[0.97] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {running && (
               <svg className="w-3 h-3 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">

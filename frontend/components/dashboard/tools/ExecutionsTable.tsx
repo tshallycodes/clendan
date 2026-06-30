@@ -26,18 +26,18 @@ export function ExecutionsTable({ executions }: Props) {
   if (executions.length === 0) {
     return (
       <div className="border border-brand-border rounded-sm p-8 text-center">
-        <p className="text-xs font-mono text-[#4a6a4a]">No executions yet. Use Run test to trigger this tool.</p>
+        <p className="text-xs font-body text-[#4a6a4a]">No executions yet. Use Run test to trigger this tool.</p>
       </div>
     )
   }
 
   return (
     <div className="border border-brand-border rounded-sm overflow-hidden">
-      <table className="w-full text-xs font-mono">
+      <table className="w-full text-xs font-body">
         <thead>
           <tr className="border-b border-brand-border">
             {['Time', 'Decision', 'Confidence', 'Duration', 'Status'].map((h) => (
-              <th key={h} className="text-left text-[10px] font-mono text-[#4a6a4a] px-3 py-2 uppercase tracking-wide">{h}</th>
+              <th key={h} className="text-left text-[10px] font-body text-[#4a6a4a] px-3 py-2 uppercase tracking-wide">{h}</th>
             ))}
           </tr>
         </thead>

@@ -66,11 +66,11 @@ function ToastItem({ item, onDismiss }: { item: ToastItem; onDismiss: (id: strin
       style={accent ? { borderColor: `${accent}33` } : undefined}
     >
       {accent && (
-        <span className="mt-0.5 shrink-0 text-xs font-mono font-bold leading-none" style={{ color: accent }}>
+        <span className="mt-0.5 shrink-0 text-xs font-body font-bold leading-none" style={{ color: accent }}>
           {item.type === 'error' ? '✕' : '✓'}
         </span>
       )}
-      <p className="text-xs font-mono text-brand-text leading-relaxed flex-1">{item.message}</p>
+      <p className="text-xs font-body text-brand-text leading-relaxed flex-1">{item.message}</p>
       <button
         onClick={() => onDismiss(item.id)}
         className="shrink-0 text-brand-muted hover:text-brand-text transition-colors text-xs leading-none mt-0.5"

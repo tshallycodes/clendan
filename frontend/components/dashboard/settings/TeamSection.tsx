@@ -70,20 +70,20 @@ export function TeamSection() {
   }
 
   if (members.length === 0) {
-    return <p className="text-xs font-mono text-brand-muted">No members found.</p>
+    return <p className="text-xs font-body text-brand-muted">No members found.</p>
   }
 
   return (
     <div className="divide-y divide-brand-border border border-brand-border rounded-sm overflow-hidden">
       {members.map((m) => (
         <div key={m.id} className="bg-brand-surface px-4 py-3 flex items-center gap-3">
-          <span className="w-32 shrink-0 text-xs font-mono text-brand-text truncate">
+          <span className="w-32 shrink-0 text-xs font-body text-brand-text truncate">
             {m.email ? nameFromEmail(m.email) : <span className="text-brand-muted">—</span>}
           </span>
-          <span className="flex-1 text-xs font-mono text-brand-muted truncate">
+          <span className="flex-1 text-xs font-body text-brand-muted truncate">
             {m.email || <span className="text-brand-muted italic">no email</span>}
           </span>
-          <span className={`shrink-0 text-[10px] font-mono px-2 py-0.5 rounded-sm border ${ROLE_COLORS[m.role.toLowerCase()] ?? ROLE_COLORS.member}`}>
+          <span className={`shrink-0 text-[10px] font-body px-2 py-0.5 rounded-sm border ${ROLE_COLORS[m.role.toLowerCase()] ?? ROLE_COLORS.member}`}>
             {capitalize(m.role)}
           </span>
         </div>

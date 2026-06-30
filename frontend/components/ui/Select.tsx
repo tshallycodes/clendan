@@ -38,7 +38,7 @@ export function Select({ value, options, onChange, placeholder, className }: Sel
       <button
         type="button"
         onClick={() => setOpen(prev => !prev)}
-        className={`w-full flex items-center justify-between bg-brand-bg border rounded-sm px-3 py-2 text-xs font-mono text-brand-text outline-none transition-colors ${open ? 'border-[#00C853]' : 'border-brand-border'}`}
+        className={`w-full flex items-center justify-between bg-brand-bg border rounded-sm px-3 py-2 text-xs font-body text-brand-text outline-none transition-colors ${open ? 'border-[#00C853]' : 'border-brand-border'}`}
       >
         <span className={selected ? 'text-brand-text' : 'text-brand-muted'}>{displayLabel}</span>
         <CaretDown
@@ -57,7 +57,7 @@ export function Select({ value, options, onChange, placeholder, className }: Sel
                 onChange(opt.value)
                 setOpen(false)
               }}
-              className={`w-full text-left px-3 py-2 text-xs font-mono transition-colors ${opt.value === value ? 'bg-brand-surface text-brand-text font-medium' : 'text-brand-secondary hover:bg-brand-surface hover:text-brand-text'}`}
+              className={`w-full text-left px-3 py-2 text-xs font-body transition-colors ${opt.value === value ? 'bg-brand-surface text-brand-text font-medium' : 'text-brand-secondary hover:bg-brand-surface hover:text-brand-text'}`}
             >
               {opt.label}
             </button>

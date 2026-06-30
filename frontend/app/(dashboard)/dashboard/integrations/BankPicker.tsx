@@ -49,7 +49,7 @@ function BankCard({ bank, syncError, onViewDetail }: { bank: BankDef; syncError?
         >
           {useFallback ? (
             <span
-              className={`${abbrSize(bank.abbr)} font-mono font-bold leading-none`}
+              className={`${abbrSize(bank.abbr)} font-body font-bold leading-none`}
               style={{ color: bank.color }}
             >
               {bank.abbr}
@@ -71,7 +71,7 @@ function BankCard({ bank, syncError, onViewDetail }: { bank: BankDef; syncError?
           style={{ background: syncError ? '#ff4d6d' : '#00C853' }}
         />
       </div>
-      <span className="text-[10px] font-mono text-brand-muted text-center leading-tight max-w-[64px] truncate">
+      <span className="text-[10px] font-body text-brand-muted text-center leading-tight max-w-[64px] truncate">
         {bank.name}
       </span>
     </button>
@@ -170,7 +170,7 @@ export function BankPicker({
             key={r.value}
             onClick={() => setRegion(r.value)}
             className={[
-              'px-3 py-1 text-[10px] font-mono uppercase tracking-widest rounded-sm transition-colors',
+              'px-3 py-1 text-[10px] font-body uppercase tracking-widest rounded-sm transition-colors',
               region === r.value
                 ? 'bg-brand-surface border border-brand-border text-brand-text'
                 : 'text-brand-muted hover:text-brand-secondary',
@@ -209,7 +209,7 @@ export function BankPicker({
           <button
             onClick={() => onConnect(region)}
             disabled={connecting}
-            className="px-6 py-2 text-xs font-mono text-black bg-[#00C853] rounded-sm hover:bg-[#00a844] active:scale-[0.97] transition-all disabled:opacity-40"
+            className="px-6 py-2 text-xs font-body text-black bg-[#00C853] rounded-sm hover:bg-[#00a844] active:scale-[0.97] transition-all disabled:opacity-40"
           >
             {connecting ? 'Connecting...' : 'Connect'}
           </button>

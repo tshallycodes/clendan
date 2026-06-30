@@ -37,7 +37,7 @@ export function MonthPicker({ value, onChange }: { value: string; onChange: (v: 
       <button
         type="button"
         onClick={() => setOpen(p => !p)}
-        className="flex items-center gap-2 bg-brand-bg border border-brand-border hover:border-[#00C853] text-brand-text text-xs font-mono rounded-sm px-3 py-2 outline-none transition-colors"
+        className="flex items-center gap-2 bg-brand-bg border border-brand-border hover:border-[#00C853] text-brand-text text-xs font-body rounded-sm px-3 py-2 outline-none transition-colors"
       >
         {displayLabel}
         <svg
@@ -62,15 +62,15 @@ export function MonthPicker({ value, onChange }: { value: string; onChange: (v: 
               <button
                 type="button"
                 onClick={() => setViewYear(y => y - 1)}
-                className="text-brand-muted hover:text-brand-text text-sm font-mono px-1 transition-colors"
+                className="text-brand-muted hover:text-brand-text text-sm font-body px-1 transition-colors"
               >
                 ‹
               </button>
-              <span className="text-xs font-mono text-brand-text">{viewYear}</span>
+              <span className="text-xs font-body text-brand-text">{viewYear}</span>
               <button
                 type="button"
                 onClick={() => setViewYear(y => y + 1)}
-                className="text-brand-muted hover:text-brand-text text-sm font-mono px-1 transition-colors"
+                className="text-brand-muted hover:text-brand-text text-sm font-body px-1 transition-colors"
               >
                 ›
               </button>
@@ -85,7 +85,7 @@ export function MonthPicker({ value, onChange }: { value: string; onChange: (v: 
                     key={m}
                     type="button"
                     onClick={() => select(i)}
-                    className={`text-[11px] font-mono rounded-sm px-2 py-1.5 transition-colors ${
+                    className={`text-[11px] font-body rounded-sm px-2 py-1.5 transition-colors ${
                       isActive
                         ? 'bg-[#00C853] text-black'
                         : 'text-brand-text hover:bg-brand-bg'
@@ -102,7 +102,7 @@ export function MonthPicker({ value, onChange }: { value: string; onChange: (v: 
               <button
                 type="button"
                 onClick={() => { onChange(''); setOpen(false) }}
-                className="text-[10px] font-mono text-brand-muted hover:text-brand-text transition-colors"
+                className="text-[10px] font-body text-brand-muted hover:text-brand-text transition-colors"
               >
                 Clear
               </button>
@@ -113,7 +113,7 @@ export function MonthPicker({ value, onChange }: { value: string; onChange: (v: 
                   onChange(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`)
                   setOpen(false)
                 }}
-                className="text-[10px] font-mono text-[#00C853] hover:text-[#00a844] transition-colors"
+                className="text-[10px] font-body text-[#00C853] hover:text-[#00a844] transition-colors"
               >
                 This month
               </button>

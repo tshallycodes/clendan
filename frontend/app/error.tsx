@@ -22,19 +22,19 @@ export default function Error({
         Something went wrong.
       </p>
 
-      <p className="font-mono text-sm text-brand-muted mb-8">
+      <p className="font-body text-sm text-brand-muted mb-8">
         Our team has been notified automatically.
       </p>
 
       <button
         onClick={reset}
-        className="rounded-sm px-6 py-3 text-sm font-mono font-medium mb-6 transition-colors hover:bg-[#00a844]"
+        className="rounded-sm px-6 py-3 text-sm font-body font-medium mb-6 transition-colors hover:bg-[#00a844]"
         style={{ background: '#00C853', color: '#000' }}
       >
         Try again
       </button>
 
-      <p className="font-mono text-xs text-brand-muted">
+      <p className="font-body text-xs text-brand-muted">
         If this keeps happening, contact{' '}
         <a
           href="mailto:support@clendan.com"
@@ -45,7 +45,7 @@ export default function Error({
       </p>
 
       {error.digest && (
-        <p className="font-mono text-[10px] text-brand-muted mt-4">
+        <p className="font-body text-[10px] text-brand-muted mt-4">
           Digest: {error.digest}
         </p>
       )}

@@ -66,7 +66,7 @@ export default function BlogPage() {
     <div className="bg-brand-bg text-brand-text">
       {/* Hero */}
       <section className="max-w-6xl mx-auto px-6 md:px-8 pt-20 pb-14">
-        <p className="font-mono text-[10px] uppercase tracking-widest text-brand-muted mb-4">
+        <p className="font-body text-[10px] uppercase tracking-widest text-brand-muted mb-4">
           Blog
         </p>
         <h1
@@ -75,7 +75,7 @@ export default function BlogPage() {
         >
           Finance Automation Insights
         </h1>
-        <p className="font-mono text-sm text-brand-secondary max-w-xl">
+        <p className="font-body text-sm text-brand-secondary max-w-xl">
           Practical guides, product updates, and research for finance teams.
         </p>
       </section>
@@ -90,7 +90,7 @@ export default function BlogPage() {
             >
               <div className="flex items-center justify-between">
                 <span
-                  className="text-[10px] font-mono uppercase tracking-widest px-2 py-0.5 rounded-sm"
+                  className="text-[10px] font-body uppercase tracking-widest px-2 py-0.5 rounded-sm"
                   style={{
                     background: CATEGORY_COLORS[post.category],
                     color: CATEGORY_TEXT[post.category],
@@ -99,7 +99,7 @@ export default function BlogPage() {
                 >
                   {post.category}
                 </span>
-                <span className="text-[10px] font-mono text-brand-muted">{post.readTime}</span>
+                <span className="text-[10px] font-body text-brand-muted">{post.readTime}</span>
               </div>
 
               <div className="flex flex-col gap-2 flex-1">
@@ -109,18 +109,18 @@ export default function BlogPage() {
                 >
                   {post.title}
                 </h2>
-                <p className="font-mono text-xs text-brand-secondary leading-relaxed">
+                <p className="font-body text-xs text-brand-secondary leading-relaxed">
                   {post.excerpt}
                 </p>
               </div>
 
               <div className="flex items-center justify-between pt-2 border-t border-brand-border">
-                <span className="text-[10px] font-mono text-brand-muted">
+                <span className="text-[10px] font-body text-brand-muted">
                   {formatDate(post.date)}
                 </span>
                 <Link
                   href={`/blog/${post.slug}`}
-                  className="text-xs font-mono text-brand-green hover:text-brand-text transition-colors"
+                  className="text-xs font-body text-brand-green hover:text-brand-text transition-colors"
                 >
                   Read more →
                 </Link>

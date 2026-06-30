@@ -18,7 +18,7 @@ export function AuditFilters({
   onDateToChange,
 }: Props) {
   const inputClass =
-    'bg-brand-bg border border-brand-border focus:border-brand-green rounded-sm px-3 py-2 text-xs font-mono text-brand-text placeholder:text-brand-muted outline-none transition-colors'
+    'bg-brand-bg border border-brand-border focus:border-brand-green rounded-sm px-3 py-2 text-xs font-body text-brand-text placeholder:text-brand-muted outline-none transition-colors'
 
   return (
     <div className="flex flex-col sm:flex-row gap-2">

@@ -70,7 +70,7 @@ export function CurrencySelector() {
         <button
           onClick={() => setOpen((v) => !v)}
           disabled={saving}
-          className="w-full flex items-center justify-between gap-3 bg-brand-bg border border-brand-border rounded-sm px-3 py-2 text-xs font-mono text-brand-text hover:bg-brand-bg transition-colors disabled:opacity-50"
+          className="w-full flex items-center justify-between gap-3 bg-brand-bg border border-brand-border rounded-sm px-3 py-2 text-xs font-body text-brand-text hover:bg-brand-bg transition-colors disabled:opacity-50"
         >
           <span className="flex items-center gap-2 min-w-0">
             <span className="text-brand-muted shrink-0">{selected.symbol}</span>
@@ -102,7 +102,7 @@ export function CurrencySelector() {
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Search currencies..."
-                  className="w-full bg-brand-bg border border-brand-border rounded-sm px-3 py-1.5 text-xs font-mono text-brand-text placeholder:text-brand-muted focus:border-[#00C853] focus:outline-none"
+                  className="w-full bg-brand-bg border border-brand-border rounded-sm px-3 py-1.5 text-xs font-body text-brand-text placeholder:text-brand-muted focus:border-[#00C853] focus:outline-none"
                 />
               </div>
 
@@ -110,7 +110,7 @@ export function CurrencySelector() {
               <div className="max-h-64 overflow-y-auto">
                 {normalised ? (
                   filtered.length === 0 ? (
-                    <p className="px-3 py-4 text-xs font-mono text-brand-muted text-center">No results for &ldquo;{search}&rdquo;</p>
+                    <p className="px-3 py-4 text-xs font-body text-brand-muted text-center">No results for &ldquo;{search}&rdquo;</p>
                   ) : (
                     filtered.map((c) => (
                       <CurrencyOption key={c.code} currency={c} selected={c.code === currency} onSelect={handleSelect} />
@@ -122,7 +122,7 @@ export function CurrencySelector() {
                     if (!group?.length) return null
                     return (
                       <div key={region}>
-                        <p className="px-3 pt-3 pb-1 text-[10px] font-mono uppercase tracking-widest text-brand-muted">
+                        <p className="px-3 pt-3 pb-1 text-[10px] font-body uppercase tracking-widest text-brand-muted">
                           {region}
                         </p>
                         {group.map((c) => (
@@ -145,7 +145,7 @@ export function CurrencySelector() {
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            className="text-[10px] font-mono text-[#f5a623] leading-relaxed"
+            className="text-[10px] font-body text-[#f5a623] leading-relaxed"
           >
             ⚠ {staleMessage}
           </motion.p>
@@ -167,7 +167,7 @@ function CurrencyOption({
   return (
     <button
       onClick={() => onSelect(currency.code)}
-      className={`w-full flex items-center gap-3 px-3 py-2 text-left text-xs font-mono transition-colors ${
+      className={`w-full flex items-center gap-3 px-3 py-2 text-left text-xs font-body transition-colors ${
         selected
           ? 'bg-[rgba(0,200,83,0.08)] text-[#00C853]'
           : 'text-brand-text hover:bg-brand-surface'

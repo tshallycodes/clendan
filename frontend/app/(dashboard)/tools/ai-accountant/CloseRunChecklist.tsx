@@ -42,7 +42,7 @@ export function CloseRunChecklist({ tasks, onCompleteTask, completingTask, runCl
   return (
     <div className="bg-brand-surface border border-brand-border rounded-sm overflow-hidden">
       <div className="px-4 py-3 border-b border-brand-border">
-        <p className="text-[10px] font-mono uppercase tracking-widest text-brand-muted">Checklist</p>
+        <p className="text-[10px] font-body uppercase tracking-widest text-brand-muted">Checklist</p>
       </div>
       <div className="divide-y divide-brand-border">
         {tasks.map((task) => {
@@ -54,24 +54,24 @@ export function CloseRunChecklist({ tasks, onCompleteTask, completingTask, runCl
           return (
             <div key={task.task_key} className="px-4 py-3 flex items-center justify-between gap-4">
               <div className="flex items-center gap-3 min-w-0">
-                <span className={`text-sm font-mono shrink-0 ${cls}`}>{icon}</span>
+                <span className={`text-sm font-body shrink-0 ${cls}`}>{icon}</span>
                 <div className="min-w-0">
-                  <p className="text-xs font-mono text-brand-text truncate">{task.label}</p>
-                  <p className="text-[10px] font-mono text-brand-muted mt-0.5 leading-relaxed">
+                  <p className="text-xs font-body text-brand-text truncate">{task.label}</p>
+                  <p className="text-[10px] font-body text-brand-muted mt-0.5 leading-relaxed">
                     {TASK_DESCRIPTIONS[task.task_key]}
                   </p>
                   {task.completed_by && (
-                    <p className="text-[10px] font-mono text-brand-muted mt-0.5">
+                    <p className="text-[10px] font-body text-brand-muted mt-0.5">
                       by {task.completed_by}
                     </p>
                   )}
                   {task.notes && (
-                    <p className="text-[10px] font-mono text-brand-muted mt-0.5 truncate">{task.notes}</p>
+                    <p className="text-[10px] font-body text-brand-muted mt-0.5 truncate">{task.notes}</p>
                   )}
                 </div>
               </div>
               <div className="flex items-center gap-2 shrink-0">
-                <span className={`text-[10px] font-mono px-2 py-0.5 rounded-sm ${STATUS_BADGE_CLS[task.status] ?? ''}`}>
+                <span className={`text-[10px] font-body px-2 py-0.5 rounded-sm ${STATUS_BADGE_CLS[task.status] ?? ''}`}>
                   {task.status}
                 </span>
                 {canComplete && (
@@ -79,7 +79,7 @@ export function CloseRunChecklist({ tasks, onCompleteTask, completingTask, runCl
                     type="button"
                     onClick={() => onCompleteTask(task.task_key)}
                     disabled={isCompleting}
-                    className="text-[10px] font-mono border border-brand-border text-brand-text hover:bg-brand-bg rounded-sm px-2 py-0.5 transition-colors disabled:opacity-40"
+                    className="text-[10px] font-body border border-brand-border text-brand-text hover:bg-brand-bg rounded-sm px-2 py-0.5 transition-colors disabled:opacity-40"
                   >
                     {isCompleting ? 'Saving…' : 'Mark Complete'}
                   </button>

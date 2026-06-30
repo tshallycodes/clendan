@@ -158,7 +158,7 @@ export function IntegrationDetailDrawer({ slug, intg, status, lastSyncedAt, onCl
                   {/* Account summary */}
                   {summary && (
                     <section>
-                      <p className="text-[10px] font-mono uppercase tracking-widest text-brand-muted mb-3">Account Summary</p>
+                      <p className="text-[10px] font-body uppercase tracking-widest text-brand-muted mb-3">Account Summary</p>
                       <div className="grid grid-cols-2 gap-2">
                         {/* FreshBooks-style: rich accounting summary with amounts */}
                         {summary.total_invoices !== undefined && (
@@ -241,15 +241,15 @@ export function IntegrationDetailDrawer({ slug, intg, status, lastSyncedAt, onCl
 
                   {/* Sync status */}
                   <section>
-                    <p className="text-[10px] font-mono uppercase tracking-widest text-brand-muted mb-3">Sync Status</p>
+                    <p className="text-[10px] font-body uppercase tracking-widest text-brand-muted mb-3">Sync Status</p>
                     <div className="bg-brand-bg border border-brand-border rounded-sm divide-y divide-brand-border">
                       <div className="flex items-center justify-between px-4 py-2.5">
-                        <span className="text-[10px] font-mono text-brand-muted">Last sync</span>
-                        <span className="text-xs font-mono text-brand-text">{lastSyncDisplay}</span>
+                        <span className="text-[10px] font-body text-brand-muted">Last sync</span>
+                        <span className="text-xs font-body text-brand-text">{lastSyncDisplay}</span>
                       </div>
                       <div className="flex items-center justify-between px-4 py-2.5">
-                        <span className="text-[10px] font-mono text-brand-muted">Health</span>
-                        <span className="text-[10px] font-mono uppercase tracking-wider text-[#00C853]">OK</span>
+                        <span className="text-[10px] font-body text-brand-muted">Health</span>
+                        <span className="text-[10px] font-body uppercase tracking-wider text-[#00C853]">OK</span>
                       </div>
                     </div>
                   </section>
@@ -257,17 +257,17 @@ export function IntegrationDetailDrawer({ slug, intg, status, lastSyncedAt, onCl
                   {/* Recent syncs */}
                   {(logsLoading || logs.length > 0) && (
                     <section>
-                      <p className="text-[10px] font-mono uppercase tracking-widest text-brand-muted mb-3">Recent Syncs</p>
+                      <p className="text-[10px] font-body uppercase tracking-widest text-brand-muted mb-3">Recent Syncs</p>
                       {logsLoading ? (
                         <div className="space-y-1">{[1, 2, 3].map((i) => <div key={i} className="h-10 bg-brand-bg border border-brand-border rounded-sm animate-pulse" />)}</div>
                       ) : (
                         <div className="space-y-1">
                           {logs.map((entry) => (
                             <div key={entry.id} className="bg-brand-bg border border-brand-border rounded-sm px-4 py-2.5 flex items-center justify-between gap-4">
-                              <span className="text-xs font-mono text-brand-text truncate">{entry.entity_type}</span>
+                              <span className="text-xs font-body text-brand-text truncate">{entry.entity_type}</span>
                               <div className="flex items-center gap-3 shrink-0">
-                                <span className={`text-[10px] font-mono uppercase ${statusColor(entry.status)}`}>{entry.status}</span>
-                                <span className="text-[10px] font-mono text-brand-muted">{new Date(entry.timestamp).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
+                                <span className={`text-[10px] font-body uppercase ${statusColor(entry.status)}`}>{entry.status}</span>
+                                <span className="text-[10px] font-body text-brand-muted">{new Date(entry.timestamp).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
                               </div>
                             </div>
                           ))}
@@ -278,7 +278,7 @@ export function IntegrationDetailDrawer({ slug, intg, status, lastSyncedAt, onCl
 
                   {/* Actions */}
                   <section>
-                    <p className="text-[10px] font-mono uppercase tracking-widest text-brand-muted mb-3">Actions</p>
+                    <p className="text-[10px] font-body uppercase tracking-widest text-brand-muted mb-3">Actions</p>
                     <div className="flex gap-2">
                       <button
                         disabled={resyncing}
@@ -286,11 +286,11 @@ export function IntegrationDetailDrawer({ slug, intg, status, lastSyncedAt, onCl
                           setResyncing(true)
                           try { await onResync() } finally { setResyncing(false) }
                         }}
-                        className="flex-1 py-2 text-[11px] font-mono text-brand-text border border-brand-border rounded-sm hover:bg-brand-bg transition-colors disabled:opacity-60"
+                        className="flex-1 py-2 text-[11px] font-body text-brand-text border border-brand-border rounded-sm hover:bg-brand-bg transition-colors disabled:opacity-60"
                       >
                         {resyncing ? 'Syncing...' : 'Resync'}
                       </button>
-                      <button onClick={onSyncLog} className="flex-1 py-2 text-[11px] font-mono text-brand-text border border-brand-border rounded-sm hover:bg-brand-bg transition-colors">Sync Log</button>
+                      <button onClick={onSyncLog} className="flex-1 py-2 text-[11px] font-body text-brand-text border border-brand-border rounded-sm hover:bg-brand-bg transition-colors">Sync Log</button>
                       {confirmDisconnect ? (
                         <>
                           <button
@@ -299,14 +299,14 @@ export function IntegrationDetailDrawer({ slug, intg, status, lastSyncedAt, onCl
                               setDisconnecting(true)
                               try { await onDisconnect() } finally { setDisconnecting(false); setConfirmDisconnect(false) }
                             }}
-                            className="flex-1 py-2 text-[11px] font-mono text-[#ff4d6d] bg-[rgba(255,77,109,0.08)] border border-[#ff4d6d]/30 rounded-sm hover:bg-[rgba(255,77,109,0.15)] transition-colors disabled:opacity-60"
+                            className="flex-1 py-2 text-[11px] font-body text-[#ff4d6d] bg-[rgba(255,77,109,0.08)] border border-[#ff4d6d]/30 rounded-sm hover:bg-[rgba(255,77,109,0.15)] transition-colors disabled:opacity-60"
                           >
                             {disconnecting ? 'Disconnecting...' : 'Confirm'}
                           </button>
-                          <button onClick={() => setConfirmDisconnect(false)} className="px-3 py-2 text-[11px] font-mono text-brand-muted border border-brand-border rounded-sm hover:bg-brand-bg transition-colors">Cancel</button>
+                          <button onClick={() => setConfirmDisconnect(false)} className="px-3 py-2 text-[11px] font-body text-brand-muted border border-brand-border rounded-sm hover:bg-brand-bg transition-colors">Cancel</button>
                         </>
                       ) : (
-                        <button onClick={() => setConfirmDisconnect(true)} className="flex-1 py-2 text-[11px] font-mono text-[#ff4d6d] bg-[rgba(255,77,109,0.05)] border border-[#ff4d6d]/30 rounded-sm hover:bg-[rgba(255,77,109,0.1)] transition-colors">Disconnect</button>
+                        <button onClick={() => setConfirmDisconnect(true)} className="flex-1 py-2 text-[11px] font-body text-[#ff4d6d] bg-[rgba(255,77,109,0.05)] border border-[#ff4d6d]/30 rounded-sm hover:bg-[rgba(255,77,109,0.1)] transition-colors">Disconnect</button>
                       )}
                     </div>
                   </section>
@@ -317,10 +317,10 @@ export function IntegrationDetailDrawer({ slug, intg, status, lastSyncedAt, onCl
                     <IntegrationLogo slug={intg.slug} size={48} />
                   </div>
                   <div>
-                    <p className="text-sm font-mono text-brand-text">{intg.name}</p>
-                    <p className="text-[10px] font-mono text-brand-muted mt-1 max-w-[240px] mx-auto">{intg.desc}</p>
+                    <p className="text-sm font-body text-brand-text">{intg.name}</p>
+                    <p className="text-[10px] font-body text-brand-muted mt-1 max-w-[240px] mx-auto">{intg.desc}</p>
                   </div>
-                  <button onClick={onConnect} className="px-6 py-2.5 bg-[#00C853] text-black text-xs font-mono font-semibold rounded-sm hover:bg-[#00a844] active:scale-[0.97] transition-all">
+                  <button onClick={onConnect} className="px-6 py-2.5 bg-[#00C853] text-black text-xs font-body font-semibold rounded-sm hover:bg-[#00a844] active:scale-[0.97] transition-all">
                     Connect
                   </button>
                 </div>
@@ -350,9 +350,9 @@ function SummaryCard({ label, value, sub, accent }: SummaryCardProps) {
 
   return (
     <div className="bg-brand-bg border border-brand-border rounded-sm px-4 py-3">
-      <p className="text-[10px] font-mono uppercase tracking-widest text-brand-muted mb-1">{label}</p>
-      <p className={`text-xl font-mono font-semibold ${valueColor}`}>{value}</p>
-      {sub && <p className="text-[10px] font-mono text-brand-muted mt-0.5">{sub}</p>}
+      <p className="text-[10px] font-body uppercase tracking-widest text-brand-muted mb-1">{label}</p>
+      <p className={`text-xl font-body font-semibold ${valueColor}`}>{value}</p>
+      {sub && <p className="text-[10px] font-body text-brand-muted mt-0.5">{sub}</p>}
     </div>
   )
 }

@@ -70,11 +70,11 @@ function SubscribeForm() {
         >
           Get notified of new releases
         </p>
-        <p className="font-mono text-xs text-brand-secondary mb-6">
+        <p className="font-body text-xs text-brand-secondary mb-6">
           No spam. Just the changelog, delivered to your inbox.
         </p>
         {submitted ? (
-          <p className="font-mono text-sm text-brand-green">
+          <p className="font-body text-sm text-brand-green">
             You&apos;re on the list.
           </p>
         ) : (
@@ -85,11 +85,11 @@ function SubscribeForm() {
               value={value}
               onChange={(e) => setValue(e.target.value)}
               required
-              className="flex-1 bg-brand-bg border border-brand-border rounded-sm px-3 py-2 font-mono text-sm text-brand-text placeholder:text-brand-muted focus:outline-none focus:border-brand-green transition-colors"
+              className="flex-1 bg-brand-bg border border-brand-border rounded-sm px-3 py-2 font-body text-sm text-brand-text placeholder:text-brand-muted focus:outline-none focus:border-brand-green transition-colors"
             />
             <button
               type="submit"
-              className="rounded-sm px-4 py-2 text-sm font-mono font-medium transition-colors hover:bg-[#00a844]"
+              className="rounded-sm px-4 py-2 text-sm font-body font-medium transition-colors hover:bg-[#00a844]"
               style={{ background: '#00C853', color: '#000' }}
             >
               Subscribe
@@ -106,7 +106,7 @@ export default function ChangelogPage() {
     <div className="bg-brand-bg text-brand-text">
       {/* Hero */}
       <section className="max-w-6xl mx-auto px-6 md:px-8 pt-20 pb-14">
-        <p className="font-mono text-[10px] uppercase tracking-widest text-brand-muted mb-4">
+        <p className="font-body text-[10px] uppercase tracking-widest text-brand-muted mb-4">
           Changelog
         </p>
         <h1
@@ -115,7 +115,7 @@ export default function ChangelogPage() {
         >
           What&apos;s New in Clendan
         </h1>
-        <p className="font-mono text-sm text-brand-secondary max-w-xl">
+        <p className="font-body text-sm text-brand-secondary max-w-xl">
           Every update, fix, and new feature — in order.
         </p>
       </section>
@@ -132,7 +132,7 @@ export default function ChangelogPage() {
               {/* Date column */}
               <div className="hidden md:flex flex-col items-end shrink-0 w-36 pt-1 gap-2">
                 <span
-                  className="font-mono text-[10px] uppercase tracking-widest px-2 py-0.5 rounded-sm"
+                  className="font-body text-[10px] uppercase tracking-widest px-2 py-0.5 rounded-sm"
                   style={{
                     background: 'rgba(0,200,83,0.08)',
                     color: '#00C853',
@@ -141,7 +141,7 @@ export default function ChangelogPage() {
                 >
                   {formatDate(entry.date)}
                 </span>
-                <span className="font-mono text-[10px] text-brand-muted">{entry.version}</span>
+                <span className="font-body text-[10px] text-brand-muted">{entry.version}</span>
               </div>
 
               {/* Content */}
@@ -149,7 +149,7 @@ export default function ChangelogPage() {
                 <div className="flex flex-wrap items-center gap-2">
                   {/* Mobile date */}
                   <span
-                    className="md:hidden font-mono text-[10px] uppercase tracking-widest px-2 py-0.5 rounded-sm"
+                    className="md:hidden font-body text-[10px] uppercase tracking-widest px-2 py-0.5 rounded-sm"
                     style={{
                       background: 'rgba(0,200,83,0.08)',
                       color: '#00C853',
@@ -158,11 +158,11 @@ export default function ChangelogPage() {
                   >
                     {formatDate(entry.date)}
                   </span>
-                  <span className="md:hidden font-mono text-[10px] text-brand-muted">
+                  <span className="md:hidden font-body text-[10px] text-brand-muted">
                     {entry.version}
                   </span>
                   <span
-                    className="font-mono text-[10px] uppercase tracking-widest px-2 py-0.5 rounded-sm"
+                    className="font-body text-[10px] uppercase tracking-widest px-2 py-0.5 rounded-sm"
                     style={{
                       background: CATEGORY_BG[entry.category],
                       color: CATEGORY_COLOR[entry.category],
@@ -178,7 +178,7 @@ export default function ChangelogPage() {
                 >
                   {entry.title}
                 </h2>
-                <p className="font-mono text-sm text-brand-secondary leading-relaxed">
+                <p className="font-body text-sm text-brand-secondary leading-relaxed">
                   {entry.body}
                 </p>
               </div>

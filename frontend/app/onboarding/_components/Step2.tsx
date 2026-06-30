@@ -67,7 +67,7 @@ export function Step2({ onNext, onSkip }: Step2Props) {
     <div className="space-y-6">
       <div className="text-center space-y-1">
         <h1 className="font-heading font-bold text-[28px] text-brand-text">Who else needs access?</h1>
-        <p className="text-xs font-mono text-brand-muted">Invite your team to collaborate.</p>
+        <p className="text-xs font-body text-brand-muted">Invite your team to collaborate.</p>
       </div>
       <div className="space-y-2">
         {invites.map((inv, i) => (
@@ -83,28 +83,28 @@ export function Step2({ onNext, onSkip }: Step2Props) {
           <button
             type="button"
             onClick={addInvite}
-            className="text-xs font-mono text-brand-muted hover:text-brand-text transition-colors"
+            className="text-xs font-body text-brand-muted hover:text-brand-text transition-colors"
           >
             + Add another
           </button>
         )}
       </div>
-      <p className="text-[10px] font-mono text-brand-muted">
+      <p className="text-[10px] font-body text-brand-muted">
         They'll receive an email invite and set their own password.
       </p>
-      {error && <p className="text-xs font-mono text-brand-danger">{error}</p>}
+      {error && <p className="text-xs font-body text-brand-danger">{error}</p>}
       <button
         type="button"
         onClick={handleSubmit}
         disabled={loading}
-        className="w-full bg-brand-green text-black hover:bg-[#00a844] active:scale-[0.97] rounded-sm px-4 py-2.5 text-xs font-mono font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+        className="w-full bg-brand-green text-black hover:bg-[#00a844] active:scale-[0.97] rounded-sm px-4 py-2.5 text-xs font-body font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {loading ? 'Sending invites…' : 'Send Invites →'}
       </button>
       <button
         type="button"
         onClick={onSkip}
-        className="w-full text-xs font-mono text-brand-muted hover:text-brand-text transition-colors py-1"
+        className="w-full text-xs font-body text-brand-muted hover:text-brand-text transition-colors py-1"
       >
         Skip for now
       </button>

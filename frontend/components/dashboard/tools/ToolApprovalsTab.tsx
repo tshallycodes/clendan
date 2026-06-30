@@ -98,7 +98,7 @@ export function ToolApprovalsTab({ toolId }: { toolId: string | null }) {
   const pendingCount = approvals.filter(a => a.status === 'pending').length
 
   if (loading) {
-    return <div className="py-12 text-center text-xs font-mono text-brand-muted">Loading…</div>
+    return <div className="py-12 text-center text-xs font-body text-brand-muted">Loading…</div>
   }
 
   return (
@@ -107,7 +107,7 @@ export function ToolApprovalsTab({ toolId }: { toolId: string | null }) {
         {FILTERS.map(f => (
           <button key={f.key} type="button" onClick={() => setFilter(f.key)}
             className={cn(
-              'text-[10px] font-mono px-3 py-1.5 rounded-sm border transition-colors tracking-wider uppercase',
+              'text-[10px] font-body px-3 py-1.5 rounded-sm border transition-colors tracking-wider uppercase',
               filter === f.key
                 ? 'border-brand-green/30 bg-brand-green/10 text-brand-green'
                 : 'border-brand-border bg-transparent text-brand-muted hover:text-brand-text',
@@ -125,7 +125,7 @@ export function ToolApprovalsTab({ toolId }: { toolId: string | null }) {
 
       {displayed.length === 0 ? (
         <div className="bg-brand-surface border border-brand-border rounded-sm p-8 text-center">
-          <p className="text-xs font-mono text-brand-muted">
+          <p className="text-xs font-body text-brand-muted">
             {filter === 'pending' ? 'No pending approvals' : `No ${filter} approvals`}
           </p>
         </div>
@@ -140,20 +140,20 @@ export function ToolApprovalsTab({ toolId }: { toolId: string | null }) {
               <div className="flex items-start justify-between gap-4">
                 <div className="space-y-1.5 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <p className="text-xs font-mono font-medium text-brand-text">
+                    <p className="text-xs font-body font-medium text-brand-text">
                       {formatToolType(a.tool_type)}{a.document_type ? ` — ${formatDocType(a.document_type)}` : ''}
                     </p>
                     {a.confidence != null && (
-                      <span className="text-[10px] font-mono text-brand-muted">{Math.round(a.confidence * 100)}% confidence</span>
+                      <span className="text-[10px] font-body text-brand-muted">{Math.round(a.confidence * 100)}% confidence</span>
                     )}
                   </div>
                   {a.document_filename && (
-                    <p className="text-[11px] font-mono text-brand-secondary truncate">{a.document_filename}</p>
+                    <p className="text-[11px] font-body text-brand-secondary truncate">{a.document_filename}</p>
                   )}
                   {a.reason && (
-                    <p className="text-[10px] font-mono text-brand-muted">{a.reason}</p>
+                    <p className="text-[10px] font-body text-brand-muted">{a.reason}</p>
                   )}
-                  <p className="text-[10px] font-mono text-brand-muted">
+                  <p className="text-[10px] font-body text-brand-muted">
                     Requested {new Date(a.requested_at).toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
                     {' · '}Expires {new Date(a.expires_at).toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
                     {a.triggered_by ? ` · by ${a.triggered_by}` : ''}
@@ -165,7 +165,7 @@ export function ToolApprovalsTab({ toolId }: { toolId: string | null }) {
                       type="button"
                       disabled={acting === a.id}
                       onClick={() => respond(a.id, 'approve')}
-                      className="text-[10px] font-mono px-3 py-1.5 rounded-sm bg-[rgba(0,200,83,0.08)] text-[#00C853] border border-[rgba(0,200,83,0.2)] hover:bg-[rgba(0,200,83,0.15)] disabled:opacity-50 transition-colors"
+                      className="text-[10px] font-body px-3 py-1.5 rounded-sm bg-[rgba(0,200,83,0.08)] text-[#00C853] border border-[rgba(0,200,83,0.2)] hover:bg-[rgba(0,200,83,0.15)] disabled:opacity-50 transition-colors"
                     >
                       {acting === a.id ? '…' : 'Approve'}
                     </button>
@@ -173,14 +173,14 @@ export function ToolApprovalsTab({ toolId }: { toolId: string | null }) {
                       type="button"
                       disabled={acting === a.id}
                       onClick={() => respond(a.id, 'reject')}
-                      className="text-[10px] font-mono px-3 py-1.5 rounded-sm bg-[rgba(255,77,109,0.08)] text-[#ff4d6d] border border-[rgba(255,77,109,0.2)] hover:bg-[rgba(255,77,109,0.15)] disabled:opacity-50 transition-colors"
+                      className="text-[10px] font-body px-3 py-1.5 rounded-sm bg-[rgba(255,77,109,0.08)] text-[#ff4d6d] border border-[rgba(255,77,109,0.2)] hover:bg-[rgba(255,77,109,0.15)] disabled:opacity-50 transition-colors"
                     >
                       {acting === a.id ? '…' : 'Reject'}
                     </button>
                   </div>
                 ) : (
                   <span className={cn(
-                    'text-[10px] font-mono px-2 py-0.5 rounded-sm border shrink-0',
+                    'text-[10px] font-body px-2 py-0.5 rounded-sm border shrink-0',
                     a.status === 'approved'
                       ? 'text-[#00C853] border-[rgba(0,200,83,0.2)] bg-[rgba(0,200,83,0.08)]'
                       : 'text-[#ff4d6d] border-[rgba(255,77,109,0.2)] bg-[rgba(255,77,109,0.08)]',

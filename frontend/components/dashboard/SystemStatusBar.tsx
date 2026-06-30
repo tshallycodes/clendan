@@ -47,16 +47,16 @@ export async function SystemStatusBar() {
   return (
     <div className="bg-brand-surface border border-brand-border rounded-sm px-5 py-3 flex items-center justify-between">
       <div className="flex items-center gap-6">
-        <span className="flex items-center gap-2 text-xs font-mono text-brand-secondary">
+        <span className="flex items-center gap-2 text-xs font-body text-brand-secondary">
           <StatusDot color={qbDot} />
           QuickBooks
         </span>
-        <span className="flex items-center gap-2 text-xs font-mono text-brand-secondary">
+        <span className="flex items-center gap-2 text-xs font-body text-brand-secondary">
           <StatusDot color={plaidDot} />
           Plaid
         </span>
       </div>
-      <span className="text-[10px] font-mono text-brand-muted">Last health check: just now</span>
+      <span className="text-[10px] font-body text-brand-muted">Last health check: just now</span>
     </div>
   )
 }

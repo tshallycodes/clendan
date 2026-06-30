@@ -15,14 +15,14 @@ function FounderCard({ role, name, initials }: FounderCardProps) {
       </div>
       <div>
         <p className="font-heading font-bold text-[16px] text-brand-text">{name}</p>
-        <p className="font-mono text-[12px] text-brand-secondary mt-0.5">{role}</p>
+        <p className="font-body text-[12px] text-brand-secondary mt-0.5">{role}</p>
       </div>
       <a
         href="https://linkedin.com"
         target="_blank"
         rel="noopener noreferrer"
         aria-label={`${name} on LinkedIn`}
-        className="font-mono text-[11px] text-brand-muted hover:text-brand-secondary transition-colors flex items-center gap-1.5"
+        className="font-body text-[11px] text-brand-muted hover:text-brand-secondary transition-colors flex items-center gap-1.5"
       >
         <LinkedInIcon />
         LinkedIn
@@ -50,7 +50,7 @@ function RoadmapPhase({ phase, title, isLast = false }: RoadmapPhaseProps) {
     <div className="flex items-start gap-4">
       <div className="flex flex-col items-center">
         <div className="w-8 h-8 rounded-sm bg-[rgba(0,200,83,0.08)] border border-[rgba(0,200,83,0.2)] flex items-center justify-center flex-shrink-0">
-          <span className="font-mono text-brand-green text-[10px] font-medium">{phase}</span>
+          <span className="font-body text-brand-green text-[10px] font-medium">{phase}</span>
         </div>
         {!isLast && (
           <div className="w-px flex-1 mt-2 bg-brand-border" style={{ minHeight: '32px' }} />
@@ -70,7 +70,7 @@ export default function AboutPage() {
     <div className="bg-brand-bg min-h-screen">
       {/* Hero */}
       <section className="max-w-6xl mx-auto px-6 md:px-8 pt-20 pb-14 border-b border-brand-border">
-        <p className="font-mono text-[10px] uppercase tracking-widest text-brand-muted mb-4">
+        <p className="font-body text-[10px] uppercase tracking-widest text-brand-muted mb-4">
           About
         </p>
         <h1 className="font-heading font-extrabold text-[48px] leading-[1.1] text-brand-text max-w-3xl">
@@ -82,7 +82,7 @@ export default function AboutPage() {
       {/* Founding story */}
       <section className="max-w-6xl mx-auto px-6 md:px-8 py-14 border-b border-brand-border">
         <div className="max-w-3xl space-y-6">
-          <p className="font-mono text-[14px] text-brand-secondary leading-relaxed">
+          <p className="font-body text-[14px] text-brand-secondary leading-relaxed">
             Clendan was born from a simple observation: finance teams spend most of their time on
             execution — processing invoices, reconciling accounts, chasing approvals. These are
             deterministic, rule-based tasks that AI can handle reliably. We built Clendan to give
@@ -102,7 +102,7 @@ export default function AboutPage() {
       {/* Team */}
       <section className="border-b border-brand-border">
         <div className="max-w-6xl mx-auto px-6 md:px-8 py-14">
-          <p className="font-mono text-[10px] uppercase tracking-widest text-brand-muted mb-3">
+          <p className="font-body text-[10px] uppercase tracking-widest text-brand-muted mb-3">
             Team
           </p>
           <h2 className="font-heading font-bold text-[32px] text-brand-text mb-8">
@@ -118,7 +118,7 @@ export default function AboutPage() {
       {/* What we're building — roadmap */}
       <section className="border-b border-brand-border">
         <div className="max-w-6xl mx-auto px-6 md:px-8 py-14">
-          <p className="font-mono text-[10px] uppercase tracking-widest text-brand-muted mb-3">
+          <p className="font-body text-[10px] uppercase tracking-widest text-brand-muted mb-3">
             Roadmap
           </p>
           <h2 className="font-heading font-bold text-[32px] text-brand-text mb-10">
@@ -135,7 +135,7 @@ export default function AboutPage() {
       {/* Contact */}
       <section>
         <div className="max-w-6xl mx-auto px-6 md:px-8 py-14">
-          <p className="font-mono text-[10px] uppercase tracking-widest text-brand-muted mb-3">
+          <p className="font-body text-[10px] uppercase tracking-widest text-brand-muted mb-3">
             Contact
           </p>
           <h2 className="font-heading font-bold text-[32px] text-brand-text mb-6">
@@ -144,26 +144,26 @@ export default function AboutPage() {
           <div className="flex flex-wrap items-center gap-4">
             <a
               href="mailto:hello@clendan.com"
-              className="font-mono text-[13px] text-brand-secondary hover:text-brand-text transition-colors"
+              className="font-body text-[13px] text-brand-secondary hover:text-brand-text transition-colors"
             >
               hello@clendan.com
             </a>
-            <span className="text-brand-border font-mono">|</span>
+            <span className="text-brand-border font-body">|</span>
             <a
               href="https://linkedin.com/company/clendan"
               target="_blank"
               rel="noopener noreferrer"
-              className="font-mono text-[13px] text-brand-secondary hover:text-brand-text transition-colors flex items-center gap-1.5"
+              className="font-body text-[13px] text-brand-secondary hover:text-brand-text transition-colors flex items-center gap-1.5"
             >
               <LinkedInIcon />
               LinkedIn
             </a>
-            <span className="text-brand-border font-mono">|</span>
+            <span className="text-brand-border font-body">|</span>
             <a
               href="https://x.com/clendan"
               target="_blank"
               rel="noopener noreferrer"
-              className="font-mono text-[13px] text-brand-secondary hover:text-brand-text transition-colors flex items-center gap-1.5"
+              className="font-body text-[13px] text-brand-secondary hover:text-brand-text transition-colors flex items-center gap-1.5"
             >
               <XIcon />
               X / Twitter

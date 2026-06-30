@@ -85,17 +85,17 @@ export function AskClenDrawer({ documentId, filename, onClose }: Props) {
         >
           <div className="flex items-start justify-between px-5 py-4 border-b border-brand-border shrink-0">
             <div className="min-w-0 pr-4">
-              <p className="text-[10px] font-mono text-brand-muted uppercase tracking-widest mb-1">
+              <p className="text-[10px] font-body text-brand-muted uppercase tracking-widest mb-1">
                 Ask Clen
               </p>
-              <p className="text-sm font-mono text-brand-text truncate">
+              <p className="text-sm font-body text-brand-text truncate">
                 {filename ?? 'Untitled document'}
               </p>
             </div>
             <button
               type="button"
               onClick={onClose}
-              className="shrink-0 text-brand-muted hover:text-brand-text transition-colors text-sm font-mono mt-0.5"
+              className="shrink-0 text-brand-muted hover:text-brand-text transition-colors text-sm font-body mt-0.5"
               aria-label="Close"
             >
               ✕
@@ -104,25 +104,25 @@ export function AskClenDrawer({ documentId, filename, onClose }: Props) {
 
           <div className="flex-1 overflow-y-auto px-5 py-4 space-y-5">
             {messages.length === 0 && !loading && (
-              <p className="text-xs font-mono text-brand-muted mt-4">
+              <p className="text-xs font-body text-brand-muted mt-4">
                 Ask Clen anything about this document — risks, clauses, obligations, summaries.
               </p>
             )}
             {messages.map((msg, i) => (
               <div key={i} className="space-y-2">
                 <div className="flex gap-2">
-                  <span className="text-[10px] font-mono text-brand-muted shrink-0 mt-0.5">You</span>
-                  <p className="text-xs font-mono text-brand-secondary">{msg.question}</p>
+                  <span className="text-[10px] font-body text-brand-muted shrink-0 mt-0.5">You</span>
+                  <p className="text-xs font-body text-brand-secondary">{msg.question}</p>
                 </div>
                 <div className="flex gap-2">
-                  <span className="text-[10px] font-mono text-[#00C853] shrink-0 mt-0.5">Clen</span>
-                  <p className="text-xs font-mono text-brand-text leading-relaxed whitespace-pre-wrap">{msg.answer}</p>
+                  <span className="text-[10px] font-body text-[#00C853] shrink-0 mt-0.5">Clen</span>
+                  <p className="text-xs font-body text-brand-text leading-relaxed whitespace-pre-wrap">{msg.answer}</p>
                 </div>
               </div>
             ))}
             {loading && (
               <div className="flex gap-2 items-center">
-                <span className="text-[10px] font-mono text-[#00C853] shrink-0">Clen</span>
+                <span className="text-[10px] font-body text-[#00C853] shrink-0">Clen</span>
                 <div className="flex gap-1">
                   {[0, 1, 2].map(i => (
                     <div key={i} className="w-1.5 h-1.5 rounded-full bg-[#00C853] animate-bounce" style={{ animationDelay: `${i * 120}ms` }} />
@@ -141,18 +141,18 @@ export function AskClenDrawer({ documentId, filename, onClose }: Props) {
                 onKeyDown={handleKeyDown}
                 placeholder="Ask a question… (Enter to send)"
                 rows={2}
-                className="flex-1 bg-brand-bg border border-brand-border focus:border-[#00C853] text-brand-text placeholder:text-brand-muted rounded-sm px-3 py-2 text-xs font-mono resize-none outline-none transition-colors"
+                className="flex-1 bg-brand-bg border border-brand-border focus:border-[#00C853] text-brand-text placeholder:text-brand-muted rounded-sm px-3 py-2 text-xs font-body resize-none outline-none transition-colors"
               />
               <button
                 type="button"
                 onClick={handleAsk}
                 disabled={!question.trim() || loading}
-                className="shrink-0 text-[10px] font-mono px-4 py-2 rounded-sm bg-[#00C853] text-black hover:bg-[#00a844] active:scale-[0.97] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                className="shrink-0 text-[10px] font-body px-4 py-2 rounded-sm bg-[#00C853] text-black hover:bg-[#00a844] active:scale-[0.97] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
               >
                 {loading ? '…' : 'Ask'}
               </button>
             </div>
-            <p className="text-[10px] font-mono text-brand-muted mt-1.5">Shift+Enter for new line</p>
+            <p className="text-[10px] font-body text-brand-muted mt-1.5">Shift+Enter for new line</p>
           </div>
         </motion.div>
       </>

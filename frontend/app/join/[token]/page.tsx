@@ -21,8 +21,8 @@ const ROLE_LABEL: Record<string, string> = {
   viewer: 'Viewer',
 }
 
-const BTN_PRIMARY = 'block w-full text-center bg-[#00C853] text-black hover:bg-[#00a844] active:scale-[0.97] rounded-sm px-4 py-2.5 text-xs font-mono font-medium transition-all disabled:opacity-60 disabled:cursor-not-allowed'
-const BTN_SECONDARY = 'block w-full text-center bg-transparent border border-brand-border text-brand-text hover:bg-brand-bg rounded-sm px-4 py-2.5 text-xs font-mono font-medium transition-all'
+const BTN_PRIMARY = 'block w-full text-center bg-[#00C853] text-black hover:bg-[#00a844] active:scale-[0.97] rounded-sm px-4 py-2.5 text-xs font-body font-medium transition-all disabled:opacity-60 disabled:cursor-not-allowed'
+const BTN_SECONDARY = 'block w-full text-center bg-transparent border border-brand-border text-brand-text hover:bg-brand-bg rounded-sm px-4 py-2.5 text-xs font-body font-medium transition-all'
 
 export default function JoinPage() {
   const params = useParams()
@@ -74,7 +74,7 @@ export default function JoinPage() {
     <div className="min-h-screen bg-brand-bg flex items-center justify-center p-6">
       <div className="w-full max-w-sm flex flex-col items-center gap-8">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 border border-[#00C853] flex items-center justify-center font-bold text-[#00C853] font-mono text-sm">C</div>
+          <div className="w-8 h-8 border border-[#00C853] flex items-center justify-center font-bold text-[#00C853] font-body text-sm">C</div>
           <span className="text-brand-text font-bold tracking-widest uppercase text-sm" style={{ fontFamily: 'var(--font-heading, sans-serif)' }}>Clendan</span>
         </div>
 
@@ -106,13 +106,13 @@ export default function JoinPage() {
           {(pageState === 'ready' || pageState === 'accepting') && info && (
             <>
               <div className="space-y-2">
-                <p className="text-[10px] font-mono text-brand-muted uppercase tracking-widest">You've been invited to</p>
+                <p className="text-[10px] font-body text-brand-muted uppercase tracking-widest">You've been invited to</p>
                 <h1 className="text-xl font-bold text-brand-text" style={{ fontFamily: 'var(--font-heading, sans-serif)' }}>
                   {info.org_name}
                 </h1>
                 <div className="flex items-center gap-2 pt-0.5">
-                  <span className="text-[10px] font-mono text-brand-muted uppercase tracking-widest">Role</span>
-                  <span className="text-[10px] font-mono font-medium px-2 py-0.5 rounded-sm bg-brand-elevated border border-brand-border text-brand-text uppercase tracking-wider">
+                  <span className="text-[10px] font-body text-brand-muted uppercase tracking-widest">Role</span>
+                  <span className="text-[10px] font-body font-medium px-2 py-0.5 rounded-sm bg-brand-elevated border border-brand-border text-brand-text uppercase tracking-wider">
                     {ROLE_LABEL[info.role] ?? info.role}
                   </span>
                 </div>
@@ -150,9 +150,9 @@ function StatusMessage({ icon, title, body, danger = false }: {
 }) {
   return (
     <div className="text-center space-y-2 py-2">
-      <p className="text-2xl font-mono" style={{ color: danger ? '#ff4d6d' : '#00C853' }}>{icon}</p>
+      <p className="text-2xl font-body" style={{ color: danger ? '#ff4d6d' : '#00C853' }}>{icon}</p>
       <p className="text-sm font-bold text-brand-text" style={{ fontFamily: 'var(--font-heading, sans-serif)' }}>{title}</p>
-      <p className="text-xs font-mono text-brand-muted leading-relaxed">{body}</p>
+      <p className="text-xs font-body text-brand-muted leading-relaxed">{body}</p>
     </div>
   )
 }

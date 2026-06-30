@@ -40,7 +40,7 @@ export default function SecurityPage() {
     <div className="bg-brand-bg text-brand-text">
       {/* Hero */}
       <section className="max-w-6xl mx-auto px-6 md:px-8 pt-20 pb-14">
-        <p className="font-mono text-[10px] uppercase tracking-widest text-brand-muted mb-4">
+        <p className="font-body text-[10px] uppercase tracking-widest text-brand-muted mb-4">
           Security
         </p>
         <h1
@@ -50,14 +50,14 @@ export default function SecurityPage() {
           Security Built for<br />
           <span className="text-brand-green">Financial Infrastructure</span>
         </h1>
-        <p className="font-mono text-sm text-brand-secondary max-w-xl">
+        <p className="font-body text-sm text-brand-secondary max-w-xl">
           Every decision auditable. Every credential encrypted. Every tenant isolated.
         </p>
       </section>
 
       {/* Principles grid */}
       <section className="max-w-6xl mx-auto px-6 md:px-8 pb-20">
-        <p className="font-mono text-[10px] uppercase tracking-widest text-brand-muted mb-6">
+        <p className="font-body text-[10px] uppercase tracking-widest text-brand-muted mb-6">
           Security Principles
         </p>
         <div className="grid md:grid-cols-2 gap-4">
@@ -73,7 +73,7 @@ export default function SecurityPage() {
               >
                 {p.title}
               </h2>
-              <p className="font-mono text-xs text-brand-secondary leading-relaxed">{p.body}</p>
+              <p className="font-body text-xs text-brand-secondary leading-relaxed">{p.body}</p>
             </div>
           ))}
         </div>
@@ -82,7 +82,7 @@ export default function SecurityPage() {
       {/* SOC 2 */}
       <section className="bg-brand-surface border-t border-b border-brand-border">
         <div className="max-w-6xl mx-auto px-6 md:px-8 py-14">
-          <p className="font-mono text-[10px] uppercase tracking-widest text-brand-muted mb-6">
+          <p className="font-body text-[10px] uppercase tracking-widest text-brand-muted mb-6">
             Compliance
           </p>
           <div className="flex flex-col md:flex-row gap-8 items-start">
@@ -93,21 +93,21 @@ export default function SecurityPage() {
               >
                 SOC 2 Type II In Progress
               </h2>
-              <p className="font-mono text-sm text-brand-secondary leading-relaxed">
+              <p className="font-body text-sm text-brand-secondary leading-relaxed">
                 Clendan is working toward SOC 2 Type II certification, targeting Q4 2026. Our
                 security controls — encryption, access control, audit logging, and incident
                 response — are designed to meet SOC 2 Trust Service Criteria from day one.
               </p>
             </div>
             <div className="bg-brand-bg border border-brand-border rounded-sm p-5 shrink-0 min-w-56">
-              <p className="font-mono text-[10px] uppercase tracking-widest text-brand-muted mb-3">
+              <p className="font-body text-[10px] uppercase tracking-widest text-brand-muted mb-3">
                 Current Status
               </p>
               <div className="flex flex-col gap-2">
                 <div className="flex items-center justify-between">
-                  <span className="font-mono text-xs text-brand-secondary">Audit in progress</span>
+                  <span className="font-body text-xs text-brand-secondary">Audit in progress</span>
                   <span
-                    className="text-[10px] font-mono px-2 py-0.5 rounded-sm"
+                    className="text-[10px] font-body px-2 py-0.5 rounded-sm"
                     style={{
                       background: 'rgba(0,168,204,0.08)',
                       color: '#00a8cc',
@@ -118,8 +118,8 @@ export default function SecurityPage() {
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="font-mono text-xs text-brand-secondary">Target date</span>
-                  <span className="font-mono text-xs text-brand-text">Q4 2026</span>
+                  <span className="font-body text-xs text-brand-secondary">Target date</span>
+                  <span className="font-body text-xs text-brand-text">Q4 2026</span>
                 </div>
               </div>
             </div>
@@ -129,7 +129,7 @@ export default function SecurityPage() {
 
       {/* Data handling */}
       <section className="max-w-6xl mx-auto px-6 md:px-8 py-16">
-        <p className="font-mono text-[10px] uppercase tracking-widest text-brand-muted mb-6">
+        <p className="font-body text-[10px] uppercase tracking-widest text-brand-muted mb-6">
           Data Handling
         </p>
         <div className="grid md:grid-cols-2 gap-10">
@@ -143,8 +143,8 @@ export default function SecurityPage() {
             <ul className="flex flex-col gap-3">
               {DATA_HANDLING.map((item) => (
                 <li key={item} className="flex items-start gap-3">
-                  <span className="text-brand-green font-mono text-xs mt-0.5 shrink-0">—</span>
-                  <span className="font-mono text-xs text-brand-secondary leading-relaxed">
+                  <span className="text-brand-green font-body text-xs mt-0.5 shrink-0">—</span>
+                  <span className="font-body text-xs text-brand-secondary leading-relaxed">
                     {item}
                   </span>
                 </li>
@@ -160,25 +160,25 @@ export default function SecurityPage() {
             >
               Vulnerability Disclosure
             </h2>
-            <p className="font-mono text-xs text-brand-secondary leading-relaxed mb-4">
+            <p className="font-body text-xs text-brand-secondary leading-relaxed mb-4">
               If you discover a security issue, please report it responsibly. We take all reports
               seriously.
             </p>
             <div className="flex flex-col gap-3">
               <div className="bg-brand-bg border border-brand-border rounded-sm px-3 py-2">
-                <p className="font-mono text-[10px] text-brand-muted mb-0.5">Report to</p>
+                <p className="font-body text-[10px] text-brand-muted mb-0.5">Report to</p>
                 <a
                   href="mailto:security@clendan.com"
-                  className="font-mono text-xs text-brand-text hover:text-brand-green transition-colors"
+                  className="font-body text-xs text-brand-text hover:text-brand-green transition-colors"
                 >
                   security@clendan.com
                 </a>
               </div>
               <div className="flex flex-col gap-1 pl-1">
-                <p className="font-mono text-xs text-brand-secondary">
+                <p className="font-body text-xs text-brand-secondary">
                   — Acknowledged within 48 hours
                 </p>
-                <p className="font-mono text-xs text-brand-secondary">
+                <p className="font-body text-xs text-brand-secondary">
                   — Status update within 7 days
                 </p>
               </div>
@@ -186,7 +186,7 @@ export default function SecurityPage() {
             <div className="mt-4 pt-4 border-t border-brand-border">
               <Link
                 href="/security-policy"
-                className="font-mono text-xs text-brand-green hover:text-brand-text transition-colors"
+                className="font-body text-xs text-brand-green hover:text-brand-text transition-colors"
               >
                 Read our full security policy →
               </Link>

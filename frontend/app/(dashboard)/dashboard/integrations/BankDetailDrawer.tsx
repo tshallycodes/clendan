@@ -56,7 +56,7 @@ function StatusBadge({ status }: { status: string }) {
   const s = map[status] ?? { bg: 'rgba(82,196,120,0.1)', color: 'var(--brand-muted)', border: 'rgba(82,196,120,0.25)' }
   return (
     <span
-      className="text-[10px] font-mono uppercase tracking-wider px-2 py-0.5 rounded-sm"
+      className="text-[10px] font-body uppercase tracking-wider px-2 py-0.5 rounded-sm"
       style={{ background: s.bg, color: s.color, border: `1px solid ${s.border}` }}
     >
       {status}
@@ -91,8 +91,8 @@ function ConnectionSection({
       {/* Header row */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-brand-border">
         <div>
-          <p className="text-xs font-mono text-brand-text">{conn.institution_name || 'Connected Account'}</p>
-          <p className="text-[10px] font-mono text-brand-muted mt-0.5">Last sync: {lastSyncDisplay}</p>
+          <p className="text-xs font-body text-brand-text">{conn.institution_name || 'Connected Account'}</p>
+          <p className="text-[10px] font-body text-brand-muted mt-0.5">Last sync: {lastSyncDisplay}</p>
         </div>
         <StatusBadge status={conn.status} />
       </div>
@@ -103,10 +103,10 @@ function ConnectionSection({
           {conn.accounts.map((a) => (
             <div key={a.id} className="flex items-center justify-between gap-4 px-4 py-2.5">
               <div className="min-w-0">
-                <p className="text-xs font-mono text-brand-text truncate">{a.name}</p>
-                <p className="text-[10px] font-mono text-brand-muted uppercase mt-0.5">{a.subtype || a.type}</p>
+                <p className="text-xs font-body text-brand-text truncate">{a.name}</p>
+                <p className="text-[10px] font-body text-brand-muted uppercase mt-0.5">{a.subtype || a.type}</p>
               </div>
-              <p className="text-xs font-mono text-brand-text shrink-0">{convert(a.current_balance_minor, a.currency)}</p>
+              <p className="text-xs font-body text-brand-text shrink-0">{convert(a.current_balance_minor, a.currency)}</p>
             </div>
           ))}
         </div>
@@ -115,14 +115,14 @@ function ConnectionSection({
       {/* Recent transactions */}
       {conn.recent_transactions.length > 0 && (
         <div className="border-b border-brand-border">
-          <p className="text-[10px] font-mono uppercase tracking-widest text-brand-muted px-4 pt-3 pb-2">Recent</p>
+          <p className="text-[10px] font-body uppercase tracking-widest text-brand-muted px-4 pt-3 pb-2">Recent</p>
           <div className="divide-y divide-brand-border">
             {conn.recent_transactions.slice(0, 3).map((t) => (
               <div key={t.id} className="flex items-center justify-between gap-4 px-4 py-2">
-                <p className="text-[10px] font-mono text-brand-secondary truncate">{t.merchant_name || t.description}</p>
+                <p className="text-[10px] font-body text-brand-secondary truncate">{t.merchant_name || t.description}</p>
                 <div className="text-right shrink-0">
-                  <p className="text-[10px] font-mono text-brand-text">{convert(t.amount_minor, t.currency)}</p>
-                  <p className="text-[10px] font-mono text-brand-muted">
+                  <p className="text-[10px] font-body text-brand-text">{convert(t.amount_minor, t.currency)}</p>
+                  <p className="text-[10px] font-body text-brand-muted">
                     {new Date(t.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
                   </p>
                 </div>
@@ -140,7 +140,7 @@ function ConnectionSection({
             setResyncing(true)
             try { await onResync(conn.integration_id, provider) } finally { setResyncing(false) }
           }}
-          className="flex-1 py-1.5 text-[10px] font-mono text-brand-text bg-transparent border border-brand-border rounded-sm hover:bg-brand-bg transition-colors disabled:opacity-60"
+          className="flex-1 py-1.5 text-[10px] font-body text-brand-text bg-transparent border border-brand-border rounded-sm hover:bg-brand-bg transition-colors disabled:opacity-60"
         >
           {resyncing ? 'Syncing...' : 'Resync'}
         </button>
@@ -149,7 +149,7 @@ function ConnectionSection({
             `${provider}/connections/${conn.integration_id}`,
             conn.institution_name || 'Connection',
           )}
-          className="flex-1 py-1.5 text-[10px] font-mono text-brand-text bg-transparent border border-brand-border rounded-sm hover:bg-brand-bg transition-colors"
+          className="flex-1 py-1.5 text-[10px] font-body text-brand-text bg-transparent border border-brand-border rounded-sm hover:bg-brand-bg transition-colors"
         >
           Sync Log
         </button>
@@ -164,13 +164,13 @@ function ConnectionSection({
                   setConfirmDisconnect(false)
                 }
               }}
-              className="flex-1 py-1.5 text-[10px] font-mono text-[#ff4d6d] bg-[rgba(255,77,109,0.1)] border border-[#ff4d6d] rounded-sm hover:bg-[rgba(255,77,109,0.15)] transition-colors disabled:opacity-60"
+              className="flex-1 py-1.5 text-[10px] font-body text-[#ff4d6d] bg-[rgba(255,77,109,0.1)] border border-[#ff4d6d] rounded-sm hover:bg-[rgba(255,77,109,0.15)] transition-colors disabled:opacity-60"
             >
               {disconnecting ? 'Disconnecting...' : 'Confirm'}
             </button>
             <button
               onClick={() => setConfirmDisconnect(false)}
-              className="px-3 py-1.5 text-[10px] font-mono text-brand-muted bg-transparent border border-brand-border rounded-sm hover:bg-brand-bg transition-colors"
+              className="px-3 py-1.5 text-[10px] font-body text-brand-muted bg-transparent border border-brand-border rounded-sm hover:bg-brand-bg transition-colors"
             >
               Cancel
             </button>
@@ -178,7 +178,7 @@ function ConnectionSection({
         ) : (
           <button
             onClick={() => setConfirmDisconnect(true)}
-            className="flex-1 py-1.5 text-[10px] font-mono text-[#ff4d6d] bg-[rgba(255,77,109,0.1)] border border-[#ff4d6d]/30 rounded-sm hover:bg-[rgba(255,77,109,0.15)] transition-colors"
+            className="flex-1 py-1.5 text-[10px] font-body text-[#ff4d6d] bg-[rgba(255,77,109,0.1)] border border-[#ff4d6d]/30 rounded-sm hover:bg-[rgba(255,77,109,0.15)] transition-colors"
           >
             Disconnect
           </button>
@@ -284,7 +284,7 @@ export function BankDetailDrawer({ bank, onClose, onConnect, onDisconnect, onRes
                   style={{ backgroundColor: logoError || !bank.domain ? bank.color : undefined }}
                 >
                   {logoError || !bank.domain ? (
-                    <span className="text-[10px] font-mono font-bold text-white leading-none">
+                    <span className="text-[10px] font-body font-bold text-white leading-none">
                       {bank.abbr.slice(0, 2)}
                     </span>
                   ) : (
@@ -316,7 +316,7 @@ export function BankDetailDrawer({ bank, onClose, onConnect, onDisconnect, onRes
               ) : connections.length > 0 ? (
                 <>
                   {connections.length > 1 && (
-                    <p className="text-[10px] font-mono uppercase tracking-widest text-brand-muted">
+                    <p className="text-[10px] font-body uppercase tracking-widest text-brand-muted">
                       {connections.length} Connections
                     </p>
                   )}
@@ -338,7 +338,7 @@ export function BankDetailDrawer({ bank, onClose, onConnect, onDisconnect, onRes
                     style={{ backgroundColor: !bank.domain ? bank.color : undefined }}
                   >
                     {!bank.domain ? (
-                      <span className="text-lg font-mono font-bold text-white">{bank.abbr.slice(0, 2)}</span>
+                      <span className="text-lg font-body font-bold text-white">{bank.abbr.slice(0, 2)}</span>
                     ) : (
                       <Image
                         unoptimized
@@ -348,14 +348,14 @@ export function BankDetailDrawer({ bank, onClose, onConnect, onDisconnect, onRes
                     )}
                   </div>
                   <div>
-                    <p className="text-sm font-mono font-semibold text-brand-text">{bank.name}</p>
-                    <p className="text-[10px] font-mono text-brand-muted mt-1.5 max-w-[220px] mx-auto leading-relaxed">
+                    <p className="text-sm font-body font-semibold text-brand-text">{bank.name}</p>
+                    <p className="text-[10px] font-body text-brand-muted mt-1.5 max-w-[220px] mx-auto leading-relaxed">
                       Sync accounts and transactions automatically
                     </p>
                   </div>
                   <button
                     onClick={() => onConnect(bank)}
-                    className="px-6 py-2.5 bg-[#00C853] text-black text-xs font-mono font-semibold rounded-sm hover:bg-[#00a844] active:scale-[0.97] transition-all"
+                    className="px-6 py-2.5 bg-[#00C853] text-black text-xs font-body font-semibold rounded-sm hover:bg-[#00a844] active:scale-[0.97] transition-all"
                   >
                     Connect
                   </button>

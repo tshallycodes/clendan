@@ -48,7 +48,7 @@ export function PricingFAQ() {
                 {item.q}
               </span>
               <span
-                className={`flex-shrink-0 font-mono text-[18px] text-brand-muted transition-transform duration-200 ${
+                className={`flex-shrink-0 font-body text-[18px] text-brand-muted transition-transform duration-200 ${
                   isOpen ? 'rotate-45' : ''
                 }`}
               >
@@ -57,7 +57,7 @@ export function PricingFAQ() {
             </button>
             {isOpen && (
               <div className="px-5 pb-4 border-t border-brand-border pt-4">
-                <p className="font-mono text-[13px] text-brand-secondary leading-relaxed">
+                <p className="font-body text-[13px] text-brand-secondary leading-relaxed">
                   {item.a}
                 </p>
               </div>

@@ -39,7 +39,7 @@ export function NumberInput({ value, min, max, step = 1, onChange, className }: 
           const raw = step < 1 ? parseFloat(e.target.value) : parseInt(e.target.value, 10)
           if (!isNaN(raw)) onChange(clamp(raw))
         }}
-        className="flex-1 min-w-0 bg-transparent px-3 py-2 text-xs font-mono text-brand-text outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+        className="flex-1 min-w-0 bg-transparent px-3 py-2 text-xs font-body text-brand-text outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
       />
       <div className="flex flex-col border-l border-brand-border shrink-0">
         <button

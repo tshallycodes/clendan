@@ -20,8 +20,8 @@ export interface RunDrawerProps {
   onQueued: (executionId: string) => void
 }
 
-const inputClass = 'w-full bg-[#0a0a0a] border border-brand-border focus:border-[#00C853] text-[#e8f0e8] rounded-sm px-3 py-2 text-xs font-mono outline-none transition-colors resize-none'
-const labelClass = 'text-[10px] font-mono text-[#6e8c6e] uppercase tracking-widest'
+const inputClass = 'w-full bg-[#0a0a0a] border border-brand-border focus:border-[#00C853] text-[#e8f0e8] rounded-sm px-3 py-2 text-xs font-body outline-none transition-colors resize-none'
+const labelClass = 'text-[10px] font-body text-[#6e8c6e] uppercase tracking-widest'
 
 export function RunDrawer({ tool, onClose, onQueued }: RunDrawerProps) {
   const { getToken } = useAuth()
@@ -106,12 +106,12 @@ export function RunDrawer({ tool, onClose, onQueued }: RunDrawerProps) {
               <p className="font-heading font-semibold text-[#e8f0e8] text-sm">Queued successfully</p>
               <div className="w-full space-y-1">
                 <p className={labelClass}>Execution ID</p>
-                <p className="text-xs font-mono text-[#a0b8a0] select-all break-all">{queuedId}</p>
+                <p className="text-xs font-body text-[#a0b8a0] select-all break-all">{queuedId}</p>
               </div>
-              <Link href="/executions" className="text-xs font-mono text-[#00C853] underline underline-offset-2 hover:text-[#00a844] transition-colors">
+              <Link href="/executions" className="text-xs font-body text-[#00C853] underline underline-offset-2 hover:text-[#00a844] transition-colors">
                 View in Executions
               </Link>
-              <button type="button" onClick={onClose} className="border border-brand-border text-[#e8f0e8] rounded-sm px-3 py-2 text-xs font-mono hover:bg-[#1a1a1a] transition-colors w-full">
+              <button type="button" onClick={onClose} className="border border-brand-border text-[#e8f0e8] rounded-sm px-3 py-2 text-xs font-body hover:bg-[#1a1a1a] transition-colors w-full">
                 Close
               </button>
             </div>
@@ -121,7 +121,7 @@ export function RunDrawer({ tool, onClose, onQueued }: RunDrawerProps) {
                 <p className={labelClass}>Payload</p>
 
                 <div className="space-y-1.5">
-                  <label className="text-xs font-mono text-[#a0b8a0]">JSON Payload</label>
+                  <label className="text-xs font-body text-[#a0b8a0]">JSON Payload</label>
                   <textarea
                     value={payloadText}
                     onChange={(e) => { setPayloadText(e.target.value); setPayloadError(null) }}
@@ -130,9 +130,9 @@ export function RunDrawer({ tool, onClose, onQueued }: RunDrawerProps) {
                     className={inputClass}
                   />
                   {payloadError ? (
-                    <p className="text-[10px] font-mono text-[#ff4d6d]">{payloadError}</p>
+                    <p className="text-[10px] font-body text-[#ff4d6d]">{payloadError}</p>
                   ) : (
-                    <p className="text-[10px] font-mono text-[#6e8c6e]">Payload is passed directly to the tool. Must be valid JSON.</p>
+                    <p className="text-[10px] font-body text-[#6e8c6e]">Payload is passed directly to the tool. Must be valid JSON.</p>
                   )}
                 </div>
 
@@ -143,14 +143,14 @@ export function RunDrawer({ tool, onClose, onQueued }: RunDrawerProps) {
                   type="button"
                   onClick={handleSubmit}
                   disabled={submitting}
-                  className="bg-[#00C853] text-black hover:bg-[#00a844] active:scale-[0.97] rounded-sm px-3 py-2 text-xs font-mono transition-all disabled:opacity-50"
+                  className="bg-[#00C853] text-black hover:bg-[#00a844] active:scale-[0.97] rounded-sm px-3 py-2 text-xs font-body transition-all disabled:opacity-50"
                 >
                   {submitting ? 'Queuing…' : 'Run Tool'}
                 </button>
                 <button
                   type="button"
                   onClick={onClose}
-                  className="border border-brand-border text-[#e8f0e8] rounded-sm px-3 py-2 text-xs font-mono hover:bg-[#1a1a1a] transition-colors"
+                  className="border border-brand-border text-[#e8f0e8] rounded-sm px-3 py-2 text-xs font-body hover:bg-[#1a1a1a] transition-colors"
                 >
                   Cancel
                 </button>

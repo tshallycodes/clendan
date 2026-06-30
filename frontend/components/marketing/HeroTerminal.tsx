@@ -37,13 +37,13 @@ export function HeroTerminal() {
           <span className="w-2.5 h-2.5 rounded-full" style={{ background: '#ff4d6d', opacity: 0.7 }} />
           <span className="w-2.5 h-2.5 rounded-full" style={{ background: '#f5a623', opacity: 0.7 }} />
           <span className="w-2.5 h-2.5 rounded-full" style={{ background: '#00C853', opacity: 0.7 }} />
-          <span className="ml-3 text-xs font-mono text-brand-muted">invoice-tool — execution log</span>
+          <span className="ml-3 text-xs font-body text-brand-muted">invoice-tool — execution log</span>
         </div>
         <div className="p-5 flex flex-col gap-2" aria-label="Execution log">
           {LOG_LINES.map((line, i) => (
             <div
               key={i}
-              className="flex items-start gap-3 text-xs font-mono"
+              className="flex items-start gap-3 text-xs font-body"
               style={{
                 opacity: 0,
                 animation: `terminalFadeIn 0.4s ease-out forwards`,
@@ -55,7 +55,7 @@ export function HeroTerminal() {
             </div>
           ))}
           <div
-            className="flex items-center gap-3 text-xs font-mono"
+            className="flex items-center gap-3 text-xs font-body"
             style={{
               opacity: 0,
               animation: `terminalFadeIn 0.4s ease-out forwards`,

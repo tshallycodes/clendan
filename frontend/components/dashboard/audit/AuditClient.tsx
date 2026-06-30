@@ -39,7 +39,7 @@ export function AuditClient({ entries }: Props) {
         <button
           onClick={() => exportCsv(entries)}
           className="shrink-0 bg-transparent border border-brand-border text-brand-text hover:bg-brand-surface
-            text-xs font-mono px-4 py-2 rounded-sm transition-colors"
+            text-xs font-body px-4 py-2 rounded-sm transition-colors"
         >
           Export CSV
         </button>
@@ -47,7 +47,7 @@ export function AuditClient({ entries }: Props) {
 
       <motion.div variants={sectionVariants} className="bg-brand-surface border border-brand-border rounded-sm overflow-hidden">
         {entries.length === 0 ? (
-          <p className="px-5 py-12 text-xs font-mono text-brand-muted text-center">No audit entries yet</p>
+          <p className="px-5 py-12 text-xs font-body text-brand-muted text-center">No audit entries yet</p>
         ) : (
           <AuditTable
             entries={entries}
