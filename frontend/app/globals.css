@@ -48,7 +48,7 @@
   --color-brand-warning: #f5a623;
 
   --font-heading: 'Sora', sans-serif;
-  --font-body:    'DM Sans', sans-serif;
+  --font-body:    'Merriweather', serif;
   --font-sans:    var(--font-body);
 
   /* Border radius scale — rounded across the app */
@@ -92,7 +92,7 @@ html {
 body {
   background-color: var(--brand-bg);
   color: var(--brand-text);
-  font-family: var(--font-body), 'DM Sans', sans-serif;
+  font-family: var(--font-body), 'Merriweather', serif;
 }
 
 h1, h2, h3, h4, h5, h6 {

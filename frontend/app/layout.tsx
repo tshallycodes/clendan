@@ -1,5 +1,5 @@
 ﻿import type { Metadata } from 'next'
-import { Sora, DM_Sans } from 'next/font/google'
+import { Sora, Merriweather } from 'next/font/google'
 import { ClerkProvider } from '@clerk/nextjs'
 import { Providers } from '@/components/Providers'
 import { WarningBanner } from '@/components/WarningBanner'
@@ -11,10 +11,10 @@ const sora = Sora({
   weight: ['300', '400', '500', '600'],
 })
 
-const dmSans = DM_Sans({
+const merriweather = Merriweather({
   variable: '--font-body',
   subsets: ['latin'],
-  weight: ['300', '400', '500', '600'],
+  weight: ['300', '400', '700', '900'],
 })
 
 export const metadata: Metadata = {
@@ -30,7 +30,7 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <ClerkProvider>
-      <html lang="en" className={`${sora.variable} ${dmSans.variable} h-full`} suppressHydrationWarning>
+      <html lang="en" className={`${sora.variable} ${merriweather.variable} h-full`} suppressHydrationWarning>
         <head>
           <script
             dangerouslySetInnerHTML={{
