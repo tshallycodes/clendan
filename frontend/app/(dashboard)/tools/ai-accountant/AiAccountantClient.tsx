@@ -266,8 +266,7 @@ export function AiAccountantClient() {
   async function handleCategoriseNow() {
     if (!deployed?.id) { toast('Deploy the tool to continue', 'error'); return }
     if (running) return
-    const pending = transactions.filter(t => t.status !== 'categorised' && t.status !== 'matched')
-    if (pendingCount === 0 || pending.length === 0) { toast('No uncategorised transactions', 'info'); return }
+    if (pendingCount === 0) { toast('No uncategorised transactions', 'info'); return }
     setRunning(true)
     pollStartCategorisedRef.current = categorisedCount + matchedCount
     triggeredExecutionIdRef.current = null
@@ -280,7 +279,7 @@ export function AiAccountantClient() {
           'Content-Type': 'application/json',
           'Idempotency-Key': `ai-accountant-${deployed.id}-${Date.now()}`,
         },
-        body: JSON.stringify({ payload: { transaction_ids: pending.map(t => t.id) } }),
+        body: JSON.stringify({ payload: { transaction_ids: [] } }),
       })
       if (!res.ok) {
         const json = await res.json().catch(() => null)
@@ -405,9 +404,9 @@ export function AiAccountantClient() {
             }`}>
             {t.label}
             {t.key === 'approvals' && pendingApprovalCount > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 flex items-center justify-center min-w-[16px] h-4 px-1 rounded-full bg-[#00a8cc] text-[9px] font-mono font-semibold text-black leading-none">
-                <span className="absolute inset-0 rounded-full bg-[#00a8cc] animate-ping opacity-60" />
-                <span className="relative">{pendingApprovalCount > 99 ? '99+' : pendingApprovalCount}</span>
+              <span className="absolute -top-px -right-1 flex h-[7px] w-[7px]">
+                <span className="absolute inset-0 rounded-full bg-[#00a8cc] animate-ping opacity-75" />
+                <span className="relative rounded-full h-[7px] w-[7px] bg-[#00a8cc]" />
               </span>
             )}
           </button>

@@ -591,11 +591,25 @@ async def _orchestrate_transaction_posted(
             "transaction_count": len(transaction_ids),
         },
     )
-    if not transaction_ids:
-        logger.warning("transaction_posted_no_ids", extra={"execution_id": execution_id})
-        return "blocked", 0.0, "No transaction_ids in payload"
-
     db = get_db()
+    if not transaction_ids:
+        logger.info("transaction_posted_fetch_all_pending", extra={"execution_id": execution_id, "tenant_id": tenant_id})
+        pending_txns = await db.banktransaction.find_many(
+            where={
+                "tenant_id": tenant_id,
+                "AND": [
+                    {"NOT": {"status": {"equals": "categorised"}}},
+                    {"NOT": {"status": {"equals": "matched"}}},
+                ],
+            },
+            take=2000,
+            order={"date": "desc"},
+        )
+        transaction_ids = [t.id for t in pending_txns]
+        if not transaction_ids:
+            logger.info("transaction_posted_nothing_pending", extra={"execution_id": execution_id})
+            return "blocked", 0.0, "No pending transactions to categorise"
+        logger.info("transaction_posted_all_pending", extra={"execution_id": execution_id, "count": len(transaction_ids)})
     tool_record = await db.tool.find_unique(where={"id": tool_id})
     policy_config = (
         tool_record.config_json if tool_record and isinstance(tool_record.config_json, dict) else {}
