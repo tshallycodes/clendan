@@ -74,7 +74,7 @@ async def list_all_transactions(
         total,
         all_debits,
         all_credits,
-        pending_count,
+        total_all,
         categorised_count,
         matched_count,
     ) = await asyncio.gather(
@@ -88,10 +88,12 @@ async def list_all_transactions(
         db.banktransaction.count(where=where),
         db.banktransaction.find_many(where={**where, "amount_minor": {"gt": 0}}),
         db.banktransaction.find_many(where={**where, "amount_minor": {"lt": 0}}),
-        db.banktransaction.count(where={**status_count_where, "status": {"in": ["pending", "unprocessed"]}}),
+        db.banktransaction.count(where=status_count_where),
         db.banktransaction.count(where={**status_count_where, "status": "categorised"}),
         db.banktransaction.count(where={**status_count_where, "status": "matched"}),
     )
+    # pending_count = everything not yet categorised or matched — catches any status including null
+    pending_count = total_all - categorised_count - matched_count
     total_out_minor: int = sum(t.amount_minor for t in all_debits)
     total_in_minor: int = sum(-t.amount_minor for t in all_credits)
 
