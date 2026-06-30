@@ -14,6 +14,7 @@ from typing import Any
 import anthropic
 from pydantic import BaseModel
 
+from app.audit.logger import write_audit_log
 from app.core.config import get_settings
 from app.core.db import get_db
 from app.core.logging import get_logger, get_trace_id
@@ -226,34 +227,32 @@ class AIAccountantTool:
             resolved_execution_id = created.id
 
         # STEP 7: Audit — append-only, must succeed or operation fails
-        await db.auditlog.create(
-            data={
-                "tenant_id": tenant_id,
-                "execution_id": resolved_execution_id,
-                "actor": f"tool:{tool_id}",
-                "action": "ai_accountant:categorise_and_match",
-                "reasoning_trace_json": {
-                    "trace_id": trace_id,
-                    "reasoning": reasoning_trace,
-                    "results": [
-                        {
-                            "transaction_id": r.transaction_id,
-                            "ai_category": r.ai_category,
-                            "matched_invoice_id": r.matched_invoice_id,
-                            "confidence": r.confidence,
-                            "reasoning": r.reasoning,
-                        }
-                        for r in results
-                    ],
-                    "policy_violations": policy_violations,
-                    "category_distribution": dict(current_category_dist),
-                    "prior_period_category_distribution": dict(prior_category_dist),
-                    "category_shifts": significant_shifts,
-                    "has_significant_shifts": has_significant_shifts,
-                    "significant_shift_penalty": significant_shift_penalty_applied,
-                },
-                "model_version": get_settings().claude_model,
-            }
+        await write_audit_log(
+            tenant_id=tenant_id,
+            execution_id=resolved_execution_id,
+            actor=f"tool:{tool_id}",
+            action="ai_accountant:categorise_and_match",
+            reasoning_trace={
+                "trace_id": trace_id,
+                "reasoning": reasoning_trace,
+                "results": [
+                    {
+                        "transaction_id": r.transaction_id,
+                        "ai_category": r.ai_category,
+                        "matched_invoice_id": r.matched_invoice_id,
+                        "confidence": r.confidence,
+                        "reasoning": r.reasoning,
+                    }
+                    for r in results
+                ],
+                "policy_violations": policy_violations,
+                "category_distribution": dict(current_category_dist),
+                "prior_period_category_distribution": dict(prior_category_dist),
+                "category_shifts": significant_shifts,
+                "has_significant_shifts": has_significant_shifts,
+                "significant_shift_penalty": significant_shift_penalty_applied,
+            },
+            model_version=get_settings().claude_model,
         )
 
         logger.info(
