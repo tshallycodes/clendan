@@ -461,73 +461,78 @@ class AIAccountantTool:
                 f"- Return ONLY the JSON array — no markdown, no explanation, no preamble."
             )
 
-        # Process in batches to avoid hitting Claude's output token limit
+        # Split into batches, then run all batches in parallel to minimise total latency
         chunks = [
             txn_list[i : i + self._CLAUDE_BATCH_SIZE]
             for i in range(0, len(txn_list), self._CLAUDE_BATCH_SIZE)
         ]
-        all_parsed: list[dict] = []
-        all_raws: list[str] = []
-        was_cancelled = False
         logger.info(
             "ai_accountant_claude_batches",
             extra={"total_txns": len(txn_list), "batches": len(chunks), "batch_size": self._CLAUDE_BATCH_SIZE},
         )
 
-        for batch_idx, batch in enumerate(chunks):
-            if batch_idx > 0 and execution_id:
-                exec_record = await db.execution.find_unique(where={"id": execution_id})
-                if exec_record and exec_record.status == "cancelled":
+        # Pre-flight cancellation check before starting parallel Claude calls
+        was_cancelled = False
+        if execution_id:
+            pre_check = await db.execution.find_unique(where={"id": execution_id})
+            if pre_check and pre_check.status == "cancelled":
+                was_cancelled = True
+                logger.info("ai_accountant_cancelled_preflight", extra={"execution_id": execution_id})
+
+        all_parsed: list[dict] = []
+        all_raws: list[str] = []
+
+        if not was_cancelled:
+            sem = asyncio.Semaphore(5)
+
+            async def _run_batch(batch_idx: int, batch: list) -> tuple[list, str]:
+                async with sem:
+                    last_exc: Exception = RuntimeError("No attempts made")
+                    raw = ""
+                    for attempt in range(settings.max_agent_attempts):
+                        try:
+                            message = await client.messages.create(
+                                model=settings.claude_model,
+                                max_tokens=8192,
+                                messages=[{"role": "user", "content": _build_prompt(batch)}],
+                            )
+                            raw = message.content[0].text.strip()
+                            parsed_batch = json.loads(_strip_markdown_fences(raw))
+                            logger.info(
+                                "ai_accountant_batch_done",
+                                extra={"batch": batch_idx + 1, "of": len(chunks), "items": len(parsed_batch)},
+                            )
+                            return parsed_batch, raw
+                        except (anthropic.APIStatusError, anthropic.APIConnectionError) as exc:
+                            last_exc = exc
+                            logger.warning(
+                                "ai_accountant_transient_error",
+                                extra={"batch": batch_idx + 1, "attempt": attempt + 1, "error": str(exc)},
+                            )
+                            if attempt < settings.max_agent_attempts - 1:
+                                await asyncio.sleep(settings.backoff_seconds * (attempt + 1))
+                        except json.JSONDecodeError as exc:
+                            last_exc = exc
+                            logger.warning(
+                                "ai_accountant_json_parse_error",
+                                extra={"batch": batch_idx + 1, "attempt": attempt + 1, "error": str(exc), "raw_prefix": raw[:500]},
+                            )
+                            if attempt < settings.max_agent_attempts - 1:
+                                await asyncio.sleep(settings.backoff_seconds * (attempt + 1))
+                    raise RuntimeError(
+                        f"Claude API failed on batch {batch_idx + 1}/{len(chunks)} after {settings.max_agent_attempts} attempts: {last_exc}"
+                    ) from last_exc
+
+            batch_results = await asyncio.gather(*[_run_batch(idx, b) for idx, b in enumerate(chunks)])
+            all_parsed = [item for parsed, _ in batch_results for item in parsed]
+            all_raws = [r for _, r in batch_results]
+
+            # Post-flight cancellation check — user may have cancelled while parallel batches ran
+            if execution_id:
+                post_check = await db.execution.find_unique(where={"id": execution_id})
+                if post_check and post_check.status == "cancelled":
                     was_cancelled = True
-                    logger.info(
-                        "ai_accountant_cancelled_between_batches",
-                        extra={"execution_id": execution_id, "completed_batches": batch_idx, "remaining": len(chunks) - batch_idx},
-                    )
-                    break
-            prompt = _build_prompt(batch)
-            last_exc: Exception = RuntimeError("No attempts made")
-            raw = ""
-            for attempt in range(settings.max_agent_attempts):
-                try:
-                    message = await client.messages.create(
-                        model=settings.claude_model,
-                        max_tokens=8192,
-                        messages=[{"role": "user", "content": prompt}],
-                    )
-                    raw = message.content[0].text.strip()
-                    parsed_batch = json.loads(_strip_markdown_fences(raw))
-                    all_parsed.extend(parsed_batch)
-                    all_raws.append(raw)
-                    logger.info(
-                        "ai_accountant_batch_done",
-                        extra={"batch": batch_idx + 1, "of": len(chunks), "items": len(parsed_batch)},
-                    )
-                    break
-                except (anthropic.APIStatusError, anthropic.APIConnectionError) as exc:
-                    last_exc = exc
-                    logger.warning(
-                        "ai_accountant_transient_error",
-                        extra={"batch": batch_idx + 1, "attempt": attempt + 1, "error": str(exc)},
-                    )
-                    if attempt < settings.max_agent_attempts - 1:
-                        await asyncio.sleep(settings.backoff_seconds * (attempt + 1))
-                except json.JSONDecodeError as exc:
-                    last_exc = exc
-                    logger.warning(
-                        "ai_accountant_json_parse_error",
-                        extra={
-                            "batch": batch_idx + 1,
-                            "attempt": attempt + 1,
-                            "error": str(exc),
-                            "raw_prefix": raw[:500],
-                        },
-                    )
-                    if attempt < settings.max_agent_attempts - 1:
-                        await asyncio.sleep(settings.backoff_seconds * (attempt + 1))
-            else:
-                raise RuntimeError(
-                    f"Claude API failed on batch {batch_idx + 1}/{len(chunks)} after {settings.max_agent_attempts} attempts: {last_exc}"
-                ) from last_exc
+                    logger.info("ai_accountant_cancelled_postflight", extra={"execution_id": execution_id})
 
         parsed = all_parsed
         raw = "\n---\n".join(all_raws)
