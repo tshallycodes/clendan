@@ -179,6 +179,7 @@ export function AiAccountantClient() {
     const interval = setInterval(async () => {
       if (!active) return
       const token = await getToken()
+      if (!token) return
       const execState = await checkExecution(token)
 
       if (execState === 'failed') {
