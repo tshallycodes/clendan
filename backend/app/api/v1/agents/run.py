@@ -113,6 +113,7 @@ async def run_agent(
             "decision": "pending",
             "confidence": 0.0,
             "status": "queued",
+            **({"triggered_by_email": current_user.email} if current_user.email else {}),
         }
     )
 
@@ -206,6 +207,7 @@ async def trigger_agent(
             "decision": "pending",
             "confidence": 0.0,
             "status": "queued",
+            **({"triggered_by_email": current_user.email} if current_user.email else {}),
         }
     )
 

@@ -52,8 +52,8 @@ class ExecuteRequest(BaseModel):
     payload: dict[str, Any] = {}
 
 
-async def _resolve_api_key(authorization: str) -> tuple[str, str]:
-    """Validate API key and return (tenant_id, api_key_id), or raise 401."""
+async def _resolve_api_key(authorization: str) -> tuple[str, str, str]:
+    """Validate API key and return (tenant_id, api_key_id, key_name), or raise 401."""
     if not authorization.startswith("ck_live_"):
         raise HTTPException(status_code=401, detail="Invalid API key format")
     key_hash = hashlib.sha256(authorization.encode()).hexdigest()
@@ -67,7 +67,7 @@ async def _resolve_api_key(authorization: str) -> tuple[str, str]:
             expires_at = expires_at.replace(tzinfo=timezone.utc)
         if datetime.now(tz=timezone.utc) > expires_at:
             raise HTTPException(status_code=401, detail="API key has expired")
-    return api_key.tenant_id, api_key.id
+    return api_key.tenant_id, api_key.id, api_key.name or "api"
 
 
 @router.post("")
@@ -81,7 +81,7 @@ async def execute(
     Authenticates via API key (ck_live_...), enqueues the requested tool.
     Same Idempotency-Key + tenant + tool returns the existing execution record.
     """
-    tenant_id, api_key_id = await _resolve_api_key(authorization)
+    tenant_id, api_key_id, key_name = await _resolve_api_key(authorization)
     db = get_db()
 
     # --- Validate tool type ---
@@ -130,6 +130,7 @@ async def execute(
             "decision": "pending",
             "confidence": 0.0,
             "status": "queued",
+            "triggered_by_email": f"api:{key_name}",
         }
     )
 
@@ -187,7 +188,7 @@ async def execute_document_intelligence(
     Returns execution_id to poll via GET /execute/{execution_id}.
     The completed response includes extracted_json with summary, risks, parties, key dates.
     """
-    tenant_id, _ = await _resolve_api_key(authorization)
+    tenant_id, _, key_name = await _resolve_api_key(authorization)
     db = get_db()
 
     content_type = file.content_type or "application/pdf"
@@ -245,6 +246,7 @@ async def execute_document_intelligence(
         "decision": "pending",
         "confidence": 0.0,
         "status": "queued",
+        "triggered_by_email": f"api:{key_name}",
     })
 
     await db.document.update(
@@ -287,7 +289,7 @@ async def list_tools(
     authorization: str = Header(..., alias="Authorization"),
 ):
     """List active deployed tools for the authenticated tenant."""
-    tenant_id, _ = await _resolve_api_key(authorization)
+    tenant_id, _, key_name = await _resolve_api_key(authorization)
     db = get_db()
 
     tools = await db.tool.find_many(
@@ -318,7 +320,7 @@ async def list_approvals(
     offset: int = Query(0, ge=0),
 ):
     """List pending approvals for the authenticated tenant."""
-    tenant_id, _ = await _resolve_api_key(authorization)
+    tenant_id, _, key_name = await _resolve_api_key(authorization)
     db = get_db()
 
     approvals = await db.approval.find_many(
@@ -354,7 +356,7 @@ async def approve_action(
     authorization: str = Header(..., alias="Authorization"),
 ):
     """Approve a pending action. Enforces tenant isolation and expiry TTL."""
-    tenant_id, _ = await _resolve_api_key(authorization)
+    tenant_id, _, key_name = await _resolve_api_key(authorization)
     db = get_db()
 
     approval = await db.approval.find_first(
@@ -399,7 +401,7 @@ async def reject_action(
     authorization: str = Header(..., alias="Authorization"),
 ):
     """Reject a pending action. Enforces tenant isolation and expiry TTL."""
-    tenant_id, _ = await _resolve_api_key(authorization)
+    tenant_id, _, key_name = await _resolve_api_key(authorization)
     db = get_db()
 
     approval = await db.approval.find_first(
@@ -445,7 +447,7 @@ async def list_audit(
     offset: int = Query(0, ge=0),
 ):
     """Query the audit log for the authenticated tenant."""
-    tenant_id, _ = await _resolve_api_key(authorization)
+    tenant_id, _, key_name = await _resolve_api_key(authorization)
     db = get_db()
 
     entries, total = await asyncio.gather(
@@ -484,7 +486,7 @@ async def list_transactions(
     offset: int = Query(0, ge=0),
 ):
     """List bank transactions for the authenticated tenant."""
-    tenant_id, _ = await _resolve_api_key(authorization)
+    tenant_id, _, key_name = await _resolve_api_key(authorization)
     db = get_db()
 
     transactions, total = await asyncio.gather(
@@ -529,7 +531,7 @@ async def get_execution(
     Authenticated via API key (same as POST /execute).
     Returns status, decision, confidence, reasoning trace, and timing.
     """
-    tenant_id, _ = await _resolve_api_key(authorization)
+    tenant_id, _, key_name = await _resolve_api_key(authorization)
     db = get_db()
 
     execution = await db.execution.find_first(
