@@ -91,16 +91,19 @@ export function AiAccountantClient() {
   const [showConfig, setShowConfig] = useState(false)
   const [toggling, setToggling] = useState(false)
   const [deploying, setDeploying] = useState(false)
+  const [pendingApprovalCount, setPendingApprovalCount] = useState(0)
   const pollStartCategorisedRef = useRef(0)
   const triggeredExecutionIdRef = useRef<string | null>(null)
 
   const fetchDeployed = useCallback(async () => {
     const token = await getToken()
     const res = await fetch(`${API}/tools`, { headers: { Authorization: `Bearer ${token}` } })
-    if (!res.ok) return
+    if (!res.ok) return null
     const json = await res.json()
     const tools: Tool[] = json.data?.tools ?? json.data ?? []
-    setDeployed(tools.find((w) => w.type === 'ai_accountant') ?? null)
+    const found = tools.find((w) => w.type === 'ai_accountant') ?? null
+    setDeployed(found)
+    return found
   }, [getToken])
 
   const fetchTransactions = useCallback(async (fromOffset = 0, replace = true) => {
@@ -132,9 +135,22 @@ export function AiAccountantClient() {
     if (json.data) setCategories(json.data)
   }, [getToken])
 
+  const fetchPendingApprovals = useCallback(async (toolId: string) => {
+    const token = await getToken()
+    const res = await fetch(`${API}/dashboard/approvals?tool_id=${toolId}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+    if (!res.ok) return
+    const json = await res.json()
+    const approvals: { status: string }[] = json.data?.approvals ?? []
+    setPendingApprovalCount(approvals.filter(a => a.status === 'pending').length)
+  }, [getToken])
+
   useEffect(() => {
     async function init() {
-      await Promise.all([fetchDeployed(), fetchTransactions(), fetchCategories()])
+      const deployedTool = await fetchDeployed()
+      await Promise.all([fetchTransactions(), fetchCategories()])
+      if (deployedTool?.id) fetchPendingApprovals(deployedTool.id)
     }
     init()
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
@@ -188,6 +204,7 @@ export function AiAccountantClient() {
         active = false
         setPolling(false)
         setRunning(false)
+        if (deployed?.id) fetchPendingApprovals(deployed.id)
         toast('Categorisation complete', 'success')
       }
     }, 2000)
@@ -197,7 +214,7 @@ export function AiAccountantClient() {
       setRunning(false)
     }, 5 * 60 * 1000)
     return () => { active = false; clearInterval(interval); clearTimeout(timeout) }
-  }, [polling, fetchTransactions, toast, getToken, deployed?.id])
+  }, [polling, fetchTransactions, fetchPendingApprovals, toast, getToken, deployed?.id])
 
   async function handleToggle() {
     if (!deployed) return
@@ -361,13 +378,28 @@ export function AiAccountantClient() {
 
       <motion.div variants={sectionVariants} className="flex gap-1 border-b border-brand-border">
         {TABS.map(t => (
-          <button key={t.key} type="button" onClick={() => setActiveTab(t.key)}
-            className={`text-xs font-mono px-4 py-2.5 border-b-2 transition-colors -mb-px ${
+          <button
+            key={t.key}
+            type="button"
+            onClick={() => {
+              setActiveTab(t.key)
+              if (t.key === 'approvals' && deployed?.id) {
+                fetchPendingApprovals(deployed.id)
+                setPendingApprovalCount(0)
+              }
+            }}
+            className={`relative text-xs font-mono px-4 py-2.5 border-b-2 transition-colors -mb-px ${
               activeTab === t.key
                 ? 'border-[#00C853] text-brand-text'
                 : 'border-transparent text-brand-muted hover:text-brand-secondary'
             }`}>
             {t.label}
+            {t.key === 'approvals' && pendingApprovalCount > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 flex items-center justify-center min-w-[16px] h-4 px-1 rounded-full bg-[#00a8cc] text-[9px] font-mono font-semibold text-black leading-none">
+                <span className="absolute inset-0 rounded-full bg-[#00a8cc] animate-ping opacity-60" />
+                <span className="relative">{pendingApprovalCount > 99 ? '99+' : pendingApprovalCount}</span>
+              </span>
+            )}
           </button>
         ))}
       </motion.div>
