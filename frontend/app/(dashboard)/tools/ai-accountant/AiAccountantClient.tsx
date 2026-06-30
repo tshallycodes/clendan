@@ -426,7 +426,7 @@ export function AiAccountantClient() {
                   <p className={`text-2xl font-mono font-semibold mt-1 ${pendingCount > 0 ? 'text-[#f5a623]' : 'text-brand-text'}`}>
                     {pendingCount}
                   </p>
-                  <p className="text-[10px] font-mono text-brand-muted mt-1">pending review</p>
+                  <p className="text-[10px] font-mono text-brand-muted mt-1">not yet categorised</p>
                 </div>
                 <div className="bg-brand-surface border border-brand-border rounded-sm p-4">
                   <p className="text-[10px] font-mono text-brand-muted uppercase tracking-wider">Categorised</p>
@@ -446,17 +446,26 @@ export function AiAccountantClient() {
               {pendingCount > 0 && (
                 <div className="bg-brand-surface border border-brand-border rounded-sm p-4 flex items-center justify-between gap-4">
                   <div>
-                    <p className="text-xs font-mono text-brand-text">{pendingCount} transaction{pendingCount !== 1 ? 's' : ''} pending categorisation</p>
-                    <p className="text-[10px] font-mono text-brand-muted mt-0.5">Run the AI now or view them in the Transactions tab</p>
+                    <p className="text-xs font-mono text-brand-text">{pendingCount} transaction{pendingCount !== 1 ? 's' : ''} not yet categorised</p>
+                    <p className="text-[10px] font-mono text-brand-muted mt-0.5">Run the AI to categorise automatically, or review and categorise manually in the Transactions tab</p>
                   </div>
-                  <button
-                    type="button"
-                    onClick={handleCategoriseNow}
-                    disabled={running}
-                    className="shrink-0 text-xs font-mono bg-[#00C853] text-black hover:bg-[#00a844] active:scale-[0.97] rounded-sm px-4 py-1.5 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-                  >
-                    {running ? 'Categorising…' : 'Categorise Now'}
-                  </button>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => { setActiveTab('transactions'); setFilter('pending') }}
+                      className="text-xs font-mono bg-transparent border border-brand-border text-brand-text hover:bg-brand-elevated rounded-sm px-4 py-1.5 transition-colors"
+                    >
+                      View
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleCategoriseNow}
+                      disabled={running}
+                      className="text-xs font-mono bg-[#00C853] text-black hover:bg-[#00a844] active:scale-[0.97] rounded-sm px-4 py-1.5 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      {running ? 'Categorising…' : 'Categorise Now'}
+                    </button>
+                  </div>
                 </div>
               )}
 
