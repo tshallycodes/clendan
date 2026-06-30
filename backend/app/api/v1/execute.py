@@ -212,6 +212,19 @@ async def execute_document_intelligence(
             detail="No active document_intelligence tool found for this tenant",
         )
 
+    # Idempotency: return existing execution if this key was already submitted
+    existing = await db.execution.find_first(
+        where={"tenant_id": tenant_id, "tool_id": tool.id, "input_ref": idempotency_key}
+    )
+    if existing and existing.status != "failed":
+        doc = await db.document.find_first(where={"execution_id": existing.id, "tenant_id": tenant_id})
+        return standard_response(data={
+            "document_id": doc.id if doc else None,
+            "execution_id": existing.id,
+            "status": existing.status,
+            "idempotent": True,
+        })
+
     thumbnail_b64 = _generate_thumbnail(file_bytes, content_type)
 
     doc_record = await db.document.create(data={
