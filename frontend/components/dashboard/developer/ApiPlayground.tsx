@@ -315,7 +315,19 @@ export function ApiPlayground() {
         })
       }
 
-      const json: unknown = await res.json()
+      let json: unknown
+      try {
+        json = await res.json()
+      } catch {
+        setResponse({ kind: 'result', data: { error: `HTTP ${res.status} — response was not JSON`, status: res.status } })
+        return
+      }
+
+      if (!res.ok) {
+        setResponse({ kind: 'result', data: json })
+        return
+      }
+
       const inner = ((json as Record<string, unknown>)?.['data']) as Record<string, unknown> | undefined
       const status = inner?.['status'] as string | undefined
       const executionId = inner?.['execution_id'] as string | undefined
@@ -325,8 +337,8 @@ export function ApiPlayground() {
       } else {
         setResponse({ kind: 'result', data: json })
       }
-    } catch {
-      setResponse({ kind: 'result', data: { error: 'Request failed - check API URL and key' } })
+    } catch (err) {
+      setResponse({ kind: 'result', data: { error: err instanceof Error ? err.message : 'Network error' } })
     }
   }
 
