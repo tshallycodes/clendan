@@ -553,7 +553,7 @@ async def run_orchestrator_job(
 
         return {"status": "ok", "execution_id": execution_id, "decision": decision}
 
-    except Exception as exc:
+    except BaseException as exc:
         logger.error(
             "orchestrator_job_failed",
             extra={"execution_id": execution_id, "event_type": event_type, "error": str(exc)},
@@ -568,7 +568,7 @@ async def run_orchestrator_job(
             pass
 
         job_try = ctx.get("job_try", 1)
-        if job_try >= 3:
+        if isinstance(exc, Exception) and job_try >= 3:
             await push_to_dlq(
                 job_id=str(ctx.get("job_id", "unknown")),
                 function_name="run_orchestrator_job",
@@ -1208,5 +1208,5 @@ class ToolSettings:
     redis_settings = RedisSettings.from_dsn(get_settings().redis_public_url)
 
     max_jobs = 10
-    job_timeout = 300
+    job_timeout = 900
     max_tries = 3
