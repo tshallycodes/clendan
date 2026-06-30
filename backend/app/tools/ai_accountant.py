@@ -29,6 +29,19 @@ ALLOWED_CATEGORIES = {
 }
 
 
+def _strip_markdown_fences(text: str) -> str:
+    """Remove ```json ... ``` or ``` ... ``` wrappers Claude sometimes adds."""
+    text = text.strip()
+    if text.startswith("```"):
+        newline = text.find("\n")
+        if newline != -1:
+            text = text[newline + 1:]
+        closing = text.rfind("```")
+        if closing != -1:
+            text = text[:closing]
+    return text.strip()
+
+
 class _ToolPolicy(BaseModel):
     auto_confidence_threshold: float = 0.85
     approve_confidence_threshold: float = 0.50
@@ -447,6 +460,7 @@ Rules:
 - Return ONLY the JSON array — no markdown, no explanation."""
 
         last_exc: Exception = RuntimeError("No attempts made")
+        raw = ""
         for attempt in range(settings.max_agent_attempts):
             try:
                 message = await client.messages.create(
@@ -455,7 +469,7 @@ Rules:
                     messages=[{"role": "user", "content": prompt}],
                 )
                 raw = message.content[0].text.strip()
-                parsed = json.loads(raw)
+                parsed = json.loads(_strip_markdown_fences(raw))
                 break
             except (anthropic.APIStatusError, anthropic.APIConnectionError) as exc:
                 last_exc = exc
@@ -466,9 +480,17 @@ Rules:
                 if attempt < settings.max_agent_attempts - 1:
                     await asyncio.sleep(settings.backoff_seconds * (attempt + 1))
             except json.JSONDecodeError as exc:
-                raise ValueError(
-                    "Claude returned non-JSON output for AI Accountant"
-                ) from exc
+                last_exc = exc
+                logger.warning(
+                    "ai_accountant_json_parse_error",
+                    extra={
+                        "attempt": attempt + 1,
+                        "error": str(exc),
+                        "raw_prefix": raw[:500],
+                    },
+                )
+                if attempt < settings.max_agent_attempts - 1:
+                    await asyncio.sleep(settings.backoff_seconds * (attempt + 1))
         else:
             raise RuntimeError(
                 f"Claude API failed after {settings.max_agent_attempts} attempts: {last_exc}"
