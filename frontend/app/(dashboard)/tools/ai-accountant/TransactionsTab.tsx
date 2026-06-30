@@ -103,7 +103,7 @@ function ColumnFilterDropdown({
       </button>
 
       {open && (
-        <div className="absolute left-0 top-full mt-1.5 z-40 w-56 bg-brand-elevated border border-brand-border rounded-sm overflow-hidden">
+        <div className="absolute left-0 top-full mt-1.5 z-40 w-56 bg-brand-surface border border-brand-border rounded-[4px] overflow-hidden">
           {/* Search */}
           {options.length > 5 && (
             <div className="px-2.5 py-2 border-b border-brand-border">
@@ -123,15 +123,15 @@ function ColumnFilterDropdown({
             <button
               type="button"
               onClick={onSelectAll}
-              className="text-[9px] font-mono text-brand-muted hover:text-brand-secondary transition-colors"
+              className="text-[9px] font-mono font-normal text-brand-muted hover:text-brand-secondary transition-colors"
             >
               Select all
             </button>
-            <span className="text-[9px] text-brand-muted">·</span>
+            <span className="text-[9px] font-normal text-brand-muted">·</span>
             <button
               type="button"
               onClick={onClear}
-              className="text-[9px] font-mono text-brand-muted hover:text-brand-secondary transition-colors"
+              className="text-[9px] font-mono font-normal text-brand-muted hover:text-brand-secondary transition-colors"
             >
               Clear
             </button>
@@ -150,15 +150,15 @@ function ColumnFilterDropdown({
                     type="button"
                     onClick={() => onToggle(opt)}
                     className={cn(
-                      'w-full flex items-center gap-2 text-left text-[10px] font-mono px-3 py-1.5 transition-colors',
+                      'w-full flex items-center gap-2 text-left text-[10px] font-mono font-normal px-3 py-1.5 transition-colors',
                       isSelected
-                        ? 'text-brand-text bg-brand-surface'
-                        : 'text-brand-secondary hover:text-brand-text hover:bg-brand-surface',
+                        ? 'text-brand-text bg-brand-elevated'
+                        : 'text-brand-secondary hover:text-brand-text hover:bg-brand-elevated',
                     )}
                   >
                     {/* Checkbox indicator */}
                     <span className={cn(
-                      'shrink-0 w-3 h-3 rounded-sm border flex items-center justify-center transition-colors',
+                      'shrink-0 w-3 h-3 rounded-[2px] border flex items-center justify-center transition-colors',
                       isSelected
                         ? 'bg-[#00C853] border-[#00C853]'
                         : 'border-brand-border',

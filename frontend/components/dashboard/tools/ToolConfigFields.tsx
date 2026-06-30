@@ -371,7 +371,7 @@ export function ToolConfigFields({ toolType, config, onChange, dynamicOptions }:
                         isChecked ? 'bg-brand-elevated border-brand-border' : 'bg-brand-bg border-brand-border hover:bg-brand-bg'
                       }`}
                     >
-                      <span className={`w-3.5 h-3.5 rounded-sm border flex items-center justify-center shrink-0 transition-colors ${
+                      <span className={`w-3.5 h-3.5 rounded-[2px] border flex items-center justify-center shrink-0 transition-colors ${
                         isChecked ? 'bg-[#00C853] border-[#00C853]' : 'bg-brand-bg border-brand-border'
                       }`}>
                         {isChecked && (

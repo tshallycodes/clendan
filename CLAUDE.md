@@ -416,9 +416,13 @@ Page container padding: `lg` or `xl`. Data clusters: `xs` or `sm`. Card internal
 
 ### Border Radius
 
-`xs: 2px` / `sm: 4px` / `md: 6px` / `lg: 8px` / `full: 9999px`
+Actual values from `globals.css` `@theme` block (Tailwind v4 — no tailwind.config):
 
-Clendan is sharp-edged — infrastructure product aesthetic. Default: `sm`. Max: `md`. No soft rounded cards.
+`xs: 4px` / `sm: 8px` / `md: 12px` / `lg: 16px` / `full: 9999px`
+
+**Warning:** `rounded-sm` = 8px. On small elements like 12–14px checkboxes, `rounded-sm` produces near-circles. For small square checkboxes always use `rounded-[2px]` directly, never `rounded-sm`.
+
+Clendan is sharp-edged — infrastructure product aesthetic. Default: `rounded-[4px]` for cards/panels. Never use `rounded-md` or larger on data surfaces.
 
 ### Component Patterns
 
@@ -449,7 +453,7 @@ Clendan is sharp-edged — infrastructure product aesthetic. Default: `sm`. Max:
 | Shape    | Class          | Use                                                               |
 |----------|----------------|-------------------------------------------------------------------|
 | Circular | `rounded-full` | Selection lists inside drawers and config panels (`ConfigDrawer`) |
-| Square   | `rounded-sm`   | Tool config multiselect fields rendered by `ToolConfigFields`     |
+| Square   | `rounded-[2px]` | Tool config multiselect fields (`ToolConfigFields`), column filter dropdowns |
 
 Never use native `<input type="checkbox">` — it is always square and cannot be styled consistently. Always use the custom `<button>` + `<span>` pattern below.
 
@@ -482,7 +486,7 @@ Never use native `<input type="checkbox">` — it is always square and cannot be
     isChecked ? 'bg-brand-elevated border-brand-border' : 'bg-brand-bg border-brand-border hover:bg-brand-elevated'
   }`}
 >
-  <span className={`w-3.5 h-3.5 rounded-sm border flex items-center justify-center shrink-0 transition-colors ${
+  <span className={`w-3.5 h-3.5 rounded-[2px] border flex items-center justify-center shrink-0 transition-colors ${
     isChecked ? 'bg-[#00C853] border-[#00C853]' : 'bg-brand-bg border-brand-border'
   }`}>
     {isChecked && (
@@ -496,6 +500,8 @@ Never use native `<input type="checkbox">` — it is always square and cannot be
 ```
 
 Pass `dynamicOptions?: Record<string, string[]>` to `ToolConfigFields` when options must come from the server (e.g. only connected integrations). The renderer uses `dynamicOptions[field.key]` over `field.options` when present. If the resolved list is empty, renders "No connected integrations. Connect one via Integrations first." in place of the buttons.
+
+**Column Filter Dropdown (table headers):** Used in data tables where columns need client-side multi-select filtering. Container: `bg-brand-surface border border-brand-border rounded-[4px]`. Items: `font-mono font-normal text-[10px]` with `hover:bg-brand-elevated`. Square checkboxes use `rounded-[2px]` (not `rounded-sm` — at 12–14px size, `rounded-sm`=8px produces circles). Active filter state on the column header: `text-[#00C853]` with a count badge `bg-[rgba(0,200,83,0.12)] text-[#00C853] rounded-full`. Clear-all button uses `text-brand-muted hover:text-brand-secondary` — never red, never green.
 
 ### Motion Rules
 
