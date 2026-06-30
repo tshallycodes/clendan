@@ -59,7 +59,7 @@ const WORKER_FIELDS: Record<string, FieldDef[]> = {
   ai_accountant: [
     { key: 'auto_categorise_confidence_min', type: 'number', label: 'Auto-categorise min confidence', unit: '%', step: 1, min: 0, max: 100, default: 90,
       description: "Transactions where Claude's confidence is at or above this are categorised automatically into your chart of accounts." },
-    { key: 'human_review_confidence_min', type: 'number', label: 'Human review below confidence', unit: '%', step: 1, min: 0, max: 100, default: 70,
+    { key: 'human_review_confidence_min', type: 'number', label: 'Human review below confidence', unit: '%', step: 1, min: 0, max: 100, default: 50,
       description: "Transactions where confidence falls between this and the auto-categorise threshold are sent for human review. Below this lower bound they're flagged for investigation." },
     { key: 'learn_from_corrections', type: 'boolean', label: 'Learn from corrections', default: true,
       description: 'When on, the model updates its categorisation based on corrections made by your team. Accuracy improves over time.' },
