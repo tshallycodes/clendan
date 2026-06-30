@@ -42,7 +42,7 @@ export const HIGHLIGHTER_CUSTOM_STYLE: React.CSSProperties = {
   padding: '16px',
   fontSize: '12px',
   margin: 0,
-  fontFamily: '"IBM Plex Mono", monospace',
+  fontFamily: 'var(--font-body), monospace',
   lineHeight: '1.6',
   overflowX: 'auto',
 }
