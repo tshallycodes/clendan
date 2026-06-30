@@ -88,13 +88,13 @@ function GhostTable({ rows, symbol }: { rows: GhostRow[]; symbol: string }) {
   if (rows.length === 0) return null
   return (
     <div className="space-y-1">
-      <p className="text-[10px] font-body uppercase tracking-widest text-[#ff4d6d]">Ghost Employees ({rows.length})</p>
+      <p className="text-[11px] font-body uppercase tracking-widest text-[#ff4d6d]">Ghost Employees ({rows.length})</p>
       <div className="bg-brand-surface border border-brand-border rounded-sm overflow-hidden">
         <table className="w-full">
           <thead>
             <tr className="border-b border-brand-border">
               {['Extracted Name', 'Description', 'Amount', 'Date'].map(h => (
-                <th key={h} className="text-left text-[10px] font-body text-brand-muted uppercase tracking-widest px-4 py-2.5 whitespace-nowrap">{h}</th>
+                <th key={h} className="text-left text-[11px] font-body text-brand-muted uppercase tracking-widest px-4 py-2.5 whitespace-nowrap">{h}</th>
               ))}
             </tr>
           </thead>
@@ -118,13 +118,13 @@ function MissingTable({ rows, symbol }: { rows: MissingRow[]; symbol: string }) 
   if (rows.length === 0) return null
   return (
     <div className="space-y-1">
-      <p className="text-[10px] font-body uppercase tracking-widest text-[#f5a623]">Missing Employees ({rows.length})</p>
+      <p className="text-[11px] font-body uppercase tracking-widest text-[#f5a623]">Missing Employees ({rows.length})</p>
       <div className="bg-brand-surface border border-brand-border rounded-sm overflow-hidden">
         <table className="w-full">
           <thead>
             <tr className="border-b border-brand-border">
               {['Name', 'Expected Salary'].map(h => (
-                <th key={h} className="text-left text-[10px] font-body text-brand-muted uppercase tracking-widest px-4 py-2.5">{h}</th>
+                <th key={h} className="text-left text-[11px] font-body text-brand-muted uppercase tracking-widest px-4 py-2.5">{h}</th>
               ))}
             </tr>
           </thead>
@@ -146,13 +146,13 @@ function DiscrepancyTable({ rows, symbol }: { rows: DiscrepancyRow[]; symbol: st
   if (rows.length === 0) return null
   return (
     <div className="space-y-1">
-      <p className="text-[10px] font-body uppercase tracking-widest text-[#f5a623]">Amount Discrepancies ({rows.length})</p>
+      <p className="text-[11px] font-body uppercase tracking-widest text-[#f5a623]">Amount Discrepancies ({rows.length})</p>
       <div className="bg-brand-surface border border-brand-border rounded-sm overflow-hidden">
         <table className="w-full">
           <thead>
             <tr className="border-b border-brand-border">
               {['Name', 'Expected', 'Actual', 'Diff %'].map(h => (
-                <th key={h} className="text-left text-[10px] font-body text-brand-muted uppercase tracking-widest px-4 py-2.5">{h}</th>
+                <th key={h} className="text-left text-[11px] font-body text-brand-muted uppercase tracking-widest px-4 py-2.5">{h}</th>
               ))}
             </tr>
           </thead>
@@ -325,24 +325,24 @@ export function PayrollRecTab({ toolId }: { toolId: string | null }) {
     >
       {/* Config card */}
       <div className="bg-brand-surface border border-brand-border rounded-sm p-4 space-y-4">
-        <p className="text-[10px] font-body uppercase tracking-widest text-brand-muted">Run Payroll Reconciliation</p>
+        <p className="text-[11px] font-body uppercase tracking-widest text-brand-muted">Run Payroll Reconciliation</p>
 
         {/* Period */}
         <div className="flex flex-col gap-1">
-          <label className="text-[10px] font-body text-brand-muted uppercase tracking-widest">Period</label>
+          <label className="text-[11px] font-body text-brand-muted uppercase tracking-widest">Period</label>
           <MonthPicker value={period} onChange={setPeriod} />
         </div>
 
         {/* Roster — bulk paste or CSV import */}
         <div className="flex flex-col gap-2">
           <div className="flex items-center justify-between gap-2">
-            <label className="text-[10px] font-body text-brand-muted uppercase tracking-widest">Employee Roster</label>
+            <label className="text-[11px] font-body text-brand-muted uppercase tracking-widest">Employee Roster</label>
             <div className="flex items-center gap-2">
               {validRoster.length > 0 && parseErrors.length === 0 && (
-                <span className="text-[10px] font-body text-[#00C853]">{validRoster.length} employee{validRoster.length !== 1 ? 's' : ''} ready</span>
+                <span className="text-[11px] font-body text-[#00C853]">{validRoster.length} employee{validRoster.length !== 1 ? 's' : ''} ready</span>
               )}
               {parseErrors.length > 0 && (
-                <span className="text-[10px] font-body text-[#ff4d6d]">{parseErrors.length} line{parseErrors.length !== 1 ? 's' : ''} with errors</span>
+                <span className="text-[11px] font-body text-[#ff4d6d]">{parseErrors.length} line{parseErrors.length !== 1 ? 's' : ''} with errors</span>
               )}
               <input
                 ref={fileInputRef}
@@ -354,7 +354,7 @@ export function PayrollRecTab({ toolId }: { toolId: string | null }) {
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                className="text-[10px] font-body border border-brand-border text-brand-muted hover:text-brand-text rounded-sm px-2.5 py-1 transition-colors"
+                className="text-[11px] font-body border border-brand-border text-brand-muted hover:text-brand-text rounded-sm px-2.5 py-1 transition-colors"
               >
                 Import CSV
               </button>
@@ -370,7 +370,7 @@ export function PayrollRecTab({ toolId }: { toolId: string | null }) {
           {parseErrors.length > 0 && (
             <div className="space-y-1">
               {parseErrors.map((e, i) => (
-                <p key={i} className="text-[10px] font-body text-[#ff4d6d]">
+                <p key={i} className="text-[11px] font-body text-[#ff4d6d]">
                   Line {parsed.indexOf(e) + 1}: {e.error} — <span className="text-brand-muted">{e.raw}</span>
                 </p>
               ))}
@@ -403,28 +403,28 @@ export function PayrollRecTab({ toolId }: { toolId: string | null }) {
             <div className="bg-brand-surface border border-brand-border rounded-sm p-4 space-y-3">
               <div className="flex items-center justify-between gap-3 flex-wrap">
                 <div className="flex items-center gap-3">
-                  <span className={`text-[10px] font-body px-2 py-0.5 rounded-sm uppercase tracking-wider ${STATUS_STYLE[activeRun.status]}`}>
+                  <span className={`text-[11px] font-body px-2 py-0.5 rounded-sm uppercase tracking-wider ${STATUS_STYLE[activeRun.status]}`}>
                     {activeRun.status}
                   </span>
-                  <span className="text-[10px] font-body text-brand-muted">{activeRun.period}</span>
+                  <span className="text-[11px] font-body text-brand-muted">{activeRun.period}</span>
                 </div>
                 <button
                   type="button"
                   onClick={handleExport}
                   disabled={exporting}
-                  className="text-[10px] font-body border border-brand-border text-brand-muted hover:text-brand-text rounded-sm px-3 py-1 transition-colors disabled:opacity-40"
+                  className="text-[11px] font-body border border-brand-border text-brand-muted hover:text-brand-text rounded-sm px-3 py-1 transition-colors disabled:opacity-40"
                 >
                   {exporting ? 'Exporting…' : 'Export CSV'}
                 </button>
               </div>
               <div className="flex gap-3 flex-wrap">
-                <span className="text-[10px] font-body px-2 py-1 rounded-sm bg-[rgba(0,200,83,0.08)] text-[#00C853] border border-[rgba(0,200,83,0.2)]">
+                <span className="text-[11px] font-body px-2 py-1 rounded-sm bg-[rgba(0,200,83,0.08)] text-[#00C853] border border-[rgba(0,200,83,0.2)]">
                   Matched {activeRun.matched_count}
                 </span>
-                <span className="text-[10px] font-body px-2 py-1 rounded-sm bg-[rgba(255,77,109,0.08)] text-[#ff4d6d] border border-[rgba(255,77,109,0.2)]">
+                <span className="text-[11px] font-body px-2 py-1 rounded-sm bg-[rgba(255,77,109,0.08)] text-[#ff4d6d] border border-[rgba(255,77,109,0.2)]">
                   Ghosts {activeRun.ghost_count}
                 </span>
-                <span className="text-[10px] font-body px-2 py-1 rounded-sm bg-[rgba(245,166,35,0.08)] text-[#f5a623] border border-[rgba(245,166,35,0.2)]">
+                <span className="text-[11px] font-body px-2 py-1 rounded-sm bg-[rgba(245,166,35,0.08)] text-[#f5a623] border border-[rgba(245,166,35,0.2)]">
                   Missing {activeRun.missing_count}
                 </span>
               </div>
@@ -440,13 +440,13 @@ export function PayrollRecTab({ toolId }: { toolId: string | null }) {
       {/* Run history */}
       <div className="space-y-2">
         <div className="flex items-center justify-between">
-          <p className="text-[10px] font-body uppercase tracking-widest text-brand-muted">Run History</p>
+          <p className="text-[11px] font-body uppercase tracking-widest text-brand-muted">Run History</p>
           {!historyLoaded && (
             <button
               type="button"
               onClick={loadHistory}
               disabled={loadingHistory}
-              className="text-[10px] font-body text-brand-muted hover:text-brand-text border border-brand-border rounded-sm px-3 py-1 transition-colors disabled:opacity-50"
+              className="text-[11px] font-body text-brand-muted hover:text-brand-text border border-brand-border rounded-sm px-3 py-1 transition-colors disabled:opacity-50"
             >
               {loadingHistory ? 'Loading…' : 'Load history'}
             </button>
@@ -458,11 +458,11 @@ export function PayrollRecTab({ toolId }: { toolId: string | null }) {
               <div key={r.id} className="flex items-center justify-between px-4 py-3 border-b border-brand-border last:border-0 hover:bg-brand-bg transition-colors">
                 <span className="text-xs font-body text-brand-text">{r.period}</span>
                 <div className="flex items-center gap-3">
-                  <span className="text-[10px] font-body text-brand-muted">
+                  <span className="text-[11px] font-body text-brand-muted">
                     {r.ghost_count > 0 && <span className="text-[#ff4d6d] mr-2">{r.ghost_count} ghosts</span>}
                     {r.missing_count > 0 && <span className="text-[#f5a623]">{r.missing_count} missing</span>}
                   </span>
-                  <span className={`text-[10px] font-body px-2 py-0.5 rounded-sm ${STATUS_STYLE[r.status] ?? STATUS_STYLE.pending}`}>
+                  <span className={`text-[11px] font-body px-2 py-0.5 rounded-sm ${STATUS_STYLE[r.status] ?? STATUS_STYLE.pending}`}>
                     {r.status}
                   </span>
                 </div>

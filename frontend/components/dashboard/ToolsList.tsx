@@ -47,7 +47,7 @@ export function ToolsList({ tools }: { tools: DeployedTool[] }) {
     <div className="bg-brand-surface border border-brand-border rounded-sm overflow-hidden">
       <div className="px-5 py-4 border-b border-brand-border">
         <h2 className="font-heading font-semibold text-brand-text text-sm">Active Tools</h2>
-        <p className="text-[10px] font-body text-brand-muted mt-0.5">AI agents deployed on your financial data — each enforces policy before acting</p>
+        <p className="text-[11px] font-body text-brand-muted mt-0.5">AI agents deployed on your financial data — each enforces policy before acting</p>
       </div>
       {tools.length === 0 ? (
         <motion.p
@@ -73,12 +73,12 @@ export function ToolsList({ tools }: { tools: DeployedTool[] }) {
                 </span>
                 <div className="flex-1 min-w-0">
                   <div className="text-xs font-body text-brand-text truncate">{toolDisplayName(tool.type)}</div>
-                  <div className="text-[10px] font-body text-brand-muted">{tool.type}</div>
+                  <div className="text-[11px] font-body text-brand-muted">{tool.type}</div>
                 </div>
-                <span className={`text-[10px] font-body px-2 py-0.5 rounded-sm border shrink-0 ${autonomy.bg} ${autonomy.text} ${autonomy.border}`}>
+                <span className={`text-[11px] font-body px-2 py-0.5 rounded-sm border shrink-0 ${autonomy.bg} ${autonomy.text} ${autonomy.border}`}>
                   {autonomy.label}
                 </span>
-                <span className="text-[10px] font-body text-brand-muted shrink-0">v{tool.version}</span>
+                <span className="text-[11px] font-body text-brand-muted shrink-0">v{tool.version}</span>
               </motion.div>
             )
           })}

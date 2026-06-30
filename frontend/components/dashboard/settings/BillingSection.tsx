@@ -5,7 +5,7 @@ export function BillingSection() {
     <div className="space-y-4">
       <div className="flex items-center gap-3">
         <span className="text-xs font-body text-brand-text">Current plan</span>
-        <span className="text-[10px] font-body px-2 py-0.5 rounded-sm border border-[#00a8cc]/30 bg-[rgba(0,168,204,0.08)] text-[#00a8cc]">
+        <span className="text-[11px] font-body px-2 py-0.5 rounded-sm border border-[#00a8cc]/30 bg-[rgba(0,168,204,0.08)] text-[#00a8cc]">
           Growth
         </span>
       </div>
@@ -21,7 +21,7 @@ export function BillingSection() {
         Contact us
       </a>
 
-      <p className="text-[10px] font-body text-brand-muted">
+      <p className="text-[11px] font-body text-brand-muted">
         Billing management is coming soon.
       </p>
     </div>

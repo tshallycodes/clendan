@@ -36,7 +36,7 @@ export function QuickActions() {
           <Icon className="w-4 h-4 text-brand-muted group-hover:text-brand-text transition-colors mt-0.5 shrink-0" />
           <div>
             <p className="text-xs font-body font-medium text-brand-text">{title}</p>
-            <p className="text-[10px] font-body text-brand-muted mt-0.5">{desc}</p>
+            <p className="text-[11px] font-body text-brand-muted mt-0.5">{desc}</p>
           </div>
         </Link>
       ))}

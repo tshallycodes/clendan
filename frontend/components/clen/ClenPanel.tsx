@@ -65,13 +65,13 @@ export function ClenPanel({ mode, isOpen, onClose, position, pathname = '/dashbo
                   Clen
                 </span>
                 {mode === 'account' && (
-                  <span className="flex items-center gap-1 text-[10px] font-body text-brand-muted">
+                  <span className="flex items-center gap-1 text-[11px] font-body text-brand-muted">
                     <span className="w-1.5 h-1.5 rounded-full bg-[#00C853] inline-block" />
                     Connected to your account
                   </span>
                 )}
               </div>
-              <p className="text-[11px] font-body text-brand-muted">Clendan Assistant</p>
+              <p className="text-[12px] font-body text-brand-muted">Clendan Assistant</p>
             </div>
             <button
               onClick={onClose}
@@ -101,7 +101,7 @@ export function ClenPanel({ mode, isOpen, onClose, position, pathname = '/dashbo
               <LoadingDots />
             )}
             {error && (
-              <p className="text-[11px] font-body text-brand-danger mb-3">{error}</p>
+              <p className="text-[12px] font-body text-brand-danger mb-3">{error}</p>
             )}
             <div ref={bottomRef} />
           </div>

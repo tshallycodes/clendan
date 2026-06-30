@@ -70,30 +70,30 @@ export function IntegrationCard({
       <AnimatePresence mode="wait">
         {status === 'connected' && (
           <motion.div key="connected-actions" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }} className="space-y-2">
-            <p className="text-[10px] font-body text-brand-muted">
+            <p className="text-[11px] font-body text-brand-muted">
               Last sync: {lastSyncedAt ? new Date(lastSyncedAt).toLocaleString() : '—'}
             </p>
             {disconnecting ? (
-              <p className="text-[10px] font-body text-brand-muted">Disconnecting...</p>
+              <p className="text-[11px] font-body text-brand-muted">Disconnecting...</p>
             ) : confirming ? (
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-[10px] font-body text-[#ff4d6d]">Disconnect {intg.name}?</span>
-                <button type="button" onClick={onDisconnect} className="text-[10px] font-body bg-[rgba(255,77,109,0.1)] border border-[#ff4d6d] text-[#ff4d6d] rounded-sm px-2 py-0.5 hover:bg-[rgba(255,77,109,0.2)] transition-colors">
+                <span className="text-[11px] font-body text-[#ff4d6d]">Disconnect {intg.name}?</span>
+                <button type="button" onClick={onDisconnect} className="text-[11px] font-body bg-[rgba(255,77,109,0.1)] border border-[#ff4d6d] text-[#ff4d6d] rounded-sm px-2 py-0.5 hover:bg-[rgba(255,77,109,0.2)] transition-colors">
                   Confirm
                 </button>
-                <button type="button" onClick={onCancelConfirm} className="text-[10px] font-body text-brand-muted hover:text-brand-text transition-colors">
+                <button type="button" onClick={onCancelConfirm} className="text-[11px] font-body text-brand-muted hover:text-brand-text transition-colors">
                   Cancel
                 </button>
               </div>
             ) : (
               <div className="flex items-center gap-2 flex-wrap">
-                <button type="button" onClick={onResync} className="text-[10px] font-body border border-brand-border text-brand-secondary rounded-sm px-2 py-0.5 hover:border-brand-border-subtle hover:text-brand-text transition-colors">
+                <button type="button" onClick={onResync} className="text-[11px] font-body border border-brand-border text-brand-secondary rounded-sm px-2 py-0.5 hover:border-brand-border-subtle hover:text-brand-text transition-colors">
                   Resync
                 </button>
-                <button type="button" onClick={onViewLog} className="text-[10px] font-body border border-brand-border text-brand-secondary rounded-sm px-2 py-0.5 hover:border-brand-border-subtle hover:text-brand-text transition-colors">
+                <button type="button" onClick={onViewLog} className="text-[11px] font-body border border-brand-border text-brand-secondary rounded-sm px-2 py-0.5 hover:border-brand-border-subtle hover:text-brand-text transition-colors">
                   Sync log
                 </button>
-                <button type="button" onClick={onDisconnect} className="text-[10px] font-body bg-[rgba(255,77,109,0.1)] border border-[#ff4d6d] text-[#ff4d6d] rounded-sm px-2 py-0.5 hover:bg-[rgba(255,77,109,0.2)] transition-colors">
+                <button type="button" onClick={onDisconnect} className="text-[11px] font-body bg-[rgba(255,77,109,0.1)] border border-[#ff4d6d] text-[#ff4d6d] rounded-sm px-2 py-0.5 hover:bg-[rgba(255,77,109,0.2)] transition-colors">
                   Disconnect
                 </button>
               </div>
@@ -103,7 +103,7 @@ export function IntegrationCard({
 
         {status === 'error' && (
           <motion.div key="error-actions" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}>
-            <p className="text-[10px] font-body text-[#ff4d6d] mb-2">Connection error — check credentials</p>
+            <p className="text-[11px] font-body text-[#ff4d6d] mb-2">Connection error — check credentials</p>
             <button type="button" onClick={onConnect} disabled={connecting} className="text-xs font-body bg-[#00C853] text-black hover:bg-[#00a844] active:scale-[0.97] rounded-sm px-3 py-1.5 transition-all disabled:opacity-50">
               {connecting ? 'Reconnecting...' : 'Reconnect'}
             </button>
@@ -112,7 +112,7 @@ export function IntegrationCard({
 
         {(status === 'connecting' || status === 'syncing') && (
           <motion.div key="loading-state" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}>
-            <p className="text-[10px] font-body text-[#00a8cc]">
+            <p className="text-[11px] font-body text-[#00a8cc]">
               {status === 'connecting' ? 'Connecting...' : 'Syncing data...'}
             </p>
           </motion.div>

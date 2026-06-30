@@ -25,14 +25,14 @@ export function RunControls({
     <div className="bg-brand-surface border border-brand-border rounded-sm p-4">
       <div className="flex flex-wrap gap-3 items-end">
         <div className="flex flex-col gap-1">
-          <label className="text-[10px] font-body uppercase tracking-widest text-brand-muted">
+          <label className="text-[11px] font-body uppercase tracking-widest text-brand-muted">
             Period Start
           </label>
           <DatePicker value={periodStart} onChange={onPeriodStartChange} />
         </div>
 
         <div className="flex flex-col gap-1">
-          <label className="text-[10px] font-body uppercase tracking-widest text-brand-muted">
+          <label className="text-[11px] font-body uppercase tracking-widest text-brand-muted">
             Period End
           </label>
           <DatePicker value={periodEnd} onChange={onPeriodEndChange} />

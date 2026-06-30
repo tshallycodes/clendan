@@ -19,7 +19,7 @@ export function CloseRunBottlenecks({ tasks }: Props) {
   return (
     <div className="bg-[rgba(255,77,109,0.08)] border border-[rgba(255,77,109,0.3)] rounded-sm overflow-hidden">
       <div className="px-4 py-3 border-b border-[rgba(255,77,109,0.2)]">
-        <p className="text-[10px] font-body uppercase tracking-widest text-[#ff4d6d]">
+        <p className="text-[11px] font-body uppercase tracking-widest text-[#ff4d6d]">
           Bottlenecks — {bottlenecks.length} task{bottlenecks.length > 1 ? 's' : ''} blocking close
         </p>
       </div>
@@ -27,7 +27,7 @@ export function CloseRunBottlenecks({ tasks }: Props) {
         {bottlenecks.map((task) => (
           <div key={task.task_key} className="px-4 py-2.5 flex items-center justify-between">
             <span className="text-xs font-body text-brand-text">{task.label}</span>
-            <span className={`text-[10px] font-body px-2 py-0.5 rounded-sm ${
+            <span className={`text-[11px] font-body px-2 py-0.5 rounded-sm ${
               task.status === 'blocked'
                 ? 'bg-[rgba(255,77,109,0.12)] text-[#ff4d6d] border border-[rgba(255,77,109,0.3)]'
                 : 'bg-[rgba(245,166,35,0.08)] text-[#f5a623] border border-[rgba(245,166,35,0.2)]'

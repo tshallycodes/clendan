@@ -335,7 +335,7 @@ export function AiAccountantClient() {
   return (
     <motion.div variants={pageVariants} initial="hidden" animate="show" className="p-6 space-y-6">
       <motion.div variants={sectionVariants}>
-        <Link href="/tools" className="text-[11px] font-body text-brand-muted hover:text-brand-secondary transition-colors">
+        <Link href="/tools" className="text-[12px] font-body text-brand-muted hover:text-brand-secondary transition-colors">
           ← Tools
         </Link>
       </motion.div>
@@ -344,7 +344,7 @@ export function AiAccountantClient() {
         <div className="space-y-1">
           <div className="flex items-center gap-2 flex-wrap">
             <h1 className="font-heading font-bold text-2xl text-brand-text">AI Accountant</h1>
-            {badge && <span className={`text-[10px] font-body px-2 py-0.5 rounded-sm ${badge.className}`}>{badge.label}</span>}
+            {badge && <span className={`text-[11px] font-body px-2 py-0.5 rounded-sm ${badge.className}`}>{badge.label}</span>}
           </div>
           <p className="text-xs font-body text-brand-muted max-w-xl">
             Automate transaction categorisation, invoice matching, and month-end close with AI.
@@ -426,28 +426,28 @@ export function AiAccountantClient() {
               {/* Stats */}
               <div className="grid grid-cols-4 gap-3">
                 <div className="bg-brand-surface border border-brand-border rounded-sm p-4">
-                  <p className="text-[10px] font-body text-brand-muted uppercase tracking-wider">Total</p>
+                  <p className="text-[11px] font-body text-brand-muted uppercase tracking-wider">Total</p>
                   <p className="text-2xl font-body font-semibold text-brand-text mt-1">{totalAll}</p>
-                  <p className="text-[10px] font-body text-brand-muted mt-1">transactions</p>
+                  <p className="text-[11px] font-body text-brand-muted mt-1">transactions</p>
                 </div>
                 <div className="bg-brand-surface border border-brand-border rounded-sm p-4">
-                  <p className="text-[10px] font-body text-brand-muted uppercase tracking-wider">Uncategorised</p>
+                  <p className="text-[11px] font-body text-brand-muted uppercase tracking-wider">Uncategorised</p>
                   <p className={`text-2xl font-body font-semibold mt-1 ${pendingCount > 0 ? 'text-[#f5a623]' : 'text-brand-text'}`}>
                     {pendingCount}
                   </p>
-                  <p className="text-[10px] font-body text-brand-muted mt-1">not yet categorised</p>
+                  <p className="text-[11px] font-body text-brand-muted mt-1">not yet categorised</p>
                 </div>
                 <div className="bg-brand-surface border border-brand-border rounded-sm p-4">
-                  <p className="text-[10px] font-body text-brand-muted uppercase tracking-wider">Categorised</p>
+                  <p className="text-[11px] font-body text-brand-muted uppercase tracking-wider">Categorised</p>
                   <p className={`text-2xl font-body font-semibold mt-1 ${categorisedPct >= 90 ? 'text-[#00C853]' : 'text-brand-text'}`}>
                     {categorisedPct}%
                   </p>
-                  <p className="text-[10px] font-body text-brand-muted mt-1">{categorisedCount + matchedCount} of {totalAll}</p>
+                  <p className="text-[11px] font-body text-brand-muted mt-1">{categorisedCount + matchedCount} of {totalAll}</p>
                 </div>
                 <div className="bg-brand-surface border border-brand-border rounded-sm p-4">
-                  <p className="text-[10px] font-body text-brand-muted uppercase tracking-wider">Matched</p>
+                  <p className="text-[11px] font-body text-brand-muted uppercase tracking-wider">Matched</p>
                   <p className="text-2xl font-body font-semibold text-[#00C853] mt-1">{matchedCount}</p>
-                  <p className="text-[10px] font-body text-brand-muted mt-1">to invoices</p>
+                  <p className="text-[11px] font-body text-brand-muted mt-1">to invoices</p>
                 </div>
               </div>
 
@@ -456,7 +456,7 @@ export function AiAccountantClient() {
                 <div className="bg-brand-surface border border-brand-border rounded-sm p-4 flex items-center justify-between gap-4">
                   <div>
                     <p className="text-xs font-body text-brand-text">{pendingCount} transaction{pendingCount !== 1 ? 's' : ''} not yet categorised</p>
-                    <p className="text-[10px] font-body text-brand-muted mt-0.5">Run the AI to categorise automatically, or review and categorise manually in the Transactions tab</p>
+                    <p className="text-[11px] font-body text-brand-muted mt-0.5">Run the AI to categorise automatically, or review and categorise manually in the Transactions tab</p>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
                     <button
@@ -481,15 +481,15 @@ export function AiAccountantClient() {
               {/* How it works */}
               <div className="bg-brand-surface border border-brand-border rounded-sm overflow-hidden">
                 <div className="px-4 py-3 border-b border-brand-border">
-                  <p className="text-[10px] font-body uppercase tracking-widest text-brand-muted">How it works</p>
-                  <p className="text-[10px] font-body text-brand-muted mt-0.5">Every transaction follows this fixed execution flow — no step can be skipped</p>
+                  <p className="text-[11px] font-body uppercase tracking-widest text-brand-muted">How it works</p>
+                  <p className="text-[11px] font-body text-brand-muted mt-0.5">Every transaction follows this fixed execution flow — no step can be skipped</p>
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-4 divide-x divide-brand-border">
                   {HOW_IT_WORKS.map(({ step, label, desc }) => (
                     <div key={step} className="px-4 py-4 space-y-1.5">
-                      <p className="text-[10px] font-body text-brand-muted">{step}</p>
+                      <p className="text-[11px] font-body text-brand-muted">{step}</p>
                       <p className="text-xs font-body font-medium text-brand-text">{label}</p>
-                      <p className="text-[10px] font-body text-brand-muted leading-relaxed">{desc}</p>
+                      <p className="text-[11px] font-body text-brand-muted leading-relaxed">{desc}</p>
                     </div>
                   ))}
                 </div>
@@ -498,13 +498,13 @@ export function AiAccountantClient() {
               {/* Capabilities */}
               <div className="bg-brand-surface border border-brand-border rounded-sm overflow-hidden">
                 <div className="px-4 py-3 border-b border-brand-border">
-                  <p className="text-[10px] font-body uppercase tracking-widest text-brand-muted">Capabilities</p>
-                  <p className="text-[10px] font-body text-brand-muted mt-0.5">What this agent does once deployed and connected to your data</p>
+                  <p className="text-[11px] font-body uppercase tracking-widest text-brand-muted">Capabilities</p>
+                  <p className="text-[11px] font-body text-brand-muted mt-0.5">What this agent does once deployed and connected to your data</p>
                 </div>
                 <motion.ul variants={capabilityVariants} initial="hidden" animate="show" className="divide-y divide-brand-border">
                   {CAPABILITIES.map(cap => (
                     <motion.li key={cap} variants={capItemVariants} className="flex items-start gap-3 px-4 py-3">
-                      <span className="text-brand-muted font-body text-[10px] mt-0.5 shrink-0">→</span>
+                      <span className="text-brand-muted font-body text-[11px] mt-0.5 shrink-0">→</span>
                       <span className="text-xs font-body text-brand-secondary">{cap}</span>
                     </motion.li>
                   ))}
@@ -515,23 +515,23 @@ export function AiAccountantClient() {
               {deployed && (
                 <div className="bg-brand-surface border border-brand-border rounded-sm overflow-hidden">
                   <div className="px-4 py-3 border-b border-brand-border">
-                    <p className="text-[10px] font-body uppercase tracking-widest text-brand-muted">Configuration</p>
+                    <p className="text-[11px] font-body uppercase tracking-widest text-brand-muted">Configuration</p>
                   </div>
                   <div className="px-4 py-4 grid grid-cols-3 gap-6">
                     <div className="space-y-1.5">
-                      <p className="text-[10px] font-body text-brand-muted uppercase tracking-widest">Autonomy</p>
-                      {badge && <span className={`text-[10px] font-body px-2 py-0.5 rounded-sm inline-block ${badge.className}`}>{badge.label}</span>}
-                      <p className="text-[10px] font-body text-brand-muted leading-relaxed">{AUTONOMY_DESC[deployed.autonomy_level] ?? ''}</p>
+                      <p className="text-[11px] font-body text-brand-muted uppercase tracking-widest">Autonomy</p>
+                      {badge && <span className={`text-[11px] font-body px-2 py-0.5 rounded-sm inline-block ${badge.className}`}>{badge.label}</span>}
+                      <p className="text-[11px] font-body text-brand-muted leading-relaxed">{AUTONOMY_DESC[deployed.autonomy_level] ?? ''}</p>
                     </div>
                     <div className="space-y-1.5">
-                      <p className="text-[10px] font-body text-brand-muted uppercase tracking-widest">Version</p>
+                      <p className="text-[11px] font-body text-brand-muted uppercase tracking-widest">Version</p>
                       <p className="text-xs font-body text-brand-text">v{deployed.version}</p>
-                      <p className="text-[10px] font-body text-brand-muted">Increments on every config change</p>
+                      <p className="text-[11px] font-body text-brand-muted">Increments on every config change</p>
                     </div>
                     <div className="space-y-1.5">
-                      <p className="text-[10px] font-body text-brand-muted uppercase tracking-widest">Status</p>
+                      <p className="text-[11px] font-body text-brand-muted uppercase tracking-widest">Status</p>
                       <p className="text-xs font-body text-brand-text">{deployed.status === 'active' ? 'Running' : 'Paused'}</p>
-                      <p className="text-[10px] font-body text-brand-muted">
+                      <p className="text-[11px] font-body text-brand-muted">
                         {deployed.status === 'active' ? 'Agent is live and processing' : 'Agent is paused — no runs will fire'}
                       </p>
                     </div>

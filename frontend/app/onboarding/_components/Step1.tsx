@@ -21,7 +21,7 @@ interface Step1Props {
 }
 
 const INPUT = 'w-full bg-brand-bg border border-brand-border focus:border-brand-green rounded-sm px-3 py-2 text-xs font-body text-brand-text placeholder:text-brand-muted outline-none transition-colors'
-const LABEL = 'text-[10px] font-body text-brand-muted uppercase tracking-widest'
+const LABEL = 'text-[11px] font-body text-brand-muted uppercase tracking-widest'
 
 export function Step1({ onNext }: Step1Props) {
   const { getToken } = useAuth()

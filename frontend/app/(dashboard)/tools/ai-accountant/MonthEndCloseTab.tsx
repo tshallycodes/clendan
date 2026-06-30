@@ -178,7 +178,7 @@ export function MonthEndCloseTab({ toolId }: Props) {
       {/* Period picker + action */}
       <div className="flex items-center gap-3 flex-wrap">
         <div className="flex flex-col gap-1">
-          <label className="text-[10px] font-body text-brand-muted uppercase tracking-widest">Period</label>
+          <label className="text-[11px] font-body text-brand-muted uppercase tracking-widest">Period</label>
           <MonthPicker value={period} onChange={setPeriod} />
         </div>
         {!loading && !run && (
@@ -220,7 +220,7 @@ export function MonthEndCloseTab({ toolId }: Props) {
       {!loading && !run && !error && (
         <div className="bg-brand-surface border border-brand-border rounded-sm p-6 text-center space-y-1">
           <p className="text-xs font-body text-brand-text">No close run for {period}</p>
-          <p className="text-[11px] font-body text-brand-muted">
+          <p className="text-[12px] font-body text-brand-muted">
             Opening a close run starts the checklist for this period. Clendan will automatically
             evaluate data readiness — you only need to manually confirm payroll and sign-offs.
           </p>
@@ -240,10 +240,10 @@ export function MonthEndCloseTab({ toolId }: Props) {
           >
             {/* Status badge */}
             <div className="flex items-center gap-2">
-              <span className={`text-[10px] font-body px-2 py-0.5 rounded-sm ${RUN_STATUS_BADGE[run.status] ?? ''}`}>
+              <span className={`text-[11px] font-body px-2 py-0.5 rounded-sm ${RUN_STATUS_BADGE[run.status] ?? ''}`}>
                 {run.status.replace('_', ' ').toUpperCase()}
               </span>
-              <span className="text-[10px] font-body text-brand-muted">Period {run.period}</span>
+              <span className="text-[11px] font-body text-brand-muted">Period {run.period}</span>
             </div>
 
             <CloseRunChecklist
@@ -281,20 +281,20 @@ function CloseRunSignOffs({ signOffs, onSignOff, signingOff, autoTasksResolved, 
   return (
     <div className="bg-brand-surface border border-brand-border rounded-sm overflow-hidden">
       <div className="px-4 py-3 border-b border-brand-border flex items-center justify-between">
-        <p className="text-[10px] font-body uppercase tracking-widest text-brand-muted">Sign-offs</p>
+        <p className="text-[11px] font-body uppercase tracking-widest text-brand-muted">Sign-offs</p>
         {!runClosed && (
           <button
             type="button"
             onClick={onSignOff}
             disabled={signingOff || !autoTasksResolved}
             title={!autoTasksResolved ? 'All auto-checked tasks must pass before signing off' : undefined}
-            className="text-[10px] font-body bg-[#00C853] text-black hover:bg-[#00a844] active:scale-[0.97] rounded-sm px-3 py-1 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+            className="text-[11px] font-body bg-[#00C853] text-black hover:bg-[#00a844] active:scale-[0.97] rounded-sm px-3 py-1 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
           >
             {signingOff ? 'Signing off…' : 'Sign Off'}
           </button>
         )}
       </div>
-      <p className="px-4 py-2 text-[10px] font-body text-brand-muted border-b border-brand-border">
+      <p className="px-4 py-2 text-[11px] font-body text-brand-muted border-b border-brand-border">
         A sign-off is your confirmation that you have reviewed this period&apos;s financials and
         they are accurate. Each team member who needs to approve should click &quot;Sign Off&quot; individually.
       </p>
@@ -305,7 +305,7 @@ function CloseRunSignOffs({ signOffs, onSignOff, signingOff, autoTasksResolved, 
           {signOffs.map((s) => (
             <div key={s.email} className="px-4 py-2.5 flex items-center justify-between">
               <span className="text-xs font-body text-brand-text">{s.email}</span>
-              <span className="text-[10px] font-body text-brand-muted">
+              <span className="text-[11px] font-body text-brand-muted">
                 {new Date(s.signed_at).toLocaleDateString()}
               </span>
             </div>

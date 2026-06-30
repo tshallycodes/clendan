@@ -90,7 +90,7 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
         {/* Meta */}
         <div className="flex items-center gap-3 mb-6">
           <span
-            className="text-[10px] font-body uppercase tracking-widest px-2 py-0.5 rounded-sm"
+            className="text-[11px] font-body uppercase tracking-widest px-2 py-0.5 rounded-sm"
             style={{
               background: CATEGORY_COLORS[post.category],
               color: CATEGORY_TEXT[post.category],
@@ -99,8 +99,8 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
           >
             {post.category}
           </span>
-          <span className="text-[10px] font-body text-brand-muted">{post.readTime}</span>
-          <span className="text-[10px] font-body text-brand-muted">{formatDate(post.date)}</span>
+          <span className="text-[11px] font-body text-brand-muted">{post.readTime}</span>
+          <span className="text-[11px] font-body text-brand-muted">{formatDate(post.date)}</span>
         </div>
 
         {/* Title */}

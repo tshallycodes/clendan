@@ -69,15 +69,15 @@ function TracePanel({ approval, onClose }: TraceCardProps) {
   return (
     <div className="mt-3 bg-brand-bg border border-brand-border rounded-sm p-4">
       <div className="flex items-center justify-between mb-3">
-        <span className="text-[10px] font-body text-brand-muted uppercase tracking-widest">Execution Trace</span>
+        <span className="text-[11px] font-body text-brand-muted uppercase tracking-widest">Execution Trace</span>
         <button
           onClick={onClose}
-          className="text-[10px] font-body text-brand-muted hover:text-brand-text transition-colors"
+          className="text-[11px] font-body text-brand-muted hover:text-brand-text transition-colors"
         >
           Close
         </button>
       </div>
-      <pre className="text-[11px] font-body text-brand-secondary whitespace-pre-wrap break-all">
+      <pre className="text-[12px] font-body text-brand-secondary whitespace-pre-wrap break-all">
         {JSON.stringify(traceData, null, 2)}
       </pre>
     </div>
@@ -106,21 +106,21 @@ function PendingCard({ approval, onAction, loadingState }: ApprovalCardProps) {
             </span>
             <span
               className={cn(
-                'text-[10px] font-body',
+                'text-[11px] font-body',
                 expiry.urgent ? 'text-[#f5a623]' : 'text-brand-muted',
               )}
             >
               {expiry.label}
             </span>
           </div>
-          <div className="text-[10px] font-body text-brand-muted">{waiting}</div>
+          <div className="text-[11px] font-body text-brand-muted">{waiting}</div>
           {approval.decision && (
             <div className="text-xs font-body text-brand-secondary capitalize">
               Decision: {approval.decision}
             </div>
           )}
           {approval.confidence != null && (
-            <div className="text-[10px] font-body text-brand-muted">
+            <div className="text-[11px] font-body text-brand-muted">
               Confidence: {(approval.confidence * 100).toFixed(0)}%
             </div>
           )}
@@ -132,7 +132,7 @@ function PendingCard({ approval, onAction, loadingState }: ApprovalCardProps) {
                 type="button"
                 onClick={() => onAction(approval.id, 'approve')}
                 disabled={loadingState !== null}
-                className="text-[10px] font-body px-3 py-1.5 bg-brand-green text-black font-medium hover:bg-[#00a844] active:scale-[0.97] transition-all rounded-sm disabled:opacity-40"
+                className="text-[11px] font-body px-3 py-1.5 bg-brand-green text-black font-medium hover:bg-[#00a844] active:scale-[0.97] transition-all rounded-sm disabled:opacity-40"
               >
                 {loadingState === 'approve' ? '...' : 'Approve'}
               </button>
@@ -140,7 +140,7 @@ function PendingCard({ approval, onAction, loadingState }: ApprovalCardProps) {
                 type="button"
                 onClick={() => onAction(approval.id, 'reject')}
                 disabled={loadingState !== null}
-                className="text-[10px] font-body px-3 py-1.5 border border-[#ff4d6d] text-[#ff4d6d] bg-[rgba(255,77,109,0.08)] hover:bg-[rgba(255,77,109,0.12)] active:scale-[0.97] transition-all rounded-sm disabled:opacity-40"
+                className="text-[11px] font-body px-3 py-1.5 border border-[#ff4d6d] text-[#ff4d6d] bg-[rgba(255,77,109,0.08)] hover:bg-[rgba(255,77,109,0.12)] active:scale-[0.97] transition-all rounded-sm disabled:opacity-40"
               >
                 {loadingState === 'reject' ? '...' : 'Reject'}
               </button>
@@ -149,7 +149,7 @@ function PendingCard({ approval, onAction, loadingState }: ApprovalCardProps) {
           <button
             type="button"
             onClick={() => setTraceOpen((v) => !v)}
-            className="text-[10px] font-body text-brand-muted hover:text-brand-text transition-colors"
+            className="text-[11px] font-body text-brand-muted hover:text-brand-text transition-colors"
           >
             View trace →
           </button>
@@ -180,7 +180,7 @@ function ResolvedCard({ approval }: { approval: Approval }) {
             </span>
             <StatusBadge status={approval.status === 'approved' ? 'auto' : 'blocked'} />
           </div>
-          <div className="text-[10px] font-body text-brand-muted">{resolvedAt}</div>
+          <div className="text-[11px] font-body text-brand-muted">{resolvedAt}</div>
           {approval.decision && (
             <div className="text-xs font-body text-brand-secondary capitalize">
               Decision: {approval.decision}
@@ -190,7 +190,7 @@ function ResolvedCard({ approval }: { approval: Approval }) {
         <button
           type="button"
           onClick={() => setTraceOpen((v) => !v)}
-          className="text-[10px] font-body text-brand-muted hover:text-brand-text transition-colors self-start"
+          className="text-[11px] font-body text-brand-muted hover:text-brand-text transition-colors self-start"
         >
           View trace →
         </button>
@@ -281,7 +281,7 @@ export function ApprovalsClient({ initialApprovals }: Props) {
             key={tab.key}
             onClick={() => setActiveTab(tab.key)}
             className={cn(
-              'text-[10px] font-body px-3 py-1.5 rounded-sm border transition-colors tracking-wider uppercase',
+              'text-[11px] font-body px-3 py-1.5 rounded-sm border transition-colors tracking-wider uppercase',
               activeTab === tab.key
                 ? 'border-brand-green/30 bg-brand-green/10 text-brand-green'
                 : 'border-brand-border bg-transparent text-brand-muted hover:text-brand-text',

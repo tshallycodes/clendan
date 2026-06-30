@@ -58,13 +58,13 @@ export function DangerZone() {
       <div className="space-y-3">
         <div>
           <p className="text-xs font-body text-brand-text font-medium">Pause all tools</p>
-          <p className="text-[10px] font-body text-brand-muted mt-0.5">Sets all active tools to inactive. They can be resumed individually.</p>
+          <p className="text-[11px] font-body text-brand-muted mt-0.5">Sets all active tools to inactive. They can be resumed individually.</p>
         </div>
         {pauseConfirm && (
-          <p className="text-[10px] font-body text-[#ff4d6d]">This will pause all active tools. Click again to confirm.</p>
+          <p className="text-[11px] font-body text-[#ff4d6d]">This will pause all active tools. Click again to confirm.</p>
         )}
         {pauseDone && (
-          <p className="text-[10px] font-body text-brand-green">All tools paused.</p>
+          <p className="text-[11px] font-body text-brand-green">All tools paused.</p>
         )}
         <button
           type="button"
@@ -78,7 +78,7 @@ export function DangerZone() {
           <button
             type="button"
             onClick={() => setPauseConfirm(false)}
-            className="ml-2 text-[10px] font-body text-brand-muted hover:text-brand-text transition-colors"
+            className="ml-2 text-[11px] font-body text-brand-muted hover:text-brand-text transition-colors"
           >
             Cancel
           </button>
@@ -88,7 +88,7 @@ export function DangerZone() {
       <div className="space-y-3">
         <div>
           <p className="text-xs font-body text-brand-text font-medium">Delete account</p>
-          <p className="text-[10px] font-body text-brand-muted mt-0.5">Permanently removes your organisation and all data. This cannot be undone.</p>
+          <p className="text-[11px] font-body text-brand-muted mt-0.5">Permanently removes your organisation and all data. This cannot be undone.</p>
         </div>
         {!deleteConfirm ? (
           <button
@@ -100,7 +100,7 @@ export function DangerZone() {
           </button>
         ) : (
           <div className="space-y-3">
-            <p className="text-[10px] font-body text-[#ff4d6d]">This action is permanent. Type DELETE to confirm.</p>
+            <p className="text-[11px] font-body text-[#ff4d6d]">This action is permanent. Type DELETE to confirm.</p>
             <input
               type="text"
               value={deleteInput}
@@ -109,7 +109,7 @@ export function DangerZone() {
               className="w-full max-w-xs bg-brand-bg border border-[#ff4d6d]/40 focus:border-[#ff4d6d] rounded-sm px-3 py-2 text-xs font-body text-brand-text placeholder:text-brand-muted outline-none transition-colors"
             />
             {deleteInput === 'DELETE' && (
-              <p className="text-[10px] font-body text-brand-muted">
+              <p className="text-[11px] font-body text-brand-muted">
                 To delete your account, contact{' '}
                 <a href="mailto:support@clendan.com" className="text-[#ff4d6d] hover:underline">support@clendan.com</a>
               </p>
@@ -117,7 +117,7 @@ export function DangerZone() {
             <button
               type="button"
               onClick={() => { setDeleteConfirm(false); setDeleteInput('') }}
-              className="text-[10px] font-body text-brand-muted hover:text-brand-text transition-colors"
+              className="text-[11px] font-body text-brand-muted hover:text-brand-text transition-colors"
             >
               Cancel
             </button>

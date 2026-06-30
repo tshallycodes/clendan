@@ -45,7 +45,7 @@ export default function Error({
       </p>
 
       {error.digest && (
-        <p className="font-body text-[10px] text-brand-muted mt-4">
+        <p className="font-body text-[11px] text-brand-muted mt-4">
           Digest: {error.digest}
         </p>
       )}

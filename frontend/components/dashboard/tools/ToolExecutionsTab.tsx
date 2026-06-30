@@ -140,7 +140,7 @@ export function ToolExecutionsTab({ toolId }: { toolId: string | null }) {
           { label: 'Blocked', value: blocked },
         ].map(({ label, value }) => (
           <div key={label} className="bg-brand-surface border border-brand-border rounded-sm p-3">
-            <p className="text-[10px] font-body uppercase tracking-widest text-brand-muted">{label}</p>
+            <p className="text-[11px] font-body uppercase tracking-widest text-brand-muted">{label}</p>
             <p className="text-lg font-heading font-bold text-brand-text mt-1">{value}</p>
           </div>
         ))}
@@ -149,7 +149,7 @@ export function ToolExecutionsTab({ toolId }: { toolId: string | null }) {
       <div className="flex gap-1">
         {FILTERS.map(f => (
           <button key={f.key} type="button" onClick={() => setFilter(f.key)}
-            className={`text-[10px] font-body px-3 py-1.5 rounded-sm border transition-colors ${
+            className={`text-[11px] font-body px-3 py-1.5 rounded-sm border transition-colors ${
               filter === f.key
                 ? 'border-brand-border bg-brand-elevated text-brand-text'
                 : 'border-transparent text-brand-muted hover:text-brand-secondary'
@@ -209,14 +209,14 @@ export function ToolExecutionsTab({ toolId }: { toolId: string | null }) {
                     <tr className="border-t border-brand-border bg-brand-elevated">
                       <td colSpan={6} className="px-4 py-3 space-y-2">
                         {e.input_ref && (
-                          <p className="text-[10px] font-body text-brand-muted">ref: {e.input_ref}</p>
+                          <p className="text-[11px] font-body text-brand-muted">ref: {e.input_ref}</p>
                         )}
                         {e.error_message ? (
-                          <pre className="text-[10px] font-body text-[#ff4d6d] whitespace-pre-wrap bg-[rgba(255,77,109,0.06)] border border-[rgba(255,77,109,0.2)] rounded-sm p-3 overflow-x-auto max-h-48">
+                          <pre className="text-[11px] font-body text-[#ff4d6d] whitespace-pre-wrap bg-[rgba(255,77,109,0.06)] border border-[rgba(255,77,109,0.2)] rounded-sm p-3 overflow-x-auto max-h-48">
                             {e.error_message}
                           </pre>
                         ) : (
-                          <p className="text-[10px] font-body text-brand-muted">No error details recorded for this execution.</p>
+                          <p className="text-[11px] font-body text-brand-muted">No error details recorded for this execution.</p>
                         )}
                       </td>
                     </tr>
@@ -233,7 +233,7 @@ export function ToolExecutionsTab({ toolId }: { toolId: string | null }) {
           type="button"
           onClick={loadMore}
           disabled={loadingMore}
-          className="w-full py-2 text-[10px] font-body text-brand-muted border border-brand-border rounded-sm hover:text-brand-secondary hover:bg-brand-bg transition-colors disabled:opacity-50"
+          className="w-full py-2 text-[11px] font-body text-brand-muted border border-brand-border rounded-sm hover:text-brand-secondary hover:bg-brand-bg transition-colors disabled:opacity-50"
         >
           {loadingMore ? 'Loading…' : `Load more · ${executions.length} of ${total}`}
         </button>

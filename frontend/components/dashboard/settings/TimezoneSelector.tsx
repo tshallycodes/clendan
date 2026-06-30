@@ -83,7 +83,7 @@ export function TimezoneSelector() {
         className="w-full flex items-center justify-between gap-3 bg-brand-bg border border-brand-border rounded-sm px-3 py-2 text-xs font-body text-brand-text hover:bg-brand-bg transition-colors disabled:opacity-50"
       >
         <span className="truncate">{selected.label}</span>
-        <motion.span animate={{ rotate: open ? 180 : 0 }} transition={{ duration: 0.15 }} className="text-brand-muted shrink-0 text-[10px]">▼</motion.span>
+        <motion.span animate={{ rotate: open ? 180 : 0 }} transition={{ duration: 0.15 }} className="text-brand-muted shrink-0 text-[11px]">▼</motion.span>
       </button>
 
       <AnimatePresence>
@@ -120,7 +120,7 @@ export function TimezoneSelector() {
                   if (!group.length) return null
                   return (
                     <div key={region}>
-                      <p className="px-3 pt-3 pb-1 text-[10px] font-body uppercase tracking-widest text-brand-muted">{region}</p>
+                      <p className="px-3 pt-3 pb-1 text-[11px] font-body uppercase tracking-widest text-brand-muted">{region}</p>
                       {group.map(tz => (
                         <TzOption key={tz.value} tz={tz} selected={tz.value === timezone} onSelect={handleSelect} />
                       ))}
@@ -145,8 +145,8 @@ function TzOption({ tz, selected, onSelect }: { tz: typeof TIMEZONES[0]; selecte
       }`}
     >
       <span className="flex-1 truncate">{tz.label}</span>
-      <span className="text-brand-muted text-[10px] font-body shrink-0">{tz.value}</span>
-      {selected && <span className="text-[#00C853] text-[10px] shrink-0">✓</span>}
+      <span className="text-brand-muted text-[11px] font-body shrink-0">{tz.value}</span>
+      {selected && <span className="text-[#00C853] text-[11px] shrink-0">✓</span>}
     </button>
   )
 }

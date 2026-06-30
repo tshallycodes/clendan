@@ -56,7 +56,7 @@ export async function SystemStatusBar() {
           Plaid
         </span>
       </div>
-      <span className="text-[10px] font-body text-brand-muted">Last health check: just now</span>
+      <span className="text-[11px] font-body text-brand-muted">Last health check: just now</span>
     </div>
   )
 }

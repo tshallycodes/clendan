@@ -510,7 +510,7 @@ export function IntegrationsClient() {
       {/* Page header */}
       <div>
         <h1 className="font-heading font-bold text-2xl text-brand-text">Integrations</h1>
-        <p className="text-[10px] font-body text-brand-muted mt-1 uppercase tracking-widest">
+        <p className="text-[11px] font-body text-brand-muted mt-1 uppercase tracking-widest">
           Connect your financial systems
         </p>
       </div>
@@ -529,7 +529,7 @@ export function IntegrationsClient() {
         <>
           {/* Banking — always first, uses BankPicker */}
           <section className="space-y-3">
-            <h2 className="text-[10px] font-body uppercase tracking-widest text-brand-muted border-b border-brand-border pb-2">
+            <h2 className="text-[11px] font-body uppercase tracking-widest text-brand-muted border-b border-brand-border pb-2">
               Banking
             </h2>
             <BankPicker
@@ -559,7 +559,7 @@ export function IntegrationsClient() {
             const items = INTEGRATIONS.filter((i) => i.category === cat)
             return (
               <section key={cat} className="space-y-3">
-                <h2 className="text-[10px] font-body uppercase tracking-widest text-brand-muted border-b border-brand-border pb-2">
+                <h2 className="text-[11px] font-body uppercase tracking-widest text-brand-muted border-b border-brand-border pb-2">
                   {cat}
                 </h2>
                 <IntegrationIconGrid

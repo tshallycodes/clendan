@@ -44,18 +44,18 @@ export function InvitationsTable({ invitations, onChanged }: Props) {
   return (
     <div className="divide-y divide-brand-border border border-brand-border rounded-sm overflow-hidden">
       <div className="bg-brand-bg px-4 py-2 grid grid-cols-[1fr_auto_auto_auto] gap-4 items-center">
-        <span className="text-[10px] font-body uppercase tracking-widest text-brand-muted">Email</span>
-        <span className="text-[10px] font-body uppercase tracking-widest text-brand-muted">Role</span>
-        <span className="text-[10px] font-body uppercase tracking-widest text-brand-muted">Sent</span>
-        {canConfigure && <span className="text-[10px] font-body uppercase tracking-widest text-brand-muted">Actions</span>}
+        <span className="text-[11px] font-body uppercase tracking-widest text-brand-muted">Email</span>
+        <span className="text-[11px] font-body uppercase tracking-widest text-brand-muted">Role</span>
+        <span className="text-[11px] font-body uppercase tracking-widest text-brand-muted">Sent</span>
+        {canConfigure && <span className="text-[11px] font-body uppercase tracking-widest text-brand-muted">Actions</span>}
       </div>
       {invitations.map((inv) => (
         <div key={inv.id} className="bg-brand-surface px-4 py-3 grid grid-cols-[1fr_auto_auto_auto] gap-4 items-center">
           <span className="text-xs font-body text-brand-text truncate">{inv.email}</span>
-          <span className={`text-[10px] font-body px-2 py-0.5 rounded-sm border ${ROLE_COLORS[inv.role] ?? ROLE_COLORS['org:viewer']}`}>
+          <span className={`text-[11px] font-body px-2 py-0.5 rounded-sm border ${ROLE_COLORS[inv.role] ?? ROLE_COLORS['org:viewer']}`}>
             {ROLE_LABEL[inv.role] ?? inv.role}
           </span>
-          <span className="text-[10px] font-body text-brand-muted">
+          <span className="text-[11px] font-body text-brand-muted">
             {new Date(inv.sent_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
           </span>
           {canConfigure ? (
@@ -63,7 +63,7 @@ export function InvitationsTable({ invitations, onChanged }: Props) {
               type="button"
               disabled={revoking === inv.id}
               onClick={() => handleRevoke(inv.id)}
-              className="text-[10px] font-body text-brand-danger border border-brand-danger/30 bg-brand-danger/08 hover:bg-brand-danger/15 rounded-sm px-2 py-0.5 transition-colors disabled:opacity-40"
+              className="text-[11px] font-body text-brand-danger border border-brand-danger/30 bg-brand-danger/08 hover:bg-brand-danger/15 rounded-sm px-2 py-0.5 transition-colors disabled:opacity-40"
             >
               {revoking === inv.id ? '…' : 'Revoke'}
             </button>

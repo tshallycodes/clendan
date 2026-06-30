@@ -98,7 +98,7 @@ export function DatePicker({ value, onChange, className }: Props) {
 
           <div className="grid grid-cols-7 mb-1">
             {DAYS.map(d => (
-              <div key={d} className="text-[10px] font-body text-brand-muted text-center py-1">{d}</div>
+              <div key={d} className="text-[11px] font-body text-brand-muted text-center py-1">{d}</div>
             ))}
           </div>
 
@@ -113,7 +113,7 @@ export function DatePicker({ value, onChange, className }: Props) {
                   key={i}
                   type="button"
                   onClick={() => select(day)}
-                  className={`text-[11px] font-body h-7 w-full rounded-sm transition-colors ${
+                  className={`text-[12px] font-body h-7 w-full rounded-sm transition-colors ${
                     isSelected
                       ? 'bg-[#00C853] text-black font-medium'
                       : isToday
@@ -129,11 +129,11 @@ export function DatePicker({ value, onChange, className }: Props) {
 
           <div className="flex justify-between mt-3 pt-2 border-t border-brand-border">
             <button type="button" onClick={() => { onChange(''); setOpen(false) }}
-              className="text-[10px] font-body text-brand-muted hover:text-brand-secondary transition-colors">
+              className="text-[11px] font-body text-brand-muted hover:text-brand-secondary transition-colors">
               Clear
             </button>
             <button type="button" onClick={() => { onChange(todayStr); setOpen(false) }}
-              className="text-[10px] font-body text-brand-muted hover:text-brand-secondary transition-colors">
+              className="text-[11px] font-body text-brand-muted hover:text-brand-secondary transition-colors">
               Today
             </button>
           </div>

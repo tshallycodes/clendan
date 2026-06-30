@@ -84,7 +84,7 @@ export function SyncLogDrawer({ slug, integrationName, onClose }: SyncLogDrawerP
             <div className="flex items-center justify-between px-6 py-4 border-b border-brand-border">
               <div>
                 <h2 className="font-heading font-bold text-base text-[#e8f0e8]">Sync Log</h2>
-                <p className="text-[10px] font-body text-brand-muted mt-0.5 uppercase tracking-widest">
+                <p className="text-[11px] font-body text-brand-muted mt-0.5 uppercase tracking-widest">
                   {integrationName}
                 </p>
               </div>
@@ -109,7 +109,7 @@ export function SyncLogDrawer({ slug, integrationName, onClose }: SyncLogDrawerP
               {!loading && (!supportsLog || events.length === 0) && (
                 <div className="flex flex-col items-center justify-center h-40 gap-1">
                   <p className="text-xs font-body text-brand-secondary">No sync events yet</p>
-                  <p className="text-[10px] font-body text-brand-muted">Events will appear here after the first sync</p>
+                  <p className="text-[11px] font-body text-brand-muted">Events will appear here after the first sync</p>
                 </div>
               )}
 
@@ -127,17 +127,17 @@ export function SyncLogDrawer({ slug, integrationName, onClose }: SyncLogDrawerP
                         <div className="min-w-0">
                           <div className="flex items-center gap-2">
                             <span className="text-xs font-body text-[#e8f0e8] truncate">{event.entity_type}</span>
-                            <span className={`text-[10px] font-body uppercase tracking-wider ${statusColor(event.status)}`}>
+                            <span className={`text-[11px] font-body uppercase tracking-wider ${statusColor(event.status)}`}>
                               {event.status}
                             </span>
                           </div>
                           {event.records_synced > 0 && (
-                            <p className="text-[10px] font-body text-brand-muted mt-0.5">
+                            <p className="text-[11px] font-body text-brand-muted mt-0.5">
                               {event.records_synced} records
                             </p>
                           )}
                         </div>
-                        <time className="text-[10px] font-body text-brand-muted shrink-0">
+                        <time className="text-[11px] font-body text-brand-muted shrink-0">
                           {new Date(event.timestamp).toLocaleString()}
                         </time>
                       </div>

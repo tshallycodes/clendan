@@ -180,16 +180,16 @@ export function InviteLinksSection() {
                 <span className="flex-1 font-body text-xs text-brand-muted truncate" title={url}>
                   {url}
                 </span>
-                <span className="shrink-0 text-[10px] font-body text-brand-muted">
+                <span className="shrink-0 text-[11px] font-body text-brand-muted">
                   {ROLE_LABEL[link.role.toLowerCase() as InviteLinkRole] ?? link.role}
                 </span>
-                <span className="shrink-0 text-[10px] font-body text-brand-muted">
+                <span className="shrink-0 text-[11px] font-body text-brand-muted">
                   {formatExpiry(link.expires_at)}
                 </span>
                 <button
                   type="button"
                   onClick={() => handleCopy(link)}
-                  className="shrink-0 text-[10px] font-body border border-brand-border rounded-sm px-2 py-1 text-brand-text hover:border-brand-green transition-colors"
+                  className="shrink-0 text-[11px] font-body border border-brand-border rounded-sm px-2 py-1 text-brand-text hover:border-brand-green transition-colors"
                 >
                   {copiedId === link.id ? 'Copied!' : 'Copy'}
                 </button>
@@ -197,7 +197,7 @@ export function InviteLinksSection() {
                   type="button"
                   onClick={() => handleDelete(link.id)}
                   aria-label="Delete invite link"
-                  className="shrink-0 text-[10px] font-body text-brand-danger hover:underline transition-colors"
+                  className="shrink-0 text-[11px] font-body text-brand-danger hover:underline transition-colors"
                 >
                   Delete
                 </button>

@@ -17,7 +17,7 @@ export function StatusBadge({ status }: { status: Status | string }) {
   const style = BADGE_STYLES[status as Status] ?? BADGE_STYLES.inactive
   return (
     <span className={cn(
-      'text-[10px] font-body font-medium border px-2 py-0.5 rounded-sm tracking-wider',
+      'text-[11px] font-body font-medium border px-2 py-0.5 rounded-sm tracking-wider',
       style.bg, style.text, style.border,
     )}>
       {style.label}

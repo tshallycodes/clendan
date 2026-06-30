@@ -85,7 +85,7 @@ export function AskClenDrawer({ documentId, filename, onClose }: Props) {
         >
           <div className="flex items-start justify-between px-5 py-4 border-b border-brand-border shrink-0">
             <div className="min-w-0 pr-4">
-              <p className="text-[10px] font-body text-brand-muted uppercase tracking-widest mb-1">
+              <p className="text-[11px] font-body text-brand-muted uppercase tracking-widest mb-1">
                 Ask Clen
               </p>
               <p className="text-sm font-body text-brand-text truncate">
@@ -111,18 +111,18 @@ export function AskClenDrawer({ documentId, filename, onClose }: Props) {
             {messages.map((msg, i) => (
               <div key={i} className="space-y-2">
                 <div className="flex gap-2">
-                  <span className="text-[10px] font-body text-brand-muted shrink-0 mt-0.5">You</span>
+                  <span className="text-[11px] font-body text-brand-muted shrink-0 mt-0.5">You</span>
                   <p className="text-xs font-body text-brand-secondary">{msg.question}</p>
                 </div>
                 <div className="flex gap-2">
-                  <span className="text-[10px] font-body text-[#00C853] shrink-0 mt-0.5">Clen</span>
+                  <span className="text-[11px] font-body text-[#00C853] shrink-0 mt-0.5">Clen</span>
                   <p className="text-xs font-body text-brand-text leading-relaxed whitespace-pre-wrap">{msg.answer}</p>
                 </div>
               </div>
             ))}
             {loading && (
               <div className="flex gap-2 items-center">
-                <span className="text-[10px] font-body text-[#00C853] shrink-0">Clen</span>
+                <span className="text-[11px] font-body text-[#00C853] shrink-0">Clen</span>
                 <div className="flex gap-1">
                   {[0, 1, 2].map(i => (
                     <div key={i} className="w-1.5 h-1.5 rounded-full bg-[#00C853] animate-bounce" style={{ animationDelay: `${i * 120}ms` }} />
@@ -147,12 +147,12 @@ export function AskClenDrawer({ documentId, filename, onClose }: Props) {
                 type="button"
                 onClick={handleAsk}
                 disabled={!question.trim() || loading}
-                className="shrink-0 text-[10px] font-body px-4 py-2 rounded-sm bg-[#00C853] text-black hover:bg-[#00a844] active:scale-[0.97] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                className="shrink-0 text-[11px] font-body px-4 py-2 rounded-sm bg-[#00C853] text-black hover:bg-[#00a844] active:scale-[0.97] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
               >
                 {loading ? '…' : 'Ask'}
               </button>
             </div>
-            <p className="text-[10px] font-body text-brand-muted mt-1.5">Shift+Enter for new line</p>
+            <p className="text-[11px] font-body text-brand-muted mt-1.5">Shift+Enter for new line</p>
           </div>
         </motion.div>
       </>

@@ -251,9 +251,9 @@ function ApiSection({ endpoint, title, desc, useCases, curl, response }: ApiSect
 
         {/* Right: code */}
         <div className="space-y-3">
-          <p className="font-body text-[10px] uppercase tracking-widest text-brand-muted">Request</p>
+          <p className="font-body text-[11px] uppercase tracking-widest text-brand-muted">Request</p>
           <CodeBlock>{curl}</CodeBlock>
-          <p className="font-body text-[10px] uppercase tracking-widest text-brand-muted pt-2">Response</p>
+          <p className="font-body text-[11px] uppercase tracking-widest text-brand-muted pt-2">Response</p>
           <CodeBlock>{response}</CodeBlock>
         </div>
       </div>
@@ -269,7 +269,7 @@ export default function ApiToolsPage() {
 
       {/* Hero */}
       <section className="max-w-6xl mx-auto px-6 md:px-8 pt-20 pb-8">
-        <p className="font-body text-[10px] uppercase tracking-widest text-brand-muted mb-4">API Tools</p>
+        <p className="font-body text-[11px] uppercase tracking-widest text-brand-muted mb-4">API Tools</p>
         <h1
           className="text-4xl md:text-5xl font-heading font-extrabold leading-tight mb-4"
           style={{ fontFamily: 'var(--font-heading)' }}
@@ -295,7 +295,7 @@ export default function ApiToolsPage() {
       <section className="border-t border-brand-border bg-brand-surface">
         <div className="max-w-6xl mx-auto px-6 md:px-8 py-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div>
-            <p className="font-body text-[10px] uppercase tracking-widest text-brand-muted mb-1">Pricing</p>
+            <p className="font-body text-[11px] uppercase tracking-widest text-brand-muted mb-1">Pricing</p>
             <p className="font-body text-sm text-brand-secondary">
               Standalone API access included in Growth and Enterprise plans.
             </p>

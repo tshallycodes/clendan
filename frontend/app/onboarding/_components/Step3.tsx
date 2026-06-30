@@ -52,7 +52,7 @@ export function Step3({ onNext, onSkip }: Step3Props) {
         <div className="bg-brand-surface border border-brand-border rounded-sm p-5 space-y-3">
           <div>
             <p className="text-sm font-body text-brand-text font-medium">QuickBooks</p>
-            <p className="text-[10px] font-body text-brand-muted mt-0.5">
+            <p className="text-[11px] font-body text-brand-muted mt-0.5">
               Sync invoices, bills, payments, and chart of accounts automatically.
             </p>
           </div>
@@ -68,7 +68,7 @@ export function Step3({ onNext, onSkip }: Step3Props) {
         <div className="relative bg-brand-surface border border-brand-border rounded-sm p-5 opacity-50">
           <div>
             <p className="text-sm font-body text-brand-text font-medium">Plaid</p>
-            <p className="text-[10px] font-body text-brand-muted mt-0.5">
+            <p className="text-[11px] font-body text-brand-muted mt-0.5">
               Bank account connections and transaction data.
             </p>
           </div>

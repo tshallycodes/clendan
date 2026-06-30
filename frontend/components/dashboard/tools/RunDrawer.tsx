@@ -21,7 +21,7 @@ export interface RunDrawerProps {
 }
 
 const inputClass = 'w-full bg-[#0a0a0a] border border-brand-border focus:border-[#00C853] text-[#e8f0e8] rounded-sm px-3 py-2 text-xs font-body outline-none transition-colors resize-none'
-const labelClass = 'text-[10px] font-body text-[#6e8c6e] uppercase tracking-widest'
+const labelClass = 'text-[11px] font-body text-[#6e8c6e] uppercase tracking-widest'
 
 export function RunDrawer({ tool, onClose, onQueued }: RunDrawerProps) {
   const { getToken } = useAuth()
@@ -130,9 +130,9 @@ export function RunDrawer({ tool, onClose, onQueued }: RunDrawerProps) {
                     className={inputClass}
                   />
                   {payloadError ? (
-                    <p className="text-[10px] font-body text-[#ff4d6d]">{payloadError}</p>
+                    <p className="text-[11px] font-body text-[#ff4d6d]">{payloadError}</p>
                   ) : (
-                    <p className="text-[10px] font-body text-[#6e8c6e]">Payload is passed directly to the tool. Must be valid JSON.</p>
+                    <p className="text-[11px] font-body text-[#6e8c6e]">Payload is passed directly to the tool. Must be valid JSON.</p>
                   )}
                 </div>
 

@@ -43,7 +43,7 @@ export function DomainMatchingToggle({ initialEnabled, domain }: Props) {
         <p className="text-xs font-body text-brand-text">
           Allow anyone with a <span className="text-brand-green">@{domain}</span> Google account to join automatically
         </p>
-        <p className="text-[10px] font-body text-[#f5a623]">
+        <p className="text-[11px] font-body text-[#f5a623]">
           Warning: only enable this for your company domain
         </p>
       </div>

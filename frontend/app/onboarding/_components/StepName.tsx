@@ -8,7 +8,7 @@ interface Props {
 }
 
 const INPUT = 'w-full bg-brand-bg border border-brand-border focus:border-brand-green rounded-sm px-3 py-2 text-xs font-body text-brand-text placeholder:text-brand-muted outline-none transition-colors'
-const LABEL = 'text-[10px] font-body text-brand-muted uppercase tracking-widest'
+const LABEL = 'text-[11px] font-body text-brand-muted uppercase tracking-widest'
 
 export function StepName({ onNext }: Props) {
   const { user, isLoaded } = useUser()
@@ -85,7 +85,7 @@ export function StepName({ onNext }: Props) {
                 readOnly
                 className={`${INPUT} opacity-50 cursor-not-allowed select-none`}
               />
-              <span className="shrink-0 text-[10px] font-body text-brand-muted border border-brand-border rounded-sm px-2 py-1.5">
+              <span className="shrink-0 text-[11px] font-body text-brand-muted border border-brand-border rounded-sm px-2 py-1.5">
                 verified
               </span>
             </div>

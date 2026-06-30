@@ -53,23 +53,23 @@ function ReconciliationTrace({ trace }: { trace: Record<string, unknown> }) {
 
       <div className="grid grid-cols-3 gap-2">
         <div className="bg-brand-bg border border-brand-border rounded-sm p-3">
-          <p className="text-[10px] font-body text-brand-muted uppercase tracking-widest">Transactions reviewed</p>
+          <p className="text-[11px] font-body text-brand-muted uppercase tracking-widest">Transactions reviewed</p>
           <p className="text-xl font-heading font-bold text-brand-text mt-1">{txnCount}</p>
-          <p className="text-[10px] font-body text-brand-muted mt-0.5">{matchedTxns} matched · {unmatchedTxns} unmatched</p>
+          <p className="text-[11px] font-body text-brand-muted mt-0.5">{matchedTxns} matched · {unmatchedTxns} unmatched</p>
         </div>
         <div className="bg-brand-bg border border-brand-border rounded-sm p-3">
-          <p className="text-[10px] font-body text-brand-muted uppercase tracking-widest">Bills / Invoices</p>
+          <p className="text-[11px] font-body text-brand-muted uppercase tracking-widest">Bills / Invoices</p>
           <p className="text-xl font-heading font-bold text-brand-text mt-1">{billCount + invoiceCount}</p>
-          <p className="text-[10px] font-body text-brand-muted mt-0.5">
+          <p className="text-[11px] font-body text-brand-muted mt-0.5">
             {unmatchedBills + unmatchedInvoices} unmatched
           </p>
         </div>
         <div className="bg-brand-bg border border-brand-border rounded-sm p-3">
-          <p className="text-[10px] font-body text-brand-muted uppercase tracking-widest">Unmatched rate</p>
+          <p className="text-[11px] font-body text-brand-muted uppercase tracking-widest">Unmatched rate</p>
           <p className={`text-xl font-heading font-bold mt-1 ${unmatchedPct > 0.2 ? 'text-[#ff4d6d]' : 'text-[#00C853]'}`}>
             {Math.round(unmatchedPct * 100)}%
           </p>
-          <p className="text-[10px] font-body text-brand-muted mt-0.5">
+          <p className="text-[11px] font-body text-brand-muted mt-0.5">
             {policyBreach ? 'Policy threshold exceeded' : 'Within policy'}
           </p>
         </div>
@@ -77,13 +77,13 @@ function ReconciliationTrace({ trace }: { trace: Record<string, unknown> }) {
 
       {flagged.length > 0 && (
         <div className="space-y-1.5">
-          <p className="text-[10px] font-body uppercase tracking-widest text-[#ff4d6d]">
+          <p className="text-[11px] font-body uppercase tracking-widest text-[#ff4d6d]">
             Flagged items · {flagged.length}
           </p>
           {flagged.map((a, i) => (
             <div key={i} className="bg-[rgba(255,77,109,0.04)] border border-[rgba(255,77,109,0.15)] rounded-sm px-3 py-2.5">
-              <p className="text-[11px] font-body text-brand-secondary leading-relaxed">{a.reasoning}</p>
-              <p className="text-[10px] font-body text-brand-muted mt-1 capitalize">{a.item_type} · {a.severity} severity</p>
+              <p className="text-[12px] font-body text-brand-secondary leading-relaxed">{a.reasoning}</p>
+              <p className="text-[11px] font-body text-brand-muted mt-1 capitalize">{a.item_type} · {a.severity} severity</p>
             </div>
           ))}
         </div>
@@ -91,13 +91,13 @@ function ReconciliationTrace({ trace }: { trace: Record<string, unknown> }) {
 
       {reviews.length > 0 && (
         <div className="space-y-1.5">
-          <p className="text-[10px] font-body uppercase tracking-widest text-[#00a8cc]">
+          <p className="text-[11px] font-body uppercase tracking-widest text-[#00a8cc]">
             Needs review · {reviews.length}
           </p>
           {reviews.map((a, i) => (
             <div key={i} className="bg-[rgba(0,168,204,0.04)] border border-[rgba(0,168,204,0.15)] rounded-sm px-3 py-2.5">
-              <p className="text-[11px] font-body text-brand-secondary leading-relaxed">{a.reasoning}</p>
-              <p className="text-[10px] font-body text-brand-muted mt-1 capitalize">{a.item_type} · {a.severity} severity</p>
+              <p className="text-[12px] font-body text-brand-secondary leading-relaxed">{a.reasoning}</p>
+              <p className="text-[11px] font-body text-brand-muted mt-1 capitalize">{a.item_type} · {a.severity} severity</p>
             </div>
           ))}
         </div>
@@ -129,17 +129,17 @@ function DocumentIntelligenceTrace({ trace }: { trace: Record<string, unknown> }
 
       <div className="grid grid-cols-3 gap-2">
         <div className="bg-brand-bg border border-brand-border rounded-sm p-3">
-          <p className="text-[10px] font-body text-brand-muted uppercase tracking-widest">Confidence</p>
+          <p className="text-[11px] font-body text-brand-muted uppercase tracking-widest">Confidence</p>
           <p className={`text-xl font-heading font-bold mt-1 ${(confidence ?? 0) >= 0.9 ? 'text-[#00C853]' : 'text-brand-text'}`}>
             {confidence != null ? `${Math.round(confidence * 100)}%` : '—'}
           </p>
         </div>
         <div className="bg-brand-bg border border-brand-border rounded-sm p-3">
-          <p className="text-[10px] font-body text-brand-muted uppercase tracking-widest">Document type</p>
+          <p className="text-[11px] font-body text-brand-muted uppercase tracking-widest">Document type</p>
           <p className="text-xs font-body text-brand-text mt-1 capitalize">{documentType.replace(/_/g, ' ') || '—'}</p>
         </div>
         <div className="bg-brand-bg border border-brand-border rounded-sm p-3">
-          <p className="text-[10px] font-body text-brand-muted uppercase tracking-widest">Policy flags</p>
+          <p className="text-[11px] font-body text-brand-muted uppercase tracking-widest">Policy flags</p>
           <p className={`text-xl font-heading font-bold mt-1 ${flags.length > 0 ? 'text-[#f5a623]' : 'text-[#00C853]'}`}>
             {flags.length}
           </p>
@@ -148,17 +148,17 @@ function DocumentIntelligenceTrace({ trace }: { trace: Record<string, unknown> }
 
       {reason && (
         <div className="bg-brand-bg border border-brand-border rounded-sm px-3 py-2.5">
-          <p className="text-[10px] font-body text-brand-muted uppercase tracking-widest mb-1.5">Reason</p>
-          <p className="text-[11px] font-body text-brand-secondary leading-relaxed">{reason}</p>
+          <p className="text-[11px] font-body text-brand-muted uppercase tracking-widest mb-1.5">Reason</p>
+          <p className="text-[12px] font-body text-brand-secondary leading-relaxed">{reason}</p>
         </div>
       )}
 
       {flags.length > 0 && (
         <div className="space-y-1.5">
-          <p className="text-[10px] font-body uppercase tracking-widest text-[#f5a623]">Policy flags</p>
+          <p className="text-[11px] font-body uppercase tracking-widest text-[#f5a623]">Policy flags</p>
           {flags.map((flag, i) => (
             <div key={i} className="bg-[rgba(245,166,35,0.04)] border border-[rgba(245,166,35,0.2)] rounded-sm px-3 py-2.5">
-              <p className="text-[11px] font-body text-brand-secondary leading-relaxed">{flag}</p>
+              <p className="text-[12px] font-body text-brand-secondary leading-relaxed">{flag}</p>
             </div>
           ))}
         </div>
@@ -192,17 +192,17 @@ function OrchestratorTrace({ trace }: { trace: Record<string, unknown> }) {
 
       <div className="grid grid-cols-3 gap-2">
         <div className="bg-brand-bg border border-brand-border rounded-sm p-3">
-          <p className="text-[10px] font-body text-brand-muted uppercase tracking-widest">Event type</p>
+          <p className="text-[11px] font-body text-brand-muted uppercase tracking-widest">Event type</p>
           <p className="text-xs font-body text-brand-text mt-1">{eventType ?? '—'}</p>
         </div>
         <div className="bg-brand-bg border border-brand-border rounded-sm p-3">
-          <p className="text-[10px] font-body text-brand-muted uppercase tracking-widest">Confidence</p>
+          <p className="text-[11px] font-body text-brand-muted uppercase tracking-widest">Confidence</p>
           <p className={`text-xl font-heading font-bold mt-1 ${(confidence ?? 0) >= 0.9 ? 'text-[#00C853]' : 'text-brand-text'}`}>
             {confidence != null ? `${Math.round(confidence * 100)}%` : '—'}
           </p>
         </div>
         <div className="bg-brand-bg border border-brand-border rounded-sm p-3">
-          <p className="text-[10px] font-body text-brand-muted uppercase tracking-widest">Duration</p>
+          <p className="text-[11px] font-body text-brand-muted uppercase tracking-widest">Duration</p>
           <p className="text-xl font-heading font-bold text-brand-text mt-1">
             {durationMs != null ? `${durationMs}ms` : '—'}
           </p>
@@ -211,17 +211,17 @@ function OrchestratorTrace({ trace }: { trace: Record<string, unknown> }) {
 
       {reasoning && (
         <div className="bg-brand-bg border border-brand-border rounded-sm px-3 py-2.5">
-          <p className="text-[10px] font-body text-brand-muted uppercase tracking-widest mb-1.5">Reasoning</p>
-          <p className="text-[11px] font-body text-brand-secondary leading-relaxed">{reasoning}</p>
+          <p className="text-[11px] font-body text-brand-muted uppercase tracking-widest mb-1.5">Reasoning</p>
+          <p className="text-[12px] font-body text-brand-secondary leading-relaxed">{reasoning}</p>
         </div>
       )}
 
       {payloadKeys.length > 0 && (
         <div>
-          <p className="text-[10px] font-body text-brand-muted uppercase tracking-widest mb-1.5">Payload fields</p>
+          <p className="text-[11px] font-body text-brand-muted uppercase tracking-widest mb-1.5">Payload fields</p>
           <div className="flex flex-wrap gap-1.5">
             {payloadKeys.map(k => (
-              <span key={k} className="text-[10px] font-body text-brand-secondary bg-brand-bg border border-brand-border rounded-sm px-2 py-0.5">{k}</span>
+              <span key={k} className="text-[11px] font-body text-brand-secondary bg-brand-bg border border-brand-border rounded-sm px-2 py-0.5">{k}</span>
             ))}
           </div>
         </div>
@@ -248,25 +248,25 @@ function ApprovalTrace({ entry, trace }: { entry: AuditEntry; trace: Record<stri
 
       <div className="grid grid-cols-2 gap-2">
         <div className="bg-brand-bg border border-brand-border rounded-sm p-3">
-          <p className="text-[10px] font-body text-brand-muted uppercase tracking-widest">Actioned by</p>
+          <p className="text-[11px] font-body text-brand-muted uppercase tracking-widest">Actioned by</p>
           <p className="text-xs font-body text-brand-text mt-1 truncate">{actor}</p>
         </div>
         <div className="bg-brand-bg border border-brand-border rounded-sm p-3">
-          <p className="text-[10px] font-body text-brand-muted uppercase tracking-widest">Action</p>
+          <p className="text-[11px] font-body text-brand-muted uppercase tracking-widest">Action</p>
           <p className={`text-xs font-body font-medium mt-1 ${dc.color}`}>{isApproved ? 'Approved' : 'Rejected'}</p>
         </div>
       </div>
 
       {approvalId && (
         <div className="bg-brand-bg border border-brand-border rounded-sm px-3 py-2.5">
-          <p className="text-[10px] font-body text-brand-muted uppercase tracking-widest mb-1">Approval ID</p>
-          <p className="text-[10px] font-body text-brand-muted break-all">{approvalId}</p>
+          <p className="text-[11px] font-body text-brand-muted uppercase tracking-widest mb-1">Approval ID</p>
+          <p className="text-[11px] font-body text-brand-muted break-all">{approvalId}</p>
         </div>
       )}
       {executionId && (
         <div className="bg-brand-bg border border-brand-border rounded-sm px-3 py-2.5">
-          <p className="text-[10px] font-body text-brand-muted uppercase tracking-widest mb-1">Execution</p>
-          <p className="text-[10px] font-body text-brand-muted break-all">{executionId}</p>
+          <p className="text-[11px] font-body text-brand-muted uppercase tracking-widest mb-1">Execution</p>
+          <p className="text-[11px] font-body text-brand-muted break-all">{executionId}</p>
         </div>
       )}
     </div>
@@ -290,7 +290,7 @@ function TraceView({ entry }: { entry: AuditEntry }) {
           <button
             type="button"
             onClick={() => setShowRaw(v => !v)}
-            className="text-[10px] font-body text-brand-muted hover:text-brand-secondary transition-colors"
+            className="text-[11px] font-body text-brand-muted hover:text-brand-secondary transition-colors"
           >
             {showRaw ? 'Show summary' : 'View raw'}
           </button>
@@ -306,7 +306,7 @@ function TraceView({ entry }: { entry: AuditEntry }) {
               : <OrchestratorTrace trace={trace!} />
       ) : (
         entry.reasoning_trace_json && (
-          <pre className="text-[10px] font-body text-brand-secondary whitespace-pre-wrap bg-brand-bg border border-brand-border rounded-sm p-3 overflow-x-auto max-h-64">
+          <pre className="text-[11px] font-body text-brand-secondary whitespace-pre-wrap bg-brand-bg border border-brand-border rounded-sm p-3 overflow-x-auto max-h-64">
             {typeof entry.reasoning_trace_json === 'object'
               ? JSON.stringify(entry.reasoning_trace_json, null, 2)
               : entry.reasoning_trace_json}
@@ -384,23 +384,23 @@ export function ToolAuditTab({ toolId }: { toolId: string | null }) {
                 className="w-full flex items-center justify-between px-4 py-3 hover:bg-brand-bg transition-colors text-left"
               >
                 <div className="flex items-center gap-4 min-w-0">
-                  <span className="text-[10px] font-body text-brand-muted shrink-0">
+                  <span className="text-[11px] font-body text-brand-muted shrink-0">
                     {new Date(e.created_at).toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
                   </span>
                   <span className="text-xs font-body text-brand-secondary truncate">{e.action}</span>
                 </div>
                 <div className="flex items-center gap-3 shrink-0 ml-4">
-                  <span className="text-[10px] font-body text-brand-muted">{e.actor}</span>
-                  <span className="text-[10px] font-body text-brand-muted">{expanded === e.id ? '▲' : '▼'}</span>
+                  <span className="text-[11px] font-body text-brand-muted">{e.actor}</span>
+                  <span className="text-[11px] font-body text-brand-muted">{expanded === e.id ? '▲' : '▼'}</span>
                 </div>
               </button>
               {expanded === e.id && (
                 <div className="px-4 pb-4 space-y-2 border-t border-brand-border">
                   {e.execution_id && (
-                    <p className="text-[10px] font-body text-brand-muted pt-2">execution: {e.execution_id}</p>
+                    <p className="text-[11px] font-body text-brand-muted pt-2">execution: {e.execution_id}</p>
                   )}
                   {e.model_version && (
-                    <p className="text-[10px] font-body text-brand-muted">model: {e.model_version}</p>
+                    <p className="text-[11px] font-body text-brand-muted">model: {e.model_version}</p>
                   )}
                   <TraceView entry={e} />
                 </div>

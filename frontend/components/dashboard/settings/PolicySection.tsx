@@ -54,7 +54,7 @@ export function PolicySection() {
         </p>
         <Link
           href="/tools"
-          className="text-[10px] font-body text-brand-secondary hover:text-brand-text transition-colors"
+          className="text-[11px] font-body text-brand-secondary hover:text-brand-text transition-colors"
         >
           Go to Tools →
         </Link>
@@ -73,7 +73,7 @@ export function PolicySection() {
                 <span className="text-xs font-body text-brand-text font-medium truncate">
                   {formatType(tool.type)}
                 </span>
-                <span className={`text-[10px] font-body px-2 py-0.5 rounded-sm ${AUTONOMY_BADGE[tool.autonomy_level]}`}>
+                <span className={`text-[11px] font-body px-2 py-0.5 rounded-sm ${AUTONOMY_BADGE[tool.autonomy_level]}`}>
                   {tool.autonomy_level}
                 </span>
               </div>
@@ -88,7 +88,7 @@ export function PolicySection() {
                   ) : (
                     <span className="h-2 w-2 rounded-full bg-brand-muted" />
                   )}
-                  <span className={`text-[10px] font-body ${isActive ? 'text-[#00C853]' : 'text-brand-muted'}`}>
+                  <span className={`text-[11px] font-body ${isActive ? 'text-[#00C853]' : 'text-brand-muted'}`}>
                     {isActive ? 'Active' : 'Inactive'}
                   </span>
                 </div>

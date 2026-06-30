@@ -70,7 +70,7 @@ export function Step4({ onBack }: Step4Props) {
       </div>
       <div className="bg-brand-surface border-l-[3px] border-l-brand-green border border-brand-border rounded-sm p-4">
         <p className="text-sm font-body text-brand-text font-medium">Invoice Processing Tool</p>
-        <p className="text-[10px] font-body text-brand-muted mt-0.5">
+        <p className="text-[11px] font-body text-brand-muted mt-0.5">
           Reads, classifies, and routes incoming invoices.
         </p>
       </div>
@@ -88,7 +88,7 @@ export function Step4({ onBack }: Step4Props) {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-body text-brand-text font-medium">{opt.label}</p>
-                <p className="text-[10px] font-body text-brand-muted mt-0.5">{opt.desc}</p>
+                <p className="text-[11px] font-body text-brand-muted mt-0.5">{opt.desc}</p>
               </div>
               {autonomy === opt.level && <span className="text-brand-green text-xs font-body">✓</span>}
             </div>

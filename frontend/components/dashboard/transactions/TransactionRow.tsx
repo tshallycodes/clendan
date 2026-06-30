@@ -116,7 +116,7 @@ export function TransactionRow({ transaction: t, onCategoryUpdate, categories }:
           {t.merchant_name ?? t.description ?? '—'}
         </span>
         {t.merchant_name && t.description && t.description !== t.merchant_name && (
-          <span className="text-[10px] font-body text-brand-muted block truncate">{t.description}</span>
+          <span className="text-[11px] font-body text-brand-muted block truncate">{t.description}</span>
         )}
       </td>
 
@@ -134,12 +134,12 @@ export function TransactionRow({ transaction: t, onCategoryUpdate, categories }:
       <td ref={ref} className="px-5 py-3 relative">
         <div className="flex items-center gap-1.5">
           {saving ? (
-            <span className="text-[10px] font-body text-brand-muted">saving…</span>
+            <span className="text-[11px] font-body text-brand-muted">saving…</span>
           ) : (
             <button
               onClick={() => setOpen(v => !v)}
               className={cn(
-                'text-[10px] font-body px-2 py-1 rounded-sm border transition-all max-w-[140px] truncate text-left',
+                'text-[11px] font-body px-2 py-1 rounded-sm border transition-all max-w-[140px] truncate text-left',
                 activeCategory
                   ? 'bg-brand-elevated text-brand-secondary border-brand-border hover:text-brand-text hover:border-brand-border-subtle'
                   : 'bg-transparent text-brand-muted border-dashed border-brand-border hover:text-brand-secondary',
@@ -163,7 +163,7 @@ export function TransactionRow({ transaction: t, onCategoryUpdate, categories }:
                 key={cat}
                 onClick={() => selectCategory(cat)}
                 className={cn(
-                  'w-full text-left text-[10px] font-body px-3 py-2 transition-colors',
+                  'w-full text-left text-[11px] font-body px-3 py-2 transition-colors',
                   cat === activeCategory
                     ? 'text-[#00C853] bg-brand-surface'
                     : 'text-brand-secondary hover:text-brand-text hover:bg-brand-surface',
@@ -180,7 +180,7 @@ export function TransactionRow({ transaction: t, onCategoryUpdate, categories }:
                 key={cat}
                 onClick={() => selectCategory(cat)}
                 className={cn(
-                  'w-full text-left text-[10px] font-body px-3 py-2 transition-colors',
+                  'w-full text-left text-[11px] font-body px-3 py-2 transition-colors',
                   cat === activeCategory
                     ? 'text-brand-text bg-brand-surface'
                     : 'text-brand-secondary hover:text-brand-text hover:bg-brand-surface',
@@ -196,13 +196,13 @@ export function TransactionRow({ transaction: t, onCategoryUpdate, categories }:
       {/* Invoice match */}
       <td className="px-5 py-3 text-xs font-body text-brand-muted">
         {t.matched_invoice_id ? (
-          <span className="text-[10px] font-body text-[#00C853]">matched</span>
+          <span className="text-[11px] font-body text-[#00C853]">matched</span>
         ) : '—'}
       </td>
 
       {/* Status */}
       <td className="px-5 py-3">
-        <span className={cn('text-[10px] font-body px-2 py-1 rounded-sm border', statusStyle)}>
+        <span className={cn('text-[11px] font-body px-2 py-1 rounded-sm border', statusStyle)}>
           {t.status}
         </span>
       </td>

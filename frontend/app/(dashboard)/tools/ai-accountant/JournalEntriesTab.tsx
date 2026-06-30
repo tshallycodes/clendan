@@ -77,7 +77,7 @@ function LineItemsTable({ lines }: { lines: JournalLine[] }) {
       <thead>
         <tr className="border-b border-brand-border">
           {['Code', 'Account', 'Debit', 'Credit'].map((h) => (
-            <th key={h} className="text-left text-[10px] font-body text-brand-muted uppercase tracking-widest px-3 py-2">
+            <th key={h} className="text-left text-[11px] font-body text-brand-muted uppercase tracking-widest px-3 py-2">
               {h}
             </th>
           ))}
@@ -86,12 +86,12 @@ function LineItemsTable({ lines }: { lines: JournalLine[] }) {
       <tbody>
         {lines.map((ln) => (
           <tr key={ln.id} className="border-b border-brand-border last:border-0">
-            <td className="text-[11px] font-body text-brand-muted px-3 py-2">{ln.account_code}</td>
-            <td className="text-[11px] font-body text-brand-text px-3 py-2">{ln.account_name}</td>
-            <td className="text-[11px] font-body text-brand-text px-3 py-2">
+            <td className="text-[12px] font-body text-brand-muted px-3 py-2">{ln.account_code}</td>
+            <td className="text-[12px] font-body text-brand-text px-3 py-2">{ln.account_name}</td>
+            <td className="text-[12px] font-body text-brand-text px-3 py-2">
               {ln.debit_minor > 0 ? fmt(ln.debit_minor) : '—'}
             </td>
-            <td className="text-[11px] font-body text-brand-text px-3 py-2">
+            <td className="text-[12px] font-body text-brand-text px-3 py-2">
               {ln.credit_minor > 0 ? fmt(ln.credit_minor) : '—'}
             </td>
           </tr>
@@ -133,14 +133,14 @@ function JournalEntryCard({
         className="w-full flex items-center justify-between px-4 py-3 hover:bg-brand-bg transition-colors text-left"
       >
         <div className="flex items-center gap-3 min-w-0">
-          <span className="text-[10px] font-body text-brand-muted uppercase tracking-wider shrink-0">
+          <span className="text-[11px] font-body text-brand-muted uppercase tracking-wider shrink-0">
             {entry.period}
           </span>
           <span className="text-xs font-body text-brand-text truncate">{entry.description}</span>
         </div>
         <div className="flex items-center gap-3 shrink-0 ml-4">
           <span className="text-xs font-body text-brand-text">{fmt(entry.total_minor)}</span>
-          <span className={`text-[10px] font-body px-2 py-0.5 rounded-sm border ${statusClass}`}>
+          <span className={`text-[11px] font-body px-2 py-0.5 rounded-sm border ${statusClass}`}>
             {statusLabel}
           </span>
           <span className="text-brand-muted text-xs">{expanded ? '▲' : '▼'}</span>
@@ -165,7 +165,7 @@ function JournalEntryCard({
                     type="button"
                     onClick={() => onPost(entry.id)}
                     disabled={posting}
-                    className="text-[11px] font-body bg-[#00C853] text-black hover:bg-[#00a844] active:scale-[0.97] rounded-sm px-3 py-1.5 transition-all disabled:opacity-50"
+                    className="text-[12px] font-body bg-[#00C853] text-black hover:bg-[#00a844] active:scale-[0.97] rounded-sm px-3 py-1.5 transition-all disabled:opacity-50"
                   >
                     {posting ? 'Posting…' : 'Post Entry'}
                   </button>
@@ -175,13 +175,13 @@ function JournalEntryCard({
                     type="button"
                     onClick={() => onVoid(entry.id)}
                     disabled={voiding}
-                    className="text-[11px] font-body bg-[rgba(255,77,109,0.1)] border border-[#ff4d6d] text-[#ff4d6d] rounded-sm px-3 py-1.5 transition-colors disabled:opacity-50"
+                    className="text-[12px] font-body bg-[rgba(255,77,109,0.1)] border border-[#ff4d6d] text-[#ff4d6d] rounded-sm px-3 py-1.5 transition-colors disabled:opacity-50"
                   >
                     {voiding ? 'Voiding…' : 'Void'}
                   </button>
                 )}
                 {entry.posted_at && (
-                  <span className="text-[10px] font-body text-brand-muted">
+                  <span className="text-[11px] font-body text-brand-muted">
                     Posted {new Date(entry.posted_at).toLocaleDateString('en-GB')}
                   </span>
                 )}
@@ -338,7 +338,7 @@ export function JournalEntriesTab({ toolId }: Props) {
     <div className="space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <p className="text-[10px] font-body text-brand-muted uppercase tracking-widest">
+        <p className="text-[11px] font-body text-brand-muted uppercase tracking-widest">
           Payroll Journal Entries
         </p>
         <button
@@ -364,13 +364,13 @@ export function JournalEntriesTab({ toolId }: Props) {
             <div className="bg-brand-surface border border-brand-border rounded-sm p-4 space-y-4">
               <div className="grid grid-cols-2 gap-3">
                 <div className="flex flex-col gap-1">
-                  <label className="text-[10px] font-body text-brand-muted uppercase tracking-widest">
+                  <label className="text-[11px] font-body text-brand-muted uppercase tracking-widest">
                     Period
                   </label>
                   <MonthPicker value={period} onChange={setPeriod} />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[10px] font-body text-brand-muted uppercase tracking-widest">
+                  <label className="text-[11px] font-body text-brand-muted uppercase tracking-widest">
                     Description
                   </label>
                   <input
@@ -391,7 +391,7 @@ export function JournalEntriesTab({ toolId }: Props) {
                       {['Code', 'Account Name', 'Debit (Â£)', 'Credit (Â£)', ''].map((h) => (
                         <th
                           key={h}
-                          className="text-left text-[10px] font-body text-brand-muted uppercase tracking-widest px-3 py-2"
+                          className="text-left text-[11px] font-body text-brand-muted uppercase tracking-widest px-3 py-2"
                         >
                           {h}
                         </th>
@@ -406,7 +406,7 @@ export function JournalEntriesTab({ toolId }: Props) {
                             value={ln.account_code}
                             onChange={(e) => updateLine(idx, 'account_code', e.target.value)}
                             placeholder="5000"
-                            className="w-20 bg-brand-bg border border-brand-border focus:border-[#00C853] text-brand-text placeholder:text-brand-muted rounded-sm px-2 py-1 text-[11px] font-body outline-none"
+                            className="w-20 bg-brand-bg border border-brand-border focus:border-[#00C853] text-brand-text placeholder:text-brand-muted rounded-sm px-2 py-1 text-[12px] font-body outline-none"
                           />
                         </td>
                         <td className="px-2 py-1.5">
@@ -414,7 +414,7 @@ export function JournalEntriesTab({ toolId }: Props) {
                             value={ln.account_name}
                             onChange={(e) => updateLine(idx, 'account_name', e.target.value)}
                             placeholder="Payroll — Engineering"
-                            className="w-full bg-brand-bg border border-brand-border focus:border-[#00C853] text-brand-text placeholder:text-brand-muted rounded-sm px-2 py-1 text-[11px] font-body outline-none"
+                            className="w-full bg-brand-bg border border-brand-border focus:border-[#00C853] text-brand-text placeholder:text-brand-muted rounded-sm px-2 py-1 text-[12px] font-body outline-none"
                           />
                         </td>
                         <td className="px-2 py-1.5">
@@ -423,7 +423,7 @@ export function JournalEntriesTab({ toolId }: Props) {
                             onChange={(e) => updateLine(idx, 'debit', e.target.value)}
                             placeholder="0.00"
                             inputMode="decimal"
-                            className="w-28 bg-brand-bg border border-brand-border focus:border-[#00C853] text-brand-text placeholder:text-brand-muted rounded-sm px-2 py-1 text-[11px] font-body outline-none text-right"
+                            className="w-28 bg-brand-bg border border-brand-border focus:border-[#00C853] text-brand-text placeholder:text-brand-muted rounded-sm px-2 py-1 text-[12px] font-body outline-none text-right"
                           />
                         </td>
                         <td className="px-2 py-1.5">
@@ -432,7 +432,7 @@ export function JournalEntriesTab({ toolId }: Props) {
                             onChange={(e) => updateLine(idx, 'credit', e.target.value)}
                             placeholder="0.00"
                             inputMode="decimal"
-                            className="w-28 bg-brand-bg border border-brand-border focus:border-[#00C853] text-brand-text placeholder:text-brand-muted rounded-sm px-2 py-1 text-[11px] font-body outline-none text-right"
+                            className="w-28 bg-brand-bg border border-brand-border focus:border-[#00C853] text-brand-text placeholder:text-brand-muted rounded-sm px-2 py-1 text-[12px] font-body outline-none text-right"
                           />
                         </td>
                         <td className="px-2 py-1.5">
@@ -456,11 +456,11 @@ export function JournalEntriesTab({ toolId }: Props) {
                 <button
                   type="button"
                   onClick={addLine}
-                  className="text-[11px] font-body text-brand-muted hover:text-brand-text border border-brand-border rounded-sm px-3 py-1.5 transition-colors"
+                  className="text-[12px] font-body text-brand-muted hover:text-brand-text border border-brand-border rounded-sm px-3 py-1.5 transition-colors"
                 >
                   + Add Line
                 </button>
-                <div className="flex items-center gap-4 text-[11px] font-body">
+                <div className="flex items-center gap-4 text-[12px] font-body">
                   <span className="text-brand-muted">
                     Dr {fmt(totalDebits)} / Cr {fmt(totalCredits)}
                   </span>

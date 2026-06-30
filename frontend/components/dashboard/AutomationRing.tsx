@@ -63,13 +63,13 @@ export function AutomationRing({ autoApproved, total }: Props) {
       {/* Text */}
       <div className="flex-1 space-y-2 min-w-0">
         <div className="space-y-0.5">
-          <p className="text-[10px] font-body text-brand-muted uppercase tracking-widest">
+          <p className="text-[11px] font-body text-brand-muted uppercase tracking-widest">
             Automation Rate
           </p>
           <p className="text-sm font-heading font-bold text-brand-text">
             {autoApproved} auto-executed
           </p>
-          <p className="text-[10px] font-body text-brand-muted">of {total} total runs</p>
+          <p className="text-[11px] font-body text-brand-muted">of {total} total runs</p>
         </div>
 
         {/* Tier badge */}
@@ -80,7 +80,7 @@ export function AutomationRing({ autoApproved, total }: Props) {
           className="flex items-center gap-2"
         >
           <span
-            className="text-[10px] font-body px-2 py-0.5 rounded-sm border"
+            className="text-[11px] font-body px-2 py-0.5 rounded-sm border"
             style={{
               color: tier.color,
               borderColor: `${tier.color}33`,
@@ -94,7 +94,7 @@ export function AutomationRing({ autoApproved, total }: Props) {
               initial={{ opacity: 0, scale: 0 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 1.2, type: 'spring', stiffness: 300 }}
-              className="text-[10px] font-body text-[#00C853]"
+              className="text-[11px] font-body text-[#00C853]"
             >
               ✓ Target exceeded
             </motion.span>
@@ -105,8 +105,8 @@ export function AutomationRing({ autoApproved, total }: Props) {
         {total > 0 && rate < 90 && (
           <div>
             <div className="flex justify-between mb-1">
-              <span className="text-[10px] font-body text-brand-muted">Target: 90%</span>
-              <span className="text-[10px] font-body" style={{ color: tier.color }}>
+              <span className="text-[11px] font-body text-brand-muted">Target: 90%</span>
+              <span className="text-[11px] font-body" style={{ color: tier.color }}>
                 {90 - rate}% to go
               </span>
             </div>
@@ -122,7 +122,7 @@ export function AutomationRing({ autoApproved, total }: Props) {
           </div>
         )}
 
-        <p className="text-[10px] font-body text-brand-muted leading-relaxed">
+        <p className="text-[11px] font-body text-brand-muted leading-relaxed">
           {total === 0
             ? 'Deploy a tool to start tracking. Higher automation means fewer decisions routed to you.'
             : 'Percentage of agent runs completed without requiring your approval.'}

@@ -40,7 +40,7 @@ export default function SecurityPage() {
     <div className="bg-brand-bg text-brand-text">
       {/* Hero */}
       <section className="max-w-6xl mx-auto px-6 md:px-8 pt-20 pb-14">
-        <p className="font-body text-[10px] uppercase tracking-widest text-brand-muted mb-4">
+        <p className="font-body text-[11px] uppercase tracking-widest text-brand-muted mb-4">
           Security
         </p>
         <h1
@@ -57,7 +57,7 @@ export default function SecurityPage() {
 
       {/* Principles grid */}
       <section className="max-w-6xl mx-auto px-6 md:px-8 pb-20">
-        <p className="font-body text-[10px] uppercase tracking-widest text-brand-muted mb-6">
+        <p className="font-body text-[11px] uppercase tracking-widest text-brand-muted mb-6">
           Security Principles
         </p>
         <div className="grid md:grid-cols-2 gap-4">
@@ -82,7 +82,7 @@ export default function SecurityPage() {
       {/* SOC 2 */}
       <section className="bg-brand-surface border-t border-b border-brand-border">
         <div className="max-w-6xl mx-auto px-6 md:px-8 py-14">
-          <p className="font-body text-[10px] uppercase tracking-widest text-brand-muted mb-6">
+          <p className="font-body text-[11px] uppercase tracking-widest text-brand-muted mb-6">
             Compliance
           </p>
           <div className="flex flex-col md:flex-row gap-8 items-start">
@@ -100,14 +100,14 @@ export default function SecurityPage() {
               </p>
             </div>
             <div className="bg-brand-bg border border-brand-border rounded-sm p-5 shrink-0 min-w-56">
-              <p className="font-body text-[10px] uppercase tracking-widest text-brand-muted mb-3">
+              <p className="font-body text-[11px] uppercase tracking-widest text-brand-muted mb-3">
                 Current Status
               </p>
               <div className="flex flex-col gap-2">
                 <div className="flex items-center justify-between">
                   <span className="font-body text-xs text-brand-secondary">Audit in progress</span>
                   <span
-                    className="text-[10px] font-body px-2 py-0.5 rounded-sm"
+                    className="text-[11px] font-body px-2 py-0.5 rounded-sm"
                     style={{
                       background: 'rgba(0,168,204,0.08)',
                       color: '#00a8cc',
@@ -129,7 +129,7 @@ export default function SecurityPage() {
 
       {/* Data handling */}
       <section className="max-w-6xl mx-auto px-6 md:px-8 py-16">
-        <p className="font-body text-[10px] uppercase tracking-widest text-brand-muted mb-6">
+        <p className="font-body text-[11px] uppercase tracking-widest text-brand-muted mb-6">
           Data Handling
         </p>
         <div className="grid md:grid-cols-2 gap-10">
@@ -166,7 +166,7 @@ export default function SecurityPage() {
             </p>
             <div className="flex flex-col gap-3">
               <div className="bg-brand-bg border border-brand-border rounded-sm px-3 py-2">
-                <p className="font-body text-[10px] text-brand-muted mb-0.5">Report to</p>
+                <p className="font-body text-[11px] text-brand-muted mb-0.5">Report to</p>
                 <a
                   href="mailto:security@clendan.com"
                   className="font-body text-xs text-brand-text hover:text-brand-green transition-colors"

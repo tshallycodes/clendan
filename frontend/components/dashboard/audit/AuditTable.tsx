@@ -113,12 +113,12 @@ export function AuditTable({ entries, searchQuery, dateFrom, dateTo }: Props) {
       <table className="w-full text-xs font-body">
         <thead>
           <tr className="border-b border-brand-border">
-            <th className="px-5 py-3 text-left text-[10px] font-body text-brand-muted uppercase tracking-widest">Timestamp</th>
-            <th className="px-5 py-3 text-left text-[10px] font-body text-brand-muted uppercase tracking-widest">Actor</th>
-            <th className="px-5 py-3 text-left text-[10px] font-body text-brand-muted uppercase tracking-widest">Action</th>
-            <th className="px-5 py-3 text-left text-[10px] font-body text-brand-muted uppercase tracking-widest">Decision</th>
-            <th className="px-5 py-3 text-left text-[10px] font-body text-brand-muted uppercase tracking-widest">Trace ID</th>
-            <th className="px-5 py-3 text-right text-[10px] font-body text-brand-muted uppercase tracking-widest" aria-label="Expand row" />
+            <th className="px-5 py-3 text-left text-[11px] font-body text-brand-muted uppercase tracking-widest">Timestamp</th>
+            <th className="px-5 py-3 text-left text-[11px] font-body text-brand-muted uppercase tracking-widest">Actor</th>
+            <th className="px-5 py-3 text-left text-[11px] font-body text-brand-muted uppercase tracking-widest">Action</th>
+            <th className="px-5 py-3 text-left text-[11px] font-body text-brand-muted uppercase tracking-widest">Decision</th>
+            <th className="px-5 py-3 text-left text-[11px] font-body text-brand-muted uppercase tracking-widest">Trace ID</th>
+            <th className="px-5 py-3 text-right text-[11px] font-body text-brand-muted uppercase tracking-widest" aria-label="Expand row" />
           </tr>
         </thead>
         <motion.tbody

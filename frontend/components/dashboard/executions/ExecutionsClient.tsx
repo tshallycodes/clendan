@@ -93,7 +93,7 @@ function StatsBar({ executions }: { executions: Execution[] }) {
     <motion.div variants={statsVariants} initial="hidden" animate="show" className="grid grid-cols-4 gap-3">
       {stats.map((s) => (
         <motion.div key={s.label} variants={statItemVariants} className="bg-brand-surface border border-brand-border rounded-sm p-4">
-          <div className="text-[10px] font-body text-brand-muted uppercase tracking-widest mb-1">{s.label}</div>
+          <div className="text-[11px] font-body text-brand-muted uppercase tracking-widest mb-1">{s.label}</div>
           <div className="text-lg font-heading font-bold text-brand-text">{s.value}</div>
         </motion.div>
       ))}
@@ -138,35 +138,35 @@ function ExecutionDrawer({ execution, onClose, onAction, loadingState }: DrawerP
 
         <div className="space-y-5">
           <div>
-            <div className="text-[10px] font-body text-brand-muted uppercase tracking-widest mb-1">Tool</div>
+            <div className="text-[11px] font-body text-brand-muted uppercase tracking-widest mb-1">Tool</div>
             <div className="text-sm font-body text-brand-text">{toToolLabel(execution.tool_type)}</div>
             {execution.version && (
-              <div className="text-[10px] font-body text-brand-muted mt-0.5">v{execution.version}</div>
+              <div className="text-[11px] font-body text-brand-muted mt-0.5">v{execution.version}</div>
             )}
           </div>
 
           {execution.input_ref && (
             <div>
-              <div className="text-[10px] font-body text-brand-muted uppercase tracking-widest mb-1">Input Reference</div>
+              <div className="text-[11px] font-body text-brand-muted uppercase tracking-widest mb-1">Input Reference</div>
               <div className="text-xs font-body text-brand-secondary break-all">{execution.input_ref}</div>
             </div>
           )}
 
           <div>
-            <div className="text-[10px] font-body text-brand-muted uppercase tracking-widest mb-1">Decision</div>
+            <div className="text-[11px] font-body text-brand-muted uppercase tracking-widest mb-1">Decision</div>
             <div className="text-sm font-body text-brand-text capitalize">{execution.decision}</div>
-            <div className="text-[10px] font-body text-brand-muted mt-0.5">
+            <div className="text-[11px] font-body text-brand-muted mt-0.5">
               Confidence: {(execution.confidence * 100).toFixed(0)}%
             </div>
           </div>
 
           <div>
-            <div className="text-[10px] font-body text-brand-muted uppercase tracking-widest mb-1">Status</div>
+            <div className="text-[11px] font-body text-brand-muted uppercase tracking-widest mb-1">Status</div>
             <StatusBadge status={decisionToBadge(execution.decision)} />
           </div>
 
           <div>
-            <div className="text-[10px] font-body text-brand-muted uppercase tracking-widest mb-1">Duration</div>
+            <div className="text-[11px] font-body text-brand-muted uppercase tracking-widest mb-1">Duration</div>
             <div
               className={cn(
                 'text-sm font-body',
@@ -181,14 +181,14 @@ function ExecutionDrawer({ execution, onClose, onAction, loadingState }: DrawerP
 
           {execution.trace_id && (
             <div>
-              <div className="text-[10px] font-body text-brand-muted uppercase tracking-widest mb-1">Trace ID</div>
+              <div className="text-[11px] font-body text-brand-muted uppercase tracking-widest mb-1">Trace ID</div>
               <div className="flex items-center gap-2">
-                <span className="text-[11px] font-body text-brand-muted break-all flex-1">
+                <span className="text-[12px] font-body text-brand-muted break-all flex-1">
                   {execution.trace_id}
                 </span>
                 <button
                   onClick={copyTraceId}
-                  className="text-[10px] font-body text-brand-muted hover:text-brand-text transition-colors shrink-0"
+                  className="text-[11px] font-body text-brand-muted hover:text-brand-text transition-colors shrink-0"
                 >
                   {copied ? 'Copied' : 'Copy'}
                 </button>
@@ -198,19 +198,19 @@ function ExecutionDrawer({ execution, onClose, onAction, loadingState }: DrawerP
 
           {execution.decision === 'approval_required' && (
             <div className="pt-2 border-t border-brand-border">
-              <div className="text-[10px] font-body text-brand-muted uppercase tracking-widest mb-3">Actions</div>
+              <div className="text-[11px] font-body text-brand-muted uppercase tracking-widest mb-3">Actions</div>
               <div className="flex gap-2">
                 <button
                   onClick={() => onAction(execution.id, 'approve')}
                   disabled={loadingState !== null}
-                  className="flex-1 text-[10px] font-body py-2 bg-brand-green text-black font-medium hover:bg-[#00a844] active:scale-[0.97] transition-all rounded-sm disabled:opacity-40"
+                  className="flex-1 text-[11px] font-body py-2 bg-brand-green text-black font-medium hover:bg-[#00a844] active:scale-[0.97] transition-all rounded-sm disabled:opacity-40"
                 >
                   {loadingState === 'approve' ? '...' : 'Approve'}
                 </button>
                 <button
                   onClick={() => onAction(execution.id, 'reject')}
                   disabled={loadingState !== null}
-                  className="flex-1 text-[10px] font-body py-2 border border-[#ff4d6d] text-[#ff4d6d] bg-[rgba(255,77,109,0.08)] hover:bg-[rgba(255,77,109,0.12)] active:scale-[0.97] transition-all rounded-sm disabled:opacity-40"
+                  className="flex-1 text-[11px] font-body py-2 border border-[#ff4d6d] text-[#ff4d6d] bg-[rgba(255,77,109,0.08)] hover:bg-[rgba(255,77,109,0.12)] active:scale-[0.97] transition-all rounded-sm disabled:opacity-40"
                 >
                   {loadingState === 'reject' ? '...' : 'Reject'}
                 </button>
@@ -316,7 +316,7 @@ export function ExecutionsClient({ initialExecutions, total }: Props) {
               key={f.key}
               onClick={() => setStatusFilter(f.key)}
               className={cn(
-                'text-[10px] font-body px-3 py-1.5 rounded-sm border transition-colors tracking-wider uppercase',
+                'text-[11px] font-body px-3 py-1.5 rounded-sm border transition-colors tracking-wider uppercase',
                 statusFilter === f.key
                   ? 'border-brand-green/30 bg-brand-green/10 text-brand-green'
                   : 'border-brand-border bg-transparent text-brand-muted hover:text-brand-text',
@@ -348,7 +348,7 @@ export function ExecutionsClient({ initialExecutions, total }: Props) {
                   {['Timestamp', 'Tool', 'Decision', 'Status', 'Duration', ''].map((h, i) => (
                     <th
                       key={i}
-                      className="text-left text-[10px] font-body text-brand-muted uppercase tracking-widest px-5 py-3"
+                      className="text-left text-[11px] font-body text-brand-muted uppercase tracking-widest px-5 py-3"
                     >
                       {h}
                     </th>
@@ -386,7 +386,7 @@ export function ExecutionsClient({ initialExecutions, total }: Props) {
                       {e.duration_ms != null ? `${e.duration_ms}ms` : '—'}
                     </td>
                     <td className="px-5 py-3">
-                      <span className="text-[10px] font-body text-brand-muted hover:text-brand-text transition-colors">
+                      <span className="text-[11px] font-body text-brand-muted hover:text-brand-text transition-colors">
                         View →
                       </span>
                     </td>
@@ -403,7 +403,7 @@ export function ExecutionsClient({ initialExecutions, total }: Props) {
           <button
             onClick={loadMore}
             disabled={loadingMore}
-            className="text-[10px] font-body px-4 py-2 border border-brand-border text-brand-muted hover:text-brand-text hover:border-brand-secondary transition-colors rounded-sm disabled:opacity-40"
+            className="text-[11px] font-body px-4 py-2 border border-brand-border text-brand-muted hover:text-brand-text hover:border-brand-secondary transition-colors rounded-sm disabled:opacity-40"
           >
             {loadingMore ? 'Loading…' : 'Load more'}
           </button>

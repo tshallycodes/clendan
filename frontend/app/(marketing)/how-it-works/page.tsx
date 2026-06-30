@@ -5,7 +5,7 @@
 function OAuthMockup() {
   return (
     <div className="bg-brand-bg border border-brand-border rounded-sm p-4 space-y-2 font-body text-xs">
-      <p className="text-brand-muted uppercase tracking-widest text-[10px]">Connect a tool</p>
+      <p className="text-brand-muted uppercase tracking-widest text-[11px]">Connect a tool</p>
       {['QuickBooks', 'Xero'].map((tool) => (
         <button
           key={tool}
@@ -26,7 +26,7 @@ function OAuthMockup() {
 function ToolConfigMockup() {
   return (
     <div className="bg-brand-bg border border-brand-border rounded-sm p-4 font-body text-xs space-y-3">
-      <p className="text-brand-muted uppercase tracking-widest text-[10px]">Tool config</p>
+      <p className="text-brand-muted uppercase tracking-widest text-[11px]">Tool config</p>
       <div className="space-y-1">
         <div className="flex justify-between">
           <span className="text-brand-muted">Tool</span>
@@ -42,7 +42,7 @@ function ToolConfigMockup() {
         </div>
       </div>
       <div className="border-t border-brand-border pt-2 flex justify-end">
-        <span className="text-brand-green text-[10px] uppercase tracking-widest">Deploy →</span>
+        <span className="text-brand-green text-[11px] uppercase tracking-widest">Deploy →</span>
       </div>
     </div>
   )
@@ -56,7 +56,7 @@ function PolicyMockup() {
   ]
   return (
     <div className="bg-brand-bg border border-brand-border rounded-sm p-4 font-body text-xs space-y-2">
-      <p className="text-brand-muted uppercase tracking-widest text-[10px]">Policy thresholds</p>
+      <p className="text-brand-muted uppercase tracking-widest text-[11px]">Policy thresholds</p>
       {rows.map((r) => (
         <div key={r.label} className="flex items-center justify-between py-1 border-b border-brand-border last:border-0">
           <span style={{ color: r.color }}>{r.label}</span>
@@ -77,7 +77,7 @@ function TerminalMockup() {
   ]
   return (
     <div className="bg-brand-bg border border-brand-border rounded-sm p-4 font-body text-xs space-y-1">
-      <p className="text-brand-muted uppercase tracking-widest text-[10px] mb-2">Execution log</p>
+      <p className="text-brand-muted uppercase tracking-widest text-[11px] mb-2">Execution log</p>
       {lines.map((l, i) => (
         <p key={i} style={{ color: l.color }}>{l.text}</p>
       ))}
@@ -89,8 +89,8 @@ function ApprovalMockup() {
   return (
     <div className="bg-brand-bg border border-brand-border rounded-sm p-4 font-body text-xs space-y-3">
       <div className="flex items-center justify-between">
-        <p className="text-brand-muted uppercase tracking-widest text-[10px]">Approval required</p>
-        <span className="text-[10px] px-2 py-0.5 rounded-sm" style={{ background: 'rgba(0,168,204,0.08)', color: '#00a8cc', border: '1px solid rgba(0,168,204,0.2)' }}>Pending</span>
+        <p className="text-brand-muted uppercase tracking-widest text-[11px]">Approval required</p>
+        <span className="text-[11px] px-2 py-0.5 rounded-sm" style={{ background: 'rgba(0,168,204,0.08)', color: '#00a8cc', border: '1px solid rgba(0,168,204,0.2)' }}>Pending</span>
       </div>
       <div className="space-y-1">
         <div className="flex justify-between"><span className="text-brand-muted">Vendor</span><span className="text-brand-text">Acme Corp</span></div>
@@ -98,8 +98,8 @@ function ApprovalMockup() {
         <div className="flex justify-between"><span className="text-brand-muted">Confidence</span><span className="text-brand-green">0.97</span></div>
       </div>
       <div className="flex gap-2 pt-1">
-        <button className="flex-1 py-1.5 rounded-sm text-black text-[11px] cursor-default" style={{ background: '#00C853' }}>Approve</button>
-        <button className="flex-1 py-1.5 rounded-sm text-[11px] cursor-default" style={{ background: 'rgba(255,77,109,0.1)', border: '1px solid #ff4d6d', color: '#ff4d6d' }}>Block</button>
+        <button className="flex-1 py-1.5 rounded-sm text-black text-[12px] cursor-default" style={{ background: '#00C853' }}>Approve</button>
+        <button className="flex-1 py-1.5 rounded-sm text-[12px] cursor-default" style={{ background: 'rgba(255,77,109,0.1)', border: '1px solid #ff4d6d', color: '#ff4d6d' }}>Block</button>
       </div>
     </div>
   )
@@ -108,14 +108,14 @@ function ApprovalMockup() {
 function AuditMockup() {
   return (
     <div className="bg-brand-bg border border-brand-border rounded-sm p-4 font-body text-xs space-y-2">
-      <p className="text-brand-muted uppercase tracking-widest text-[10px]">Audit entry</p>
+      <p className="text-brand-muted uppercase tracking-widest text-[11px]">Audit entry</p>
       <div className="space-y-1">
         <div className="flex justify-between"><span className="text-brand-muted">Action</span><span className="text-brand-text">payment.scheduled</span></div>
         <div className="flex justify-between"><span className="text-brand-muted">Tool</span><span className="text-brand-text">invoice_processing@1.4.2</span></div>
         <div className="flex justify-between"><span className="text-brand-muted">Trace ID</span><span className="text-brand-muted">cln_tr_8f4d2a</span></div>
         <div className="flex justify-between"><span className="text-brand-muted">Timestamp</span><span className="text-brand-secondary">2026-06-05 09:14:32Z</span></div>
       </div>
-      <div className="border-t border-brand-border pt-2 text-brand-muted text-[10px]">
+      <div className="border-t border-brand-border pt-2 text-brand-muted text-[11px]">
         Reasoning: amount below £500 threshold → auto-approved per policy v3
       </div>
     </div>
@@ -177,7 +177,7 @@ export default function HowItWorksPage() {
 
       {/* Hero */}
       <section className="max-w-6xl mx-auto px-6 md:px-8 pt-20 pb-16">
-        <p className="font-body text-[10px] uppercase tracking-widest text-brand-muted mb-4">How it works</p>
+        <p className="font-body text-[11px] uppercase tracking-widest text-brand-muted mb-4">How it works</p>
         <h1
           className="text-4xl md:text-5xl font-heading font-extrabold leading-tight mb-4"
           style={{ fontFamily: 'var(--font-heading)' }}
@@ -227,7 +227,7 @@ export default function HowItWorksPage() {
       {/* Results */}
       <section className="border-t border-brand-border bg-brand-surface">
         <div className="max-w-6xl mx-auto px-6 md:px-8 py-16">
-          <p className="font-body text-[10px] uppercase tracking-widest text-brand-muted mb-6">Results</p>
+          <p className="font-body text-[11px] uppercase tracking-widest text-brand-muted mb-6">Results</p>
           <div className="grid md:grid-cols-3 gap-4">
             {RESULTS.map((r) => (
               <div key={r.metric} className="bg-brand-bg border border-brand-border rounded-sm p-6">

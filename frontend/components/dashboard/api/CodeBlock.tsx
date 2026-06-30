@@ -66,10 +66,10 @@ export function CodeBlock({ code, lang = 'bash' }: CodeBlockProps) {
   return (
     <div className="relative group rounded-sm border border-brand-border bg-brand-bg overflow-hidden">
       <div className="flex items-center justify-between px-4 py-2 border-b border-brand-border bg-brand-elevated">
-        <span className="text-[10px] font-body uppercase tracking-widest text-brand-muted">{lang}</span>
+        <span className="text-[11px] font-body uppercase tracking-widest text-brand-muted">{lang}</span>
         <button
           onClick={copy}
-          className="flex items-center gap-1.5 text-[10px] font-body text-brand-muted hover:text-brand-text transition-colors"
+          className="flex items-center gap-1.5 text-[11px] font-body text-brand-muted hover:text-brand-text transition-colors"
         >
           {copied ? <Check className="w-3 h-3 text-brand-green" /> : <Copy className="w-3 h-3" />}
           {copied ? 'copied' : 'copy'}

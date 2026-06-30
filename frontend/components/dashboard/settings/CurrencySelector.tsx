@@ -79,7 +79,7 @@ export function CurrencySelector() {
           <motion.span
             animate={{ rotate: open ? 180 : 0 }}
             transition={{ duration: 0.15 }}
-            className="text-brand-muted shrink-0 text-[10px]"
+            className="text-brand-muted shrink-0 text-[11px]"
           >
             ▼
           </motion.span>
@@ -122,7 +122,7 @@ export function CurrencySelector() {
                     if (!group?.length) return null
                     return (
                       <div key={region}>
-                        <p className="px-3 pt-3 pb-1 text-[10px] font-body uppercase tracking-widest text-brand-muted">
+                        <p className="px-3 pt-3 pb-1 text-[11px] font-body uppercase tracking-widest text-brand-muted">
                           {region}
                         </p>
                         {group.map((c) => (
@@ -145,7 +145,7 @@ export function CurrencySelector() {
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            className="text-[10px] font-body text-[#f5a623] leading-relaxed"
+            className="text-[11px] font-body text-[#f5a623] leading-relaxed"
           >
             ⚠ {staleMessage}
           </motion.p>
@@ -176,7 +176,7 @@ function CurrencyOption({
       <span className="w-8 shrink-0 text-brand-muted">{currency.symbol}</span>
       <span className="w-10 shrink-0 font-semibold">{currency.code}</span>
       <span className="truncate text-brand-secondary">{currency.name}</span>
-      {selected && <span className="ml-auto text-[#00C853] text-[10px]">✓</span>}
+      {selected && <span className="ml-auto text-[#00C853] text-[11px]">✓</span>}
     </button>
   )
 }

@@ -87,7 +87,7 @@ export default function TermsPage() {
       <Navbar />
       <main className="flex-1">
         <div className="max-w-3xl mx-auto px-6 md:px-8 pt-20 pb-24">
-          <p className="font-body text-[10px] uppercase tracking-widest text-brand-muted mb-4">
+          <p className="font-body text-[11px] uppercase tracking-widest text-brand-muted mb-4">
             Legal
           </p>
           <h1

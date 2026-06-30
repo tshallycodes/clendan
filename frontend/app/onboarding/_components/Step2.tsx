@@ -89,7 +89,7 @@ export function Step2({ onNext, onSkip }: Step2Props) {
           </button>
         )}
       </div>
-      <p className="text-[10px] font-body text-brand-muted">
+      <p className="text-[11px] font-body text-brand-muted">
         They'll receive an email invite and set their own password.
       </p>
       {error && <p className="text-xs font-body text-brand-danger">{error}</p>}

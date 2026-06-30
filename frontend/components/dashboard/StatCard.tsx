@@ -46,9 +46,9 @@ export function StatCard({ value, label, description, change, changeDirection = 
       className="bg-brand-surface border border-brand-border rounded-sm p-4"
     >
       <div className="font-heading text-3xl font-bold text-brand-text mb-1">{display}</div>
-      <div className="text-brand-muted text-[10px] font-body uppercase tracking-widest mb-1">{label}</div>
+      <div className="text-brand-muted text-[11px] font-body uppercase tracking-widest mb-1">{label}</div>
       {description && (
-        <div className="text-brand-muted text-[10px] font-body mb-2 leading-relaxed">{description}</div>
+        <div className="text-brand-muted text-[11px] font-body mb-2 leading-relaxed">{description}</div>
       )}
       {change && (
         <div className={cn('text-xs font-body',

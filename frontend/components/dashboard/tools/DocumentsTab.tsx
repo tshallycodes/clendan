@@ -58,10 +58,10 @@ function AccordionSection({ title, items, color = 'text-brand-secondary' }: { ti
         onClick={() => setOpen(v => !v)}
         className="w-full flex items-center justify-between px-3 py-2 hover:bg-brand-bg transition-colors text-left"
       >
-        <span className="text-[10px] font-body text-brand-muted uppercase tracking-widest">
+        <span className="text-[11px] font-body text-brand-muted uppercase tracking-widest">
           {title} <span className="text-brand-secondary normal-case tracking-normal">({items.length})</span>
         </span>
-        <span className="text-[10px] font-body text-brand-muted">{open ? '▲' : '▼'}</span>
+        <span className="text-[11px] font-body text-brand-muted">{open ? '▲' : '▼'}</span>
       </button>
       <AnimatePresence>
         {open && (
@@ -75,8 +75,8 @@ function AccordionSection({ title, items, color = 'text-brand-secondary' }: { ti
             <div className="border-t border-brand-border divide-y divide-brand-border-subtle">
               {items.map((item, i) => (
                 <div key={i} className="flex gap-2 px-3 py-2">
-                  <span className="text-[10px] font-body text-brand-muted shrink-0 mt-0.5">→</span>
-                  <p className={`text-[11px] font-body leading-relaxed ${color}`}>{item}</p>
+                  <span className="text-[11px] font-body text-brand-muted shrink-0 mt-0.5">→</span>
+                  <p className={`text-[12px] font-body leading-relaxed ${color}`}>{item}</p>
                 </div>
               ))}
             </div>
@@ -99,7 +99,7 @@ function DocumentAnalysis({ extracted }: { extracted: Record<string, unknown> })
     <div className="space-y-3 mt-1">
       {summary && (
         <div>
-          <p className="text-[10px] font-body text-brand-muted uppercase tracking-widest mb-1.5">Summary</p>
+          <p className="text-[11px] font-body text-brand-muted uppercase tracking-widest mb-1.5">Summary</p>
           <p className="text-xs font-body text-brand-secondary leading-relaxed">{summary}</p>
         </div>
       )}
@@ -107,17 +107,17 @@ function DocumentAnalysis({ extracted }: { extracted: Record<string, unknown> })
         <div className="grid grid-cols-2 gap-x-6 gap-y-2">
           {parties?.length ? (
             <div>
-              <p className="text-[10px] font-body text-brand-muted mb-1">Parties</p>
+              <p className="text-[11px] font-body text-brand-muted mb-1">Parties</p>
               <div className="space-y-0.5">
-                {parties.map((p, i) => <p key={i} className="text-[11px] font-body text-brand-secondary">{p}</p>)}
+                {parties.map((p, i) => <p key={i} className="text-[12px] font-body text-brand-secondary">{p}</p>)}
               </div>
             </div>
           ) : null}
           {keyDates?.length ? (
             <div>
-              <p className="text-[10px] font-body text-brand-muted mb-1">Key dates</p>
+              <p className="text-[11px] font-body text-brand-muted mb-1">Key dates</p>
               <div className="space-y-0.5">
-                {keyDates.map((d, i) => <p key={i} className="text-[11px] font-body text-brand-secondary">{d}</p>)}
+                {keyDates.map((d, i) => <p key={i} className="text-[12px] font-body text-brand-secondary">{d}</p>)}
               </div>
             </div>
           ) : null}
@@ -194,11 +194,11 @@ function QuickActions({ doc, toolId, onAbort }: QuickActionsProps) {
     finally { setActionLoading(null) }
   }
 
-  const btn = 'text-[10px] font-body px-3 py-1.5 rounded-sm border border-brand-border text-brand-text bg-transparent hover:bg-brand-bg transition-colors disabled:opacity-50'
+  const btn = 'text-[11px] font-body px-3 py-1.5 rounded-sm border border-brand-border text-brand-text bg-transparent hover:bg-brand-bg transition-colors disabled:opacity-50'
 
   return (
     <div className="pt-3 border-t border-brand-border">
-      <p className="text-[10px] font-body text-brand-muted uppercase tracking-widest mb-2">Quick actions</p>
+      <p className="text-[11px] font-body text-brand-muted uppercase tracking-widest mb-2">Quick actions</p>
       <div className="flex flex-wrap gap-2">
         <button type="button" onClick={handleDownloadPdf} disabled={actionLoading !== null} className={btn}>
           {actionLoading === 'pdf' ? '…' : 'Download PDF'}
@@ -207,7 +207,7 @@ function QuickActions({ doc, toolId, onAbort }: QuickActionsProps) {
           type="button"
           onClick={() => handleExport('google-drive')}
           disabled={actionLoading !== null}
-          className="flex items-center gap-1.5 text-[10px] font-body px-2.5 py-1.5 rounded-sm border border-brand-border bg-brand-surface hover:bg-brand-bg text-brand-secondary transition-colors disabled:opacity-40"
+          className="flex items-center gap-1.5 text-[11px] font-body px-2.5 py-1.5 rounded-sm border border-brand-border bg-brand-surface hover:bg-brand-bg text-brand-secondary transition-colors disabled:opacity-40"
         >
           <IntegrationLogo slug="google-drive" size={13} />
           {actionLoading === 'google-drive' ? '…' : 'Export to Drive'}
@@ -216,7 +216,7 @@ function QuickActions({ doc, toolId, onAbort }: QuickActionsProps) {
           type="button"
           onClick={() => handleExport('dropbox')}
           disabled={actionLoading !== null}
-          className="flex items-center gap-1.5 text-[10px] font-body px-2.5 py-1.5 rounded-sm border border-brand-border bg-brand-surface hover:bg-brand-bg text-brand-secondary transition-colors disabled:opacity-40"
+          className="flex items-center gap-1.5 text-[11px] font-body px-2.5 py-1.5 rounded-sm border border-brand-border bg-brand-surface hover:bg-brand-bg text-brand-secondary transition-colors disabled:opacity-40"
         >
           <IntegrationLogo slug="dropbox" size={13} />
           {actionLoading === 'dropbox' ? '…' : 'Export to Dropbox'}
@@ -225,7 +225,7 @@ function QuickActions({ doc, toolId, onAbort }: QuickActionsProps) {
           type="button"
           onClick={() => handleExport('onedrive')}
           disabled={actionLoading !== null}
-          className="flex items-center gap-1.5 text-[10px] font-body px-2.5 py-1.5 rounded-sm border border-brand-border bg-brand-surface hover:bg-brand-bg text-brand-secondary transition-colors disabled:opacity-40"
+          className="flex items-center gap-1.5 text-[11px] font-body px-2.5 py-1.5 rounded-sm border border-brand-border bg-brand-surface hover:bg-brand-bg text-brand-secondary transition-colors disabled:opacity-40"
         >
           <IntegrationLogo slug="onedrive" size={13} />
           {actionLoading === 'onedrive' ? '…' : 'Export to OneDrive'}
@@ -234,7 +234,7 @@ function QuickActions({ doc, toolId, onAbort }: QuickActionsProps) {
           type="button"
           onClick={handleDelete}
           disabled={actionLoading !== null}
-          className="text-[10px] font-body px-3 py-1.5 rounded-sm border border-[#ff4d6d] text-[#ff4d6d] bg-[rgba(255,77,109,0.1)] hover:bg-[rgba(255,77,109,0.16)] transition-colors disabled:opacity-50"
+          className="text-[11px] font-body px-3 py-1.5 rounded-sm border border-[#ff4d6d] text-[#ff4d6d] bg-[rgba(255,77,109,0.1)] hover:bg-[rgba(255,77,109,0.16)] transition-colors disabled:opacity-50"
         >
           {actionLoading === 'delete' ? '…' : 'Delete'}
         </button>
@@ -300,7 +300,7 @@ function DocumentRow({ doc, toolId, onAbort }: DocumentRowProps) {
           {doc.thumbnail_b64 ? (
             <img src={`data:image/png;base64,${doc.thumbnail_b64}`} alt="doc" className="w-full h-full object-cover" />
           ) : (
-            <span className="text-[10px] font-body text-brand-muted">
+            <span className="text-[11px] font-body text-brand-muted">
               {doc.content_type?.includes('word') ? 'DOC' : 'PDF'}
             </span>
           )}
@@ -314,20 +314,20 @@ function DocumentRow({ doc, toolId, onAbort }: DocumentRowProps) {
                 {doc.filename ?? 'Untitled document'}
               </p>
               <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                <span className="text-[10px] font-body text-brand-muted uppercase tracking-widest">
+                <span className="text-[11px] font-body text-brand-muted uppercase tracking-widest">
                   {DOC_TYPE_LABEL[doc.document_type] ?? doc.document_type}
                 </span>
                 {doc.file_size_bytes != null && (
-                  <span className="text-[10px] font-body text-brand-muted">{formatBytes(doc.file_size_bytes)}</span>
+                  <span className="text-[11px] font-body text-brand-muted">{formatBytes(doc.file_size_bytes)}</span>
                 )}
-                {uploader && <span className="text-[10px] font-body text-brand-muted">{uploader}</span>}
-                <span className="text-[10px] font-body text-brand-muted">{date}</span>
+                {uploader && <span className="text-[11px] font-body text-brand-muted">{uploader}</span>}
+                <span className="text-[11px] font-body text-brand-muted">{date}</span>
               </div>
             </div>
             <div className="shrink-0 flex items-center gap-2">
               {doc.status === 'processing' && (
                 <>
-                  <span className={`text-[10px] font-body px-2 py-0.5 rounded-sm border ${
+                  <span className={`text-[11px] font-body px-2 py-0.5 rounded-sm border ${
                     timedOut
                       ? 'text-[#ff4d6d] bg-[rgba(255,77,109,0.08)] border-[rgba(255,77,109,0.2)]'
                       : 'text-[#f5a623] bg-[rgba(245,166,35,0.08)] border-[rgba(245,166,35,0.2)]'
@@ -339,7 +339,7 @@ function DocumentRow({ doc, toolId, onAbort }: DocumentRowProps) {
                       type="button"
                       onClick={e => handleDelete(e, timedOut ? 'Deleted' : 'Aborted')}
                       disabled={aborting}
-                      className="text-[10px] font-body text-[#ff4d6d] bg-[rgba(255,77,109,0.06)] border border-[rgba(255,77,109,0.3)] hover:bg-[rgba(255,77,109,0.12)] rounded-sm px-2 py-0.5 transition-colors disabled:opacity-50"
+                      className="text-[11px] font-body text-[#ff4d6d] bg-[rgba(255,77,109,0.06)] border border-[rgba(255,77,109,0.3)] hover:bg-[rgba(255,77,109,0.12)] rounded-sm px-2 py-0.5 transition-colors disabled:opacity-50"
                     >
                       {aborting ? 'Deleting…' : timedOut ? 'Delete' : 'Abort'}
                     </button>
@@ -348,14 +348,14 @@ function DocumentRow({ doc, toolId, onAbort }: DocumentRowProps) {
               )}
               {doc.status === 'failed' && (
                 <>
-                  <span className="text-[10px] font-body text-[#ff4d6d] bg-[rgba(255,77,109,0.08)] border border-[rgba(255,77,109,0.2)] rounded-sm px-2 py-0.5">
+                  <span className="text-[11px] font-body text-[#ff4d6d] bg-[rgba(255,77,109,0.08)] border border-[rgba(255,77,109,0.2)] rounded-sm px-2 py-0.5">
                     Failed
                   </span>
                   <button
                     type="button"
                     onClick={e => handleDelete(e, 'Deleted')}
                     disabled={aborting}
-                    className="text-[10px] font-body text-[#ff4d6d] bg-[rgba(255,77,109,0.06)] border border-[rgba(255,77,109,0.3)] hover:bg-[rgba(255,77,109,0.12)] rounded-sm px-2 py-0.5 transition-colors disabled:opacity-50"
+                    className="text-[11px] font-body text-[#ff4d6d] bg-[rgba(255,77,109,0.06)] border border-[rgba(255,77,109,0.3)] hover:bg-[rgba(255,77,109,0.12)] rounded-sm px-2 py-0.5 transition-colors disabled:opacity-50"
                   >
                     {aborting ? 'Deleting…' : 'Delete'}
                   </button>
@@ -366,27 +366,27 @@ function DocumentRow({ doc, toolId, onAbort }: DocumentRowProps) {
                   type="button"
                   onClick={e => handleDelete(e, 'Deleted')}
                   disabled={aborting}
-                  className="text-[10px] font-body text-[#ff4d6d] bg-[rgba(255,77,109,0.06)] border border-[rgba(255,77,109,0.3)] hover:bg-[rgba(255,77,109,0.12)] rounded-sm px-2 py-0.5 transition-colors disabled:opacity-50"
+                  className="text-[11px] font-body text-[#ff4d6d] bg-[rgba(255,77,109,0.06)] border border-[rgba(255,77,109,0.3)] hover:bg-[rgba(255,77,109,0.12)] rounded-sm px-2 py-0.5 transition-colors disabled:opacity-50"
                 >
                   {aborting ? 'Deleting…' : 'Delete'}
                 </button>
               )}
               {dc && (
-                <span className={`text-[10px] font-body px-2 py-0.5 rounded-sm border ${dc.bg} ${dc.border} ${dc.color}`}>
+                <span className={`text-[11px] font-body px-2 py-0.5 rounded-sm border ${dc.bg} ${dc.border} ${dc.color}`}>
                   {dc.label}
                 </span>
               )}
               {doc.confidence != null && (
-                <span className={`text-[10px] font-body ${doc.confidence >= 0.9 ? 'text-[#00C853]' : 'text-brand-muted'}`}>
+                <span className={`text-[11px] font-body ${doc.confidence >= 0.9 ? 'text-[#00C853]' : 'text-brand-muted'}`}>
                   {Math.round(doc.confidence * 100)}%
                 </span>
               )}
-              <span className="text-[10px] font-body text-brand-muted">{expanded ? '▲' : '▼'}</span>
+              <span className="text-[11px] font-body text-brand-muted">{expanded ? '▲' : '▼'}</span>
             </div>
           </div>
 
           {doc.reason && (
-            <p className="text-[10px] font-body text-brand-muted truncate">{doc.reason}</p>
+            <p className="text-[11px] font-body text-brand-muted truncate">{doc.reason}</p>
           )}
         </div>
       </button>
@@ -403,7 +403,7 @@ function DocumentRow({ doc, toolId, onAbort }: DocumentRowProps) {
             <div className="px-4 pb-4 border-t border-brand-border space-y-4">
               {showAnalysis && (
                 <div className="mt-3">
-                  <p className="text-[10px] font-body text-brand-muted uppercase tracking-widest mb-2">
+                  <p className="text-[11px] font-body text-brand-muted uppercase tracking-widest mb-2">
                     Analysis
                     {!!doc.extracted_json?.document_subtype && (
                       <span className="ml-2 normal-case tracking-normal text-brand-secondary">
@@ -521,13 +521,13 @@ function CloudImport({ toolId, onImported }: { toolId: string; onImported: () =>
   return (
     <div className="space-y-2">
       <div className="flex items-center gap-2 flex-wrap">
-        <span className="text-[10px] font-body text-brand-muted">Import from:</span>
+        <span className="text-[11px] font-body text-brand-muted">Import from:</span>
         {CLOUD_SOURCES.map(s => (
           <button
             key={s.id}
             type="button"
             onClick={() => openPicker(s)}
-            className={`flex items-center gap-1.5 text-[10px] font-body px-2.5 py-1.5 rounded-sm border transition-colors ${
+            className={`flex items-center gap-1.5 text-[11px] font-body px-2.5 py-1.5 rounded-sm border transition-colors ${
               activePicker?.id === s.id
                 ? 'border-brand-secondary bg-brand-elevated text-brand-text'
                 : 'border-brand-border bg-brand-surface hover:bg-brand-bg text-brand-secondary'
@@ -544,14 +544,14 @@ function CloudImport({ toolId, onImported }: { toolId: string; onImported: () =>
           <div className="flex items-center justify-between px-3 py-2 border-b border-brand-border">
             <div className="flex items-center gap-2">
               <IntegrationLogo slug={activePicker.logoSlug} size={13} />
-              <span className="text-[10px] font-body text-brand-muted uppercase tracking-widest">
+              <span className="text-[11px] font-body text-brand-muted uppercase tracking-widest">
                 {activePicker.label} · {files.length} file{files.length !== 1 ? 's' : ''}
               </span>
             </div>
             <button
               type="button"
               onClick={() => setActivePicker(null)}
-              className="text-[10px] font-body text-brand-muted hover:text-brand-text transition-colors"
+              className="text-[11px] font-body text-brand-muted hover:text-brand-text transition-colors"
             >
               ✕
             </button>
@@ -559,7 +559,7 @@ function CloudImport({ toolId, onImported }: { toolId: string; onImported: () =>
 
           {files.length === 0 ? (
             <div className="px-3 py-6 text-center">
-              <p className="text-[11px] font-body text-brand-muted">No PDF files found</p>
+              <p className="text-[12px] font-body text-brand-muted">No PDF files found</p>
             </div>
           ) : (
             <div className="divide-y divide-brand-border-subtle max-h-52 overflow-y-auto">
@@ -585,17 +585,17 @@ function CloudImport({ toolId, onImported }: { toolId: string; onImported: () =>
                     )}
                   </span>
                   <div className="flex-1 min-w-0">
-                    <p className="text-[11px] font-body text-brand-text truncate">{f.name}</p>
+                    <p className="text-[12px] font-body text-brand-text truncate">{f.name}</p>
                     <div className="flex items-center gap-2 mt-0.5">
                       {f.size != null && (
-                        <span className="text-[10px] font-body text-brand-muted">
+                        <span className="text-[11px] font-body text-brand-muted">
                           {f.size < 1024 * 1024
                             ? `${(f.size / 1024).toFixed(0)} KB`
                             : `${(f.size / (1024 * 1024)).toFixed(1)} MB`}
                         </span>
                       )}
                       {f.already_imported && (
-                        <span className="text-[10px] font-body text-brand-muted">Already imported</span>
+                        <span className="text-[11px] font-body text-brand-muted">Already imported</span>
                       )}
                     </div>
                   </div>
@@ -609,7 +609,7 @@ function CloudImport({ toolId, onImported }: { toolId: string; onImported: () =>
               type="button"
               onClick={importSelected}
               disabled={selected.size === 0 || importing}
-              className="w-full bg-[#00C853] text-black text-[10px] font-body py-1.5 rounded-sm hover:bg-[#00a844] active:scale-[0.97] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+              className="w-full bg-[#00C853] text-black text-[11px] font-body py-1.5 rounded-sm hover:bg-[#00a844] active:scale-[0.97] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
             >
               {importing
                 ? 'Importing…'
@@ -656,10 +656,10 @@ function UploadArea({ uploading, onFiles }: { uploading: boolean; onFiles: (file
           <p className="text-xs font-body text-brand-secondary">
             Drop files here or click to browse
           </p>
-          <p className="text-[10px] font-body text-brand-muted">
+          <p className="text-[11px] font-body text-brand-muted">
             PDF · Word · PNG · JPG · WebP · max 10 MB
           </p>
-          <p className="text-[10px] font-body text-brand-muted mt-1">
+          <p className="text-[11px] font-body text-brand-muted mt-1">
             Clen analyses and extracts summary, risks, loopholes, and improvements
           </p>
         </div>
@@ -829,13 +829,13 @@ export function DocumentsTab({ toolId }: { toolId: string | null }) {
 
       <div>
         <div className="flex items-center justify-between mb-2">
-          <p className="text-[10px] font-body text-brand-muted uppercase tracking-widest">
+          <p className="text-[11px] font-body text-brand-muted uppercase tracking-widest">
             Documents · {total}
           </p>
           <button
             type="button"
             onClick={() => load(0)}
-            className="text-[10px] font-body text-brand-muted hover:text-brand-secondary transition-colors"
+            className="text-[11px] font-body text-brand-muted hover:text-brand-secondary transition-colors"
           >
             Refresh
           </button>

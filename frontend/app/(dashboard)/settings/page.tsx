@@ -55,23 +55,23 @@ export default async function SettingsPage() {
           {/* Organisation */}
           <AnimatedSection>
             <section className="space-y-4">
-              <h2 className="text-[10px] font-body uppercase tracking-widest text-brand-muted border-b border-brand-border pb-2">Organisation</h2>
+              <h2 className="text-[11px] font-body uppercase tracking-widest text-brand-muted border-b border-brand-border pb-2">Organisation</h2>
               <div className="space-y-3">
                 <div>
-                  <p className="text-[10px] font-body text-brand-muted mb-1.5 uppercase tracking-wide">Name</p>
+                  <p className="text-[11px] font-body text-brand-muted mb-1.5 uppercase tracking-wide">Name</p>
                   {data ? <OrgNameForm initialName={data.tenant.name} /> : <p className="text-xs font-body text-brand-muted">Backend unavailable</p>}
                 </div>
                 <div>
-                  <p className="text-[10px] font-body text-brand-muted mb-1.5 uppercase tracking-wide">Tenant ID</p>
+                  <p className="text-[11px] font-body text-brand-muted mb-1.5 uppercase tracking-wide">Tenant ID</p>
                   <div className="flex items-center gap-2 flex-wrap">
                     <code className="text-xs font-body text-brand-text bg-brand-bg border border-brand-border rounded-sm px-3 py-2">
                       {data?.tenant.id ?? '—'}
                     </code>
-                    <span className="text-[10px] font-body text-brand-muted">use as X-Tenant-ID in API calls</span>
+                    <span className="text-[11px] font-body text-brand-muted">use as X-Tenant-ID in API calls</span>
                   </div>
                 </div>
                 <div>
-                  <p className="text-[10px] font-body text-brand-muted mb-1.5 uppercase tracking-wide">Created</p>
+                  <p className="text-[11px] font-body text-brand-muted mb-1.5 uppercase tracking-wide">Created</p>
                   <p className="text-xs font-body text-brand-text">
                     {data ? new Date(data.tenant.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) : '—'}
                   </p>
@@ -83,16 +83,16 @@ export default async function SettingsPage() {
           {/* Account */}
           <AnimatedSection>
             <section className="space-y-4">
-              <h2 className="text-[10px] font-body uppercase tracking-widest text-brand-muted border-b border-brand-border pb-2">Your Account</h2>
+              <h2 className="text-[11px] font-body uppercase tracking-widest text-brand-muted border-b border-brand-border pb-2">Your Account</h2>
               <div className="space-y-3">
                 <div>
-                  <p className="text-[10px] font-body text-brand-muted mb-1.5 uppercase tracking-wide">Email</p>
+                  <p className="text-[11px] font-body text-brand-muted mb-1.5 uppercase tracking-wide">Email</p>
                   <p className="text-xs font-body text-brand-text">{data?.user.email ?? '—'}</p>
                 </div>
                 <div>
-                  <p className="text-[10px] font-body text-brand-muted mb-1.5 uppercase tracking-wide">Role</p>
+                  <p className="text-[11px] font-body text-brand-muted mb-1.5 uppercase tracking-wide">Role</p>
                   {data ? (
-                    <span className={`text-[10px] font-body px-2 py-0.5 rounded-sm border ${ROLE_COLORS[data.user.role.toLowerCase()] ?? ROLE_COLORS.member}`}>
+                    <span className={`text-[11px] font-body px-2 py-0.5 rounded-sm border ${ROLE_COLORS[data.user.role.toLowerCase()] ?? ROLE_COLORS.member}`}>
                       {data.user.role.charAt(0).toUpperCase() + data.user.role.slice(1).toLowerCase()}
                     </span>
                   ) : <p className="text-xs font-body text-brand-muted">—</p>}
@@ -104,11 +104,11 @@ export default async function SettingsPage() {
           {/* Display Currency */}
           <AnimatedSection>
             <section className="space-y-4">
-              <h2 className="text-[10px] font-body uppercase tracking-widest text-brand-muted border-b border-brand-border pb-2">Display Currency</h2>
+              <h2 className="text-[11px] font-body uppercase tracking-widest text-brand-muted border-b border-brand-border pb-2">Display Currency</h2>
               <div className="space-y-2">
-                <p className="text-[10px] font-body text-brand-muted uppercase tracking-wide">Preferred currency</p>
+                <p className="text-[11px] font-body text-brand-muted uppercase tracking-wide">Preferred currency</p>
                 <CurrencySelector />
-                <p className="text-[10px] font-body text-brand-muted leading-relaxed">
+                <p className="text-[11px] font-body text-brand-muted leading-relaxed">
                   All monetary values across the dashboard are displayed in this currency. Amounts are converted from their native currency at read time — stored values are never modified.
                 </p>
               </div>
@@ -118,11 +118,11 @@ export default async function SettingsPage() {
           {/* Timezone */}
           <AnimatedSection>
             <section className="space-y-4">
-              <h2 className="text-[10px] font-body uppercase tracking-widest text-brand-muted border-b border-brand-border pb-2">Timezone</h2>
+              <h2 className="text-[11px] font-body uppercase tracking-widest text-brand-muted border-b border-brand-border pb-2">Timezone</h2>
               <div className="space-y-2">
-                <p className="text-[10px] font-body text-brand-muted uppercase tracking-wide">Organisation timezone</p>
+                <p className="text-[11px] font-body text-brand-muted uppercase tracking-wide">Organisation timezone</p>
                 <TimezoneSelector />
-                <p className="text-[10px] font-body text-brand-muted leading-relaxed">
+                <p className="text-[11px] font-body text-brand-muted leading-relaxed">
                   Used for scheduling automated tool runs (daily reconciliation, weekly payment runs, etc.) and displaying timestamps across the dashboard.
                 </p>
               </div>
@@ -132,7 +132,7 @@ export default async function SettingsPage() {
           {/* Notifications */}
           <AnimatedSection>
             <section className="space-y-4">
-              <h2 className="text-[10px] font-body uppercase tracking-widest text-brand-muted border-b border-brand-border pb-2">Notifications</h2>
+              <h2 className="text-[11px] font-body uppercase tracking-widest text-brand-muted border-b border-brand-border pb-2">Notifications</h2>
               <NotificationsSection />
             </section>
           </AnimatedSection>
@@ -140,7 +140,7 @@ export default async function SettingsPage() {
           {/* Billing */}
           <AnimatedSection>
             <section className="space-y-4">
-              <h2 className="text-[10px] font-body uppercase tracking-widest text-brand-muted border-b border-brand-border pb-2">Billing</h2>
+              <h2 className="text-[11px] font-body uppercase tracking-widest text-brand-muted border-b border-brand-border pb-2">Billing</h2>
               <BillingSection />
             </section>
           </AnimatedSection>
@@ -148,7 +148,7 @@ export default async function SettingsPage() {
           {/* Danger Zone */}
           <AnimatedSection>
             <section className="space-y-4">
-              <h2 className="text-[10px] font-body uppercase tracking-widest text-[#ff4d6d] border-b border-[#ff4d6d]/20 pb-2">Danger Zone</h2>
+              <h2 className="text-[11px] font-body uppercase tracking-widest text-[#ff4d6d] border-b border-[#ff4d6d]/20 pb-2">Danger Zone</h2>
               <DangerZone />
             </section>
           </AnimatedSection>
@@ -161,7 +161,7 @@ export default async function SettingsPage() {
           {/* Team */}
           <AnimatedSection>
             <section className="space-y-4">
-              <h2 className="text-[10px] font-body uppercase tracking-widest text-brand-muted border-b border-brand-border pb-2">Team</h2>
+              <h2 className="text-[11px] font-body uppercase tracking-widest text-brand-muted border-b border-brand-border pb-2">Team</h2>
               <TeamSection />
             </section>
           </AnimatedSection>
@@ -169,7 +169,7 @@ export default async function SettingsPage() {
           {/* Invite Links */}
           <AnimatedSection>
             <section className="space-y-4">
-              <h2 className="text-[10px] font-body uppercase tracking-widest text-brand-muted border-b border-brand-border pb-2">Invite Links</h2>
+              <h2 className="text-[11px] font-body uppercase tracking-widest text-brand-muted border-b border-brand-border pb-2">Invite Links</h2>
               <InviteLinksSection />
             </section>
           </AnimatedSection>
@@ -178,8 +178,8 @@ export default async function SettingsPage() {
           <AnimatedSection>
             <section className="space-y-4">
               <div className="border-b border-brand-border pb-2 flex items-baseline justify-between">
-                <h2 className="text-[10px] font-body uppercase tracking-widest text-brand-muted">Integrations</h2>
-                <p className="text-[10px] font-body text-brand-muted">Connected external systems</p>
+                <h2 className="text-[11px] font-body uppercase tracking-widest text-brand-muted">Integrations</h2>
+                <p className="text-[11px] font-body text-brand-muted">Connected external systems</p>
               </div>
               <IntegrationsSection />
             </section>
@@ -189,8 +189,8 @@ export default async function SettingsPage() {
           <AnimatedSection>
             <section className="space-y-4">
               <div className="border-b border-brand-border pb-2 flex items-baseline justify-between">
-                <h2 className="text-[10px] font-body uppercase tracking-widest text-brand-muted">Policy &amp; Approvals</h2>
-                <p className="text-[10px] font-body text-brand-muted">Autonomy per tool</p>
+                <h2 className="text-[11px] font-body uppercase tracking-widest text-brand-muted">Policy &amp; Approvals</h2>
+                <p className="text-[11px] font-body text-brand-muted">Autonomy per tool</p>
               </div>
               <PolicySection />
             </section>

@@ -39,7 +39,7 @@ export function PricingToggle() {
         }`}
       >
         Annual
-        <span className="bg-[rgba(0,200,83,0.08)] border border-[rgba(0,200,83,0.2)] text-brand-green font-body text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-sm">
+        <span className="bg-[rgba(0,200,83,0.08)] border border-[rgba(0,200,83,0.2)] text-brand-green font-body text-[11px] uppercase tracking-wider px-2 py-0.5 rounded-sm">
           2 months free
         </span>
       </button>

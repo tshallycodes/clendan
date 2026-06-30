@@ -106,13 +106,13 @@ export default function JoinPage() {
           {(pageState === 'ready' || pageState === 'accepting') && info && (
             <>
               <div className="space-y-2">
-                <p className="text-[10px] font-body text-brand-muted uppercase tracking-widest">You've been invited to</p>
+                <p className="text-[11px] font-body text-brand-muted uppercase tracking-widest">You've been invited to</p>
                 <h1 className="text-xl font-bold text-brand-text" style={{ fontFamily: 'var(--font-heading, sans-serif)' }}>
                   {info.org_name}
                 </h1>
                 <div className="flex items-center gap-2 pt-0.5">
-                  <span className="text-[10px] font-body text-brand-muted uppercase tracking-widest">Role</span>
-                  <span className="text-[10px] font-body font-medium px-2 py-0.5 rounded-sm bg-brand-elevated border border-brand-border text-brand-text uppercase tracking-wider">
+                  <span className="text-[11px] font-body text-brand-muted uppercase tracking-widest">Role</span>
+                  <span className="text-[11px] font-body font-medium px-2 py-0.5 rounded-sm bg-brand-elevated border border-brand-border text-brand-text uppercase tracking-wider">
                     {ROLE_LABEL[info.role] ?? info.role}
                   </span>
                 </div>

@@ -99,7 +99,7 @@ export function ApiKeysSection() {
     <div className="space-y-4">
       {revealedKey && (
         <div className="border border-brand-green/40 bg-brand-green/05 rounded-sm p-4 space-y-3">
-          <p className="text-[10px] font-body uppercase tracking-widest text-brand-green">New API key — copy it now. It will not be shown again.</p>
+          <p className="text-[11px] font-body uppercase tracking-widest text-brand-green">New API key — copy it now. It will not be shown again.</p>
           <div className="flex items-center gap-3 bg-brand-bg border border-brand-border rounded-sm px-3 py-2">
             <code className="flex-1 text-xs font-body text-brand-text break-all">{revealedKey}</code>
             <button type="button" onClick={copyKey} aria-label="Copy API key" className="shrink-0 text-brand-muted hover:text-brand-text transition-colors">
@@ -140,23 +140,23 @@ export function ApiKeysSection() {
             <div key={k.id} className="bg-brand-surface px-4 py-3 flex items-center gap-4">
               <div className="flex-1 min-w-0">
                 <span className="text-xs font-body text-brand-text">{k.name}</span>
-                <code className="ml-3 text-[10px] font-body text-brand-muted">{k.key_prefix}••••••••</code>
+                <code className="ml-3 text-[11px] font-body text-brand-muted">{k.key_prefix}••••••••</code>
               </div>
-              <span className={`text-[10px] font-body px-2 py-0.5 rounded-sm border ${k.status === 'active' ? 'text-brand-green border-brand-green/30 bg-brand-green/08' : 'text-brand-muted border-brand-border'}`}>
+              <span className={`text-[11px] font-body px-2 py-0.5 rounded-sm border ${k.status === 'active' ? 'text-brand-green border-brand-green/30 bg-brand-green/08' : 'text-brand-muted border-brand-border'}`}>
                 {k.status}
               </span>
-              <span className="text-[10px] font-body text-brand-muted hidden sm:block">
+              <span className="text-[11px] font-body text-brand-muted hidden sm:block">
                 {new Date(k.created_at).toLocaleDateString()}
               </span>
               {canConfigure && (
                 k.status === 'active' ? (
                   <button type="button" onClick={() => handleRevoke(k.id)}
-                    className="text-[10px] font-body text-brand-danger border border-brand-danger/30 bg-brand-danger/08 hover:bg-brand-danger/15 rounded-sm px-2 py-0.5 transition-colors">
+                    className="text-[11px] font-body text-brand-danger border border-brand-danger/30 bg-brand-danger/08 hover:bg-brand-danger/15 rounded-sm px-2 py-0.5 transition-colors">
                     Revoke
                   </button>
                 ) : (
                   <button type="button" onClick={() => handleDelete(k.id)}
-                    className="text-[10px] font-body text-brand-danger border border-brand-danger/30 bg-brand-danger/08 hover:bg-brand-danger/15 rounded-sm px-2 py-0.5 transition-colors">
+                    className="text-[11px] font-body text-brand-danger border border-brand-danger/30 bg-brand-danger/08 hover:bg-brand-danger/15 rounded-sm px-2 py-0.5 transition-colors">
                     Delete
                   </button>
                 )

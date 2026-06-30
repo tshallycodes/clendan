@@ -152,23 +152,23 @@ function EndpointRow({ endpoint, apiKey, idempotencyKey }: EndpointRowProps) {
         onClick={() => setExpanded((v) => !v)}
         className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-brand-bg transition-colors text-left"
       >
-        <span className={`shrink-0 text-[10px] font-body font-semibold uppercase tracking-wider w-10 ${METHOD_COLORS[endpoint.method]}`}>
+        <span className={`shrink-0 text-[11px] font-body font-semibold uppercase tracking-wider w-10 ${METHOD_COLORS[endpoint.method]}`}>
           {endpoint.method}
         </span>
         <span className="flex-1 min-w-0 text-xs font-body text-brand-text truncate">{endpoint.path}</span>
-        <span className="shrink-0 text-[10px] font-body text-brand-muted hidden sm:block">{endpoint.shortDesc}</span>
+        <span className="shrink-0 text-[11px] font-body text-brand-muted hidden sm:block">{endpoint.shortDesc}</span>
         <CaretRight className={`w-3.5 h-3.5 text-brand-muted shrink-0 transition-transform duration-150 ${expanded ? 'rotate-90' : ''}`} />
       </button>
 
       {/* Expanded body */}
       {expanded && (
         <div className="border-t border-brand-border px-3 pb-3 pt-3 space-y-3">
-          <p className="text-[10px] font-body text-brand-muted">{endpoint.description}</p>
+          <p className="text-[11px] font-body text-brand-muted">{endpoint.description}</p>
 
           {/* Path param input (only for PATCH with {transaction_id}) */}
           {endpoint.defaultPathParam !== null && (
             <div className="space-y-1">
-              <label className="text-[10px] font-body uppercase tracking-widest text-brand-muted">transaction_id</label>
+              <label className="text-[11px] font-body uppercase tracking-widest text-brand-muted">transaction_id</label>
               <input
                 value={pathParam}
                 onChange={(e) => setPathParam(e.target.value)}
@@ -181,7 +181,7 @@ function EndpointRow({ endpoint, apiKey, idempotencyKey }: EndpointRowProps) {
           {/* Body editor */}
           {endpoint.defaultBody !== null && (
             <div className="space-y-1">
-              <label className="text-[10px] font-body uppercase tracking-widest text-brand-muted">Body (JSON)</label>
+              <label className="text-[11px] font-body uppercase tracking-widest text-brand-muted">Body (JSON)</label>
               <textarea
                 value={bodyText}
                 onChange={(e) => setBodyText(e.target.value)}
@@ -207,7 +207,7 @@ function EndpointRow({ endpoint, apiKey, idempotencyKey }: EndpointRowProps) {
               <button
                 type="button"
                 onClick={() => setResp({ kind: 'idle' })}
-                className="text-[10px] font-body text-brand-muted hover:text-brand-text transition-colors"
+                className="text-[11px] font-body text-brand-muted hover:text-brand-text transition-colors"
               >
                 Clear
               </button>
@@ -349,11 +349,11 @@ export function ApiPlayground() {
       transition={{ duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}
       className="bg-brand-surface border border-brand-border rounded-sm p-4 space-y-4"
     >
-      <p className="text-[10px] font-body uppercase tracking-widest text-brand-muted">API Playground</p>
+      <p className="text-[11px] font-body uppercase tracking-widest text-brand-muted">API Playground</p>
 
       {/* API Key */}
       <div className="space-y-1.5">
-        <label className="text-[10px] font-body uppercase tracking-widest text-brand-muted">API Key</label>
+        <label className="text-[11px] font-body uppercase tracking-widest text-brand-muted">API Key</label>
         <div className="flex items-center gap-2">
           <input
             type={showApiKey ? 'text' : 'password'}
@@ -381,7 +381,7 @@ export function ApiPlayground() {
         <div className="space-y-4">
           {/* Tool selector */}
           <div className="space-y-1.5">
-            <label className="text-[10px] font-body uppercase tracking-widest text-brand-muted">Tool</label>
+            <label className="text-[11px] font-body uppercase tracking-widest text-brand-muted">Tool</label>
             <select
               value={selectedTool}
               onChange={(e) => {
@@ -401,7 +401,7 @@ export function ApiPlayground() {
           {/* Payload — file picker for document_intelligence, JSON editor for everything else */}
           {selectedTool === 'document_intelligence' ? (
             <div className="space-y-1.5">
-              <label className="text-[10px] font-body uppercase tracking-widest text-brand-muted">File</label>
+              <label className="text-[11px] font-body uppercase tracking-widest text-brand-muted">File</label>
               <label className="flex flex-col items-center justify-center w-full h-24 bg-brand-bg border border-dashed border-brand-border rounded-sm cursor-pointer hover:border-[#00C853] transition-colors group">
                 <input
                   type="file"
@@ -412,19 +412,19 @@ export function ApiPlayground() {
                 {selectedFile ? (
                   <div className="text-center">
                     <p className="text-xs font-body text-brand-text">{selectedFile.name}</p>
-                    <p className="text-[10px] font-body text-brand-muted mt-0.5">{(selectedFile.size / 1024).toFixed(1)} KB — click to change</p>
+                    <p className="text-[11px] font-body text-brand-muted mt-0.5">{(selectedFile.size / 1024).toFixed(1)} KB — click to change</p>
                   </div>
                 ) : (
                   <div className="text-center">
                     <p className="text-xs font-body text-brand-muted group-hover:text-brand-text transition-colors">Click to select a file</p>
-                    <p className="text-[10px] font-body text-brand-muted mt-0.5">PDF, Word, PNG, JPG, WebP — max 10 MB</p>
+                    <p className="text-[11px] font-body text-brand-muted mt-0.5">PDF, Word, PNG, JPG, WebP — max 10 MB</p>
                   </div>
                 )}
               </label>
             </div>
           ) : (
             <div className="space-y-1.5">
-              <label className="text-[10px] font-body uppercase tracking-widest text-brand-muted">Payload (JSON)</label>
+              <label className="text-[11px] font-body uppercase tracking-widest text-brand-muted">Payload (JSON)</label>
               <textarea
                 value={payloadText}
                 onChange={(e) => setPayloadText(e.target.value)}
@@ -437,7 +437,7 @@ export function ApiPlayground() {
 
           {/* Idempotency Key */}
           <div className="space-y-1.5">
-            <label className="text-[10px] font-body uppercase tracking-widest text-brand-muted">Idempotency Key</label>
+            <label className="text-[11px] font-body uppercase tracking-widest text-brand-muted">Idempotency Key</label>
             <div className="flex items-center gap-2">
               <input
                 readOnly
@@ -470,7 +470,7 @@ export function ApiPlayground() {
 
         {/* Right - response panel */}
         <div className="space-y-1.5">
-          <label className="text-[10px] font-body uppercase tracking-widest text-brand-muted">Response</label>
+          <label className="text-[11px] font-body uppercase tracking-widest text-brand-muted">Response</label>
           <div className="bg-brand-bg border border-brand-border rounded-sm p-4 min-h-[280px] max-h-[500px] overflow-y-auto">
             {response.kind === 'idle' && (
               <p className="text-xs font-body text-brand-muted">Response will appear here</p>
@@ -504,7 +504,7 @@ export function ApiPlayground() {
       {/* Related endpoints */}
       {(RELATED_ENDPOINTS[selectedTool] ?? []).length > 0 && (
         <div className="space-y-2">
-          <p className="text-[10px] font-body uppercase tracking-widest text-brand-muted">Related endpoints</p>
+          <p className="text-[11px] font-body uppercase tracking-widest text-brand-muted">Related endpoints</p>
           {RELATED_ENDPOINTS[selectedTool]!.map((ep) => (
             <EndpointRow
               key={ep.id}

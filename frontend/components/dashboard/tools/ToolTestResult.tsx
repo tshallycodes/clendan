@@ -33,8 +33,8 @@ export function ToolTestResult({ result, onDismiss }: Props) {
   if (result.error) {
     return (
       <div className="flex items-center justify-between mt-3 px-3 py-2 bg-[rgba(255,77,109,0.06)] border border-[rgba(255,77,109,0.2)] rounded-sm">
-        <span className="text-[11px] font-body text-[#ff4d6d]">{result.error}</span>
-        <button type="button" onClick={onDismiss} className="text-[#ff4d6d] text-[10px] font-body ml-3 hover:opacity-70 transition-opacity">Ã—</button>
+        <span className="text-[12px] font-body text-[#ff4d6d]">{result.error}</span>
+        <button type="button" onClick={onDismiss} className="text-[#ff4d6d] text-[11px] font-body ml-3 hover:opacity-70 transition-opacity">Ã—</button>
       </div>
     )
   }
@@ -45,19 +45,19 @@ export function ToolTestResult({ result, onDismiss }: Props) {
   return (
     <div className="flex items-center justify-between mt-3 px-3 py-2 bg-[#0a0a0a] border border-brand-border rounded-sm">
       <div className="flex items-center gap-3">
-        <span className={`text-[10px] font-body px-2 py-0.5 rounded-sm ${style.className}`}>{style.label}</span>
+        <span className={`text-[11px] font-body px-2 py-0.5 rounded-sm ${style.className}`}>{style.label}</span>
         {result.confidence !== null && !isQueued && (
-          <span className="text-[11px] font-body text-brand-muted">
+          <span className="text-[12px] font-body text-brand-muted">
             {(result.confidence * 100).toFixed(1)}% confidence
           </span>
         )}
         {isQueued && (
-          <span className="text-[11px] font-body text-[#4a6a4a]">
+          <span className="text-[12px] font-body text-[#4a6a4a]">
             Execution queued — check Executions page for results
           </span>
         )}
       </div>
-      <button type="button" onClick={onDismiss} className="text-[#4a6a4a] text-[10px] font-body ml-3 hover:text-brand-muted transition-colors">Ã—</button>
+      <button type="button" onClick={onDismiss} className="text-[#4a6a4a] text-[11px] font-body ml-3 hover:text-brand-muted transition-colors">Ã—</button>
     </div>
   )
 }

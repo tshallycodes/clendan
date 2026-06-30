@@ -89,7 +89,7 @@ function ColumnFilterDropdown({
         type="button"
         onClick={() => { setOpen(v => !v); setSearch('') }}
         className={cn(
-          'group inline-flex items-center gap-1 text-left text-[10px] font-body uppercase tracking-widest transition-colors',
+          'group inline-flex items-center gap-1 text-left text-[11px] font-body uppercase tracking-widest transition-colors',
           active ? 'text-[#00C853]' : 'text-brand-muted hover:text-brand-secondary',
         )}
       >
@@ -112,7 +112,7 @@ function ColumnFilterDropdown({
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 placeholder={`Search ${header.toLowerCase()}…`}
-                className="w-full text-[10px] font-body bg-brand-surface border border-brand-border rounded-sm px-2 py-1.5 text-brand-text placeholder:text-brand-muted outline-none focus:border-[#00C853] transition-colors"
+                className="w-full text-[11px] font-body bg-brand-surface border border-brand-border rounded-sm px-2 py-1.5 text-brand-text placeholder:text-brand-muted outline-none focus:border-[#00C853] transition-colors"
                 autoFocus
               />
             </div>
@@ -140,7 +140,7 @@ function ColumnFilterDropdown({
           {/* Options */}
           <div className="max-h-48 overflow-y-auto">
             {filtered.length === 0 ? (
-              <p className="px-3 py-3 text-[10px] font-body text-brand-muted text-center">No matches</p>
+              <p className="px-3 py-3 text-[11px] font-body text-brand-muted text-center">No matches</p>
             ) : (
               filtered.map(opt => {
                 const isSelected = selected.has(opt)
@@ -150,7 +150,7 @@ function ColumnFilterDropdown({
                     type="button"
                     onClick={() => onToggle(opt)}
                     className={cn(
-                      'w-full flex items-center gap-2 text-left text-[10px] font-body font-normal px-3 py-1.5 transition-colors',
+                      'w-full flex items-center gap-2 text-left text-[11px] font-body font-normal px-3 py-1.5 transition-colors',
                       isSelected
                         ? 'text-brand-text bg-brand-elevated'
                         : 'text-brand-secondary hover:text-brand-text hover:bg-brand-elevated',
@@ -298,7 +298,7 @@ export function TransactionsTab({
           {FILTER_KEYS.map(key => (
             <button key={key} type="button" onClick={() => onFilterChange(key)}
               className={cn(
-                'text-[10px] font-body px-3 py-1.5 rounded-sm border transition-colors uppercase tracking-wider',
+                'text-[11px] font-body px-3 py-1.5 rounded-sm border transition-colors uppercase tracking-wider',
                 filter === key
                   ? 'border-[rgba(0,200,83,0.3)] bg-[rgba(0,200,83,0.08)] text-[#00C853]'
                   : 'border-brand-border text-brand-muted hover:text-brand-text',
@@ -316,7 +316,7 @@ export function TransactionsTab({
             <button
               type="button"
               onClick={clearAllFilters}
-              className="text-[10px] font-body text-brand-muted hover:text-brand-secondary transition-colors flex items-center gap-1"
+              className="text-[11px] font-body text-brand-muted hover:text-brand-secondary transition-colors flex items-center gap-1"
             >
               <svg width="10" height="10" viewBox="0 0 16 16" fill="none" className="text-current">
                 <path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
@@ -361,7 +361,7 @@ export function TransactionsTab({
             <button
               type="button"
               onClick={clearAllFilters}
-              className="text-[10px] font-body text-brand-muted hover:text-brand-secondary transition-colors"
+              className="text-[11px] font-body text-brand-muted hover:text-brand-secondary transition-colors"
             >
               Clear all filters
             </button>
@@ -384,7 +384,7 @@ export function TransactionsTab({
                           onSelectAll={() => selectAllFilter(col.filterKey!, columnOptions[col.filterKey!])}
                         />
                       ) : (
-                        <span className="text-[10px] font-body text-brand-muted uppercase tracking-widest">
+                        <span className="text-[11px] font-body text-brand-muted uppercase tracking-widest">
                           {col.header}
                         </span>
                       )}
@@ -411,7 +411,7 @@ export function TransactionsTab({
       {offset < total && (
         <div className="flex justify-end">
           <button type="button" onClick={onLoadMore} disabled={loadingMore}
-            className="text-[10px] font-body px-4 py-2 border border-brand-border text-brand-muted hover:text-brand-text transition-colors rounded-sm disabled:opacity-60">
+            className="text-[11px] font-body px-4 py-2 border border-brand-border text-brand-muted hover:text-brand-text transition-colors rounded-sm disabled:opacity-60">
             {loadingMore ? 'Loading…' : `Load more (${total - offset} remaining)`}
           </button>
         </div>

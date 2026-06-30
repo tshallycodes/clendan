@@ -55,7 +55,7 @@ export function XeroOrgModal({ open, orgs, onConfirm, onClose }: XeroOrgModalPro
                 <h2 className="font-heading font-bold text-base text-[#e8f0e8]">
                   Select Xero Organisation
                 </h2>
-                <p className="text-[10px] font-body text-brand-muted mt-0.5">
+                <p className="text-[11px] font-body text-brand-muted mt-0.5">
                   Which organisation do you want to connect?
                 </p>
               </div>

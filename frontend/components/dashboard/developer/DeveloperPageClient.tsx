@@ -127,7 +127,7 @@ function ApiKeysSection({ keys, loading, showForm, setShowForm, newName, setNewN
     <div className="space-y-3">
       {revealedKey && (
         <div className="border border-[rgba(0,200,83,0.4)] bg-[rgba(0,200,83,0.05)] rounded-sm p-4 space-y-3">
-          <p className="text-[10px] font-body uppercase tracking-widest text-[#00C853]">New key — copy it now. It will not be shown again.</p>
+          <p className="text-[11px] font-body uppercase tracking-widest text-[#00C853]">New key — copy it now. It will not be shown again.</p>
           <div className="flex items-center gap-3 bg-brand-bg border border-brand-border rounded-sm px-3 py-2">
             <code className="flex-1 text-xs font-body text-brand-text break-all">{revealedKey}</code>
             <button type="button" onClick={copyKey} className="shrink-0 text-brand-muted hover:text-brand-text transition-colors">
@@ -159,13 +159,13 @@ function ApiKeysSection({ keys, loading, showForm, setShowForm, newName, setNewN
             <div key={k.id} className="bg-brand-surface px-4 py-3 flex items-center gap-4">
               <div className="flex-1 min-w-0">
                 <span className="text-xs font-body text-brand-text">{k.name}</span>
-                <code className="ml-3 text-[10px] font-body text-brand-muted">{k.key_prefix}••••••••</code>
+                <code className="ml-3 text-[11px] font-body text-brand-muted">{k.key_prefix}••••••••</code>
               </div>
-              <span className={`text-[10px] font-body px-2 py-0.5 rounded-sm border ${k.status === 'active' ? 'text-[#00C853] border-[rgba(0,200,83,0.3)] bg-[rgba(0,200,83,0.08)]' : 'text-brand-muted border-brand-border'}`}>{k.status}</span>
-              <span className="text-[10px] font-body text-brand-muted hidden sm:block">{new Date(k.created_at).toLocaleDateString()}</span>
+              <span className={`text-[11px] font-body px-2 py-0.5 rounded-sm border ${k.status === 'active' ? 'text-[#00C853] border-[rgba(0,200,83,0.3)] bg-[rgba(0,200,83,0.08)]' : 'text-brand-muted border-brand-border'}`}>{k.status}</span>
+              <span className="text-[11px] font-body text-brand-muted hidden sm:block">{new Date(k.created_at).toLocaleDateString()}</span>
               {k.status === 'active' && (
                 <button type="button" onClick={() => handleRevoke(k.id)}
-                  className="text-[10px] font-body text-[#ff4d6d] border border-[rgba(255,77,109,0.3)] bg-[rgba(255,77,109,0.08)] hover:bg-[rgba(255,77,109,0.15)] rounded-sm px-2 py-0.5 transition-colors">
+                  className="text-[11px] font-body text-[#ff4d6d] border border-[rgba(255,77,109,0.3)] bg-[rgba(255,77,109,0.08)] hover:bg-[rgba(255,77,109,0.15)] rounded-sm px-2 py-0.5 transition-colors">
                   Revoke
                 </button>
               )}
@@ -260,25 +260,25 @@ export function DeveloperPageClient() {
       {/* Info strip */}
       <motion.div variants={fadeUp} className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <div className="bg-brand-surface border border-brand-border rounded-sm p-4 space-y-1">
-          <p className="text-[10px] font-body uppercase tracking-widest text-brand-muted">Base URL</p>
+          <p className="text-[11px] font-body uppercase tracking-widest text-brand-muted">Base URL</p>
           <div className="flex items-center gap-2">
             <code className="text-xs font-body text-brand-text flex-1 truncate">{BASE_URL}</code>
             <CopyButton text={BASE_URL} />
           </div>
         </div>
         <div className="bg-brand-surface border border-brand-border rounded-sm p-4 space-y-1">
-          <p className="text-[10px] font-body uppercase tracking-widest text-brand-muted">Authentication</p>
+          <p className="text-[11px] font-body uppercase tracking-widest text-brand-muted">Authentication</p>
           <div className="flex items-center gap-1.5">
-            <code className="text-[10px] font-body text-brand-muted">Authorization:</code>
+            <code className="text-[11px] font-body text-brand-muted">Authorization:</code>
             <code className="text-xs font-body text-brand-text">ck_live_...</code>
           </div>
         </div>
         <div className="bg-brand-surface border border-brand-border rounded-sm p-4 space-y-1">
-          <p className="text-[10px] font-body uppercase tracking-widest text-brand-muted">Rate Limit</p>
+          <p className="text-[11px] font-body uppercase tracking-widest text-brand-muted">Rate Limit</p>
           <code className="text-xs font-body text-brand-text">60–200 req / min</code>
         </div>
         <div className="bg-brand-surface border border-brand-border rounded-sm p-4 space-y-1">
-          <p className="text-[10px] font-body uppercase tracking-widest text-brand-muted">Idempotency</p>
+          <p className="text-[11px] font-body uppercase tracking-widest text-brand-muted">Idempotency</p>
           <code className="text-xs font-body text-brand-text">Required on writes</code>
         </div>
       </motion.div>
@@ -291,14 +291,14 @@ export function DeveloperPageClient() {
 
           {/* Capabilities */}
           <motion.div variants={fadeUp} className="space-y-3">
-            <p className="text-[10px] font-body uppercase tracking-widest text-brand-muted">What you can build</p>
+            <p className="text-[11px] font-body uppercase tracking-widest text-brand-muted">What you can build</p>
             <div className="space-y-2">
               {CAPABILITIES.map(({ icon: Icon, title, desc }) => (
                 <div key={title} className="bg-brand-surface border border-brand-border rounded-sm p-4 flex items-start gap-3">
                   <Icon className="w-4 h-4 text-[#00C853] shrink-0 mt-0.5" />
                   <div>
                     <p className="text-xs font-body font-medium text-brand-text">{title}</p>
-                    <p className="text-[11px] font-body text-brand-muted mt-0.5 leading-relaxed">{desc}</p>
+                    <p className="text-[12px] font-body text-brand-muted mt-0.5 leading-relaxed">{desc}</p>
                   </div>
                 </div>
               ))}
@@ -307,7 +307,7 @@ export function DeveloperPageClient() {
 
           {/* API Keys */}
           <motion.div variants={fadeUp} className="space-y-3">
-            <p className="text-[10px] font-body uppercase tracking-widest text-brand-muted">API Keys</p>
+            <p className="text-[11px] font-body uppercase tracking-widest text-brand-muted">API Keys</p>
             <ApiKeysSection keys={keys} loading={loading} showForm={showForm} setShowForm={setShowForm}
               newName={newName} setNewName={setNewName} creating={creating}
               handleCreate={handleCreate} handleRevoke={handleRevoke} handleDelete={handleDelete}
@@ -316,11 +316,11 @@ export function DeveloperPageClient() {
 
           {/* Quick Start */}
           <motion.div variants={fadeUp} className="space-y-3">
-            <p className="text-[10px] font-body uppercase tracking-widest text-brand-muted">Quick Start</p>
+            <p className="text-[11px] font-body uppercase tracking-widest text-brand-muted">Quick Start</p>
             <div className="flex gap-1">
               {(['python', 'javascript', 'curl'] as Lang[]).map((l) => (
                 <button key={l} type="button" onClick={() => setLang(l)}
-                  className={`px-2.5 py-1 text-[10px] font-body rounded-sm transition-colors ${lang === l ? 'bg-brand-elevated border border-brand-border text-brand-text' : 'text-brand-muted hover:text-brand-secondary'}`}>
+                  className={`px-2.5 py-1 text-[11px] font-body rounded-sm transition-colors ${lang === l ? 'bg-brand-elevated border border-brand-border text-brand-text' : 'text-brand-muted hover:text-brand-secondary'}`}>
                   {l}
                 </button>
               ))}
@@ -340,13 +340,13 @@ export function DeveloperPageClient() {
 
           {/* Endpoints */}
           <motion.div variants={fadeUp} className="space-y-3">
-            <p className="text-[10px] font-body uppercase tracking-widest text-brand-muted">REST Endpoints</p>
+            <p className="text-[11px] font-body uppercase tracking-widest text-brand-muted">REST Endpoints</p>
             <div className="divide-y divide-brand-border border border-brand-border rounded-sm overflow-hidden">
               {ENDPOINTS.map(({ method, path, desc }) => (
                 <div key={path} className="bg-brand-surface px-4 py-2.5 flex items-center gap-3">
-                  <span className={`text-[10px] font-body px-1.5 py-0.5 rounded-sm border shrink-0 ${METHOD_COLORS[method] ?? 'text-brand-muted border-brand-border'}`}>{method}</span>
+                  <span className={`text-[11px] font-body px-1.5 py-0.5 rounded-sm border shrink-0 ${METHOD_COLORS[method] ?? 'text-brand-muted border-brand-border'}`}>{method}</span>
                   <code className="text-xs font-body text-brand-text flex-1 truncate">{path}</code>
-                  <span className="text-[11px] font-body text-brand-muted hidden sm:block shrink-0">{desc}</span>
+                  <span className="text-[12px] font-body text-brand-muted hidden sm:block shrink-0">{desc}</span>
                 </div>
               ))}
             </div>
@@ -354,12 +354,12 @@ export function DeveloperPageClient() {
 
           {/* Webhook events */}
           <motion.div variants={fadeUp} className="space-y-3">
-            <p className="text-[10px] font-body uppercase tracking-widest text-brand-muted">Webhook Events</p>
+            <p className="text-[11px] font-body uppercase tracking-widest text-brand-muted">Webhook Events</p>
             <div className="divide-y divide-brand-border border border-brand-border rounded-sm overflow-hidden">
               {WEBHOOK_EVENTS.map(({ event, desc }) => (
                 <div key={event} className="bg-brand-surface px-4 py-2.5 flex items-center gap-4">
                   <code className="text-xs font-body text-[#00a8cc] flex-1">{event}</code>
-                  <span className="text-[11px] font-body text-brand-muted shrink-0 hidden sm:block">{desc}</span>
+                  <span className="text-[12px] font-body text-brand-muted shrink-0 hidden sm:block">{desc}</span>
                 </div>
               ))}
             </div>
@@ -367,7 +367,7 @@ export function DeveloperPageClient() {
 
           {/* Response shape */}
           <motion.div variants={fadeUp} className="space-y-3">
-            <p className="text-[10px] font-body uppercase tracking-widest text-brand-muted">Standard Response Shape</p>
+            <p className="text-[11px] font-body uppercase tracking-widest text-brand-muted">Standard Response Shape</p>
             <CodeBlock code={RESPONSE_SHAPE} lang="json" />
           </motion.div>
 

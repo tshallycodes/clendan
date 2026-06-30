@@ -106,7 +106,7 @@ export default function ChangelogPage() {
     <div className="bg-brand-bg text-brand-text">
       {/* Hero */}
       <section className="max-w-6xl mx-auto px-6 md:px-8 pt-20 pb-14">
-        <p className="font-body text-[10px] uppercase tracking-widest text-brand-muted mb-4">
+        <p className="font-body text-[11px] uppercase tracking-widest text-brand-muted mb-4">
           Changelog
         </p>
         <h1
@@ -132,7 +132,7 @@ export default function ChangelogPage() {
               {/* Date column */}
               <div className="hidden md:flex flex-col items-end shrink-0 w-36 pt-1 gap-2">
                 <span
-                  className="font-body text-[10px] uppercase tracking-widest px-2 py-0.5 rounded-sm"
+                  className="font-body text-[11px] uppercase tracking-widest px-2 py-0.5 rounded-sm"
                   style={{
                     background: 'rgba(0,200,83,0.08)',
                     color: '#00C853',
@@ -141,7 +141,7 @@ export default function ChangelogPage() {
                 >
                   {formatDate(entry.date)}
                 </span>
-                <span className="font-body text-[10px] text-brand-muted">{entry.version}</span>
+                <span className="font-body text-[11px] text-brand-muted">{entry.version}</span>
               </div>
 
               {/* Content */}
@@ -149,7 +149,7 @@ export default function ChangelogPage() {
                 <div className="flex flex-wrap items-center gap-2">
                   {/* Mobile date */}
                   <span
-                    className="md:hidden font-body text-[10px] uppercase tracking-widest px-2 py-0.5 rounded-sm"
+                    className="md:hidden font-body text-[11px] uppercase tracking-widest px-2 py-0.5 rounded-sm"
                     style={{
                       background: 'rgba(0,200,83,0.08)',
                       color: '#00C853',
@@ -158,11 +158,11 @@ export default function ChangelogPage() {
                   >
                     {formatDate(entry.date)}
                   </span>
-                  <span className="md:hidden font-body text-[10px] text-brand-muted">
+                  <span className="md:hidden font-body text-[11px] text-brand-muted">
                     {entry.version}
                   </span>
                   <span
-                    className="font-body text-[10px] uppercase tracking-widest px-2 py-0.5 rounded-sm"
+                    className="font-body text-[11px] uppercase tracking-widest px-2 py-0.5 rounded-sm"
                     style={{
                       background: CATEGORY_BG[entry.category],
                       color: CATEGORY_COLOR[entry.category],

@@ -40,7 +40,7 @@ const mdComponents: Components = {
     const isOrdered = (props as { ordered?: boolean }).ordered
     return (
       <li className="flex items-start gap-2 text-xs font-body text-brand-text leading-relaxed">
-        <span className={`shrink-0 mt-0.5 text-[10px] ${isOrdered ? 'text-brand-muted [counter-increment:list-counter] before:content-[counter(list-counter)"."]' : 'text-brand-muted'}`}>
+        <span className={`shrink-0 mt-0.5 text-[11px] ${isOrdered ? 'text-brand-muted [counter-increment:list-counter] before:content-[counter(list-counter)"."]' : 'text-brand-muted'}`}>
           {isOrdered ? null : '→'}
         </span>
         <span>{children}</span>
@@ -57,7 +57,7 @@ const mdComponents: Components = {
       )
     }
     return (
-      <code className="bg-brand-elevated border border-brand-border-subtle rounded-sm px-1 py-0.5 text-[11px] font-body text-[#00a8cc]">
+      <code className="bg-brand-elevated border border-brand-border-subtle rounded-sm px-1 py-0.5 text-[12px] font-body text-[#00a8cc]">
         {children}
       </code>
     )
@@ -81,7 +81,7 @@ const mdComponents: Components = {
   ),
   table: ({ children }) => (
     <div className="my-2 first:mt-0 last:mb-0 overflow-x-auto">
-      <table className="w-full text-[11px] font-body border border-brand-border rounded-sm">{children}</table>
+      <table className="w-full text-[12px] font-body border border-brand-border rounded-sm">{children}</table>
     </div>
   ),
   thead: ({ children }) => (
@@ -90,7 +90,7 @@ const mdComponents: Components = {
   tbody: ({ children }) => <tbody className="divide-y divide-brand-border">{children}</tbody>,
   tr: ({ children }) => <tr>{children}</tr>,
   th: ({ children }) => (
-    <th className="text-left px-3 py-1.5 text-brand-secondary font-semibold uppercase tracking-wider text-[10px]">{children}</th>
+    <th className="text-left px-3 py-1.5 text-brand-secondary font-semibold uppercase tracking-wider text-[11px]">{children}</th>
   ),
   td: ({ children }) => (
     <td className="px-3 py-1.5 text-brand-text">{children}</td>
@@ -112,7 +112,7 @@ export function ClenMessage({ message }: Props) {
           <div className="bg-brand-elevated rounded-sm px-3 py-2 text-xs font-body text-brand-text leading-relaxed">
             {message.content}
           </div>
-          <span className="absolute -bottom-4 right-0 text-[11px] font-body text-brand-muted opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+          <span className="absolute -bottom-4 right-0 text-[12px] font-body text-brand-muted opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
             {formatTime(message.timestamp)}
           </span>
         </div>
@@ -139,7 +139,7 @@ export function ClenMessage({ message }: Props) {
             {message.toolCalls.map((tc, i) => (
               <div
                 key={i}
-                className="flex items-center gap-2 text-[10px] font-body text-brand-muted bg-brand-surface border border-brand-border-subtle rounded-sm px-2 py-1"
+                className="flex items-center gap-2 text-[11px] font-body text-brand-muted bg-brand-surface border border-brand-border-subtle rounded-sm px-2 py-1"
               >
                 <span className="text-brand-warning">◌</span>
                 <span>Checking your data</span>
@@ -157,7 +157,7 @@ export function ClenMessage({ message }: Props) {
             </ReactMarkdown>
           </div>
         )}
-        <span className="block mt-1 text-[11px] font-body text-brand-muted opacity-0 group-hover:opacity-100 transition-opacity">
+        <span className="block mt-1 text-[12px] font-body text-brand-muted opacity-0 group-hover:opacity-100 transition-opacity">
           {formatTime(message.timestamp)}
         </span>
       </div>

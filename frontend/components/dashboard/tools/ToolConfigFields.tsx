@@ -8,7 +8,7 @@ import { useCurrency } from '@/components/Providers'
 import { CURRENCY_MAP } from '@/lib/currency'
 
 const inputClass = 'w-full bg-brand-bg border border-brand-border focus:border-brand-green rounded-sm px-3 py-2 text-xs font-body text-brand-text outline-none transition-colors'
-const labelClass = 'text-[10px] font-body text-brand-muted uppercase tracking-widest'
+const labelClass = 'text-[11px] font-body text-brand-muted uppercase tracking-widest'
 
 interface FieldDef {
   key: string
@@ -304,7 +304,7 @@ export function ToolConfigFields({ toolType, config, onChange, dynamicOptions }:
                 </button>
               </div>
               {hintOpen && field.description && (
-                <p className="mt-1.5 text-[10px] font-body text-brand-secondary bg-brand-elevated border border-brand-border rounded-sm px-2.5 py-2 leading-relaxed">
+                <p className="mt-1.5 text-[11px] font-body text-brand-secondary bg-brand-elevated border border-brand-border rounded-sm px-2.5 py-2 leading-relaxed">
                   {field.description}
                 </p>
               )}
@@ -330,7 +330,7 @@ export function ToolConfigFields({ toolType, config, onChange, dynamicOptions }:
                 }))}
               />
               {hintOpen && field.description && (
-                <p className="text-[10px] font-body text-brand-secondary bg-brand-elevated border border-brand-border rounded-sm px-2.5 py-2 leading-relaxed">
+                <p className="text-[11px] font-body text-brand-secondary bg-brand-elevated border border-brand-border rounded-sm px-2.5 py-2 leading-relaxed">
                   {field.description}
                 </p>
               )}
@@ -350,7 +350,7 @@ export function ToolConfigFields({ toolType, config, onChange, dynamicOptions }:
                 )}
               </label>
               {opts.length === 0 ? (
-                <p className="text-[10px] font-body text-brand-muted bg-brand-bg border border-brand-border rounded-sm px-3 py-2">
+                <p className="text-[11px] font-body text-brand-muted bg-brand-bg border border-brand-border rounded-sm px-3 py-2">
                   No connected integrations. Connect one via Integrations first.
                 </p>
               ) : (
@@ -380,7 +380,7 @@ export function ToolConfigFields({ toolType, config, onChange, dynamicOptions }:
                           </svg>
                         )}
                       </span>
-                      <span className="text-[11px] font-body text-brand-text">
+                      <span className="text-[12px] font-body text-brand-text">
                         {opt.replace(/[-_]/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
                       </span>
                     </button>
@@ -389,7 +389,7 @@ export function ToolConfigFields({ toolType, config, onChange, dynamicOptions }:
               </div>
               )}
               {hintOpen && field.description && (
-                <p className="text-[10px] font-body text-brand-secondary bg-brand-elevated border border-brand-border rounded-sm px-2.5 py-2 leading-relaxed">
+                <p className="text-[11px] font-body text-brand-secondary bg-brand-elevated border border-brand-border rounded-sm px-2.5 py-2 leading-relaxed">
                   {field.description}
                 </p>
               )}
@@ -414,7 +414,7 @@ export function ToolConfigFields({ toolType, config, onChange, dynamicOptions }:
                 className={inputClass}
               />
               {hintOpen && field.description && (
-                <p className="text-[10px] font-body text-brand-secondary bg-brand-elevated border border-brand-border rounded-sm px-2.5 py-2 leading-relaxed">
+                <p className="text-[11px] font-body text-brand-secondary bg-brand-elevated border border-brand-border rounded-sm px-2.5 py-2 leading-relaxed">
                   {field.description}
                 </p>
               )}
@@ -439,10 +439,10 @@ export function ToolConfigFields({ toolType, config, onChange, dynamicOptions }:
               onChange={v => onChange(field.key, v)}
             />
             {field.penceDisplay && (
-              <p className="text-[10px] font-body text-brand-muted">{currencySymbol}{((value as number) / 100).toFixed(2)}</p>
+              <p className="text-[11px] font-body text-brand-muted">{currencySymbol}{((value as number) / 100).toFixed(2)}</p>
             )}
             {hintOpen && field.description && (
-              <p className="text-[10px] font-body text-brand-secondary bg-brand-elevated border border-brand-border rounded-sm px-2.5 py-2 leading-relaxed">
+              <p className="text-[11px] font-body text-brand-secondary bg-brand-elevated border border-brand-border rounded-sm px-2.5 py-2 leading-relaxed">
                 {field.description}
               </p>
             )}

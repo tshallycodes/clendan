@@ -100,8 +100,8 @@ export function ToolCard({ tool, onConfigure, onStatusChange }: Props) {
             <Link href={`/tools/${typeToSlug(tool.type)}`} className="text-sm font-body text-brand-text font-medium hover:text-brand-green transition-colors">
               {formatType(tool.type)}
             </Link>
-            <span className={`text-[10px] font-body px-2 py-0.5 rounded-sm ${badge.className}`}>{badge.label}</span>
-            <span className="text-[10px] font-body text-brand-muted">v{tool.version}</span>
+            <span className={`text-[11px] font-body px-2 py-0.5 rounded-sm ${badge.className}`}>{badge.label}</span>
+            <span className="text-[11px] font-body text-brand-muted">v{tool.version}</span>
           </div>
         </div>
 
@@ -147,7 +147,7 @@ export function ToolCard({ tool, onConfigure, onStatusChange }: Props) {
           {canConfigure && (
             confirmDelete ? (
               <div className="flex items-center gap-1.5">
-                <span className="text-[10px] font-body text-brand-muted">Delete?</span>
+                <span className="text-[11px] font-body text-brand-muted">Delete?</span>
                 <button type="button" onClick={handleDelete} disabled={deleting} className="text-xs font-body bg-[rgba(255,77,109,0.1)] border border-[#ff4d6d] text-[#ff4d6d] hover:bg-[rgba(255,77,109,0.2)] rounded-sm px-2.5 py-1 transition-colors disabled:opacity-50">
                   {deleting ? '…' : 'Confirm'}
                 </button>
@@ -168,8 +168,8 @@ export function ToolCard({ tool, onConfigure, onStatusChange }: Props) {
 
     {lastExecutionId && (
       <div className="mt-2 flex items-center gap-3 bg-[rgba(0,200,83,0.08)] border border-[rgba(0,200,83,0.2)] rounded-sm px-3 py-2">
-        <span className="text-[10px] font-body text-brand-green">Queued — execution {lastExecutionId.slice(0, 8)}…</span>
-        <Link href="/executions" className="text-[10px] font-body text-brand-green underline underline-offset-2">View</Link>
+        <span className="text-[11px] font-body text-brand-green">Queued — execution {lastExecutionId.slice(0, 8)}…</span>
+        <Link href="/executions" className="text-[11px] font-body text-brand-green underline underline-offset-2">View</Link>
         <button type="button" onClick={() => setLastExecutionId(null)} className="ml-auto text-[#4a6a4a] hover:text-brand-muted text-xs leading-none">✕</button>
       </div>
     )}

@@ -161,7 +161,7 @@ export default function ApiDocsPage() {
 }`} />
 
         <div className="space-y-3">
-          <p className="text-[10px] font-body uppercase tracking-widest text-brand-muted">reasoning_trace shape — reconciliation</p>
+          <p className="text-[11px] font-body uppercase tracking-widest text-brand-muted">reasoning_trace shape — reconciliation</p>
           <CodeBlock lang="json" code={`{
   "overall_decision":      "flagged",
   "period_start":          "2026-05-01T00:00:00+00:00",
@@ -223,7 +223,7 @@ with open("assessments.csv", "w", newline="") as f:
         </div>
 
         <div className="space-y-3">
-          <p className="text-[10px] font-body uppercase tracking-widest text-brand-muted">reasoning_trace shape — ai_accountant</p>
+          <p className="text-[11px] font-body uppercase tracking-widest text-brand-muted">reasoning_trace shape — ai_accountant</p>
           <CodeBlock lang="json" code={`{
   "trace_id": "trc_...",
   "results": [

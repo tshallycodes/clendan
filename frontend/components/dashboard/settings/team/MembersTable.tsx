@@ -90,11 +90,11 @@ export function MembersTable({ members, isCurrentUserOwner, onChanged }: Props) 
   return (
     <div className="divide-y divide-brand-border border border-brand-border rounded-sm overflow-hidden">
       <div className="bg-brand-bg px-4 py-2 grid grid-cols-[auto_1fr_auto_auto_auto] gap-4 items-center">
-        <span className="text-[10px] font-body uppercase tracking-widest text-brand-muted w-28">Name</span>
-        <span className="text-[10px] font-body uppercase tracking-widest text-brand-muted">Email</span>
-        <span className="text-[10px] font-body uppercase tracking-widest text-brand-muted">Role</span>
-        <span className="text-[10px] font-body uppercase tracking-widest text-brand-muted">Joined</span>
-        {canConfigure && <span className="text-[10px] font-body uppercase tracking-widest text-brand-muted">Actions</span>}
+        <span className="text-[11px] font-body uppercase tracking-widest text-brand-muted w-28">Name</span>
+        <span className="text-[11px] font-body uppercase tracking-widest text-brand-muted">Email</span>
+        <span className="text-[11px] font-body uppercase tracking-widest text-brand-muted">Role</span>
+        <span className="text-[11px] font-body uppercase tracking-widest text-brand-muted">Joined</span>
+        {canConfigure && <span className="text-[11px] font-body uppercase tracking-widest text-brand-muted">Actions</span>}
       </div>
 
       {members.map((m) => {
@@ -109,10 +109,10 @@ export function MembersTable({ members, isCurrentUserOwner, onChanged }: Props) 
               {m.is_self && <span className="ml-1 text-brand-muted">(you)</span>}
             </span>
             <span className="text-xs font-body text-brand-muted truncate">{m.email}</span>
-            <span className={`text-[10px] font-body px-2 py-0.5 rounded-sm border whitespace-nowrap ${ROLE_COLORS[m.role] ?? ROLE_COLORS.viewer}`}>
+            <span className={`text-[11px] font-body px-2 py-0.5 rounded-sm border whitespace-nowrap ${ROLE_COLORS[m.role] ?? ROLE_COLORS.viewer}`}>
               {ROLE_LABEL[m.role] ?? m.role}
             </span>
-            <span className="text-[10px] font-body text-brand-muted whitespace-nowrap">
+            <span className="text-[11px] font-body text-brand-muted whitespace-nowrap">
               {new Date(m.joined_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
             </span>
 
@@ -125,7 +125,7 @@ export function MembersTable({ members, isCurrentUserOwner, onChanged }: Props) 
                       disabled={busy}
                       value={m.role}
                       onChange={(e) => handleRoleChange(m.id, e.target.value as AssignableRole)}
-                      className="bg-brand-bg border border-brand-border focus:border-brand-green text-brand-text rounded-sm px-2 py-1 text-[10px] font-body outline-none disabled:opacity-40 transition-colors"
+                      className="bg-brand-bg border border-brand-border focus:border-brand-green text-brand-text rounded-sm px-2 py-1 text-[11px] font-body outline-none disabled:opacity-40 transition-colors"
                     >
                       {ASSIGNABLE_ROLES.map((r) => (
                         <option key={r} value={r}>{ROLE_LABEL[r]}</option>
@@ -134,19 +134,19 @@ export function MembersTable({ members, isCurrentUserOwner, onChanged }: Props) 
 
                     {awaitingConfirm ? (
                       <div className="flex items-center gap-1">
-                        <span className="text-[10px] font-body text-brand-muted">Confirm?</span>
+                        <span className="text-[11px] font-body text-brand-muted">Confirm?</span>
                         <button
                           type="button"
                           disabled={busy}
                           onClick={() => handleTransferOwnership(m.id)}
-                          className="text-[10px] font-body text-brand-green border border-brand-green/30 bg-[rgba(0,200,83,0.08)] hover:bg-[rgba(0,200,83,0.15)] rounded-sm px-2 py-0.5 transition-colors disabled:opacity-40"
+                          className="text-[11px] font-body text-brand-green border border-brand-green/30 bg-[rgba(0,200,83,0.08)] hover:bg-[rgba(0,200,83,0.15)] rounded-sm px-2 py-0.5 transition-colors disabled:opacity-40"
                         >
                           Yes
                         </button>
                         <button
                           type="button"
                           onClick={() => setTransferConfirmId(null)}
-                          className="text-[10px] font-body text-brand-muted border border-brand-border rounded-sm px-2 py-0.5 hover:text-brand-text transition-colors"
+                          className="text-[11px] font-body text-brand-muted border border-brand-border rounded-sm px-2 py-0.5 hover:text-brand-text transition-colors"
                         >
                           No
                         </button>
@@ -156,7 +156,7 @@ export function MembersTable({ members, isCurrentUserOwner, onChanged }: Props) 
                         type="button"
                         disabled={busy}
                         onClick={() => setTransferConfirmId(m.id)}
-                        className="text-[10px] font-body text-brand-muted border border-brand-border hover:border-brand-green hover:text-brand-green rounded-sm px-2 py-0.5 transition-colors disabled:opacity-40 whitespace-nowrap"
+                        className="text-[11px] font-body text-brand-muted border border-brand-border hover:border-brand-green hover:text-brand-green rounded-sm px-2 py-0.5 transition-colors disabled:opacity-40 whitespace-nowrap"
                       >
                         Make Owner
                       </button>
@@ -166,7 +166,7 @@ export function MembersTable({ members, isCurrentUserOwner, onChanged }: Props) 
                       type="button"
                       disabled={busy}
                       onClick={() => handleRemove(m.id)}
-                      className="text-[10px] font-body text-brand-danger border border-brand-danger/30 bg-[rgba(255,77,109,0.08)] hover:bg-[rgba(255,77,109,0.15)] rounded-sm px-2 py-0.5 transition-colors disabled:opacity-40"
+                      className="text-[11px] font-body text-brand-danger border border-brand-danger/30 bg-[rgba(255,77,109,0.08)] hover:bg-[rgba(255,77,109,0.15)] rounded-sm px-2 py-0.5 transition-colors disabled:opacity-40"
                     >
                       {busy ? '…' : 'Remove'}
                     </button>

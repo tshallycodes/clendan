@@ -85,6 +85,10 @@
   scrollbar-color: var(--brand-border) transparent;
 }
 
+html {
+  font-size: 17px;
+}
+
 body {
   background-color: var(--brand-bg);
   color: var(--brand-text);

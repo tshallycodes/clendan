@@ -41,14 +41,14 @@ export function ApproveActions({ approvalId, token }: Props) {
       <button
         onClick={() => respond('approve')}
         disabled={!!loading}
-        className="text-[10px] font-body px-3 py-1 border border-[rgba(0,200,83,0.3)] text-brand-green hover:bg-[rgba(0,200,83,0.08)] transition-colors rounded-sm disabled:opacity-40"
+        className="text-[11px] font-body px-3 py-1 border border-[rgba(0,200,83,0.3)] text-brand-green hover:bg-[rgba(0,200,83,0.08)] transition-colors rounded-sm disabled:opacity-40"
       >
         {loading === 'approve' ? '...' : 'APPROVE'}
       </button>
       <button
         onClick={() => respond('reject')}
         disabled={!!loading}
-        className="text-[10px] font-body px-3 py-1 border border-[rgba(255,77,109,0.3)] text-brand-danger hover:bg-[rgba(255,77,109,0.08)] transition-colors rounded-sm disabled:opacity-40"
+        className="text-[11px] font-body px-3 py-1 border border-[rgba(255,77,109,0.3)] text-brand-danger hover:bg-[rgba(255,77,109,0.08)] transition-colors rounded-sm disabled:opacity-40"
       >
         {loading === 'reject' ? '...' : 'REJECT'}
       </button>

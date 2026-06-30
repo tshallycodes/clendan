@@ -83,7 +83,7 @@ export function TeamSection() {
           <span className="flex-1 text-xs font-body text-brand-muted truncate">
             {m.email || <span className="text-brand-muted italic">no email</span>}
           </span>
-          <span className={`shrink-0 text-[10px] font-body px-2 py-0.5 rounded-sm border ${ROLE_COLORS[m.role.toLowerCase()] ?? ROLE_COLORS.member}`}>
+          <span className={`shrink-0 text-[11px] font-body px-2 py-0.5 rounded-sm border ${ROLE_COLORS[m.role.toLowerCase()] ?? ROLE_COLORS.member}`}>
             {capitalize(m.role)}
           </span>
         </div>

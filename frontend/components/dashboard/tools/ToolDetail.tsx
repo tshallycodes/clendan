@@ -39,13 +39,13 @@ export function ToolDetail({ tool, executions }: Props) {
     <div className="p-6 space-y-6">
       <div className="flex items-start justify-between gap-4">
         <div className="space-y-2">
-          <Link href="/tools" className="text-[11px] font-body text-brand-muted hover:text-[#a0b8a0] transition-colors">
+          <Link href="/tools" className="text-[12px] font-body text-brand-muted hover:text-[#a0b8a0] transition-colors">
             &larr; Tools
           </Link>
           <div className="flex items-center gap-3 flex-wrap">
             <h1 className="font-heading font-bold text-2xl text-[#e8f0e8]">{formatType(tool.type)}</h1>
-            <span className={`text-[10px] font-body px-2 py-0.5 rounded-sm ${autonomy.className}`}>{autonomy.label}</span>
-            <span className="text-[10px] font-body text-brand-muted">v{tool.version}</span>
+            <span className={`text-[11px] font-body px-2 py-0.5 rounded-sm ${autonomy.className}`}>{autonomy.label}</span>
+            <span className="text-[11px] font-body text-brand-muted">v{tool.version}</span>
             <div className="flex items-center gap-1.5">
               {isActive ? (
                 <span className="relative flex h-2 w-2">

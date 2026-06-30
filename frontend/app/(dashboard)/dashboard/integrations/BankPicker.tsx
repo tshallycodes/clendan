@@ -71,7 +71,7 @@ function BankCard({ bank, syncError, onViewDetail }: { bank: BankDef; syncError?
           style={{ background: syncError ? '#ff4d6d' : '#00C853' }}
         />
       </div>
-      <span className="text-[10px] font-body text-brand-muted text-center leading-tight max-w-[64px] truncate">
+      <span className="text-[11px] font-body text-brand-muted text-center leading-tight max-w-[64px] truncate">
         {bank.name}
       </span>
     </button>
@@ -170,7 +170,7 @@ export function BankPicker({
             key={r.value}
             onClick={() => setRegion(r.value)}
             className={[
-              'px-3 py-1 text-[10px] font-body uppercase tracking-widest rounded-sm transition-colors',
+              'px-3 py-1 text-[11px] font-body uppercase tracking-widest rounded-sm transition-colors',
               region === r.value
                 ? 'bg-brand-surface border border-brand-border text-brand-text'
                 : 'text-brand-muted hover:text-brand-secondary',

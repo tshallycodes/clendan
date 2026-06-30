@@ -37,7 +37,7 @@ export function ExecutionsTable({ executions }: Props) {
         <thead>
           <tr className="border-b border-brand-border">
             {['Time', 'Decision', 'Confidence', 'Duration', 'Status'].map((h) => (
-              <th key={h} className="text-left text-[10px] font-body text-[#4a6a4a] px-3 py-2 uppercase tracking-wide">{h}</th>
+              <th key={h} className="text-left text-[11px] font-body text-[#4a6a4a] px-3 py-2 uppercase tracking-wide">{h}</th>
             ))}
           </tr>
         </thead>
@@ -46,7 +46,7 @@ export function ExecutionsTable({ executions }: Props) {
             <tr key={e.id} className="border-b border-brand-border last:border-0 hover:bg-[#1a1a1a] transition-colors">
               <td className="px-3 py-2 text-[#4a6a4a]">{formatDate(e.created_at)}</td>
               <td className="px-3 py-2">
-                <span className={`text-[10px] px-2 py-0.5 rounded-sm ${DECISION_BADGE[e.decision] ?? 'text-brand-muted border border-brand-border'}`}>
+                <span className={`text-[11px] px-2 py-0.5 rounded-sm ${DECISION_BADGE[e.decision] ?? 'text-brand-muted border border-brand-border'}`}>
                   {e.decision.replace(/_/g, ' ')}
                 </span>
               </td>

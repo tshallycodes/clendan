@@ -15,7 +15,7 @@ export function ClenDashboard() {
       <button
         onClick={() => setIsOpen(p => !p)}
         className={cn(
-          'relative flex items-center gap-2 text-[11px] font-body px-3 py-1.5 border rounded-sm transition-all duration-200 active:scale-95',
+          'relative flex items-center gap-2 text-[12px] font-body px-3 py-1.5 border rounded-sm transition-all duration-200 active:scale-95',
           isOpen
             ? 'border-brand-green/40 bg-brand-green/10 text-brand-green shadow-[0_0_12px_rgba(0,200,83,0.15)]'
             : 'border-brand-green/25 bg-brand-green/5 text-brand-text hover:border-brand-green/50 hover:bg-brand-green/10 hover:text-brand-green shadow-[0_0_8px_rgba(0,200,83,0.08)] hover:shadow-[0_0_14px_rgba(0,200,83,0.2)]',

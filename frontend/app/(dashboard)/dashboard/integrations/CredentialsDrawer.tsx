@@ -119,7 +119,7 @@ export function CredentialsDrawer({ slug, open, onClose, onSubmit }: Props) {
         <form onSubmit={handleSubmit} className="flex flex-col gap-4 p-5 flex-1 overflow-y-auto">
           {cfg.fields.map((field) => (
             <label key={field.name} className="flex flex-col gap-1.5">
-              <span className="text-[10px] font-body uppercase tracking-widest text-brand-muted">{field.label}</span>
+              <span className="text-[11px] font-body uppercase tracking-widest text-brand-muted">{field.label}</span>
               {field.type === 'select' ? (
                 <select
                   value={values[field.name] ?? field.options?.[0] ?? ''}
@@ -143,7 +143,7 @@ export function CredentialsDrawer({ slug, open, onClose, onSubmit }: Props) {
           ))}
 
           {error && (
-            <p className="text-[10px] font-body text-[#ff4d6d] bg-[rgba(255,77,109,0.08)] border border-[rgba(255,77,109,0.2)] rounded-sm px-3 py-2">
+            <p className="text-[11px] font-body text-[#ff4d6d] bg-[rgba(255,77,109,0.08)] border border-[rgba(255,77,109,0.2)] rounded-sm px-3 py-2">
               {error}
             </p>
           )}

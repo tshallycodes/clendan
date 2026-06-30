@@ -138,7 +138,7 @@ export function IntegrationIconGrid({ integrations, statuses, onViewDetail }: Pr
                 </span>
               )}
             </div>
-            <span className="text-[10px] font-body text-brand-muted text-center leading-tight max-w-[64px] truncate">
+            <span className="text-[11px] font-body text-brand-muted text-center leading-tight max-w-[64px] truncate">
               {intg.name}
             </span>
           </button>

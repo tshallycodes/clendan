@@ -114,7 +114,7 @@ export function TeamPageClient() {
 
       <motion.div variants={sectionVariants}>
         <section className="space-y-4">
-          <h2 className="text-[10px] font-body uppercase tracking-widest text-brand-muted border-b border-brand-border pb-2">
+          <h2 className="text-[11px] font-body uppercase tracking-widest text-brand-muted border-b border-brand-border pb-2">
             Members
           </h2>
           {loadingMembers ? (
@@ -129,7 +129,7 @@ export function TeamPageClient() {
 
       <motion.div variants={sectionVariants}>
         <section className="space-y-4">
-          <h2 className="text-[10px] font-body uppercase tracking-widest text-brand-muted border-b border-brand-border pb-2">
+          <h2 className="text-[11px] font-body uppercase tracking-widest text-brand-muted border-b border-brand-border pb-2">
             Pending Invitations
           </h2>
           {loadingInvites ? (
@@ -143,7 +143,7 @@ export function TeamPageClient() {
       {canConfigure && (
         <motion.div variants={sectionVariants}>
           <section className="space-y-4">
-            <h2 className="text-[10px] font-body uppercase tracking-widest text-brand-muted border-b border-brand-border pb-2">
+            <h2 className="text-[11px] font-body uppercase tracking-widest text-brand-muted border-b border-brand-border pb-2">
               Invite Team Member
             </h2>
             <InviteForm onInvited={fetchInvitations} />
@@ -154,7 +154,7 @@ export function TeamPageClient() {
       {canConfigure && (
         <motion.div variants={sectionVariants}>
           <section className="space-y-4">
-            <h2 className="text-[10px] font-body uppercase tracking-widest text-brand-muted border-b border-brand-border pb-2">
+            <h2 className="text-[11px] font-body uppercase tracking-widest text-brand-muted border-b border-brand-border pb-2">
               Invite Links
             </h2>
             <InviteLinksSection />
@@ -165,7 +165,7 @@ export function TeamPageClient() {
       {isOwner && settings && (
         <motion.div variants={sectionVariants}>
           <section className="space-y-4">
-            <h2 className="text-[10px] font-body uppercase tracking-widest text-brand-muted border-b border-brand-border pb-2">
+            <h2 className="text-[11px] font-body uppercase tracking-widest text-brand-muted border-b border-brand-border pb-2">
               Google SSO Domain Matching
             </h2>
             <DomainMatchingToggle

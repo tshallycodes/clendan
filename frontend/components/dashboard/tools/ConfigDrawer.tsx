@@ -137,7 +137,7 @@ export function ConfigDrawer({ tool, toolType, onClose, onSaved }: Props) {
     }
   }
 
-  const labelClass = 'text-[10px] font-body text-brand-muted uppercase tracking-widest'
+  const labelClass = 'text-[11px] font-body text-brand-muted uppercase tracking-widest'
 
   return (
     <div className="fixed inset-0 z-40">
@@ -147,7 +147,7 @@ export function ConfigDrawer({ tool, toolType, onClose, onSaved }: Props) {
           <div>
             <h2 className="font-heading font-semibold text-brand-text text-sm">{formatType(toolType)}</h2>
             {tool && (
-              <p className="text-[10px] font-body text-brand-muted mt-1">
+              <p className="text-[11px] font-body text-brand-muted mt-1">
                 Last configured by{' '}
                 <span className="text-brand-secondary">
                   {tool.last_configured_by_email ? tool.last_configured_by_email.split('@')[0] : '—'}
@@ -170,7 +170,7 @@ export function ConfigDrawer({ tool, toolType, onClose, onSaved }: Props) {
               ]}
             />
             {toolType === 'document_intelligence' && (
-              <p className="text-[10px] font-body text-brand-muted">Routing is controlled by the confidence threshold below.</p>
+              <p className="text-[11px] font-body text-brand-muted">Routing is controlled by the confidence threshold below.</p>
             )}
           </div>
 
@@ -186,15 +186,15 @@ export function ConfigDrawer({ tool, toolType, onClose, onSaved }: Props) {
               <label className={labelClass}>Bank Accounts</label>
               {accountsLoading ? (
                 <div className="bg-brand-bg border border-brand-border rounded-sm px-3 py-3">
-                  <p className="text-[10px] font-body text-brand-muted">Loading accounts…</p>
+                  <p className="text-[11px] font-body text-brand-muted">Loading accounts…</p>
                 </div>
               ) : accounts.length === 0 ? (
                 <div className="bg-brand-bg border border-brand-border rounded-sm px-3 py-3">
-                  <p className="text-[10px] font-body text-brand-muted">No bank accounts found. Connect a bank via Integrations first.</p>
+                  <p className="text-[11px] font-body text-brand-muted">No bank accounts found. Connect a bank via Integrations first.</p>
                 </div>
               ) : (
                 <>
-                  <p className="text-[10px] font-body text-brand-muted">Uncheck accounts to exclude them. Leave all checked to reconcile everything.</p>
+                  <p className="text-[11px] font-body text-brand-muted">Uncheck accounts to exclude them. Leave all checked to reconcile everything.</p>
                   <div className="bg-brand-bg border border-brand-border rounded-sm divide-y divide-brand-border">
                     {accounts.map((a) => {
                       const checked = selectedAccountIds.length === 0 || selectedAccountIds.includes(a.id)
@@ -222,14 +222,14 @@ export function ConfigDrawer({ tool, toolType, onClose, onSaved }: Props) {
                           </span>
                           <div className="min-w-0">
                             <p className="text-xs font-body text-brand-text truncate">{a.name}</p>
-                            <p className="text-[10px] font-body text-brand-muted">{a.source}{a.subtype ? ` · ${a.subtype}` : ''}</p>
+                            <p className="text-[11px] font-body text-brand-muted">{a.source}{a.subtype ? ` · ${a.subtype}` : ''}</p>
                           </div>
                         </button>
                       )
                     })}
                   </div>
                   {selectedAccountIds.length > 0 && selectedAccountIds.length < accounts.length && (
-                    <p className="text-[10px] font-body text-[#f5a623]">
+                    <p className="text-[11px] font-body text-[#f5a623]">
                       {selectedAccountIds.length} of {accounts.length} accounts selected
                     </p>
                   )}
@@ -241,7 +241,7 @@ export function ConfigDrawer({ tool, toolType, onClose, onSaved }: Props) {
           {toolType === 'reconciliation' && accountingSources.length > 0 && (
             <div className="space-y-2">
               <label className={labelClass}>Accounting Integrations</label>
-              <p className="text-[10px] font-body text-brand-muted">Uncheck integrations to exclude their invoices and bills from reconciliation.</p>
+              <p className="text-[11px] font-body text-brand-muted">Uncheck integrations to exclude their invoices and bills from reconciliation.</p>
               <div className="bg-brand-bg border border-brand-border rounded-sm divide-y divide-brand-border">
                 {accountingSources.map((source) => {
                   const checked = selectedIntegrationSources.length === 0 || selectedIntegrationSources.includes(source)
@@ -273,7 +273,7 @@ export function ConfigDrawer({ tool, toolType, onClose, onSaved }: Props) {
                 })}
               </div>
               {selectedIntegrationSources.length > 0 && selectedIntegrationSources.length < accountingSources.length && (
-                <p className="text-[10px] font-body text-[#f5a623]">
+                <p className="text-[11px] font-body text-[#f5a623]">
                   {selectedIntegrationSources.length} of {accountingSources.length} integrations selected
                 </p>
               )}

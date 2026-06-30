@@ -40,7 +40,7 @@ function BarGroup({ day, maxValue, animated }: { day: DayData; maxValue: number;
       <div
         className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 z-10
           bg-brand-elevated border border-brand-border rounded-sm px-3 py-2
-          text-[10px] font-body text-brand-text whitespace-nowrap
+          text-[11px] font-body text-brand-text whitespace-nowrap
           opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-150"
       >
         <div className="text-brand-muted mb-1">{day.label}</div>
@@ -76,7 +76,7 @@ function BarGroup({ day, maxValue, animated }: { day: DayData; maxValue: number;
         />
       </div>
 
-      <span className="text-[10px] font-body text-brand-muted">{day.label}</span>
+      <span className="text-[11px] font-body text-brand-muted">{day.label}</span>
     </div>
   )
 }
@@ -97,7 +97,7 @@ export function ExecutionChart() {
     <div className="bg-brand-surface border border-brand-border rounded-sm overflow-hidden">
       <div className="px-5 py-4 border-b border-brand-border flex items-center justify-between">
         <h2 className="font-heading font-semibold text-brand-text text-sm">Execution Activity</h2>
-        <div className="flex items-center gap-4 text-[10px] font-body text-brand-muted">
+        <div className="flex items-center gap-4 text-[11px] font-body text-brand-muted">
           <span className="flex items-center gap-1.5">
             <span className="inline-block w-2 h-2 bg-brand-green/70" />
             Auto-executed
