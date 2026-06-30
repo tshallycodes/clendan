@@ -34,6 +34,7 @@ const STATUS_CLASS: Record<string, string> = {
   blocked:            'text-[#ff4d6d]',
   flagged:            'text-[#ff4d6d]',
   failed:             'text-[#ff4d6d]',
+  cancelled:          'text-brand-muted',
   running:            'text-[#f5a623]',
   queued:             'text-brand-muted',
   completed:          'text-brand-secondary',
@@ -71,6 +72,7 @@ export function ToolExecutionsTab({ toolId }: { toolId: string | null }) {
   const [loadingMore, setLoadingMore] = useState(false)
   const [filter, setFilter] = useState<Filter>('all')
   const [expanded, setExpanded] = useState<string | null>(null)
+  const [cancellingId, setCancellingId] = useState<string | null>(null)
   // Tracks how many rows the user has loaded so silent polls refresh the full visible window
   const loadedLimitRef = useRef(PAGE_SIZE)
 
@@ -108,6 +110,23 @@ export function ToolExecutionsTab({ toolId }: { toolId: string | null }) {
     load()
     return () => { if (pollId) clearTimeout(pollId) }
   }, [toolId, filter, getToken]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  async function cancelExecution(executionId: string) {
+    if (!toolId) return
+    setCancellingId(executionId)
+    try {
+      const token = await getToken()
+      await fetch(`${API}/agents/${toolId}/executions/${executionId}/cancel`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      setExecutions(prev => prev.map(e =>
+        e.id === executionId ? { ...e, status: 'cancelled', decision: 'cancelled' } : e
+      ))
+    } finally {
+      setCancellingId(null)
+    }
+  }
 
   async function loadMore() {
     setLoadingMore(true)
@@ -195,7 +214,19 @@ export function ToolExecutionsTab({ toolId }: { toolId: string | null }) {
                     <td className="px-4 py-2.5 text-brand-muted max-w-[160px] truncate">{e.input_ref || '—'}</td>
                     <td className={`px-4 py-2.5 max-w-[160px] truncate ${DECISION_CLASS[e.decision] ?? 'text-brand-secondary'}`}>{e.decision || '—'}</td>
                     <td className="px-4 py-2.5">
-                      <span className={STATUS_CLASS[e.status] ?? 'text-brand-secondary'}>{e.status}</span>
+                      <div className="flex items-center gap-2">
+                        <span className={STATUS_CLASS[e.status] ?? 'text-brand-secondary'}>{e.status}</span>
+                        {(e.status === 'running' || e.status === 'queued') && (
+                          <button
+                            type="button"
+                            onClick={ev => { ev.stopPropagation(); cancelExecution(e.id) }}
+                            disabled={cancellingId === e.id}
+                            className="text-[10px] font-body text-[#ff4d6d] hover:underline disabled:opacity-50 leading-none"
+                          >
+                            {cancellingId === e.id ? '…' : 'cancel'}
+                          </button>
+                        )}
+                      </div>
                     </td>
                     <td className="px-4 py-2.5 text-right text-brand-muted">
                       {e.duration_ms != null
