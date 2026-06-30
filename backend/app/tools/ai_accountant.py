@@ -250,8 +250,16 @@ class AIAccountantTool:
         if was_cancelled:
             overall_decision = "cancelled"
 
-        # STEP 5: Output — write partial results to DB unless blocked
-        if overall_decision != "blocked":
+        # STEP 5: Output — write results to DB based on decision
+        # approval_required: write ai_category suggestion only, keep status="pending" until user approves
+        # auto_approved / cancelled partial: commit full categorisation immediately
+        if overall_decision == "approval_required":
+            for r in results:
+                await db.banktransaction.update(
+                    where={"id": r.transaction_id},
+                    data={"ai_category": r.ai_category},
+                )
+        elif overall_decision not in ("blocked",):
             for r in results:
                 await db.banktransaction.update(
                     where={"id": r.transaction_id},
@@ -264,7 +272,7 @@ class AIAccountantTool:
 
         logger.info(
             "ai_accountant_step5_db_writes_done",
-            extra={"execution_id": execution_id, "wrote_results": overall_decision != "blocked"},
+            extra={"execution_id": execution_id, "decision": overall_decision},
         )
         # STEP 6: Write Execution record
         # When called inline from the orchestrator, execution_id is provided — update that record.
@@ -523,9 +531,20 @@ class AIAccountantTool:
                         f"Claude API failed on batch {batch_idx + 1}/{len(chunks)} after {settings.max_agent_attempts} attempts: {last_exc}"
                     ) from last_exc
 
-            batch_results = await asyncio.gather(*[_run_batch(idx, b) for idx, b in enumerate(chunks)])
-            all_parsed = [item for parsed, _ in batch_results for item in parsed]
-            all_raws = [r for _, r in batch_results]
+            batch_results = await asyncio.gather(
+                *[_run_batch(idx, b) for idx, b in enumerate(chunks)],
+                return_exceptions=True,
+            )
+            for idx, result in enumerate(batch_results):
+                if isinstance(result, BaseException):
+                    logger.error(
+                        "ai_accountant_batch_failed",
+                        extra={"batch": idx + 1, "of": len(chunks), "error": str(result)},
+                    )
+                else:
+                    parsed_batch, raw = result
+                    all_parsed.extend(parsed_batch)
+                    all_raws.append(raw)
 
             # Post-flight cancellation check — user may have cancelled while parallel batches ran
             if execution_id:
