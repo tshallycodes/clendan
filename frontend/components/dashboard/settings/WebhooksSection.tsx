@@ -43,7 +43,7 @@ export function WebhooksSection() {
         href="/developer"
         className="inline-flex text-xs font-mono text-brand-text hover:text-[#00C853] transition-colors"
       >
-        Get your API key â†’
+        Get your API key →
       </Link>
     </div>
   )

@@ -99,7 +99,7 @@ export function Step2({ onNext, onSkip }: Step2Props) {
         disabled={loading}
         className="w-full bg-brand-green text-black hover:bg-[#00a844] active:scale-[0.97] rounded-sm px-4 py-2.5 text-xs font-mono font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
       >
-        {loading ? 'Sending invitesâ€¦' : 'Send Invites â†’'}
+        {loading ? 'Sending invites…' : 'Send Invites →'}
       </button>
       <button
         type="button"

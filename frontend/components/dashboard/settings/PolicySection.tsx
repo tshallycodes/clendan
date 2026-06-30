@@ -56,7 +56,7 @@ export function PolicySection() {
           href="/tools"
           className="text-[10px] font-mono text-brand-secondary hover:text-brand-text transition-colors"
         >
-          Go to Tools â†’
+          Go to Tools →
         </Link>
       </div>
     )

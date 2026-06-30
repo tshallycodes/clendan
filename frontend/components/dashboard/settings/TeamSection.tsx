@@ -78,7 +78,7 @@ export function TeamSection() {
       {members.map((m) => (
         <div key={m.id} className="bg-brand-surface px-4 py-3 flex items-center gap-3">
           <span className="w-32 shrink-0 text-xs font-mono text-brand-text truncate">
-            {m.email ? nameFromEmail(m.email) : <span className="text-brand-muted">â€”</span>}
+            {m.email ? nameFromEmail(m.email) : <span className="text-brand-muted">—</span>}
           </span>
           <span className="flex-1 text-xs font-mono text-brand-muted truncate">
             {m.email || <span className="text-brand-muted italic">no email</span>}

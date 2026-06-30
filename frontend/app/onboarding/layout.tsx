@@ -18,7 +18,7 @@ export default async function OnboardingLayout({ children }: { children: React.R
       })
       if (res.ok) redirect('/dashboard')
     }
-  } catch { /* backend down â€” let them through to complete onboarding */ }
+  } catch { /* backend down — let them through to complete onboarding */ }
 
   return <>{children}</>
 }

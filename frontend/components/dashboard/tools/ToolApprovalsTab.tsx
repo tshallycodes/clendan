@@ -80,7 +80,7 @@ export function ToolApprovalsTab({ toolId }: { toolId: string | null }) {
         body: JSON.stringify({ action }),
       })
       if (!res.ok) {
-        toast(`Failed to ${action} â€” please try again`, 'error')
+        toast(`Failed to ${action} — please try again`, 'error')
         return
       }
       const newStatus = action === 'approve' ? 'approved' : 'rejected'
@@ -88,7 +88,7 @@ export function ToolApprovalsTab({ toolId }: { toolId: string | null }) {
       setFilter('all')
       toast(action === 'approve' ? 'Execution approved' : 'Execution rejected', 'success')
     } catch {
-      toast(`Failed to ${action} â€” network error`, 'error')
+      toast(`Failed to ${action} — network error`, 'error')
     } finally {
       setActing(null)
     }
@@ -98,7 +98,7 @@ export function ToolApprovalsTab({ toolId }: { toolId: string | null }) {
   const pendingCount = approvals.filter(a => a.status === 'pending').length
 
   if (loading) {
-    return <div className="py-12 text-center text-xs font-mono text-brand-muted">Loadingâ€¦</div>
+    return <div className="py-12 text-center text-xs font-mono text-brand-muted">Loading…</div>
   }
 
   return (
@@ -141,7 +141,7 @@ export function ToolApprovalsTab({ toolId }: { toolId: string | null }) {
                 <div className="space-y-1.5 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <p className="text-xs font-mono font-medium text-brand-text">
-                      {formatToolType(a.tool_type)}{a.document_type ? ` â€” ${formatDocType(a.document_type)}` : ''}
+                      {formatToolType(a.tool_type)}{a.document_type ? ` — ${formatDocType(a.document_type)}` : ''}
                     </p>
                     {a.confidence != null && (
                       <span className="text-[10px] font-mono text-brand-muted">{Math.round(a.confidence * 100)}% confidence</span>
@@ -155,8 +155,8 @@ export function ToolApprovalsTab({ toolId }: { toolId: string | null }) {
                   )}
                   <p className="text-[10px] font-mono text-brand-muted">
                     Requested {new Date(a.requested_at).toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
-                    {' Â· '}Expires {new Date(a.expires_at).toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
-                    {a.triggered_by ? ` Â· by ${a.triggered_by}` : ''}
+                    {' · '}Expires {new Date(a.expires_at).toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                    {a.triggered_by ? ` · by ${a.triggered_by}` : ''}
                   </p>
                 </div>
                 {a.status === 'pending' ? (
@@ -167,7 +167,7 @@ export function ToolApprovalsTab({ toolId }: { toolId: string | null }) {
                       onClick={() => respond(a.id, 'approve')}
                       className="text-[10px] font-mono px-3 py-1.5 rounded-sm bg-[rgba(0,200,83,0.08)] text-[#00C853] border border-[rgba(0,200,83,0.2)] hover:bg-[rgba(0,200,83,0.15)] disabled:opacity-50 transition-colors"
                     >
-                      {acting === a.id ? 'â€¦' : 'Approve'}
+                      {acting === a.id ? '…' : 'Approve'}
                     </button>
                     <button
                       type="button"
@@ -175,7 +175,7 @@ export function ToolApprovalsTab({ toolId }: { toolId: string | null }) {
                       onClick={() => respond(a.id, 'reject')}
                       className="text-[10px] font-mono px-3 py-1.5 rounded-sm bg-[rgba(255,77,109,0.08)] text-[#ff4d6d] border border-[rgba(255,77,109,0.2)] hover:bg-[rgba(255,77,109,0.15)] disabled:opacity-50 transition-colors"
                     >
-                      {acting === a.id ? 'â€¦' : 'Reject'}
+                      {acting === a.id ? '…' : 'Reject'}
                     </button>
                   </div>
                 ) : (

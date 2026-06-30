@@ -29,7 +29,7 @@ export function ApproveActions({ approvalId, token }: Props) {
         toast(action === 'approve' ? 'Approved' : 'Rejected', action === 'approve' ? 'success' : 'info')
         router.refresh()
       } else {
-        toast('Action failed â€” try again', 'error')
+        toast('Action failed — try again', 'error')
       }
     } finally {
       setLoading(null)

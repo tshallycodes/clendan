@@ -97,7 +97,7 @@ export function ConfigDrawer({ tool, toolType, onClose, onSaved }: Props) {
           setConnectedAccountingSources(json.data?.accounting_sources ?? [])
         }
       } catch {
-        // leave as empty â€” multiselect will show "no connected integrations"
+        // leave as empty — multiselect will show "no connected integrations"
       }
     }
     fetchConnectedIntegrations()
@@ -150,12 +150,12 @@ export function ConfigDrawer({ tool, toolType, onClose, onSaved }: Props) {
               <p className="text-[10px] font-mono text-brand-muted mt-1">
                 Last configured by{' '}
                 <span className="text-brand-secondary">
-                  {tool.last_configured_by_email ? tool.last_configured_by_email.split('@')[0] : 'â€”'}
+                  {tool.last_configured_by_email ? tool.last_configured_by_email.split('@')[0] : '—'}
                 </span>
               </p>
             )}
           </div>
-          <button type="button" onClick={onClose} className="text-brand-muted hover:text-brand-text transition-colors text-lg leading-none">âœ•</button>
+          <button type="button" onClick={onClose} className="text-brand-muted hover:text-brand-text transition-colors text-lg leading-none">✕</button>
         </div>
 
         <div className="space-y-5">
@@ -165,8 +165,8 @@ export function ConfigDrawer({ tool, toolType, onClose, onSaved }: Props) {
               value={autonomy}
               onChange={setAutonomy}
               options={[
-                { value: 'auto', label: 'Auto â€” executes without approval' },
-                { value: 'approve', label: 'Approve â€” requires human approval above threshold' },
+                { value: 'auto', label: 'Auto — executes without approval' },
+                { value: 'approve', label: 'Approve — requires human approval above threshold' },
               ]}
             />
             {toolType === 'document_intelligence' && (
@@ -186,7 +186,7 @@ export function ConfigDrawer({ tool, toolType, onClose, onSaved }: Props) {
               <label className={labelClass}>Bank Accounts</label>
               {accountsLoading ? (
                 <div className="bg-brand-bg border border-brand-border rounded-sm px-3 py-3">
-                  <p className="text-[10px] font-mono text-brand-muted">Loading accountsâ€¦</p>
+                  <p className="text-[10px] font-mono text-brand-muted">Loading accounts…</p>
                 </div>
               ) : accounts.length === 0 ? (
                 <div className="bg-brand-bg border border-brand-border rounded-sm px-3 py-3">
@@ -222,7 +222,7 @@ export function ConfigDrawer({ tool, toolType, onClose, onSaved }: Props) {
                           </span>
                           <div className="min-w-0">
                             <p className="text-xs font-mono text-brand-text truncate">{a.name}</p>
-                            <p className="text-[10px] font-mono text-brand-muted">{a.source}{a.subtype ? ` Â· ${a.subtype}` : ''}</p>
+                            <p className="text-[10px] font-mono text-brand-muted">{a.source}{a.subtype ? ` · ${a.subtype}` : ''}</p>
                           </div>
                         </button>
                       )
@@ -286,7 +286,7 @@ export function ConfigDrawer({ tool, toolType, onClose, onSaved }: Props) {
             disabled={saving || saved}
             className="w-full bg-[#00C853] text-black hover:bg-[#00a844] active:scale-[0.97] rounded-sm px-4 py-2 text-xs font-mono font-medium transition-all disabled:opacity-50"
           >
-            {saved ? 'Saved âœ“' : saving ? 'Savingâ€¦' : tool ? 'Save Changes' : 'Deploy Tool'}
+            {saved ? 'Saved ✓' : saving ? 'Saving…' : tool ? 'Save Changes' : 'Deploy Tool'}
           </button>
         </div>
       </div>

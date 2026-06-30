@@ -104,7 +104,7 @@ export function IntegrationsSection() {
       await fetchStatuses()
       toast('Bank and accounting integrations resynced', 'success')
     } catch {
-      toast('Resync failed â€” check individual integrations', 'error')
+      toast('Resync failed — check individual integrations', 'error')
     } finally {
       setResyncing(false)
     }
@@ -119,7 +119,7 @@ export function IntegrationsSection() {
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
       })
       await fetchStatuses()
-      toast('Sync status reset â€” integrations marked connected', 'success')
+      toast('Sync status reset — integrations marked connected', 'success')
     } catch {
       toast('Reset failed', 'error')
     } finally {
@@ -165,7 +165,7 @@ export function IntegrationsSection() {
           href="/dashboard/integrations"
           className="text-[10px] font-mono text-brand-secondary hover:text-brand-text transition-colors"
         >
-          Connect integrations â†’
+          Connect integrations →
         </Link>
       </div>
     )
@@ -202,7 +202,7 @@ export function IntegrationsSection() {
                 <p className="text-[10px] font-mono text-brand-muted">
                   Connected {new Date(connected_at).toLocaleDateString('en-GB')}
                   {last_synced_at
-                    ? ` Â· Last sync ${new Date(last_synced_at).toLocaleDateString('en-GB')}`
+                    ? ` · Last sync ${new Date(last_synced_at).toLocaleDateString('en-GB')}`
                     : ''}
                 </p>
               )}
@@ -216,7 +216,7 @@ export function IntegrationsSection() {
                     disabled={disconnecting === slug}
                     className="text-[10px] font-mono text-[#ff4d6d] border border-[#ff4d6d]/30 bg-[rgba(255,77,109,0.08)] hover:bg-[rgba(255,77,109,0.15)] rounded-sm px-2 py-1 transition-colors disabled:opacity-50"
                   >
-                    {disconnecting === slug ? 'Disconnectingâ€¦' : 'Confirm'}
+                    {disconnecting === slug ? 'Disconnecting…' : 'Confirm'}
                   </button>
                   <button
                     onClick={() => setConfirmSlug(null)}
@@ -244,7 +244,7 @@ export function IntegrationsSection() {
           href="/dashboard/integrations"
           className="text-[10px] font-mono text-brand-muted hover:text-brand-text transition-colors"
         >
-          Manage all integrations â†’
+          Manage all integrations →
         </Link>
         <div className="flex items-center gap-2">
           {connected.some((i) => i.status === 'syncing') && (
@@ -253,7 +253,7 @@ export function IntegrationsSection() {
               disabled={resettingSync}
               className="text-[10px] font-mono text-[#f5a623] border border-[#f5a623]/30 bg-[rgba(245,166,35,0.08)] hover:bg-[rgba(245,166,35,0.12)] rounded-sm px-2 py-1 transition-colors disabled:opacity-50"
             >
-              {resettingSync ? 'Resettingâ€¦' : 'Reset Syncing'}
+              {resettingSync ? 'Resetting…' : 'Reset Syncing'}
             </button>
           )}
           <button
@@ -261,7 +261,7 @@ export function IntegrationsSection() {
             disabled={resyncing}
             className="text-[10px] font-mono text-brand-secondary border border-brand-border bg-transparent hover:bg-brand-bg rounded-sm px-2 py-1 transition-colors disabled:opacity-50"
           >
-            {resyncing ? 'Syncingâ€¦' : 'Resync All'}
+            {resyncing ? 'Syncing…' : 'Resync All'}
           </button>
         </div>
       </div>

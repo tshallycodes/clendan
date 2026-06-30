@@ -112,7 +112,7 @@ export function MonthEndCloseTab({ toolId }: Props) {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
       })
-      if (!res.ok) { toast('Refresh failed â€” please try again', 'error'); return }
+      if (!res.ok) { toast('Refresh failed — please try again', 'error'); return }
       setTimeout(() => fetchRun(period), 2000)
     } finally {
       setRefreshing(false)
@@ -143,7 +143,7 @@ export function MonthEndCloseTab({ toolId }: Props) {
   async function handleSignOff() {
     if (!run) return
     if (!autoTasksResolved) {
-      toast('Resolve all auto-checked tasks before signing off â€” click Refresh to re-evaluate', 'error')
+      toast('Resolve all auto-checked tasks before signing off — click Refresh to re-evaluate', 'error')
       return
     }
     setSigningOff(true)
@@ -188,7 +188,7 @@ export function MonthEndCloseTab({ toolId }: Props) {
             disabled={opening}
             className="mt-5 bg-[#00C853] text-black hover:bg-[#00a844] active:scale-[0.97] text-xs font-mono rounded-sm px-4 py-1.5 transition-all disabled:opacity-50"
           >
-            {opening ? 'Openingâ€¦' : 'Open Close Run'}
+            {opening ? 'Opening…' : 'Open Close Run'}
           </button>
         )}
         {run && (
@@ -198,7 +198,7 @@ export function MonthEndCloseTab({ toolId }: Props) {
             disabled={refreshing || run.status === 'closed'}
             className="mt-5 text-xs font-mono border border-brand-border text-brand-text hover:bg-brand-bg rounded-sm px-3 py-1.5 transition-colors disabled:opacity-50"
           >
-            {refreshing ? 'Refreshingâ€¦' : 'Refresh'}
+            {refreshing ? 'Refreshing…' : 'Refresh'}
           </button>
         )}
       </div>
@@ -222,7 +222,7 @@ export function MonthEndCloseTab({ toolId }: Props) {
           <p className="text-xs font-mono text-brand-text">No close run for {period}</p>
           <p className="text-[11px] font-mono text-brand-muted">
             Opening a close run starts the checklist for this period. Clendan will automatically
-            evaluate data readiness â€” you only need to manually confirm payroll and sign-offs.
+            evaluate data readiness — you only need to manually confirm payroll and sign-offs.
           </p>
         </div>
       )}
@@ -290,7 +290,7 @@ function CloseRunSignOffs({ signOffs, onSignOff, signingOff, autoTasksResolved, 
             title={!autoTasksResolved ? 'All auto-checked tasks must pass before signing off' : undefined}
             className="text-[10px] font-mono bg-[#00C853] text-black hover:bg-[#00a844] active:scale-[0.97] rounded-sm px-3 py-1 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            {signingOff ? 'Signing offâ€¦' : 'Sign Off'}
+            {signingOff ? 'Signing off…' : 'Sign Off'}
           </button>
         )}
       </div>

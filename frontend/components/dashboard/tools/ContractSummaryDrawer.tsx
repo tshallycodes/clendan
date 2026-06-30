@@ -48,7 +48,7 @@ export function AskClenDrawer({ documentId, filename, onClose }: Props) {
       setMessages(prev => [...prev, { question: q, answer }])
       setTimeout(() => inputRef.current?.focus(), 50)
     } catch {
-      toast('Network error â€” could not reach the server', 'error')
+      toast('Network error — could not reach the server', 'error')
       setQuestion(q)
     } finally {
       setLoading(false)
@@ -98,14 +98,14 @@ export function AskClenDrawer({ documentId, filename, onClose }: Props) {
               className="shrink-0 text-brand-muted hover:text-brand-text transition-colors text-sm font-mono mt-0.5"
               aria-label="Close"
             >
-              âœ•
+              ✕
             </button>
           </div>
 
           <div className="flex-1 overflow-y-auto px-5 py-4 space-y-5">
             {messages.length === 0 && !loading && (
               <p className="text-xs font-mono text-brand-muted mt-4">
-                Ask Clen anything about this document â€” risks, clauses, obligations, summaries.
+                Ask Clen anything about this document — risks, clauses, obligations, summaries.
               </p>
             )}
             {messages.map((msg, i) => (
@@ -139,7 +139,7 @@ export function AskClenDrawer({ documentId, filename, onClose }: Props) {
                 value={question}
                 onChange={e => setQuestion(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder="Ask a questionâ€¦ (Enter to send)"
+                placeholder="Ask a question… (Enter to send)"
                 rows={2}
                 className="flex-1 bg-brand-bg border border-brand-border focus:border-[#00C853] text-brand-text placeholder:text-brand-muted rounded-sm px-3 py-2 text-xs font-mono resize-none outline-none transition-colors"
               />
@@ -149,7 +149,7 @@ export function AskClenDrawer({ documentId, filename, onClose }: Props) {
                 disabled={!question.trim() || loading}
                 className="shrink-0 text-[10px] font-mono px-4 py-2 rounded-sm bg-[#00C853] text-black hover:bg-[#00a844] active:scale-[0.97] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
               >
-                {loading ? 'â€¦' : 'Ask'}
+                {loading ? '…' : 'Ask'}
               </button>
             </div>
             <p className="text-[10px] font-mono text-brand-muted mt-1.5">Shift+Enter for new line</p>

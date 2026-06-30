@@ -53,7 +53,7 @@ export function ToolTestResult({ result, onDismiss }: Props) {
         )}
         {isQueued && (
           <span className="text-[11px] font-mono text-[#4a6a4a]">
-            Execution queued â€” check Executions page for results
+            Execution queued — check Executions page for results
           </span>
         )}
       </div>

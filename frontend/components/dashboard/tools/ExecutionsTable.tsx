@@ -10,7 +10,7 @@ const DECISION_BADGE: Record<string, string> = {
 }
 
 function formatDuration(ms: number | null): string {
-  if (ms === null) return 'â€”'
+  if (ms === null) return '—'
   return ms >= 1000 ? `${(ms / 1000).toFixed(1)}s` : `${ms}ms`
 }
 
@@ -51,7 +51,7 @@ export function ExecutionsTable({ executions }: Props) {
                 </span>
               </td>
               <td className="px-3 py-2 text-brand-muted">
-                {e.confidence !== null ? `${(e.confidence * 100).toFixed(1)}%` : 'â€”'}
+                {e.confidence !== null ? `${(e.confidence * 100).toFixed(1)}%` : '—'}
               </td>
               <td className="px-3 py-2 text-brand-muted">{formatDuration(e.duration_ms)}</td>
               <td className="px-3 py-2 text-brand-muted">{e.status}</td>

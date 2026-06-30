@@ -168,7 +168,7 @@ export function MembersTable({ members, isCurrentUserOwner, onChanged }: Props) 
                       onClick={() => handleRemove(m.id)}
                       className="text-[10px] font-mono text-brand-danger border border-brand-danger/30 bg-[rgba(255,77,109,0.08)] hover:bg-[rgba(255,77,109,0.15)] rounded-sm px-2 py-0.5 transition-colors disabled:opacity-40"
                     >
-                      {busy ? 'â€¦' : 'Remove'}
+                      {busy ? '…' : 'Remove'}
                     </button>
                   </>
                 )}

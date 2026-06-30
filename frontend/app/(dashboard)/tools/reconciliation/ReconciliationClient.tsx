@@ -101,7 +101,7 @@ const AUTONOMY_BADGE: Record<string, { label: string; className: string }> = {
 }
 
 const AUTONOMY_DESC: Record<string, string> = {
-  auto:    'Executes automatically â€” no approval required before acting.',
+  auto:    'Executes automatically — no approval required before acting.',
   approve: 'Every decision is routed to you for review before the agent acts.',
 }
 
@@ -188,7 +188,7 @@ export function ReconciliationClient() {
       active = false
       setPolling(false)
       setRunning(false)
-      toast('Reconciliation timed out â€” check back shortly', 'error')
+      toast('Reconciliation timed out — check back shortly', 'error')
     }, 5 * 60 * 1000)
     return () => {
       active = false
@@ -290,7 +290,7 @@ export function ReconciliationClient() {
     const res = await fetch(`${API}/reconciliation/runs/${runId}/export?${params}`, {
       headers: { Authorization: `Bearer ${token}` },
     })
-    if (!res.ok) { toast('Export failed â€” please try again', 'error'); return }
+    if (!res.ok) { toast('Export failed — please try again', 'error'); return }
     const blob = await res.blob()
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
@@ -306,7 +306,7 @@ export function ReconciliationClient() {
     <motion.div variants={pageVariants} initial="hidden" animate="show" className="p-6 space-y-6">
       <motion.div variants={sectionVariants}>
         <Link href="/tools" className="text-[11px] font-mono text-brand-muted hover:text-brand-secondary transition-colors">
-          â† Tools
+          ← Tools
         </Link>
       </motion.div>
 
@@ -332,7 +332,7 @@ export function ReconciliationClient() {
                   ? 'border border-brand-border text-brand-text hover:bg-brand-bg'
                   : 'bg-[#00C853] text-black hover:bg-[#00a844] active:scale-[0.97]'
               }`}>
-              {toggling ? 'Pausingâ€¦' : deploying ? 'Deployingâ€¦' : isActive ? 'Pause' : 'Deploy'}
+              {toggling ? 'Pausing…' : deploying ? 'Deploying…' : isActive ? 'Pause' : 'Deploy'}
             </button>
           </div>
         )}
@@ -391,7 +391,7 @@ export function ReconciliationClient() {
               <div className="bg-brand-surface border border-brand-border rounded-sm overflow-hidden">
                 <div className="px-4 py-3 border-b border-brand-border">
                   <p className="text-[10px] font-mono uppercase tracking-widest text-brand-muted">How it works</p>
-                  <p className="text-[10px] font-mono text-brand-muted mt-0.5">Every run follows this fixed execution flow â€” no step can be skipped</p>
+                  <p className="text-[10px] font-mono text-brand-muted mt-0.5">Every run follows this fixed execution flow — no step can be skipped</p>
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-4 divide-x divide-brand-border">
                   {HOW_IT_WORKS.map(({ step, label, desc }) => (
@@ -424,7 +424,7 @@ export function ReconciliationClient() {
                     <div className="space-y-1.5">
                       <p className="text-[10px] font-mono text-brand-muted uppercase tracking-widest">Status</p>
                       <p className="text-xs font-mono text-brand-text">{deployed.status === 'active' ? 'Running' : 'Paused'}</p>
-                      <p className="text-[10px] font-mono text-brand-muted">{deployed.status === 'active' ? 'Agent is live and processing' : 'Agent is paused â€” no runs will fire'}</p>
+                      <p className="text-[10px] font-mono text-brand-muted">{deployed.status === 'active' ? 'Agent is live and processing' : 'Agent is paused — no runs will fire'}</p>
                     </div>
                   </div>
                 </div>
@@ -439,7 +439,7 @@ export function ReconciliationClient() {
                 <motion.ul variants={capabilityVariants} initial="hidden" animate="show" className="divide-y divide-brand-border">
                   {RECONCILIATION_CAPABILITIES.map(cap => (
                     <motion.li key={cap} variants={capItemVariants} className="flex items-start gap-3 px-4 py-3">
-                      <span className="text-brand-muted font-mono text-[10px] mt-0.5 shrink-0">â†’</span>
+                      <span className="text-brand-muted font-mono text-[10px] mt-0.5 shrink-0">→</span>
                       <span className="text-xs font-mono text-brand-secondary">{cap}</span>
                     </motion.li>
                   ))}
@@ -485,7 +485,7 @@ export function ReconciliationClient() {
               <div className="flex items-center justify-between px-4 py-3 border-b border-brand-border">
                 <div className="flex items-center gap-3">
                   <p className="text-[10px] font-mono uppercase tracking-widest text-brand-muted">
-                    Results Â· {new Date(selectedRun.period_start).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' })} â€“ {new Date(selectedRun.period_end).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                    Results · {new Date(selectedRun.period_start).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' })} – {new Date(selectedRun.period_end).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
                   </p>
                   {selectedRun.triggered_by_email && (
                     <p className="text-[10px] font-mono text-brand-muted">
@@ -498,7 +498,7 @@ export function ReconciliationClient() {
                   onClick={() => setModalOpen(false)}
                   className="text-brand-muted hover:text-brand-text transition-colors"
                 >
-                  <span className="text-lg leading-none">âœ•</span>
+                  <span className="text-lg leading-none">✕</span>
                 </button>
               </div>
               <ReconciliationTable items={items} loading={itemsLoading} runId={selectedRun.id} onExport={handleExport} />

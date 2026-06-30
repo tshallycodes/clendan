@@ -79,7 +79,7 @@ export function InviteForm({ onInvited }: Props) {
       >
         {success ? (
           <><Check className="w-3.5 h-3.5" /> Sent</>
-        ) : sending ? 'Sendingâ€¦' : 'Send invite'}
+        ) : sending ? 'Sending…' : 'Send invite'}
       </button>
       {error && <p className="w-full text-[10px] font-mono text-brand-danger">{error}</p>}
     </form>

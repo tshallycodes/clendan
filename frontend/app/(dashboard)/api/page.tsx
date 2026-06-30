@@ -161,7 +161,7 @@ export default function ApiDocsPage() {
 }`} />
 
         <div className="space-y-3">
-          <p className="text-[10px] font-mono uppercase tracking-widest text-brand-muted">reasoning_trace shape â€” reconciliation</p>
+          <p className="text-[10px] font-mono uppercase tracking-widest text-brand-muted">reasoning_trace shape — reconciliation</p>
           <CodeBlock lang="json" code={`{
   "overall_decision":      "flagged",
   "period_start":          "2026-05-01T00:00:00+00:00",
@@ -193,7 +193,7 @@ export default function ApiDocsPage() {
   ]
 }`} />
           <p className="text-xs font-mono text-brand-muted">
-            <code className="text-brand-text">claude_assessments</code> is a flat array â€” pipe it directly into a table or CSV.
+            <code className="text-brand-text">claude_assessments</code> is a flat array — pipe it directly into a table or CSV.
             Each row has <code className="text-brand-text">item_id</code>, <code className="text-brand-text">item_type</code>,{' '}
             <code className="text-brand-text">action</code> (<code className="text-[#00C853]">ok</code> /{' '}
             <code className="text-[#f5a623]">review</code> / <code className="text-[#ff4d6d]">flag</code>),{' '}
@@ -215,7 +215,7 @@ trace  = result["data"]["reasoning_trace"]
 # Summary row
 print(trace["overall_decision"], trace["unmatched_pct"], trace["policy_breach"])
 
-# Assessments â†’ CSV
+# Assessments → CSV
 with open("assessments.csv", "w", newline="") as f:
     writer = csv.DictWriter(f, fieldnames=["item_id", "item_type", "action", "severity", "reasoning"])
     writer.writeheader()
@@ -253,7 +253,7 @@ with open("assessments.csv", "w", newline="") as f:
           <EndpointCard
             method="POST"
             path="/execute/approvals/{id}/approve"
-            description="Approve a pending action. Enforces expiry TTL â€” stale approvals are rejected."
+            description="Approve a pending action. Enforces expiry TTL — stale approvals are rejected."
             headers={[
               { name: 'Authorization',   required: true, description: 'ck_live_...' },
               { name: 'Idempotency-Key', required: true, description: 'Unique key per operation' },
@@ -325,7 +325,7 @@ with open("assessments.csv", "w", newline="") as f:
       <section className="space-y-4">
         <h2 className="font-heading font-semibold text-sm text-brand-text uppercase tracking-widest">Payload Reference</h2>
         <p className="text-xs font-mono text-brand-muted">
-          Each tool accepts a <code className="text-brand-text">payload</code> object. Fields are optional â€” omitted fields
+          Each tool accepts a <code className="text-brand-text">payload</code> object. Fields are optional — omitted fields
           fall back to what is configured in the tool&apos;s settings drawer.
         </p>
 
@@ -344,13 +344,13 @@ with open("assessments.csv", "w", newline="") as f:
               </thead>
               <tbody className="divide-y divide-brand-border">
                 {[
-                  ['period_start', 'string (ISO date)', 'now âˆ’ period_days', 'Start of the reconciliation window'],
+                  ['period_start', 'string (ISO date)', 'now − period_days', 'Start of the reconciliation window'],
                   ['period_end',   'string (ISO date)', 'now',               'End of the reconciliation window'],
                   ['period_days',  'integer',           '30',                'Window size when period_start is omitted'],
-                  ['policy.unmatched_pct_threshold',    'float 0â€“1', '0.20', 'Fraction of unmatched items that triggers a policy breach'],
-                  ['policy.match_amount_tolerance_pct', 'float 0â€“1', '0.01', 'Allowed % difference when matching amounts'],
+                  ['policy.unmatched_pct_threshold',    'float 0–1', '0.20', 'Fraction of unmatched items that triggers a policy breach'],
+                  ['policy.match_amount_tolerance_pct', 'float 0–1', '0.01', 'Allowed % difference when matching amounts'],
                   ['policy.match_date_window_days',     'integer',   '30',   'Days either side of due date to still count as a match'],
-                  ['policy.auto_match_confidence_min',  'float 0â€“1', '0.95', 'Minimum confidence for an auto-approved match'],
+                  ['policy.auto_match_confidence_min',  'float 0–1', '0.95', 'Minimum confidence for an auto-approved match'],
                   ['policy.stale_open_item_days',       'integer',   '90',   'Days before an unmatched item is flagged as stale'],
                   ['policy.include_reconciled',         'boolean',   'false','Include already-reconciled transactions in the run'],
                   ['policy.partial_match_enabled',      'boolean',   'true', 'Allow partial amount matches'],
@@ -383,7 +383,7 @@ with open("assessments.csv", "w", newline="") as f:
 
         {/* Other tools */}
         <div className="space-y-2">
-          <p className="text-xs font-mono text-brand-text font-medium">invoice_processing Â· receipt_processing Â· fraud_detection Â· expense_control Â· spend_control</p>
+          <p className="text-xs font-mono text-brand-text font-medium">invoice_processing · receipt_processing · fraud_detection · expense_control · spend_control</p>
           <div className="overflow-x-auto">
             <table className="w-full text-xs font-mono border border-brand-border rounded-sm">
               <thead>
@@ -396,7 +396,7 @@ with open("assessments.csv", "w", newline="") as f:
               <tbody className="divide-y divide-brand-border">
                 {[
                   ['invoice_id / receipt_id', 'string', 'ID of the document to process'],
-                  ['amount_minor',  'integer', 'Amount in minor units (pence/cents) â€” no decimals'],
+                  ['amount_minor',  'integer', 'Amount in minor units (pence/cents) — no decimals'],
                   ['currency',      'string',  'ISO 4217 currency code (GBP, USD, EUR)'],
                   ['vendor / merchant', 'string', 'Counterparty name'],
                   ['transaction_id', 'string', 'Bank transaction ID (fraud_detection, expense_control)'],

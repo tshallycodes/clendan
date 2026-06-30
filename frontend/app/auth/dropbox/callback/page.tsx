@@ -41,7 +41,7 @@ export default function DropboxCallbackPage() {
     <div className="min-h-screen flex items-center justify-center bg-brand-bg">
       <div className="text-center space-y-3">
         <div className="w-5 h-5 border-2 border-[#0061FF] border-t-transparent rounded-full animate-spin mx-auto" />
-        <p className="text-xs font-mono text-brand-muted">Connecting Dropboxâ€¦</p>
+        <p className="text-xs font-mono text-brand-muted">Connecting Dropbox…</p>
         <Suspense>
           <DropboxExchange />
         </Suspense>

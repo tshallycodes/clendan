@@ -154,7 +154,7 @@ export function InviteLinksSection() {
           disabled={creating}
           className="bg-brand-green text-black hover:bg-[#00a844] active:scale-[0.97] rounded-sm px-3 py-1.5 text-xs font-mono font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {creating ? 'Generatingâ€¦' : '+ Generate link'}
+          {creating ? 'Generating…' : '+ Generate link'}
         </button>
       </div>
 

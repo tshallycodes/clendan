@@ -67,7 +67,7 @@ function ToastItem({ item, onDismiss }: { item: ToastItem; onDismiss: (id: strin
     >
       {accent && (
         <span className="mt-0.5 shrink-0 text-xs font-mono font-bold leading-none" style={{ color: accent }}>
-          {item.type === 'error' ? 'âœ•' : 'âœ“'}
+          {item.type === 'error' ? '✕' : '✓'}
         </span>
       )}
       <p className="text-xs font-mono text-brand-text leading-relaxed flex-1">{item.message}</p>
@@ -76,7 +76,7 @@ function ToastItem({ item, onDismiss }: { item: ToastItem; onDismiss: (id: strin
         className="shrink-0 text-brand-muted hover:text-brand-text transition-colors text-xs leading-none mt-0.5"
         aria-label="Dismiss"
       >
-        âœ•
+        ✕
       </button>
     </motion.div>
   )
@@ -188,7 +188,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
           }
         }
       } catch {
-        // Network error â€” use localStorage fallbacks
+        // Network error — use localStorage fallbacks
         const localCurrency = localStorage.getItem('preferredCurrency')
         if (!cancelled && localCurrency) setCurrencyState(localCurrency)
         const localTz = localStorage.getItem('timezone')

@@ -53,7 +53,7 @@ const STATUS_LABEL: Record<string, string> = {
   draft: 'Draft',
   pending_approval: 'Pending Approval',
   approved: 'Approved',
-  posted: 'Posted âœ“',
+  posted: 'Posted ✓',
   voided: 'Voided',
 }
 
@@ -89,10 +89,10 @@ function LineItemsTable({ lines }: { lines: JournalLine[] }) {
             <td className="text-[11px] font-mono text-brand-muted px-3 py-2">{ln.account_code}</td>
             <td className="text-[11px] font-mono text-brand-text px-3 py-2">{ln.account_name}</td>
             <td className="text-[11px] font-mono text-brand-text px-3 py-2">
-              {ln.debit_minor > 0 ? fmt(ln.debit_minor) : 'â€”'}
+              {ln.debit_minor > 0 ? fmt(ln.debit_minor) : '—'}
             </td>
             <td className="text-[11px] font-mono text-brand-text px-3 py-2">
-              {ln.credit_minor > 0 ? fmt(ln.credit_minor) : 'â€”'}
+              {ln.credit_minor > 0 ? fmt(ln.credit_minor) : '—'}
             </td>
           </tr>
         ))}
@@ -143,7 +143,7 @@ function JournalEntryCard({
           <span className={`text-[10px] font-mono px-2 py-0.5 rounded-sm border ${statusClass}`}>
             {statusLabel}
           </span>
-          <span className="text-brand-muted text-xs">{expanded ? 'â–²' : 'â–¼'}</span>
+          <span className="text-brand-muted text-xs">{expanded ? '▲' : '▼'}</span>
         </div>
       </button>
 
@@ -167,7 +167,7 @@ function JournalEntryCard({
                     disabled={posting}
                     className="text-[11px] font-mono bg-[#00C853] text-black hover:bg-[#00a844] active:scale-[0.97] rounded-sm px-3 py-1.5 transition-all disabled:opacity-50"
                   >
-                    {posting ? 'Postingâ€¦' : 'Post Entry'}
+                    {posting ? 'Posting…' : 'Post Entry'}
                   </button>
                 )}
                 {entry.status === 'draft' && (
@@ -177,7 +177,7 @@ function JournalEntryCard({
                     disabled={voiding}
                     className="text-[11px] font-mono bg-[rgba(255,77,109,0.1)] border border-[#ff4d6d] text-[#ff4d6d] rounded-sm px-3 py-1.5 transition-colors disabled:opacity-50"
                   >
-                    {voiding ? 'Voidingâ€¦' : 'Void'}
+                    {voiding ? 'Voiding…' : 'Void'}
                   </button>
                 )}
                 {entry.posted_at && (
@@ -292,7 +292,7 @@ export function JournalEntriesTab({ toolId }: Props) {
       setLineInputs([EMPTY_LINE(), EMPTY_LINE()])
       await fetchEntries()
     } catch {
-      toast('Network error â€” please try again', 'error')
+      toast('Network error — please try again', 'error')
     } finally {
       setSubmitting(false)
     }
@@ -310,7 +310,7 @@ export function JournalEntriesTab({ toolId }: Props) {
       toast('Entry posted', 'success')
       await fetchEntries()
     } catch {
-      toast('Network error â€” please try again', 'error')
+      toast('Network error — please try again', 'error')
     } finally {
       setPostingId(null)
     }
@@ -328,7 +328,7 @@ export function JournalEntriesTab({ toolId }: Props) {
       toast('Entry voided', 'success')
       await fetchEntries()
     } catch {
-      toast('Network error â€” please try again', 'error')
+      toast('Network error — please try again', 'error')
     } finally {
       setVoidingId(null)
     }
@@ -413,7 +413,7 @@ export function JournalEntriesTab({ toolId }: Props) {
                           <input
                             value={ln.account_name}
                             onChange={(e) => updateLine(idx, 'account_name', e.target.value)}
-                            placeholder="Payroll â€” Engineering"
+                            placeholder="Payroll — Engineering"
                             className="w-full bg-brand-bg border border-brand-border focus:border-[#00C853] text-brand-text placeholder:text-brand-muted rounded-sm px-2 py-1 text-[11px] font-mono outline-none"
                           />
                         </td>
@@ -465,7 +465,7 @@ export function JournalEntriesTab({ toolId }: Props) {
                     Dr {fmt(totalDebits)} / Cr {fmt(totalCredits)}
                   </span>
                   <span className={balanced ? 'text-[#00C853]' : 'text-[#ff4d6d]'}>
-                    {balanced ? 'âœ“ Balanced' : 'âœ— Unbalanced'}
+                    {balanced ? '✓ Balanced' : '✗ Unbalanced'}
                   </span>
                 </div>
               </div>
@@ -477,7 +477,7 @@ export function JournalEntriesTab({ toolId }: Props) {
                   disabled={!balanced || !period || !description || submitting}
                   className="text-xs font-mono bg-[#00C853] text-black hover:bg-[#00a844] active:scale-[0.97] rounded-sm px-4 py-1.5 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                 >
-                  {submitting ? 'Creatingâ€¦' : 'Post Entry'}
+                  {submitting ? 'Creating…' : 'Post Entry'}
                 </button>
               </div>
             </div>
@@ -495,7 +495,7 @@ export function JournalEntriesTab({ toolId }: Props) {
       ) : entries.length === 0 ? (
         <div className="bg-brand-surface border border-brand-border rounded-sm px-5 py-12 text-center">
           <p className="text-xs font-mono text-brand-muted">
-            No journal entries yet â€” create one above.
+            No journal entries yet — create one above.
           </p>
         </div>
       ) : (

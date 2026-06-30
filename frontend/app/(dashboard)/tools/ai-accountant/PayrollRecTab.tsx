@@ -74,7 +74,7 @@ function parseRosterText(text: string): ParsedEmployee[] {
     .filter(line => line.length > 0 && !line.startsWith('#'))
     .map(raw => {
       const comma = raw.lastIndexOf(',')
-      if (comma === -1) return { name: '', expected_minor: 0, raw, error: 'Missing comma â€” use: Name, Salary' }
+      if (comma === -1) return { name: '', expected_minor: 0, raw, error: 'Missing comma — use: Name, Salary' }
       const name = raw.slice(0, comma).trim()
       const salaryStr = raw.slice(comma + 1).trim().replace(/[,\s]/g, '')
       const salary = parseFloat(salaryStr)
@@ -101,7 +101,7 @@ function GhostTable({ rows, symbol }: { rows: GhostRow[]; symbol: string }) {
           <tbody>
             {rows.map(r => (
               <tr key={r.transaction_id} className="border-b border-brand-border last:border-0 hover:bg-brand-bg transition-colors">
-                <td className="px-4 py-2.5 text-xs font-mono text-[#ff4d6d]">{r.extracted_name || 'â€”'}</td>
+                <td className="px-4 py-2.5 text-xs font-mono text-[#ff4d6d]">{r.extracted_name || '—'}</td>
                 <td className="px-4 py-2.5 text-xs font-mono text-brand-text max-w-[240px] truncate">{r.description}</td>
                 <td className="px-4 py-2.5 text-xs font-mono text-brand-text">{formatMinor(r.amount_minor, symbol)}</td>
                 <td className="px-4 py-2.5 text-xs font-mono text-brand-muted">{r.date.slice(0, 10)}</td>
@@ -223,7 +223,7 @@ export function PayrollRecTab({ toolId }: { toolId: string | null }) {
     reader.onload = ev => {
       const text = ev.target?.result as string
       const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean)
-      // Detect header row â€” skip if first cell is non-numeric name-like header
+      // Detect header row — skip if first cell is non-numeric name-like header
       const start = /^(name|employee|full\s*name|staff)/i.test(lines[0]?.split(',')[0] ?? '') ? 1 : 0
       const normalised = lines.slice(start).map(line => {
         const cols = line.split(',').map(c => c.trim().replace(/^"|"$/g, ''))
@@ -249,7 +249,7 @@ export function PayrollRecTab({ toolId }: { toolId: string | null }) {
       const res = await fetch(`${API}/payroll-runs/${activeRun.id}/export`, {
         headers: { Authorization: `Bearer ${token}` },
       })
-      if (!res.ok) { toast('Export failed â€” please try again', 'error'); return }
+      if (!res.ok) { toast('Export failed — please try again', 'error'); return }
       const blob = await res.blob()
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
@@ -300,13 +300,13 @@ export function PayrollRecTab({ toolId }: { toolId: string | null }) {
             setHistoryLoaded(false)
             completed = true
             const issues = (run.ghost_count ?? 0) + (run.missing_count ?? 0) + (run.discrepancy_count ?? 0)
-            toast(issues > 0 ? `Rec complete â€” ${issues} issue${issues !== 1 ? 's' : ''} found` : 'Payroll rec complete â€” all clear', issues > 0 ? 'info' : 'success')
+            toast(issues > 0 ? `Rec complete — ${issues} issue${issues !== 1 ? 's' : ''} found` : 'Payroll rec complete — all clear', issues > 0 ? 'info' : 'success')
             break
           }
         }
         attempts++
       }
-      if (!completed) toast('Rec timed out â€” check back shortly', 'error')
+      if (!completed) toast('Rec timed out — check back shortly', 'error')
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Network error'
       setError(msg)
@@ -333,7 +333,7 @@ export function PayrollRecTab({ toolId }: { toolId: string | null }) {
           <MonthPicker value={period} onChange={setPeriod} />
         </div>
 
-        {/* Roster â€” bulk paste or CSV import */}
+        {/* Roster — bulk paste or CSV import */}
         <div className="flex flex-col gap-2">
           <div className="flex items-center justify-between gap-2">
             <label className="text-[10px] font-mono text-brand-muted uppercase tracking-widest">Employee Roster</label>
@@ -364,14 +364,14 @@ export function PayrollRecTab({ toolId }: { toolId: string | null }) {
             rows={8}
             value={rosterText}
             onChange={e => setRosterText(e.target.value)}
-            placeholder={`Paste your roster â€” one employee per line:\n\nJane Smith, 5000\nBob Jones, 4500\nAlice Chen, 6200\n\nFormat: Name, Monthly salary`}
+            placeholder={`Paste your roster — one employee per line:\n\nJane Smith, 5000\nBob Jones, 4500\nAlice Chen, 6200\n\nFormat: Name, Monthly salary`}
             className="w-full bg-brand-bg border border-brand-border focus:border-[#00C853] text-brand-text placeholder:text-brand-muted text-xs font-mono rounded-sm px-3 py-2.5 outline-none transition-colors resize-y leading-relaxed"
           />
           {parseErrors.length > 0 && (
             <div className="space-y-1">
               {parseErrors.map((e, i) => (
                 <p key={i} className="text-[10px] font-mono text-[#ff4d6d]">
-                  Line {parsed.indexOf(e) + 1}: {e.error} â€” <span className="text-brand-muted">{e.raw}</span>
+                  Line {parsed.indexOf(e) + 1}: {e.error} — <span className="text-brand-muted">{e.raw}</span>
                 </p>
               ))}
             </div>
@@ -386,7 +386,7 @@ export function PayrollRecTab({ toolId }: { toolId: string | null }) {
           disabled={!rosterReady}
           className="bg-[#00C853] text-black text-xs font-mono rounded-sm px-4 py-2 hover:bg-[#00a844] active:scale-[0.97] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
         >
-          {running ? 'Runningâ€¦' : 'Run Payroll Rec'}
+          {running ? 'Running…' : 'Run Payroll Rec'}
         </button>
       </div>
 
@@ -414,7 +414,7 @@ export function PayrollRecTab({ toolId }: { toolId: string | null }) {
                   disabled={exporting}
                   className="text-[10px] font-mono border border-brand-border text-brand-muted hover:text-brand-text rounded-sm px-3 py-1 transition-colors disabled:opacity-40"
                 >
-                  {exporting ? 'Exportingâ€¦' : 'Export CSV'}
+                  {exporting ? 'Exporting…' : 'Export CSV'}
                 </button>
               </div>
               <div className="flex gap-3 flex-wrap">
@@ -448,7 +448,7 @@ export function PayrollRecTab({ toolId }: { toolId: string | null }) {
               disabled={loadingHistory}
               className="text-[10px] font-mono text-brand-muted hover:text-brand-text border border-brand-border rounded-sm px-3 py-1 transition-colors disabled:opacity-50"
             >
-              {loadingHistory ? 'Loadingâ€¦' : 'Load history'}
+              {loadingHistory ? 'Loading…' : 'Load history'}
             </button>
           )}
         </div>

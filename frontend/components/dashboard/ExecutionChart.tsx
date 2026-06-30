@@ -10,7 +10,7 @@ interface DayData {
   pending: number
 }
 
-// Static placeholder data â€” replace with API response when endpoint is ready
+// Static placeholder data — replace with API response when endpoint is ready
 const PLACEHOLDER_DATA: DayData[] = [
   { label: 'Mon', auto: 12, pending: 3 },
   { label: 'Tue', auto: 18, pending: 5 },
