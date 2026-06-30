@@ -36,6 +36,7 @@ async def respond_to_approval(
     """
     Approve or reject a pending approval. Enforces expiry TTL — stale approvals are rejected.
     Scoped to tenant via JWT: only approvals belonging to the authenticated user's tenant are accessible.
+    Cascades status to linked journal entries when applicable.
     """
     tenant_id = current_user.tenant_id
     clerk_user_id = current_user.user_id
@@ -74,10 +75,31 @@ async def respond_to_approval(
     await db.approval.update(where={"id": approval_id}, data=approval_update)  # type: ignore[arg-type]
 
     # Update execution decision
+    execution = await db.execution.find_unique(where={"id": approval.execution_id})
     await db.execution.update(
         where={"id": approval.execution_id},
         data={"decision": new_decision},
     )
+
+    # Cascade to journal entry if this approval is linked to one
+    if execution and execution.input_ref and execution.input_ref.startswith("journal_entry:"):
+        parts = execution.input_ref.split(":")
+        if len(parts) >= 2:
+            je_id = parts[1]
+            je_new_status = "approved" if body.action == ApprovalAction.APPROVE else "rejected"
+            await db.journalentry.update_many(
+                where={"id": je_id, "tenant_id": tenant_id, "status": "pending_approval"},
+                data={"status": je_new_status},
+            )
+            _logger.info(
+                "journal_entry_approval_cascaded",
+                extra={
+                    "journal_entry_id": je_id,
+                    "new_status": je_new_status,
+                    "approval_id": approval_id,
+                    "tenant_id": tenant_id,
+                },
+            )
 
     # Cascade decision to document so the Documents tab reflects the outcome
     if body.action == ApprovalAction.REJECT:

@@ -1,12 +1,24 @@
-﻿'use client'
+'use client'
 
 import { useCallback, useEffect, useState } from 'react'
 import { useAuth } from '@clerk/nextjs'
-import { useToast } from '@/components/Providers'
+import { useToast, useCurrency } from '@/components/Providers'
 import { motion, AnimatePresence } from 'framer-motion'
 import { MonthPicker } from './MonthPicker'
+import { CURRENCY_MAP } from '@/lib/currency'
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+
+const PAGE_SIZE = 20
+
+const ENTRY_TYPES = [
+  { value: 'adjustment', label: 'Adjustment' },
+  { value: 'accrual', label: 'Accrual' },
+  { value: 'payroll', label: 'Payroll' },
+  { value: 'prepayment', label: 'Prepayment' },
+  { value: 'depreciation', label: 'Depreciation' },
+  { value: 'manual', label: 'Manual' },
+]
 
 interface JournalLine {
   id: string
@@ -20,6 +32,7 @@ interface JournalLine {
 interface JournalEntry {
   id: string
   period: string
+  entry_type: string
   description: string
   status: string
   total_minor: number
@@ -42,36 +55,41 @@ interface Props {
 }
 
 const STATUS_STYLE: Record<string, string> = {
-  draft: 'text-brand-muted border-brand-border bg-transparent',
+  draft:            'text-brand-muted border-brand-border bg-transparent',
   pending_approval: 'text-[#00a8cc] border-[rgba(0,168,204,0.2)] bg-[rgba(0,168,204,0.08)]',
-  approved: 'text-[#00C853] border-[rgba(0,200,83,0.2)] bg-[rgba(0,200,83,0.08)]',
-  posted: 'text-[#00C853] border-[rgba(0,200,83,0.2)] bg-[rgba(0,200,83,0.08)]',
-  voided: 'text-[#ff4d6d] border-[rgba(255,77,109,0.2)] bg-[rgba(255,77,109,0.08)]',
+  approved:         'text-[#00C853] border-[rgba(0,200,83,0.2)] bg-[rgba(0,200,83,0.08)]',
+  posted:           'text-[#00C853] border-[rgba(0,200,83,0.2)] bg-[rgba(0,200,83,0.08)]',
+  voided:           'text-[#ff4d6d] border-[rgba(255,77,109,0.2)] bg-[rgba(255,77,109,0.08)]',
+  rejected:         'text-[#ff4d6d] border-[rgba(255,77,109,0.2)] bg-[rgba(255,77,109,0.08)]',
 }
 
 const STATUS_LABEL: Record<string, string> = {
-  draft: 'Draft',
+  draft:            'Draft',
   pending_approval: 'Pending Approval',
-  approved: 'Approved',
-  posted: 'Posted ✓',
-  voided: 'Voided',
+  approved:         'Approved',
+  posted:           'Posted ✓',
+  voided:           'Voided',
+  rejected:         'Rejected',
 }
 
-function fmt(minor: number): string {
-  return (minor / 100).toLocaleString('en-GB', { style: 'currency', currency: 'GBP' })
+function fmt(minor: number, currency: string): string {
+  const info = CURRENCY_MAP[currency]
+  const decimals = info?.decimals ?? 2
+  const divisor = Math.pow(10, decimals)
+  return (minor / divisor).toLocaleString('en-GB', { style: 'currency', currency: currency || 'USD' })
 }
 
-function toMinor(val: string): number {
+function toMinor(val: string, decimals = 2): number {
   const parsed = parseFloat(val.replace(/[^0-9.]/g, ''))
   if (isNaN(parsed)) return 0
-  return Math.round(parsed * 100)
+  return Math.round(parsed * Math.pow(10, decimals))
 }
 
 // ---------------------------------------------------------------------------
 // LineItemsTable
 // ---------------------------------------------------------------------------
 
-function LineItemsTable({ lines }: { lines: JournalLine[] }) {
+function LineItemsTable({ lines, currency }: { lines: JournalLine[]; currency: string }) {
   return (
     <table className="w-full mt-3">
       <thead>
@@ -89,10 +107,10 @@ function LineItemsTable({ lines }: { lines: JournalLine[] }) {
             <td className="text-[12px] font-body text-brand-muted px-3 py-2">{ln.account_code}</td>
             <td className="text-[12px] font-body text-brand-text px-3 py-2">{ln.account_name}</td>
             <td className="text-[12px] font-body text-brand-text px-3 py-2">
-              {ln.debit_minor > 0 ? fmt(ln.debit_minor) : '—'}
+              {ln.debit_minor > 0 ? fmt(ln.debit_minor, currency) : '—'}
             </td>
             <td className="text-[12px] font-body text-brand-text px-3 py-2">
-              {ln.credit_minor > 0 ? fmt(ln.credit_minor) : '—'}
+              {ln.credit_minor > 0 ? fmt(ln.credit_minor, currency) : '—'}
             </td>
           </tr>
         ))}
@@ -136,10 +154,13 @@ function JournalEntryCard({
           <span className="text-[11px] font-body text-brand-muted uppercase tracking-wider shrink-0">
             {entry.period}
           </span>
+          <span className="text-[11px] font-body text-brand-muted shrink-0 capitalize">
+            {entry.entry_type}
+          </span>
           <span className="text-xs font-body text-brand-text truncate">{entry.description}</span>
         </div>
         <div className="flex items-center gap-3 shrink-0 ml-4">
-          <span className="text-xs font-body text-brand-text">{fmt(entry.total_minor)}</span>
+          <span className="text-xs font-body text-brand-text">{fmt(entry.total_minor, entry.currency)}</span>
           <span className={`text-[11px] font-body px-2 py-0.5 rounded-sm border ${statusClass}`}>
             {statusLabel}
           </span>
@@ -158,7 +179,7 @@ function JournalEntryCard({
             className="overflow-hidden border-t border-brand-border"
           >
             <div className="px-4 pb-3">
-              <LineItemsTable lines={entry.lines} />
+              <LineItemsTable lines={entry.lines} currency={entry.currency} />
               <div className="flex items-center gap-2 mt-3">
                 {entry.status === 'approved' && (
                   <button
@@ -217,34 +238,63 @@ const itemVariants = {
 export function JournalEntriesTab({ toolId }: Props) {
   const { getToken } = useAuth()
   const { toast } = useToast()
+  const { currency } = useCurrency()
+
+  const currencySymbol = CURRENCY_MAP[currency]?.symbol ?? currency
+  const currencyDecimals = CURRENCY_MAP[currency]?.decimals ?? 2
+
   const [entries, setEntries] = useState<JournalEntry[]>([])
+  const [total, setTotal] = useState(0)
+  const [hasMore, setHasMore] = useState(false)
+  const [skip, setSkip] = useState(0)
   const [loading, setLoading] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
+
+  const [filterPeriod, setFilterPeriod] = useState('')
+
   const [showForm, setShowForm] = useState(false)
   const [period, setPeriod] = useState('')
   const [description, setDescription] = useState('')
+  const [entryType, setEntryType] = useState('adjustment')
   const [lineInputs, setLineInputs] = useState<LineInput[]>([EMPTY_LINE(), EMPTY_LINE()])
   const [submitting, setSubmitting] = useState(false)
   const [postingId, setPostingId] = useState<string | null>(null)
   const [voidingId, setVoidingId] = useState<string | null>(null)
 
-  const totalDebits = lineInputs.reduce((s, ln) => s + toMinor(ln.debit), 0)
-  const totalCredits = lineInputs.reduce((s, ln) => s + toMinor(ln.credit), 0)
+  const totalDebits = lineInputs.reduce((s, ln) => s + toMinor(ln.debit, currencyDecimals), 0)
+  const totalCredits = lineInputs.reduce((s, ln) => s + toMinor(ln.credit, currencyDecimals), 0)
   const balanced = totalDebits > 0 && totalDebits === totalCredits
 
-  const fetchEntries = useCallback(async () => {
+  const fetchEntries = useCallback(async (currentSkip = 0, append = false) => {
     const token = await getToken()
-    const res = await fetch(`${API}/journal-entries`, {
+    const params = new URLSearchParams({ limit: String(PAGE_SIZE), skip: String(currentSkip) })
+    if (filterPeriod) params.set('period', filterPeriod)
+
+    const res = await fetch(`${API}/journal-entries?${params}`, {
       headers: { Authorization: `Bearer ${token}` },
     })
     if (!res.ok) return
     const json = await res.json()
-    setEntries(json.data?.entries ?? [])
+    const fetched: JournalEntry[] = json.data?.entries ?? []
+    setTotal(json.data?.total ?? 0)
+    setHasMore(json.data?.has_more ?? false)
+    setEntries(prev => append ? [...prev, ...fetched] : fetched)
     setLoading(false)
-  }, [getToken])
+  }, [getToken, filterPeriod])
 
   useEffect(() => {
-    fetchEntries()
+    setLoading(true)
+    setSkip(0)
+    fetchEntries(0, false)
   }, [fetchEntries])
+
+  async function loadMore() {
+    const nextSkip = skip + PAGE_SIZE
+    setSkip(nextSkip)
+    setLoadingMore(true)
+    await fetchEntries(nextSkip, true)
+    setLoadingMore(false)
+  }
 
   function updateLine(idx: number, field: keyof LineInput, value: string) {
     setLineInputs((prev) => prev.map((ln, i) => (i === idx ? { ...ln, [field]: value } : ln)))
@@ -269,8 +319,8 @@ export function JournalEntriesTab({ toolId }: Props) {
         .map((ln) => ({
           account_code: ln.account_code,
           account_name: ln.account_name,
-          debit_minor: toMinor(ln.debit),
-          credit_minor: toMinor(ln.credit),
+          debit_minor: toMinor(ln.debit, currencyDecimals),
+          credit_minor: toMinor(ln.credit, currencyDecimals),
           description: ln.description || undefined,
         }))
 
@@ -281,7 +331,7 @@ export function JournalEntriesTab({ toolId }: Props) {
           'Content-Type': 'application/json',
           'Idempotency-Key': `journal-${Date.now()}`,
         },
-        body: JSON.stringify({ period, description, lines }),
+        body: JSON.stringify({ period, description, lines, entry_type: entryType }),
       })
       const json = await res.json().catch(() => null)
       if (!res.ok) { toast((json as { detail?: string })?.detail ?? 'Failed to create entry', 'error'); return }
@@ -289,8 +339,10 @@ export function JournalEntriesTab({ toolId }: Props) {
       setShowForm(false)
       setPeriod('')
       setDescription('')
+      setEntryType('adjustment')
       setLineInputs([EMPTY_LINE(), EMPTY_LINE()])
-      await fetchEntries()
+      setSkip(0)
+      await fetchEntries(0, false)
     } catch {
       toast('Network error — please try again', 'error')
     } finally {
@@ -308,7 +360,7 @@ export function JournalEntriesTab({ toolId }: Props) {
       })
       if (!res.ok) { const j = await res.json().catch(() => null); toast((j as { detail?: string })?.detail ?? 'Failed to post entry', 'error'); return }
       toast('Entry posted', 'success')
-      await fetchEntries()
+      await fetchEntries(0, false)
     } catch {
       toast('Network error — please try again', 'error')
     } finally {
@@ -326,7 +378,7 @@ export function JournalEntriesTab({ toolId }: Props) {
       })
       if (!res.ok) { const j = await res.json().catch(() => null); toast((j as { detail?: string })?.detail ?? 'Failed to void entry', 'error'); return }
       toast('Entry voided', 'success')
-      await fetchEntries()
+      await fetchEntries(0, false)
     } catch {
       toast('Network error — please try again', 'error')
     } finally {
@@ -337,16 +389,31 @@ export function JournalEntriesTab({ toolId }: Props) {
   return (
     <div className="space-y-4">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <p className="text-[11px] font-body text-brand-muted uppercase tracking-widest">
-          Payroll Journal Entries
-        </p>
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <p className="text-[11px] font-body text-brand-muted uppercase tracking-widest shrink-0">
+            Journal Entries
+          </p>
+          <MonthPicker value={filterPeriod} onChange={(v) => setFilterPeriod(v)} />
+          {filterPeriod && (
+            <button
+              type="button"
+              onClick={() => setFilterPeriod('')}
+              className="text-[11px] font-body text-brand-muted hover:text-brand-secondary transition-colors"
+            >
+              Clear
+            </button>
+          )}
+          {total > 0 && (
+            <span className="text-[11px] font-body text-brand-muted">{total} total</span>
+          )}
+        </div>
         <button
           type="button"
           onClick={() => setShowForm((p) => !p)}
-          className="text-xs font-body border border-brand-border text-brand-text hover:bg-brand-elevated rounded-sm px-3 py-1.5 transition-colors"
+          className="text-xs font-body border border-brand-border text-brand-text hover:bg-brand-elevated rounded-sm px-3 py-1.5 transition-colors shrink-0"
         >
-          {showForm ? 'Cancel' : 'Create Journal Entry'}
+          {showForm ? 'Cancel' : 'New Entry'}
         </button>
       </div>
 
@@ -362,12 +429,26 @@ export function JournalEntriesTab({ toolId }: Props) {
             className="overflow-hidden"
           >
             <div className="bg-brand-surface border border-brand-border rounded-sm p-4 space-y-4">
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-3 gap-3">
                 <div className="flex flex-col gap-1">
                   <label className="text-[11px] font-body text-brand-muted uppercase tracking-widest">
                     Period
                   </label>
                   <MonthPicker value={period} onChange={setPeriod} />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[11px] font-body text-brand-muted uppercase tracking-widest">
+                    Type
+                  </label>
+                  <select
+                    value={entryType}
+                    onChange={(e) => setEntryType(e.target.value)}
+                    className="w-full bg-brand-bg border border-brand-border focus:border-[#00C853] text-brand-text rounded-sm px-3 py-2 text-xs font-body outline-none transition-colors"
+                  >
+                    {ENTRY_TYPES.map((t) => (
+                      <option key={t.value} value={t.value}>{t.label}</option>
+                    ))}
+                  </select>
                 </div>
                 <div className="space-y-1">
                   <label className="text-[11px] font-body text-brand-muted uppercase tracking-widest">
@@ -388,7 +469,7 @@ export function JournalEntriesTab({ toolId }: Props) {
                 <table className="w-full">
                   <thead>
                     <tr className="border-b border-brand-border bg-brand-elevated">
-                      {['Code', 'Account Name', 'Debit (Â£)', 'Credit (Â£)', ''].map((h) => (
+                      {['Code', 'Account Name', `Debit (${currencySymbol})`, `Credit (${currencySymbol})`, ''].map((h) => (
                         <th
                           key={h}
                           className="text-left text-[11px] font-body text-brand-muted uppercase tracking-widest px-3 py-2"
@@ -442,7 +523,7 @@ export function JournalEntriesTab({ toolId }: Props) {
                             disabled={lineInputs.length <= 2}
                             className="text-brand-muted hover:text-[#ff4d6d] text-xs transition-colors disabled:opacity-30"
                           >
-                            Ã—
+                            ×
                           </button>
                         </td>
                       </tr>
@@ -462,7 +543,7 @@ export function JournalEntriesTab({ toolId }: Props) {
                 </button>
                 <div className="flex items-center gap-4 text-[12px] font-body">
                   <span className="text-brand-muted">
-                    Dr {fmt(totalDebits)} / Cr {fmt(totalCredits)}
+                    Dr {fmt(totalDebits, currency)} / Cr {fmt(totalCredits, currency)}
                   </span>
                   <span className={balanced ? 'text-[#00C853]' : 'text-[#ff4d6d]'}>
                     {balanced ? '✓ Balanced' : '✗ Unbalanced'}
@@ -477,7 +558,7 @@ export function JournalEntriesTab({ toolId }: Props) {
                   disabled={!balanced || !period || !description || submitting}
                   className="text-xs font-body bg-[#00C853] text-black hover:bg-[#00a844] active:scale-[0.97] rounded-sm px-4 py-1.5 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                 >
-                  {submitting ? 'Creating…' : 'Post Entry'}
+                  {submitting ? 'Creating…' : 'Create Entry'}
                 </button>
               </div>
             </div>
@@ -495,23 +576,36 @@ export function JournalEntriesTab({ toolId }: Props) {
       ) : entries.length === 0 ? (
         <div className="bg-brand-surface border border-brand-border rounded-sm px-5 py-12 text-center">
           <p className="text-xs font-body text-brand-muted">
-            No journal entries yet — create one above.
+            {filterPeriod ? `No journal entries for ${filterPeriod}.` : 'No journal entries yet — create one above.'}
           </p>
         </div>
       ) : (
-        <motion.div variants={listVariants} initial="hidden" animate="show" className="space-y-2">
-          {entries.map((entry) => (
-            <motion.div key={entry.id} variants={itemVariants}>
-              <JournalEntryCard
-                entry={entry}
-                onPost={handlePost}
-                onVoid={handleVoid}
-                posting={postingId === entry.id}
-                voiding={voidingId === entry.id}
-              />
-            </motion.div>
-          ))}
-        </motion.div>
+        <>
+          <motion.div variants={listVariants} initial="hidden" animate="show" className="space-y-2">
+            {entries.map((entry) => (
+              <motion.div key={entry.id} variants={itemVariants}>
+                <JournalEntryCard
+                  entry={entry}
+                  onPost={handlePost}
+                  onVoid={handleVoid}
+                  posting={postingId === entry.id}
+                  voiding={voidingId === entry.id}
+                />
+              </motion.div>
+            ))}
+          </motion.div>
+
+          {hasMore && (
+            <button
+              type="button"
+              onClick={loadMore}
+              disabled={loadingMore}
+              className="w-full py-2 text-[11px] font-body text-brand-muted border border-brand-border rounded-sm hover:text-brand-secondary hover:bg-brand-elevated transition-colors disabled:opacity-50"
+            >
+              {loadingMore ? 'Loading…' : `Load more (${total - entries.length} remaining)`}
+            </button>
+          )}
+        </>
       )}
     </div>
   )

@@ -5,7 +5,6 @@ Follows mandatory execution flow: receive → classify → execute → policy ch
 """
 from __future__ import annotations
 
-import json
 import time
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
@@ -30,7 +29,7 @@ class EntryResult:
 
 class JournalEntryTool:
     """
-    Creates and posts payroll journal entries.
+    Creates and posts journal entries.
     Called by the Orchestrator as a tool — never invoked directly from routes.
     """
 
@@ -42,9 +41,11 @@ class JournalEntryTool:
         lines: list[dict[str, Any]],
         description: str,
         auto_approve_threshold_minor: int = 5_000_000,
+        entry_type: str = "payroll",
+        currency: str = "GBP",
     ) -> EntryResult:
         """
-        Create a payroll journal entry for a given period.
+        Create a journal entry for a given period.
 
         lines items must contain: account_code, account_name, debit_minor, credit_minor.
         Optional per-line: description.
@@ -76,30 +77,30 @@ class JournalEntryTool:
         requires_approval = total_minor > auto_approve_threshold_minor
         initial_status = "pending_approval" if requires_approval else "approved"
 
-        # STEP 3: Execute — write to DB (validate-then-write, no partial writes)
+        # STEP 3: Execute — create entry and all lines atomically via nested create
         entry = await db.journalentry.create(
             data={
                 "tenant_id": tenant_id,
                 "period": period,
-                "entry_type": "payroll",
+                "entry_type": entry_type,
                 "description": description,
                 "status": initial_status,
                 "total_minor": total_minor,
-                "currency": "GBP",
+                "currency": currency,
+                "lines": {
+                    "create": [
+                        {
+                            "account_code": str(ln["account_code"]),
+                            "account_name": str(ln["account_name"]),
+                            "debit_minor": int(ln.get("debit_minor", 0)),
+                            "credit_minor": int(ln.get("credit_minor", 0)),
+                            "description": ln.get("description"),
+                        }
+                        for ln in lines
+                    ]
+                },
             }
         )
-
-        for ln in lines:
-            await db.journalentryline.create(
-                data={
-                    "journal_entry_id": entry.id,
-                    "account_code": str(ln["account_code"]),
-                    "account_name": str(ln["account_name"]),
-                    "debit_minor": int(ln.get("debit_minor", 0)),
-                    "credit_minor": int(ln.get("credit_minor", 0)),
-                    "description": ln.get("description"),
-                }
-            )
 
         # STEP 4: Policy check — create Approval record if over threshold
         approval_id: str | None = None
@@ -132,13 +133,15 @@ class JournalEntryTool:
             data={
                 "tenant_id": tenant_id,
                 "actor": f"tool:{tool_id}",
-                "action": "journal_entry:create_payroll",
+                "action": "journal_entry:create",
                 "reasoning_trace_json": {
                     "trace_id": trace_id,
                     "entry_id": entry.id,
                     "period": period,
+                    "entry_type": entry_type,
                     "description": description,
                     "total_minor": total_minor,
+                    "currency": currency,
                     "status": initial_status,
                     "requires_approval": requires_approval,
                     "approval_id": approval_id,
@@ -155,6 +158,7 @@ class JournalEntryTool:
                 "tenant_id": tenant_id,
                 "entry_id": entry.id,
                 "period": period,
+                "entry_type": entry_type,
                 "total_minor": total_minor,
                 "status": initial_status,
                 "duration_ms": duration_ms,
@@ -228,7 +232,7 @@ async def run_journal_entry_job(
     ctx: dict,
     entry_id: str,
     tenant_id: str,
-    tool_id: str,
+    _tool_id: str,
 ) -> dict:
     """arq job wrapper for async journal entry post operations."""
     tool = JournalEntryTool()
