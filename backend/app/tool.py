@@ -98,6 +98,16 @@ async def run_orchestrator_job(
     """
     db = get_db()
     start_ms = int(time.time() * 1000)
+    logger.info(
+        "orchestrator_job_start",
+        extra={
+            "execution_id": execution_id,
+            "event_type": event_type,
+            "tool_id": tool_id,
+            "tenant_id": tenant_id,
+            "payload_keys": list(payload.keys()),
+        },
+    )
 
     try:
         await db.execution.update(
@@ -106,8 +116,20 @@ async def run_orchestrator_job(
         )
 
         if event_type == "transaction_posted":
+            logger.info(
+                "orchestrator_dispatching",
+                extra={"execution_id": execution_id, "event_type": event_type, "tool_id": tool_id},
+            )
             decision, confidence, reasoning = await _orchestrate_transaction_posted(
                 payload, tenant_id, tool_id, execution_id
+            )
+            logger.info(
+                "orchestrator_dispatch_done",
+                extra={
+                    "execution_id": execution_id,
+                    "decision": decision,
+                    "confidence": confidence,
+                },
             )
         elif event_type == "invoice_received":
             decision, confidence, reasoning = await _orchestrate_invoice_received(
@@ -480,6 +502,10 @@ async def run_orchestrator_job(
                     decision = overridden
 
         # Audit BEFORE updating execution
+        logger.info(
+            "orchestrator_audit_write",
+            extra={"execution_id": execution_id, "decision": decision, "duration_ms": duration_ms},
+        )
         await write_audit_log(
             tenant_id=tenant_id,
             actor=f"orchestrator:{event_type}",
@@ -496,6 +522,7 @@ async def run_orchestrator_job(
             model_version="orchestrator-v1",
             execution_id=execution_id,
         )
+        logger.info("orchestrator_audit_done", extra={"execution_id": execution_id})
 
         if decision == Decision.APPROVAL_REQUIRED.value:
             settings = get_settings()
@@ -556,13 +583,26 @@ async def _orchestrate_transaction_posted(
     """Runs the AI Accountant inline so the execution record reflects the real result."""
     from app.tools.ai_accountant import AIAccountantTool
     transaction_ids = payload.get("transaction_ids", [])
+    logger.info(
+        "transaction_posted_enter",
+        extra={
+            "execution_id": execution_id,
+            "tool_id": tool_id,
+            "transaction_count": len(transaction_ids),
+        },
+    )
     if not transaction_ids:
+        logger.warning("transaction_posted_no_ids", extra={"execution_id": execution_id})
         return "blocked", 0.0, "No transaction_ids in payload"
 
     db = get_db()
     tool_record = await db.tool.find_unique(where={"id": tool_id})
     policy_config = (
         tool_record.config_json if tool_record and isinstance(tool_record.config_json, dict) else {}
+    )
+    logger.info(
+        "transaction_posted_policy_loaded",
+        extra={"execution_id": execution_id, "policy_keys": list(policy_config.keys())},
     )
 
     result = await AIAccountantTool().run(
@@ -574,6 +614,16 @@ async def _orchestrate_transaction_posted(
     )
 
     n = len(result.results)
+    logger.info(
+        "transaction_posted_done",
+        extra={
+            "execution_id": execution_id,
+            "categorised": n,
+            "of_total": len(transaction_ids),
+            "decision": result.decision,
+            "confidence": result.confidence,
+        },
+    )
     return result.decision, result.confidence, f"Categorised {n} of {len(transaction_ids)} transactions"
 
 

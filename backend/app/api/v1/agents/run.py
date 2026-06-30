@@ -197,6 +197,17 @@ async def trigger_agent(
     )
 
     event_type = TOOL_TYPE_TO_EVENT.get(tool.type, "invoice_received")
+    _logger.info(
+        "trigger_received",
+        extra={
+            "tool_id": tool_id,
+            "tool_type": tool.type,
+            "event_type": event_type,
+            "tenant_id": tenant_id,
+            "payload_keys": list(body.payload.keys()),
+            "transaction_count": len(body.payload.get("transaction_ids", [])),
+        },
+    )
 
     # --- Create execution record ---
     execution = await db.execution.create(
@@ -227,6 +238,8 @@ async def trigger_agent(
         extra={
             "execution_id": execution.id,
             "tool_id": tool_id,
+            "tool_type": tool.type,
+            "event_type": event_type,
             "tenant_id": tenant_id,
             "source": "dashboard",
         },

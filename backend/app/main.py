@@ -77,8 +77,24 @@ def create_app() -> FastAPI:
     async def inject_trace_id(request: Request, call_next):
         trace_id = request.headers.get("X-Trace-ID") or str(uuid.uuid4())
         set_trace_id(trace_id)
-        response = await call_next(request)
+        logger.info(
+            "http_request",
+            extra={"method": request.method, "path": request.url.path, "trace_id": trace_id},
+        )
+        try:
+            response = await call_next(request)
+        except Exception as exc:
+            logger.error(
+                "http_unhandled_exception",
+                extra={"method": request.method, "path": request.url.path, "error": str(exc)},
+                exc_info=True,
+            )
+            raise
         response.headers["X-Trace-ID"] = trace_id
+        logger.info(
+            "http_response",
+            extra={"method": request.method, "path": request.url.path, "status": response.status_code},
+        )
         return response
 
     @app.get("/", include_in_schema=False)

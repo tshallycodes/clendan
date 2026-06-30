@@ -102,6 +102,15 @@ class AIAccountantTool:
         policy = _parse_policy(policy_config or {})
 
         # STEP 1: Receive + validate
+        logger.info(
+            "ai_accountant_start",
+            extra={
+                "execution_id": execution_id,
+                "tenant_id": tenant_id,
+                "tool_id": tool_id,
+                "transaction_count": len(transaction_ids),
+            },
+        )
         if not transaction_ids:
             raise ValueError("transaction_ids cannot be empty")
         if not tenant_id:
@@ -110,8 +119,16 @@ class AIAccountantTool:
         capped = transaction_ids[: policy.max_batch_size]
 
         # STEP 2: Classify — fetch transactions scoped to tenant
+        logger.info(
+            "ai_accountant_step2_fetch",
+            extra={"execution_id": execution_id, "capped_count": len(capped)},
+        )
         transactions = await db.banktransaction.find_many(
             where={"id": {"in": capped}, "tenant_id": tenant_id}
+        )
+        logger.info(
+            "ai_accountant_step2_fetched",
+            extra={"execution_id": execution_id, "found": len(transactions)},
         )
         if not transactions:
             raise ValueError("No transactions found for tenant")
@@ -122,6 +139,10 @@ class AIAccountantTool:
             order={"created_at": "desc"},
         )
 
+        logger.info(
+            "ai_accountant_step2b_prior_fetch",
+            extra={"execution_id": execution_id, "lookback_days": policy.lookback_days},
+        )
         # STEP 2b: Fetch prior-period transactions for category drift detection
         lookback_days = policy.lookback_days
         lookback_cutoff = datetime.now(UTC) - timedelta(days=lookback_days)
@@ -137,11 +158,24 @@ class AIAccountantTool:
             t.category for t in prior_transactions
         )
 
+        logger.info(
+            "ai_accountant_step3_claude_start",
+            extra={
+                "execution_id": execution_id,
+                "transaction_count": len(transactions),
+                "invoice_count": len(invoices),
+                "prior_txn_count": len(prior_transactions),
+            },
+        )
         # STEP 3: Execute — call Claude with retry
         results, reasoning_trace = await self._call_claude(
             transactions, invoices, policy, prior_category_dist, tenant_id
         )
 
+        logger.info(
+            "ai_accountant_step3_claude_done",
+            extra={"execution_id": execution_id, "result_count": len(results)},
+        )
         # STEP 3b: Category drift detection
         current_category_dist: Counter[str] = Counter(
             r.ai_category for r in results
@@ -195,6 +229,16 @@ class AIAccountantTool:
 
         duration_ms = int((time.monotonic() - start) * 1000)
 
+        logger.info(
+            "ai_accountant_step4_policy",
+            extra={
+                "execution_id": execution_id,
+                "overall_decision": overall_decision,
+                "overall_confidence": overall_confidence,
+                "violations": len(policy_violations),
+                "significant_shifts": len(significant_shifts),
+            },
+        )
         # STEP 5: Output — write results to DB only if not blocked
         if overall_decision != "blocked":
             for r in results:
@@ -207,6 +251,10 @@ class AIAccountantTool:
                     },
                 )
 
+        logger.info(
+            "ai_accountant_step5_db_writes_done",
+            extra={"execution_id": execution_id, "wrote_results": overall_decision != "blocked"},
+        )
         # STEP 6: Write Execution record
         # When called inline from the orchestrator, execution_id is provided — update that record.
         # When called as a standalone arq job, create a new record.
@@ -226,6 +274,10 @@ class AIAccountantTool:
             )
             resolved_execution_id = created.id
 
+        logger.info(
+            "ai_accountant_step7_audit_start",
+            extra={"execution_id": resolved_execution_id},
+        )
         # STEP 7: Audit — append-only, must succeed or operation fails
         await write_audit_log(
             tenant_id=tenant_id,
