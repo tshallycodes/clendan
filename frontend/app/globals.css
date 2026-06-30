@@ -47,8 +47,8 @@
   --color-brand-info:    #00a8cc;
   --color-brand-warning: #f5a623;
 
-  --font-heading: 'Space Grotesk', sans-serif;
-  --font-body:    'Red Hat Mono', monospace;
+  --font-heading: 'Sora', sans-serif;
+  --font-body:    'Geist Mono', monospace;
   --font-mono:    var(--font-body);
 
   /* Border radius scale — rounded across the app */
@@ -88,7 +88,11 @@
 body {
   background-color: var(--brand-bg);
   color: var(--brand-text);
-  font-family: var(--font-body), 'Red Hat Mono', monospace;
+  font-family: var(--font-body), 'Geist Mono', monospace;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading), 'Sora', sans-serif;
 }
 
 @keyframes float {

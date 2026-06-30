@@ -1,21 +1,20 @@
 ﻿import type { Metadata } from 'next'
-import { Space_Grotesk, Red_Hat_Mono } from 'next/font/google'
+import { Sora, Geist_Mono } from 'next/font/google'
 import { ClerkProvider } from '@clerk/nextjs'
 import { Providers } from '@/components/Providers'
 import { WarningBanner } from '@/components/WarningBanner'
 import './globals.css'
 
-const spaceGrotesk = Space_Grotesk({
+const sora = Sora({
   variable: '--font-heading',
   subsets: ['latin'],
-  weight: ['300', '400', '500', '600', '700'],
+  weight: ['300', '400', '500', '600'],
 })
 
-const redHatMono = Red_Hat_Mono({
+const geistMono = Geist_Mono({
   variable: '--font-body',
   subsets: ['latin'],
-  weight: ['300', '400', '500', '600', '700'],
-  style: ['normal', 'italic'],
+  weight: ['300', '400', '500', '600'],
 })
 
 export const metadata: Metadata = {
@@ -31,7 +30,7 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <ClerkProvider>
-      <html lang="en" className={`${spaceGrotesk.variable} ${redHatMono.variable} h-full`} suppressHydrationWarning>
+      <html lang="en" className={`${sora.variable} ${geistMono.variable} h-full`} suppressHydrationWarning>
         <head>
           <script
             dangerouslySetInnerHTML={{
