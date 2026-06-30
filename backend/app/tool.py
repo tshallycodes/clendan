@@ -107,7 +107,7 @@ async def run_orchestrator_job(
 
         if event_type == "transaction_posted":
             decision, confidence, reasoning = await _orchestrate_transaction_posted(
-                payload, tenant_id, tool_id
+                payload, tenant_id, tool_id, execution_id
             )
         elif event_type == "invoice_received":
             decision, confidence, reasoning = await _orchestrate_invoice_received(
@@ -551,9 +551,10 @@ async def run_orchestrator_job(
 
 
 async def _orchestrate_transaction_posted(
-    payload: dict, tenant_id: str, tool_id: str
+    payload: dict, tenant_id: str, tool_id: str, execution_id: str
 ) -> tuple[str, float, str]:
-    """Routes transaction_posted to the AI Accountant tool via arq."""
+    """Runs the AI Accountant inline so the execution record reflects the real result."""
+    from app.tools.ai_accountant import AIAccountantTool
     transaction_ids = payload.get("transaction_ids", [])
     if not transaction_ids:
         return "blocked", 0.0, "No transaction_ids in payload"
@@ -564,16 +565,16 @@ async def _orchestrate_transaction_posted(
         tool_record.config_json if tool_record and isinstance(tool_record.config_json, dict) else {}
     )
 
-    pool = await get_queue_pool()
-    await pool.enqueue_job(
-        "run_ai_accountant",
+    result = await AIAccountantTool().run(
         transaction_ids=transaction_ids,
         tenant_id=tenant_id,
         tool_id=tool_id,
         policy_config=policy_config,
+        execution_id=execution_id,
     )
 
-    return "routed", 1.0, f"Routed {len(transaction_ids)} transactions to AI Accountant"
+    n = len(result.results)
+    return result.decision, result.confidence, f"Categorised {n} of {len(transaction_ids)} transactions"
 
 
 async def _orchestrate_invoice_received(

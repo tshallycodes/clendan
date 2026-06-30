@@ -93,6 +93,7 @@ class AIAccountantTool:
         tenant_id: str,
         tool_id: str,
         policy_config: dict[str, Any] | None = None,
+        execution_id: str | None = None,
     ) -> ToolResult:
         start = time.monotonic()
         trace_id = get_trace_id()
@@ -206,23 +207,29 @@ class AIAccountantTool:
                 )
 
         # STEP 6: Write Execution record
-        execution = await db.execution.create(
-            data={
-                "tenant_id": tenant_id,
-                "tool_id": tool_id,
-                "input_ref": json.dumps({"transaction_ids": transaction_ids, "trace_id": trace_id}),
-                "decision": overall_decision,
-                "confidence": overall_confidence,
-                "status": "completed",
-                "duration_ms": duration_ms,
-            }
-        )
+        # When called inline from the orchestrator, execution_id is provided — update that record.
+        # When called as a standalone arq job, create a new record.
+        if execution_id:
+            resolved_execution_id = execution_id
+        else:
+            created = await db.execution.create(
+                data={
+                    "tenant_id": tenant_id,
+                    "tool_id": tool_id,
+                    "input_ref": json.dumps({"transaction_ids": transaction_ids, "trace_id": trace_id}),
+                    "decision": overall_decision,
+                    "confidence": overall_confidence,
+                    "status": "completed",
+                    "duration_ms": duration_ms,
+                }
+            )
+            resolved_execution_id = created.id
 
         # STEP 7: Audit — append-only, must succeed or operation fails
         await db.auditlog.create(
             data={
                 "tenant_id": tenant_id,
-                "execution_id": execution.id,
+                "execution_id": resolved_execution_id,
                 "actor": f"tool:{tool_id}",
                 "action": "ai_accountant:categorise_and_match",
                 "reasoning_trace_json": {
@@ -261,7 +268,7 @@ class AIAccountantTool:
         )
 
         return ToolResult(
-            execution_id=execution.id,
+            execution_id=resolved_execution_id,
             decision=overall_decision,
             confidence=overall_confidence,
             results=results,
