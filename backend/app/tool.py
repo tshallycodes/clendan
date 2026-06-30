@@ -541,10 +541,11 @@ async def run_orchestrator_job(
                     "expires_at": datetime.now(UTC) + timedelta(seconds=ttl),
                 })
 
+        final_status = "cancelled" if decision == "cancelled" else "completed"
         await db.execution.update(
             where={"id": execution_id},
             data={
-                "status": "completed",
+                "status": final_status,
                 "decision": decision,
                 "confidence": confidence,
                 "duration_ms": duration_ms,

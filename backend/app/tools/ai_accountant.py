@@ -176,8 +176,8 @@ class AIAccountantTool:
             },
         )
         # STEP 3: Execute — call Claude with retry
-        results, reasoning_trace = await self._call_claude(
-            transactions, invoices, policy, prior_category_dist, tenant_id
+        results, reasoning_trace, was_cancelled = await self._call_claude(
+            transactions, invoices, policy, prior_category_dist, tenant_id, execution_id
         )
 
         logger.info(
@@ -247,7 +247,10 @@ class AIAccountantTool:
                 "significant_shifts": len(significant_shifts),
             },
         )
-        # STEP 5: Output — write results to DB only if not blocked
+        if was_cancelled:
+            overall_decision = "cancelled"
+
+        # STEP 5: Output — write partial results to DB unless blocked
         if overall_decision != "blocked":
             for r in results:
                 await db.banktransaction.update(
@@ -343,7 +346,8 @@ class AIAccountantTool:
         policy: _ToolPolicy,
         prior_category_dist: Counter[str] | None = None,
         tenant_id: str = "",
-    ) -> tuple[list[TransactionResult], str]:
+        execution_id: str | None = None,
+    ) -> tuple[list[TransactionResult], str, bool]:
         settings = get_settings()
         client = anthropic.AsyncAnthropic(api_key=settings.anthropic_api_key)
         db = get_db()
@@ -464,12 +468,22 @@ class AIAccountantTool:
         ]
         all_parsed: list[dict] = []
         all_raws: list[str] = []
+        was_cancelled = False
         logger.info(
             "ai_accountant_claude_batches",
             extra={"total_txns": len(txn_list), "batches": len(chunks), "batch_size": self._CLAUDE_BATCH_SIZE},
         )
 
         for batch_idx, batch in enumerate(chunks):
+            if batch_idx > 0 and execution_id:
+                exec_record = await db.execution.find_unique(where={"id": execution_id})
+                if exec_record and exec_record.status == "cancelled":
+                    was_cancelled = True
+                    logger.info(
+                        "ai_accountant_cancelled_between_batches",
+                        extra={"execution_id": execution_id, "completed_batches": batch_idx, "remaining": len(chunks) - batch_idx},
+                    )
+                    break
             prompt = _build_prompt(batch)
             last_exc: Exception = RuntimeError("No attempts made")
             raw = ""
@@ -545,7 +559,7 @@ class AIAccountantTool:
                 decision=decision,
             ))
 
-        return results, raw
+        return results, raw, was_cancelled
 
 
 async def run_ai_accountant(

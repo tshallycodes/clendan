@@ -144,6 +144,32 @@ async def run_agent(
     )
 
 
+@router.post("/{tool_id}/executions/{execution_id}/cancel")
+async def cancel_execution(
+    current_user: RequireOrgAuth,
+    tool_id: str = Path(...),
+    execution_id: str = Path(...),
+):
+    """Mark a queued or running execution as cancelled. The AI Accountant checks this flag between batches."""
+    db = get_db()
+    tenant_id = current_user.tenant_id
+
+    execution = await db.execution.find_first(
+        where={"id": execution_id, "tenant_id": tenant_id, "tool_id": tool_id}
+    )
+    if not execution:
+        raise HTTPException(status_code=404, detail="Execution not found")
+    if execution.status not in ("queued", "running"):
+        raise HTTPException(status_code=409, detail=f"Execution is already {execution.status}")
+
+    await db.execution.update(
+        where={"id": execution_id},
+        data={"status": "cancelled", "decision": "cancelled"},
+    )
+
+    return standard_response(data={"execution_id": execution_id, "status": "cancelled"})
+
+
 class TriggerRequest(BaseModel):
     payload: dict[str, Any] = {}
 

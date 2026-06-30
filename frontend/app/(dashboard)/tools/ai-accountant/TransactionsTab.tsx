@@ -220,6 +220,7 @@ interface Props {
   onFilterChange: (f: StatusFilter) => void
   onCategoryUpdate: (id: string, category: string) => void
   onCategoriseNow: () => void
+  onStop: () => void
   onExportCsv: () => void
   onLoadMore: () => void
 }
@@ -227,7 +228,7 @@ interface Props {
 export function TransactionsTab({
   transactions, total, offset, loadingMore,
   filter, counts, categories, running, deployedId, pendingCount,
-  onFilterChange, onCategoryUpdate, onCategoriseNow, onExportCsv, onLoadMore,
+  onFilterChange, onCategoryUpdate, onCategoriseNow, onStop, onExportCsv, onLoadMore,
 }: Props) {
   /* ── Column filter state ─────────────────────────────────────── */
   const [columnFilters, setColumnFilters] = useState<Record<ColumnFilterKey, Set<string>>>({
@@ -332,14 +333,30 @@ export function TransactionsTab({
           >
             Export CSV
           </button>
-          <button
-            type="button"
-            onClick={onCategoriseNow}
-            disabled={!deployedId || running || pendingCount === 0}
-            className="text-xs font-body bg-[#00C853] text-black hover:bg-[#00a844] active:scale-[0.97] rounded-sm px-4 py-1.5 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-          >
-            {running ? 'Categorising…' : `Categorise Now (${pendingCount})`}
-          </button>
+          {running ? (
+            <div className="flex items-center gap-2">
+              <span className="flex items-center gap-1.5 text-xs font-body text-brand-muted">
+                <span className="h-1.5 w-1.5 rounded-full bg-[#00C853] animate-pulse shrink-0" />
+                Categorising…
+              </span>
+              <button
+                type="button"
+                onClick={onStop}
+                className="text-xs font-body border border-[#ff4d6d] text-[#ff4d6d] hover:bg-[rgba(255,77,109,0.1)] active:scale-[0.97] rounded-sm px-3 py-1.5 transition-all"
+              >
+                Stop
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={onCategoriseNow}
+              disabled={!deployedId || pendingCount === 0}
+              className="text-xs font-body bg-[#00C853] text-black hover:bg-[#00a844] active:scale-[0.97] rounded-sm px-4 py-1.5 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              {`Categorise Now (${pendingCount})`}
+            </button>
+          )}
         </div>
       </div>
 

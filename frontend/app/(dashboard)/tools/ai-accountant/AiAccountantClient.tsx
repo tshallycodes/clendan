@@ -161,7 +161,7 @@ export function AiAccountantClient() {
     if (!polling) return
     let active = true
 
-    const checkExecution = async (token: string): Promise<'running' | 'done' | 'blocked' | 'failed'> => {
+    const checkExecution = async (token: string): Promise<'running' | 'done' | 'blocked' | 'failed' | 'cancelled'> => {
       const execId = triggeredExecutionIdRef.current
       if (!execId || !deployed?.id) return 'running'
       const res = await fetch(
@@ -173,6 +173,7 @@ export function AiAccountantClient() {
       const exec = (json.data?.executions ?? []).find((e: { id: string }) => e.id === execId)
       if (!exec) return 'running'
       if (exec.status === 'queued' || exec.status === 'running') return 'running'
+      if (exec.status === 'cancelled') return 'cancelled'
       if (exec.status === 'failed') return 'failed'
       if (exec.decision === 'blocked') return 'blocked'
       return 'done'
@@ -184,6 +185,14 @@ export function AiAccountantClient() {
       if (!token) return
       const execState = await checkExecution(token)
 
+      if (execState === 'cancelled') {
+        active = false
+        setPolling(false)
+        setRunning(false)
+        await fetchTransactions(0, true)
+        toast('Categorisation stopped', 'info')
+        return
+      }
       if (execState === 'failed') {
         active = false
         setPolling(false)
@@ -215,7 +224,7 @@ export function AiAccountantClient() {
       active = false
       setPolling(false)
       setRunning(false)
-    }, 5 * 60 * 1000)
+    }, 12 * 60 * 1000)
     return () => { active = false; clearInterval(interval); clearTimeout(timeout) }
   }, [polling, fetchTransactions, fetchPendingApprovals, toast, getToken, deployed?.id])
 
@@ -293,6 +302,20 @@ export function AiAccountantClient() {
     } catch (err) {
       toast(err instanceof Error ? err.message : 'Network error', 'error')
       setRunning(false)
+    }
+  }
+
+  async function handleStopCategorise() {
+    const execId = triggeredExecutionIdRef.current
+    if (!execId || !deployed?.id) return
+    try {
+      const token = await getToken()
+      await fetch(`${API}/agents/${deployed.id}/executions/${execId}/cancel`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      })
+    } catch (err) {
+      toast(err instanceof Error ? err.message : 'Failed to stop', 'error')
     }
   }
 
@@ -556,6 +579,7 @@ export function AiAccountantClient() {
               onFilterChange={setFilter}
               onCategoryUpdate={handleCategoryUpdate}
               onCategoriseNow={handleCategoriseNow}
+              onStop={handleStopCategorise}
               onExportCsv={handleExportCsv}
               onLoadMore={handleLoadMore}
             />
