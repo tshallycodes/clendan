@@ -101,6 +101,7 @@ async def list_payroll_runs(current_user: RequireOrgAuth) -> dict:
                 "total_payroll_minor": r.total_payroll_minor,
                 "execution_id": r.execution_id,
                 "created_at": r.created_at.isoformat(),
+                "roster_json": r.roster_json,
             }
             for r in runs
         ]

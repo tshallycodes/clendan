@@ -1,6 +1,6 @@
 ﻿'use client'
 
-import { useState, useCallback, useMemo, useRef } from 'react'
+import { useState, useCallback, useEffect, useMemo, useRef } from 'react'
 import { useAuth } from '@clerk/nextjs'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useCurrency, useToast } from '@/components/Providers'
@@ -16,6 +16,11 @@ interface ParsedEmployee {
   error?: string
 }
 
+interface RosterEntry {
+  name: string
+  expected_minor: number
+}
+
 interface PayrollRun {
   id: string
   period: string
@@ -26,6 +31,7 @@ interface PayrollRun {
   discrepancy_count: number
   total_payroll_minor: number
   created_at: string
+  roster_json?: RosterEntry[]
 }
 
 interface GhostRow {
@@ -192,7 +198,21 @@ export function PayrollRecTab({ toolId }: { toolId: string | null }) {
   const [history, setHistory] = useState<PayrollRun[]>([])
   const [loadingHistory, setLoadingHistory] = useState(false)
   const [historyLoaded, setHistoryLoaded] = useState(false)
+  const [savedRoster, setSavedRoster] = useState<RosterEntry[]>([])
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    if (!toolId) return
+    async function fetchSavedRoster() {
+      const token = await getToken()
+      const res = await fetch(`${API}/payroll-runs`, { headers: { Authorization: `Bearer ${token}` } })
+      if (!res.ok) return
+      const json = await res.json()
+      const runs: PayrollRun[] = json.data?.runs ?? []
+      if (runs.length > 0) setSavedRoster(runs[0].roster_json ?? [])
+    }
+    fetchSavedRoster()
+  }, [toolId, getToken])
 
   const parsed = useMemo(() => parseRosterText(rosterText), [rosterText])
   const parseErrors = parsed.filter(p => p.error)
@@ -298,6 +318,7 @@ export function PayrollRecTab({ toolId }: { toolId: string | null }) {
             setActiveRun(run)
             setResults(run.results_json ?? null)
             setHistoryLoaded(false)
+            setSavedRoster(rosterPayload)
             completed = true
             const issues = (run.ghost_count ?? 0) + (run.missing_count ?? 0) + (run.discrepancy_count ?? 0)
             toast(issues > 0 ? `Rec complete — ${issues} issue${issues !== 1 ? 's' : ''} found` : 'Payroll rec complete — all clear', issues > 0 ? 'info' : 'success')
@@ -360,8 +381,40 @@ export function PayrollRecTab({ toolId }: { toolId: string | null }) {
               </button>
             </div>
           </div>
+          {savedRoster.length > 0 && (
+            <div className="bg-brand-bg border border-brand-border rounded-sm overflow-hidden">
+              <div className="flex items-center justify-between px-3 py-2 border-b border-brand-border">
+                <span className="text-[10px] font-body uppercase tracking-widest text-brand-muted">
+                  Saved · {savedRoster.length} employee{savedRoster.length !== 1 ? 's' : ''}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setRosterText(savedRoster.map(e => `${e.name}, ${(e.expected_minor / 100).toFixed(0)}`).join('\n'))}
+                  className="text-[10px] font-body text-brand-muted hover:text-brand-text transition-colors"
+                >
+                  Load into editor
+                </button>
+              </div>
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-brand-border">
+                    <th className="text-left text-[10px] font-body uppercase tracking-widest text-brand-muted px-3 py-2">Name</th>
+                    <th className="text-right text-[10px] font-body uppercase tracking-widest text-brand-muted px-3 py-2">Monthly Salary</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {savedRoster.map(e => (
+                    <tr key={e.name} className="border-b border-brand-border last:border-0 hover:bg-brand-elevated transition-colors">
+                      <td className="px-3 py-2 text-xs font-body text-brand-text">{e.name}</td>
+                      <td className="px-3 py-2 text-xs font-body text-brand-secondary text-right">{formatMinor(e.expected_minor, currencySymbol)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
           <textarea
-            rows={8}
+            rows={savedRoster.length > 0 ? 5 : 8}
             value={rosterText}
             onChange={e => setRosterText(e.target.value)}
             placeholder={`Paste your roster — one employee per line:\n\nJane Smith, 5000\nBob Jones, 4500\nAlice Chen, 6200\n\nFormat: Name, Monthly salary`}
