@@ -221,6 +221,64 @@ with open("assessments.csv", "w", newline="") as f:
     writer.writeheader()
     writer.writerows(trace["claude_assessments"])`} />
         </div>
+
+        <div className="space-y-3">
+          <p className="text-[10px] font-mono uppercase tracking-widest text-brand-muted">reasoning_trace shape — ai_accountant</p>
+          <CodeBlock lang="json" code={`{
+  "trace_id": "trc_...",
+  "results": [
+    {
+      "transaction_id":     "txn_abc123",
+      "ai_category":        "software",
+      "matched_invoice_id": "inv_6a8f",
+      "confidence":         0.96,
+      "reasoning":          "Merchant 'AWS' matches open invoice INV-2026-041 within 2% amount tolerance"
+    },
+    {
+      "transaction_id":     "txn_def456",
+      "ai_category":        "payroll",
+      "matched_invoice_id": null,
+      "confidence":         0.91,
+      "reasoning":          "Description 'BACS PAYROLL RUN' matches payroll keyword list"
+    }
+  ],
+  "category_distribution":            { "software": 14, "payroll": 3, "utilities": 2 },
+  "prior_period_category_distribution": { "software": 12, "payroll": 3, "utilities": 3 },
+  "category_shifts":      [],
+  "has_significant_shifts": false,
+  "policy_violations":    []
+}`} />
+          <p className="text-xs font-mono text-brand-muted">
+            <code className="text-brand-text">results</code> contains one entry per transaction.{' '}
+            <code className="text-brand-text">matched_invoice_id</code> is{' '}
+            <code className="text-brand-text">null</code> when no open invoice matches within 10% amount tolerance.
+            Per-transaction <code className="text-brand-text">decision</code>:{' '}
+            <code className="text-[#00C853]">auto</code> /{' '}
+            <code className="text-[#f5a623]">pending</code> /{' '}
+            <code className="text-[#ff4d6d]">blocked</code>.
+          </p>
+          <CodeBlock lang="python" code={`import requests, time, uuid
+
+res = requests.post(
+    "${BASE_URL}/execute",
+    headers={"Authorization": "ck_live_...", "Idempotency-Key": str(uuid.uuid4()), "Content-Type": "application/json"},
+    json={"tool": "ai_accountant", "payload": {"transaction_ids": ["txn_abc123", "txn_def456"]}},
+)
+execution_id = res.json()["data"]["execution_id"]
+
+while True:
+    result = requests.get(
+        f"${BASE_URL}/execute/{'{'}execution_id{'}'}",
+        headers={"Authorization": "ck_live_..."},
+    ).json()
+    if result["data"]["status"] not in ("queued", "running"):
+        break
+    time.sleep(1)
+
+trace = result["data"]["reasoning_trace"]
+for r in trace["results"]:
+    print(r["transaction_id"], r["ai_category"], r["confidence"])`} />
+        </div>
       </section>
 
       <section className="space-y-4">
@@ -376,6 +434,53 @@ with open("assessments.csv", "w", newline="") as f:
       "match_date_window_days":     60,
       "match_amount_tolerance_pct": 0.02,
       "include_reconciled":         false
+    }
+  }
+}`} />
+        </div>
+
+        {/* AI Accountant */}
+        <div className="space-y-2">
+          <p className="text-xs font-mono text-brand-text font-medium">ai_accountant</p>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs font-mono border border-brand-border rounded-sm">
+              <thead>
+                <tr className="border-b border-brand-border bg-brand-elevated">
+                  <th className="text-left px-3 py-2 text-brand-muted font-medium">Field</th>
+                  <th className="text-left px-3 py-2 text-brand-muted font-medium">Type</th>
+                  <th className="text-left px-3 py-2 text-brand-muted font-medium">Default</th>
+                  <th className="text-left px-3 py-2 text-brand-muted font-medium">Description</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-brand-border">
+                {[
+                  ['transaction_ids',                    'string[]',     'required',  'IDs of bank transactions to categorise and match'],
+                  ['policy.auto_categorise_confidence_min',  'integer 0–100', '85',   'Confidence at or above which the tool auto-approves the categorisation'],
+                  ['policy.human_review_confidence_min',     'integer 0–100', '50',   'Confidence below which the result is routed to the approval queue'],
+                  ['policy.bulk_categorise_batch_size',      'integer',       '500',  'Maximum number of transactions processed in a single run'],
+                  ['policy.learn_from_corrections',          'boolean',       'true', 'Include recent manual corrections as few-shot examples for Claude'],
+                  ['policy.strict_coa_mode',                 'boolean',       'true', 'Restrict output to predefined chart-of-accounts categories only'],
+                  ['policy.max_correction_examples',         'integer',       '10',   'Maximum number of correction examples passed to Claude per run'],
+                ].map(([field, type, def, desc]) => (
+                  <tr key={field} className="hover:bg-brand-bg">
+                    <td className="px-3 py-2 text-[#00C853]">{field}</td>
+                    <td className="px-3 py-2 text-brand-muted">{type}</td>
+                    <td className="px-3 py-2 text-brand-muted">{def}</td>
+                    <td className="px-3 py-2 text-brand-secondary">{desc}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <CodeBlock lang="json" code={`{
+  "tool": "ai_accountant",
+  "payload": {
+    "transaction_ids": ["txn_abc123", "txn_def456"],
+    "policy": {
+      "auto_categorise_confidence_min": 90,
+      "human_review_confidence_min":    60,
+      "strict_coa_mode":                true,
+      "learn_from_corrections":         true
     }
   }
 }`} />
