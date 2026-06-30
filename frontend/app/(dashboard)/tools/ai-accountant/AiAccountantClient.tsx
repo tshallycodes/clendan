@@ -92,6 +92,7 @@ export function AiAccountantClient() {
   const [toggling, setToggling] = useState(false)
   const [deploying, setDeploying] = useState(false)
   const pollStartCategorisedRef = useRef(0)
+  const triggeredExecutionIdRef = useRef<string | null>(null)
 
   const fetchDeployed = useCallback(async () => {
     const token = await getToken()
@@ -141,12 +142,49 @@ export function AiAccountantClient() {
   useEffect(() => {
     if (!polling) return
     let active = true
+
+    const checkExecution = async (token: string): Promise<'running' | 'done' | 'blocked' | 'failed'> => {
+      const execId = triggeredExecutionIdRef.current
+      if (!execId || !deployed?.id) return 'running'
+      const res = await fetch(
+        `${API}/dashboard/executions?tool_id=${deployed.id}&limit=10`,
+        { headers: { Authorization: `Bearer ${token}` } },
+      ).catch(() => null)
+      if (!res?.ok) return 'running'
+      const json = await res.json()
+      const exec = (json.data?.executions ?? []).find((e: { id: string }) => e.id === execId)
+      if (!exec) return 'running'
+      if (exec.status === 'queued' || exec.status === 'running') return 'running'
+      if (exec.status === 'failed') return 'failed'
+      if (exec.decision === 'blocked') return 'blocked'
+      return 'done'
+    }
+
     const interval = setInterval(async () => {
       if (!active) return
+      const token = await getToken()
+      const execState = await checkExecution(token)
+
+      if (execState === 'failed') {
+        active = false
+        setPolling(false)
+        setRunning(false)
+        toast('Categorisation failed — check the Executions tab for details', 'error')
+        return
+      }
+      if (execState === 'blocked') {
+        active = false
+        setPolling(false)
+        setRunning(false)
+        await fetchTransactions(0, true)
+        toast('Categorisation blocked — confidence too low. Lower the confidence threshold in tool config.', 'error')
+        return
+      }
+
       const result = await fetchTransactions(0, true)
       if (!result) return
       const newCategorisedCount = result.categorised + result.matched
-      if (newCategorisedCount > pollStartCategorisedRef.current) {
+      if (execState === 'done' || newCategorisedCount > pollStartCategorisedRef.current) {
         active = false
         setPolling(false)
         setRunning(false)
@@ -159,7 +197,7 @@ export function AiAccountantClient() {
       setRunning(false)
     }, 5 * 60 * 1000)
     return () => { active = false; clearInterval(interval); clearTimeout(timeout) }
-  }, [polling, fetchTransactions, toast])
+  }, [polling, fetchTransactions, toast, getToken, deployed?.id])
 
   async function handleToggle() {
     if (!deployed) return
@@ -202,10 +240,11 @@ export function AiAccountantClient() {
   async function handleCategoriseNow() {
     if (!deployed?.id) { toast('Deploy the tool to continue', 'error'); return }
     if (running) return
-    const pending = transactions.filter(t => t.status === 'pending' || t.status === 'unprocessed')
-    if (pendingCount === 0) { toast('No uncategorised transactions', 'info'); return }
+    const pending = transactions.filter(t => t.status !== 'categorised' && t.status !== 'matched')
+    if (pendingCount === 0 || pending.length === 0) { toast('No uncategorised transactions', 'info'); return }
     setRunning(true)
     pollStartCategorisedRef.current = categorisedCount + matchedCount
+    triggeredExecutionIdRef.current = null
     try {
       const token = await getToken()
       const res = await fetch(`${API}/agents/${deployed.id}/trigger`, {
@@ -223,6 +262,8 @@ export function AiAccountantClient() {
         setRunning(false)
         return
       }
+      const triggerJson = await res.json().catch(() => null)
+      triggeredExecutionIdRef.current = triggerJson?.data?.execution_id ?? null
       setPolling(true)
     } catch (err) {
       toast(err instanceof Error ? err.message : 'Network error', 'error')
