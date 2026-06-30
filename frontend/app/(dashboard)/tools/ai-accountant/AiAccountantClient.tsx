@@ -78,7 +78,7 @@ export function AiAccountantClient() {
   const [activeTab, setActiveTab] = useState<Tab>('overview')
   const [deployed, setDeployed] = useState<Tool | null>(null)
   const [transactions, setTransactions] = useState<Transaction[]>([])
-  const [total, setTotal] = useState(0)
+  const [listTotal, setListTotal] = useState(0)
   const [pendingCount, setPendingCount] = useState(0)
   const [categorisedCount, setCategorisedCount] = useState(0)
   const [matchedCount, setMatchedCount] = useState(0)
@@ -86,6 +86,8 @@ export function AiAccountantClient() {
   const [loadingMore, setLoadingMore] = useState(false)
   const [categories, setCategories] = useState<{ income: string[]; expenses: string[] }>({ income: [], expenses: [] })
   const [filter, setFilter] = useState<StatusFilter>('all')
+  const filterRef = useRef<StatusFilter>('all')
+  const filterMountedRef = useRef(false)
   const [running, setRunning] = useState(false)
   const [polling, setPolling] = useState(false)
   const [showConfig, setShowConfig] = useState(false)
@@ -106,19 +108,19 @@ export function AiAccountantClient() {
     return found
   }, [getToken])
 
-  const fetchTransactions = useCallback(async (fromOffset = 0, replace = true) => {
+  const fetchTransactions = useCallback(async (fromOffset = 0, replace = true, statusFilter?: StatusFilter) => {
     const token = await getToken()
-    const res = await fetch(
-      `${API}/transactions?limit=${PAGE_SIZE}&offset=${fromOffset}`,
-      { headers: { Authorization: `Bearer ${token}` } },
-    )
+    const params = new URLSearchParams({ limit: String(PAGE_SIZE), offset: String(fromOffset) })
+    const sf = statusFilter ?? filterRef.current
+    if (sf && sf !== 'all') params.set('status', sf)
+    const res = await fetch(`${API}/transactions?${params}`, { headers: { Authorization: `Bearer ${token}` } })
     if (!res.ok) return
     const json = await res.json()
     const txns: Transaction[] = json.data?.transactions ?? []
     const serverPending: number = json.data?.pending_count ?? 0
     const serverCategorised: number = json.data?.categorised_count ?? 0
     const serverMatched: number = json.data?.matched_count ?? 0
-    setTotal(json.data?.total ?? 0)
+    setListTotal(json.data?.total ?? 0)
     setPendingCount(serverPending)
     setCategorisedCount(serverCategorised)
     setMatchedCount(serverMatched)
@@ -217,6 +219,12 @@ export function AiAccountantClient() {
     return () => { active = false; clearInterval(interval); clearTimeout(timeout) }
   }, [polling, fetchTransactions, fetchPendingApprovals, toast, getToken, deployed?.id])
 
+  useEffect(() => {
+    filterRef.current = filter
+    if (!filterMountedRef.current) { filterMountedRef.current = true; return }
+    fetchTransactions(0, true, filter !== 'all' ? filter : undefined)
+  }, [filter, fetchTransactions])
+
   async function handleToggle() {
     if (!deployed) return
     setToggling(true)
@@ -308,7 +316,7 @@ export function AiAccountantClient() {
 
   async function handleLoadMore() {
     setLoadingMore(true)
-    try { await fetchTransactions(offset, false) } finally { setLoadingMore(false) }
+    try { await fetchTransactions(offset, false, filter !== 'all' ? filter : undefined) } finally { setLoadingMore(false) }
   }
 
   function handleCategoryUpdate(id: string, category: string) {
@@ -319,9 +327,10 @@ export function AiAccountantClient() {
   const badge = deployed ? (AUTONOMY_BADGE[deployed.autonomy_level] ?? AUTONOMY_BADGE.approve) : null
   const actionLoading = toggling || deploying
 
-  const categorisedPct = total > 0 ? Math.round(((categorisedCount + matchedCount) / total) * 100) : 0
+  const totalAll = pendingCount + categorisedCount + matchedCount
+  const categorisedPct = totalAll > 0 ? Math.round(((categorisedCount + matchedCount) / totalAll) * 100) : 0
   const counts: Record<StatusFilter, number> = {
-    all: total, pending: pendingCount, categorised: categorisedCount, matched: matchedCount,
+    all: totalAll, pending: pendingCount, categorised: categorisedCount, matched: matchedCount,
   }
 
   return (
@@ -419,7 +428,7 @@ export function AiAccountantClient() {
               <div className="grid grid-cols-4 gap-3">
                 <div className="bg-brand-surface border border-brand-border rounded-sm p-4">
                   <p className="text-[10px] font-mono text-brand-muted uppercase tracking-wider">Total</p>
-                  <p className="text-2xl font-mono font-semibold text-brand-text mt-1">{total}</p>
+                  <p className="text-2xl font-mono font-semibold text-brand-text mt-1">{totalAll}</p>
                   <p className="text-[10px] font-mono text-brand-muted mt-1">transactions</p>
                 </div>
                 <div className="bg-brand-surface border border-brand-border rounded-sm p-4">
@@ -434,7 +443,7 @@ export function AiAccountantClient() {
                   <p className={`text-2xl font-mono font-semibold mt-1 ${categorisedPct >= 90 ? 'text-[#00C853]' : 'text-brand-text'}`}>
                     {categorisedPct}%
                   </p>
-                  <p className="text-[10px] font-mono text-brand-muted mt-1">{categorisedCount + matchedCount} of {total}</p>
+                  <p className="text-[10px] font-mono text-brand-muted mt-1">{categorisedCount + matchedCount} of {totalAll}</p>
                 </div>
                 <div className="bg-brand-surface border border-brand-border rounded-sm p-4">
                   <p className="text-[10px] font-mono text-brand-muted uppercase tracking-wider">Matched</p>
@@ -536,7 +545,7 @@ export function AiAccountantClient() {
           {activeTab === 'transactions' && (
             <TransactionsTab
               transactions={transactions}
-              total={total}
+              total={listTotal}
               offset={offset}
               loadingMore={loadingMore}
               filter={filter}

@@ -34,7 +34,7 @@ export function TransactionsTab({
   filter, counts, categories, running, deployedId, pendingCount,
   onFilterChange, onCategoryUpdate, onCategoriseNow, onExportCsv, onLoadMore,
 }: Props) {
-  const filtered = filter === 'all' ? transactions : transactions.filter(t => t.status === filter)
+  const filtered = transactions
 
   return (
     <div className="space-y-3">
@@ -81,9 +81,9 @@ export function TransactionsTab({
         {filtered.length === 0 ? (
           <div className="px-5 py-16 text-center">
             <p className="text-xs font-mono text-brand-muted">
-              {transactions.length === 0
+              {filter === 'all'
                 ? 'No transactions yet — connect a bank account via Integrations.'
-                : 'No transactions match the selected filter.'}
+                : `No ${filter} transactions.`}
             </p>
           </div>
         ) : (
