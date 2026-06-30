@@ -410,16 +410,11 @@ export function ReconciliationClient() {
                   <div className="px-4 py-3 border-b border-brand-border">
                     <p className="text-[11px] font-body uppercase tracking-widest text-brand-muted">Configuration</p>
                   </div>
-                  <div className="px-4 py-4 grid grid-cols-3 gap-6">
+                  <div className="px-4 py-4 grid grid-cols-2 gap-6">
                     <div className="space-y-1.5">
                       <p className="text-[11px] font-body text-brand-muted uppercase tracking-widest">Autonomy</p>
                       {badge && <span className={`text-[11px] font-body px-2 py-0.5 rounded-sm inline-block ${badge.className}`}>{badge.label}</span>}
                       <p className="text-[11px] font-body text-brand-muted leading-relaxed">{AUTONOMY_DESC[deployed.autonomy_level] ?? ''}</p>
-                    </div>
-                    <div className="space-y-1.5">
-                      <p className="text-[11px] font-body text-brand-muted uppercase tracking-widest">Version</p>
-                      <p className="text-xs font-body text-brand-text">v{deployed.version}</p>
-                      <p className="text-[11px] font-body text-brand-muted">Increments on every config change</p>
                     </div>
                     <div className="space-y-1.5">
                       <p className="text-[11px] font-body text-brand-muted uppercase tracking-widest">Status</p>
