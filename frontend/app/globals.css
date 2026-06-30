@@ -47,8 +47,9 @@
   --color-brand-info:    #00a8cc;
   --color-brand-warning: #f5a623;
 
-  --font-heading: var(--font-syne);
-  --font-mono:    var(--font-ibm-plex-mono);
+  --font-heading: 'Space Grotesk', sans-serif;
+  --font-body:    'Red Hat Mono', monospace;
+  --font-mono:    var(--font-body);
 
   /* Border radius scale — rounded across the app */
   --radius-xs:  4px;
@@ -87,7 +88,7 @@
 body {
   background-color: var(--brand-bg);
   color: var(--brand-text);
-  font-family: var(--font-ibm-plex-mono), "IBM Plex Mono", monospace;
+  font-family: var(--font-body), 'Red Hat Mono', monospace;
 }
 
 @keyframes float {

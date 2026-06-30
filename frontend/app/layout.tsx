@@ -1,20 +1,21 @@
 ﻿import type { Metadata } from 'next'
-import { Syne, IBM_Plex_Mono } from 'next/font/google'
+import { Space_Grotesk, Red_Hat_Mono } from 'next/font/google'
 import { ClerkProvider } from '@clerk/nextjs'
 import { Providers } from '@/components/Providers'
 import { WarningBanner } from '@/components/WarningBanner'
 import './globals.css'
 
-const syne = Syne({
-  variable: '--font-syne',
+const spaceGrotesk = Space_Grotesk({
+  variable: '--font-heading',
   subsets: ['latin'],
-  weight: ['400', '600', '700', '800'],
+  weight: ['300', '400', '500', '600', '700'],
 })
 
-const ibmPlexMono = IBM_Plex_Mono({
-  variable: '--font-ibm-plex-mono',
+const redHatMono = Red_Hat_Mono({
+  variable: '--font-body',
   subsets: ['latin'],
-  weight: ['400', '500'],
+  weight: ['300', '400', '500', '600', '700'],
+  style: ['normal', 'italic'],
 })
 
 export const metadata: Metadata = {
@@ -30,7 +31,7 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <ClerkProvider>
-      <html lang="en" className={`${syne.variable} ${ibmPlexMono.variable} h-full`} suppressHydrationWarning>
+      <html lang="en" className={`${spaceGrotesk.variable} ${redHatMono.variable} h-full`} suppressHydrationWarning>
         <head>
           <script
             dangerouslySetInnerHTML={{

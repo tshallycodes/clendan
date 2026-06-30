@@ -61,7 +61,7 @@ export function ClenPanel({ mode, isOpen, onClose, position, pathname = '/dashbo
             <span className="text-[#00C853] font-mono font-bold text-sm leading-none">C</span>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
-                <span className="text-sm font-bold text-brand-text" style={{ fontFamily: 'var(--font-heading, Syne, sans-serif)' }}>
+                <span className="text-sm font-bold text-brand-text" style={{ fontFamily: 'var(--font-heading, sans-serif)' }}>
                   Clen
                 </span>
                 {mode === 'account' && (

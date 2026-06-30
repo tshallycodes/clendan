@@ -75,7 +75,7 @@ export default function JoinPage() {
       <div className="w-full max-w-sm flex flex-col items-center gap-8">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 border border-[#00C853] flex items-center justify-center font-bold text-[#00C853] font-mono text-sm">C</div>
-          <span className="text-brand-text font-bold tracking-widest uppercase text-sm" style={{ fontFamily: 'var(--font-syne, sans-serif)' }}>Clendan</span>
+          <span className="text-brand-text font-bold tracking-widest uppercase text-sm" style={{ fontFamily: 'var(--font-heading, sans-serif)' }}>Clendan</span>
         </div>
 
         <div className="w-full bg-brand-surface border border-brand-border rounded-sm p-6 space-y-5">
@@ -107,7 +107,7 @@ export default function JoinPage() {
             <>
               <div className="space-y-2">
                 <p className="text-[10px] font-mono text-brand-muted uppercase tracking-widest">You've been invited to</p>
-                <h1 className="text-xl font-bold text-brand-text" style={{ fontFamily: 'var(--font-syne, sans-serif)' }}>
+                <h1 className="text-xl font-bold text-brand-text" style={{ fontFamily: 'var(--font-heading, sans-serif)' }}>
                   {info.org_name}
                 </h1>
                 <div className="flex items-center gap-2 pt-0.5">
@@ -151,7 +151,7 @@ function StatusMessage({ icon, title, body, danger = false }: {
   return (
     <div className="text-center space-y-2 py-2">
       <p className="text-2xl font-mono" style={{ color: danger ? '#ff4d6d' : '#00C853' }}>{icon}</p>
-      <p className="text-sm font-bold text-brand-text" style={{ fontFamily: 'var(--font-syne, sans-serif)' }}>{title}</p>
+      <p className="text-sm font-bold text-brand-text" style={{ fontFamily: 'var(--font-heading, sans-serif)' }}>{title}</p>
       <p className="text-xs font-mono text-brand-muted leading-relaxed">{body}</p>
     </div>
   )

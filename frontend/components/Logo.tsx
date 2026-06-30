@@ -37,7 +37,7 @@ export function Logo({ size = 'md', iconOnly = false, className, href = '/' }: L
       {!iconOnly && (
         <span
           style={{
-            fontFamily: 'var(--font-syne)',
+            fontFamily: 'var(--font-heading)',
             fontWeight: 700,
             fontSize: text,
             letterSpacing: '0.01em',
