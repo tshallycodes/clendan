@@ -339,6 +339,8 @@ class AIAccountantTool:
             reasoning_trace=reasoning_trace,
         )
 
+    _CLAUDE_BATCH_SIZE = 50  # max transactions per Claude call to avoid output truncation
+
     async def _call_claude(
         self,
         transactions: list,
@@ -432,69 +434,94 @@ class AIAccountantTool:
                 f"keywords must be categorised as 'payroll': {policy.payroll_keywords}\n"
             )
 
-        prompt = f"""You are an AI accountant. Categorise each bank transaction and match it to an invoice if one exists.
+        system_context = (
+            f"ALLOWED CATEGORIES: {', '.join(sorted(ALLOWED_CATEGORIES))}\n"
+            f"{strict_coa_instruction}{payroll_hint}{drift_note}{correction_examples}"
+        )
 
-TRANSACTIONS:
-{json.dumps(txn_list, indent=2)}
+        def _build_prompt(batch: list[dict]) -> str:
+            return (
+                f"You are an AI accountant. Categorise each bank transaction and match it to an invoice if one exists.\n\n"
+                f"TRANSACTIONS:\n{json.dumps(batch, indent=2)}\n\n"
+                f"OPEN INVOICES:\n{json.dumps(invoice_list, indent=2)}\n\n"
+                f"{system_context}\n"
+                f"For each transaction, return a JSON array with this exact shape:\n"
+                f"[\n"
+                f"  {{\n"
+                f'    "transaction_id": "<id>",\n'
+                f'    "ai_category": "<category from allowed list>",\n'
+                f'    "matched_invoice_id": "<invoice id or null>",\n'
+                f'    "confidence": <0.0-1.0>,\n'
+                f'    "reasoning": "<one sentence>"\n'
+                f"  }}\n"
+                f"]\n\n"
+                f"Rules:\n"
+                f"- amount_minor is in cents (100 = $1.00). Use this when matching amounts to invoices.\n"
+                f"- matched_invoice_id must be null if no invoice matches within 10% amount tolerance and similar vendor name.\n"
+                f"- confidence reflects how certain you are of both the category and match.\n"
+                f"- Return ONLY the JSON array — no markdown, no explanation, no preamble."
+            )
 
-OPEN INVOICES:
-{json.dumps(invoice_list, indent=2)}
+        # Process in batches to avoid hitting Claude's output token limit
+        chunks = [
+            txn_list[i : i + self._CLAUDE_BATCH_SIZE]
+            for i in range(0, len(txn_list), self._CLAUDE_BATCH_SIZE)
+        ]
+        all_parsed: list[dict] = []
+        all_raws: list[str] = []
+        logger.info(
+            "ai_accountant_claude_batches",
+            extra={"total_txns": len(txn_list), "batches": len(chunks), "batch_size": self._CLAUDE_BATCH_SIZE},
+        )
 
-ALLOWED CATEGORIES: {", ".join(sorted(ALLOWED_CATEGORIES))}
-{strict_coa_instruction}{payroll_hint}{drift_note}{correction_examples}
-For each transaction, return a JSON array with this exact shape:
-[
-  {{
-    "transaction_id": "<id>",
-    "ai_category": "<category from allowed list>",
-    "matched_invoice_id": "<invoice id or null>",
-    "confidence": <0.0-1.0>,
-    "reasoning": "<one sentence>"
-  }}
-]
+        for batch_idx, batch in enumerate(chunks):
+            prompt = _build_prompt(batch)
+            last_exc: Exception = RuntimeError("No attempts made")
+            raw = ""
+            for attempt in range(settings.max_agent_attempts):
+                try:
+                    message = await client.messages.create(
+                        model=settings.claude_model,
+                        max_tokens=8192,
+                        messages=[{"role": "user", "content": prompt}],
+                    )
+                    raw = message.content[0].text.strip()
+                    parsed_batch = json.loads(_strip_markdown_fences(raw))
+                    all_parsed.extend(parsed_batch)
+                    all_raws.append(raw)
+                    logger.info(
+                        "ai_accountant_batch_done",
+                        extra={"batch": batch_idx + 1, "of": len(chunks), "items": len(parsed_batch)},
+                    )
+                    break
+                except (anthropic.APIStatusError, anthropic.APIConnectionError) as exc:
+                    last_exc = exc
+                    logger.warning(
+                        "ai_accountant_transient_error",
+                        extra={"batch": batch_idx + 1, "attempt": attempt + 1, "error": str(exc)},
+                    )
+                    if attempt < settings.max_agent_attempts - 1:
+                        await asyncio.sleep(settings.backoff_seconds * (attempt + 1))
+                except json.JSONDecodeError as exc:
+                    last_exc = exc
+                    logger.warning(
+                        "ai_accountant_json_parse_error",
+                        extra={
+                            "batch": batch_idx + 1,
+                            "attempt": attempt + 1,
+                            "error": str(exc),
+                            "raw_prefix": raw[:500],
+                        },
+                    )
+                    if attempt < settings.max_agent_attempts - 1:
+                        await asyncio.sleep(settings.backoff_seconds * (attempt + 1))
+            else:
+                raise RuntimeError(
+                    f"Claude API failed on batch {batch_idx + 1}/{len(chunks)} after {settings.max_agent_attempts} attempts: {last_exc}"
+                ) from last_exc
 
-Rules:
-- amount_minor is in cents (100 = $1.00). Use this when matching amounts to invoices.
-- matched_invoice_id must be null if no invoice matches within 10% amount tolerance and similar vendor name.
-- confidence reflects how certain you are of both the category and match.
-- Return ONLY the JSON array — no markdown, no explanation."""
-
-        last_exc: Exception = RuntimeError("No attempts made")
-        raw = ""
-        for attempt in range(settings.max_agent_attempts):
-            try:
-                message = await client.messages.create(
-                    model=settings.claude_model,
-                    max_tokens=2048,
-                    messages=[{"role": "user", "content": prompt}],
-                )
-                raw = message.content[0].text.strip()
-                parsed = json.loads(_strip_markdown_fences(raw))
-                break
-            except (anthropic.APIStatusError, anthropic.APIConnectionError) as exc:
-                last_exc = exc
-                logger.warning(
-                    "ai_accountant_transient_error",
-                    extra={"attempt": attempt + 1, "error": str(exc)},
-                )
-                if attempt < settings.max_agent_attempts - 1:
-                    await asyncio.sleep(settings.backoff_seconds * (attempt + 1))
-            except json.JSONDecodeError as exc:
-                last_exc = exc
-                logger.warning(
-                    "ai_accountant_json_parse_error",
-                    extra={
-                        "attempt": attempt + 1,
-                        "error": str(exc),
-                        "raw_prefix": raw[:500],
-                    },
-                )
-                if attempt < settings.max_agent_attempts - 1:
-                    await asyncio.sleep(settings.backoff_seconds * (attempt + 1))
-        else:
-            raise RuntimeError(
-                f"Claude API failed after {settings.max_agent_attempts} attempts: {last_exc}"
-            ) from last_exc
+        parsed = all_parsed
+        raw = "\n---\n".join(all_raws)
 
         results: list[TransactionResult] = []
         for item in parsed:
