@@ -478,25 +478,49 @@ export function AiAccountantClient() {
               {pendingCount > 0 && (
                 <div className="bg-brand-surface border border-brand-border rounded-sm p-4 flex items-center justify-between gap-4">
                   <div>
-                    <p className="text-xs font-body text-brand-text">{pendingCount} transaction{pendingCount !== 1 ? 's' : ''} not yet categorised</p>
-                    <p className="text-[11px] font-body text-brand-muted mt-0.5">Run the AI to categorise automatically, or review and categorise manually in the Transactions tab</p>
+                    {running ? (
+                      <>
+                        <div className="flex items-center gap-2">
+                          <span className="h-1.5 w-1.5 rounded-full bg-[#00C853] animate-pulse shrink-0" />
+                          <p className="text-xs font-body text-brand-text">Categorising transactions…</p>
+                        </div>
+                        <p className="text-[11px] font-body text-brand-muted mt-0.5">This can take a few minutes depending on the number of transactions. You can leave this page — it will run in the background.</p>
+                      </>
+                    ) : (
+                      <>
+                        <p className="text-xs font-body text-brand-text">{pendingCount} transaction{pendingCount !== 1 ? 's' : ''} not yet categorised</p>
+                        <p className="text-[11px] font-body text-brand-muted mt-0.5">Run the AI to categorise automatically, or review and categorise manually in the Transactions tab</p>
+                      </>
+                    )}
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
-                    <button
-                      type="button"
-                      onClick={() => { setActiveTab('transactions'); setFilter('pending') }}
-                      className="text-xs font-body bg-transparent border border-brand-border text-brand-text hover:bg-brand-elevated rounded-sm px-4 py-1.5 transition-colors"
-                    >
-                      View
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleCategoriseNow}
-                      disabled={running}
-                      className="text-xs font-body bg-[#00C853] text-black hover:bg-[#00a844] active:scale-[0.97] rounded-sm px-4 py-1.5 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-                    >
-                      {running ? 'Categorising…' : 'Categorise Now'}
-                    </button>
+                    {!running && (
+                      <button
+                        type="button"
+                        onClick={() => { setActiveTab('transactions'); setFilter('pending') }}
+                        className="text-xs font-body bg-transparent border border-brand-border text-brand-text hover:bg-brand-elevated rounded-sm px-4 py-1.5 transition-colors"
+                      >
+                        View
+                      </button>
+                    )}
+                    {running ? (
+                      <button
+                        type="button"
+                        onClick={handleStopCategorise}
+                        className="text-xs font-body border border-[#ff4d6d] text-[#ff4d6d] hover:bg-[rgba(255,77,109,0.1)] active:scale-[0.97] rounded-sm px-4 py-1.5 transition-all"
+                      >
+                        Stop
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={handleCategoriseNow}
+                        disabled={running}
+                        className="text-xs font-body bg-[#00C853] text-black hover:bg-[#00a844] active:scale-[0.97] rounded-sm px-4 py-1.5 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                      >
+                        Categorise Now
+                      </button>
+                    )}
                   </div>
                 </div>
               )}

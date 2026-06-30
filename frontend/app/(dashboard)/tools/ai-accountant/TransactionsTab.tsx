@@ -334,15 +334,18 @@ export function TransactionsTab({
             Export CSV
           </button>
           {running ? (
-            <div className="flex items-center gap-2">
-              <span className="flex items-center gap-1.5 text-xs font-body text-brand-muted">
-                <span className="h-1.5 w-1.5 rounded-full bg-[#00C853] animate-pulse shrink-0" />
-                Categorising…
-              </span>
+            <div className="flex items-center gap-3">
+              <div>
+                <span className="flex items-center gap-1.5 text-xs font-body text-brand-text">
+                  <span className="h-1.5 w-1.5 rounded-full bg-[#00C853] animate-pulse shrink-0" />
+                  Categorising…
+                </span>
+                <p className="text-[11px] font-body text-brand-muted mt-0.5">This can take a few minutes — you can leave this page.</p>
+              </div>
               <button
                 type="button"
                 onClick={onStop}
-                className="text-xs font-body border border-[#ff4d6d] text-[#ff4d6d] hover:bg-[rgba(255,77,109,0.1)] active:scale-[0.97] rounded-sm px-3 py-1.5 transition-all"
+                className="text-xs font-body border border-[#ff4d6d] text-[#ff4d6d] hover:bg-[rgba(255,77,109,0.1)] active:scale-[0.97] rounded-sm px-3 py-1.5 transition-all shrink-0"
               >
                 Stop
               </button>
