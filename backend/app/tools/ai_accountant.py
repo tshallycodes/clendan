@@ -15,18 +15,13 @@ import anthropic
 from pydantic import BaseModel
 
 from app.audit.logger import write_audit_log
+from app.core.categories import ALLOWED_CATEGORIES
 from app.core.config import get_settings
 from app.core.db import get_db
 from app.core.logging import get_logger, get_trace_id
 from app.queue.pool import push_to_dlq
 
 logger = get_logger(__name__)
-
-ALLOWED_CATEGORIES = {
-    "advertising", "bank_fees", "consulting", "equipment", "insurance",
-    "legal", "meals", "office_supplies", "payroll", "rent", "software",
-    "tax", "travel", "utilities", "other",
-}
 
 
 def _strip_markdown_fences(text: str) -> str:

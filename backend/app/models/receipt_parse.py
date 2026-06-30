@@ -3,11 +3,7 @@ from typing import Optional
 
 from pydantic import BaseModel, Field
 
-ALLOWED_CATEGORIES = {
-    "advertising", "bank_fees", "consulting", "equipment", "insurance",
-    "legal", "meals", "office_supplies", "payroll", "rent", "software",
-    "tax", "travel", "utilities", "other",
-}
+from app.core.categories import ALLOWED_CATEGORIES
 
 
 class ParsedReceipt(BaseModel):
