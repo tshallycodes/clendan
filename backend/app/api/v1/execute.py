@@ -270,7 +270,7 @@ async def execute_document_intelligence(
             "tool_id": tool.id,
             "document_id": doc_record.id,
             "execution_id": execution.id,
-            "filename": file.filename,
+            "document_filename": file.filename,
             "size_bytes": len(file_bytes),
         },
     )
