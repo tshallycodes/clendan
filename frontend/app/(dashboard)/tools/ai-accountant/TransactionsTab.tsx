@@ -13,14 +13,6 @@ const FILTER_LABELS: Record<StatusFilter, string> = {
 /* ── Column filter types ─────────────────────────────────────────── */
 type ColumnFilterKey = 'account' | 'merchant' | 'category' | 'invoice' | 'status'
 
-const FILTERABLE_COLUMNS: { key: ColumnFilterKey; header: string }[] = [
-  { key: 'account',  header: 'Account' },
-  { key: 'merchant', header: 'Merchant' },
-  { key: 'category', header: 'Category' },
-  { key: 'invoice',  header: 'Invoice' },
-  { key: 'status',   header: 'Status' },
-]
-
 /* Column order must match TransactionRow: Date, Account, Merchant, Amount, Category, Invoice, Status */
 type ColumnDef = { header: string; filterKey?: ColumnFilterKey }
 const TABLE_COLUMNS: ColumnDef[] = [
@@ -111,7 +103,7 @@ function ColumnFilterDropdown({
       </button>
 
       {open && (
-        <div className="absolute left-0 top-full mt-1.5 z-40 w-56 bg-brand-elevated border border-brand-border rounded-sm shadow-xl overflow-hidden animate-in fade-in slide-in-from-top-1 duration-150">
+        <div className="absolute left-0 top-full mt-1.5 z-40 w-56 bg-brand-elevated border border-brand-border rounded-sm overflow-hidden">
           {/* Search */}
           {options.length > 5 && (
             <div className="px-2.5 py-2 border-b border-brand-border">
@@ -120,7 +112,7 @@ function ColumnFilterDropdown({
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 placeholder={`Search ${header.toLowerCase()}…`}
-                className="w-full text-[10px] font-mono bg-brand-surface border border-brand-border rounded-sm px-2 py-1.5 text-brand-text placeholder:text-brand-muted outline-none focus:border-[rgba(0,200,83,0.3)] transition-colors"
+                className="w-full text-[10px] font-mono bg-brand-surface border border-brand-border rounded-sm px-2 py-1.5 text-brand-text placeholder:text-brand-muted outline-none focus:border-[#00C853] transition-colors"
                 autoFocus
               />
             </div>
@@ -168,12 +160,12 @@ function ColumnFilterDropdown({
                     <span className={cn(
                       'shrink-0 w-3 h-3 rounded-sm border flex items-center justify-center transition-colors',
                       isSelected
-                        ? 'bg-[rgba(0,200,83,0.15)] border-[rgba(0,200,83,0.4)]'
+                        ? 'bg-[#00C853] border-[#00C853]'
                         : 'border-brand-border',
                     )}>
                       {isSelected && (
                         <svg width="8" height="8" viewBox="0 0 12 12" fill="none">
-                          <path d="M2.5 6L5 8.5L9.5 3.5" stroke="#00C853" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                          <path d="M2.5 6L5 8.5L9.5 3.5" stroke="black" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                         </svg>
                       )}
                     </span>
@@ -270,8 +262,8 @@ export function TransactionsTab({
     const result: Record<ColumnFilterKey, string[]> = {
       account: [], merchant: [], category: [], invoice: [], status: [],
     }
-    for (const col of FILTERABLE_COLUMNS) {
-      result[col.key] = getUniqueValues(transactions, col.key)
+    for (const col of TABLE_COLUMNS) {
+      if (col.filterKey) result[col.filterKey] = getUniqueValues(transactions, col.filterKey)
     }
     return result
   }, [transactions])
@@ -324,7 +316,7 @@ export function TransactionsTab({
             <button
               type="button"
               onClick={clearAllFilters}
-              className="text-[10px] font-mono text-brand-muted hover:text-[#ff4d6d] transition-colors flex items-center gap-1"
+              className="text-[10px] font-mono text-brand-muted hover:text-brand-secondary transition-colors flex items-center gap-1"
             >
               <svg width="10" height="10" viewBox="0 0 16 16" fill="none" className="text-current">
                 <path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
@@ -369,7 +361,7 @@ export function TransactionsTab({
             <button
               type="button"
               onClick={clearAllFilters}
-              className="text-[10px] font-mono text-[#00C853] hover:underline transition-colors"
+              className="text-[10px] font-mono text-brand-muted hover:text-brand-secondary transition-colors"
             >
               Clear all filters
             </button>
