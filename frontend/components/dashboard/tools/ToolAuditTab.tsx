@@ -184,7 +184,6 @@ function CategoriseAndMatchTrace({ trace }: { trace: Record<string, unknown> }) 
     prior: number
   }>) || []
   const hasSignificantShifts = trace.has_significant_shifts as boolean
-  const overallReasoning = trace.reasoning as string
 
   const matchedCount = results.filter(r => r.matched_invoice_id).length
   const avgConfidence = results.length > 0
@@ -233,23 +232,6 @@ function CategoriseAndMatchTrace({ trace }: { trace: Record<string, unknown> }) 
         </div>
       )}
 
-      {overallReasoning && (() => {
-        let parsed: unknown = null
-        try { parsed = JSON.parse(overallReasoning) } catch { /* plain text */ }
-        return parsed != null ? (
-          <div className="bg-brand-bg border border-brand-border rounded-sm px-3 py-2.5">
-            <p className="text-[11px] font-body text-brand-muted uppercase tracking-widest mb-1.5">Reasoning</p>
-            <pre className="text-[11px] font-body text-brand-secondary whitespace-pre-wrap overflow-x-auto max-h-48">
-              {JSON.stringify(parsed, null, 2)}
-            </pre>
-          </div>
-        ) : (
-          <div className="bg-brand-bg border border-brand-border rounded-sm px-3 py-2.5">
-            <p className="text-[11px] font-body text-brand-muted uppercase tracking-widest mb-1.5">Reasoning</p>
-            <p className="text-[12px] font-body text-brand-secondary leading-relaxed">{overallReasoning}</p>
-          </div>
-        )
-      })()}
 
       {policyViolations.length > 0 && (
         <div className="space-y-1.5">
