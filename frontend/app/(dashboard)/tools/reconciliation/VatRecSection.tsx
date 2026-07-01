@@ -79,7 +79,6 @@ export function VatRecSection({ toolId }: Props) {
 
   const [periodStart, setPeriodStart] = useState(defaultPeriodStart)
   const [periodEnd, setPeriodEnd] = useState(defaultPeriodEnd)
-  const [source, setSource] = useState('')
   const [loading, setLoading] = useState(false)
   const [summary, setSummary] = useState<VatSummary | null>(null)
   const [showFlagged, setShowFlagged] = useState(true)
@@ -92,7 +91,6 @@ export function VatRecSection({ toolId }: Props) {
     try {
       const token = await getToken()
       const params = new URLSearchParams({ period_start: periodStart, period_end: periodEnd })
-      if (source) params.set('source', source)
       if (toolId) params.set('tool_id', toolId)
       const res = await fetch(`${API}/reconciliation/vat-summary?${params}`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -109,14 +107,13 @@ export function VatRecSection({ toolId }: Props) {
     } finally {
       setLoading(false)
     }
-  }, [toolId, periodStart, periodEnd, source, getToken, toast])
+  }, [toolId, periodStart, periodEnd, getToken, toast])
 
   useEffect(() => {
     if (toolId) run()
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [toolId])
 
-  const inputClass = 'bg-brand-bg border border-brand-border focus:border-[#00C853] rounded-sm px-3 py-1.5 text-xs font-body text-brand-text outline-none transition-colors'
   const labelClass = 'text-[11px] font-body text-brand-muted uppercase tracking-widest'
 
   return (
@@ -131,16 +128,6 @@ export function VatRecSection({ toolId }: Props) {
           <div className="space-y-1">
             <p className={labelClass}>Period end</p>
             <DatePicker value={periodEnd} onChange={setPeriodEnd} />
-          </div>
-          <div className="space-y-1">
-            <p className={labelClass}>Source (optional)</p>
-            <input
-              type="text"
-              value={source}
-              onChange={e => setSource(e.target.value)}
-              placeholder="e.g. xero"
-              className={`${inputClass} w-32`}
-            />
           </div>
           <button
             type="button"
