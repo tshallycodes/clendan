@@ -285,7 +285,7 @@ function PayrollRecTrace({ trace, executionId, getToken }: { trace: Record<strin
     if (!executionId) return
     try {
       const token = await getToken()
-      const res = await fetch(`${API}/v1/payroll-runs/by-execution/${executionId}`, {
+      const res = await fetch(`${API}/payroll-runs/by-execution/${executionId}`, {
         headers: { Authorization: `Bearer ${token}` },
       })
       if (res.ok) {

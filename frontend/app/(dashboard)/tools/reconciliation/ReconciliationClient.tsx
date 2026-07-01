@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
@@ -11,6 +11,7 @@ import { ReconciliationRun, ReconciliationItem } from './types'
 import { RunControls } from './RunControls'
 import { RunHistory } from './RunHistory'
 import { ReconciliationTable } from './ReconciliationTable'
+import { PayrollRecSection } from './PayrollRecSection'
 import { ToolExecutionsTab } from '@/components/dashboard/tools/ToolExecutionsTab'
 import { ToolApprovalsTab } from '@/components/dashboard/tools/ToolApprovalsTab'
 import { ToolAuditTab } from '@/components/dashboard/tools/ToolAuditTab'
@@ -21,11 +22,20 @@ import { CreateJournalEntryModal, type JournalEntrySuggestion } from '@/componen
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
 type Tab = 'overview' | 'executions' | 'approvals' | 'audit'
+type RecType = 'bank' | 'payroll'
+
 const TABS: { key: Tab; label: string }[] = [
   { key: 'overview', label: 'Overview' },
   { key: 'executions', label: 'Executions' },
   { key: 'approvals', label: 'Approvals' },
   { key: 'audit', label: 'Audit' },
+]
+
+const REC_TYPES: { key: string; label: string; soon?: boolean }[] = [
+  { key: 'bank', label: 'Bank' },
+  { key: 'payroll', label: 'Payroll' },
+  { key: 'invoice', label: 'Invoice', soon: true },
+  { key: 'vat', label: 'VAT', soon: true },
 ]
 
 function defaultPeriodStart() {
@@ -37,46 +47,7 @@ function defaultPeriodEnd() {
   return new Date(d.getFullYear(), d.getMonth() + 1, 0).toISOString().slice(0, 10)
 }
 
-interface OverviewProps {
-  periodStart: string
-  periodEnd: string
-  toolId: string | null
-  running: boolean
-  runs: ReconciliationRun[]
-  runsLoading: boolean
-  selectedId: string | null
-  onPeriodStartChange: (v: string) => void
-  onPeriodEndChange: (v: string) => void
-  onRun: () => void
-  onSelectRun: (run: ReconciliationRun) => void
-}
-
-function OverviewTab({
-  periodStart, periodEnd, toolId, running,
-  runs, runsLoading, selectedId,
-  onPeriodStartChange, onPeriodEndChange, onRun, onSelectRun,
-}: OverviewProps) {
-  return (
-    <>
-      <RunControls
-        periodStart={periodStart}
-        periodEnd={periodEnd}
-        toolReady={!!toolId}
-        running={running}
-        onPeriodStartChange={onPeriodStartChange}
-        onPeriodEndChange={onPeriodEndChange}
-        onRun={onRun}
-      />
-      <div className="space-y-2 mt-5">
-        <p className="text-[11px] font-body uppercase tracking-widest text-brand-muted">Run History</p>
-        <RunHistory runs={runs} loading={runsLoading} selectedId={selectedId} onSelect={onSelectRun} />
-      </div>
-    </>
-  )
-}
-
 const RECONCILIATION_CAPABILITIES = TOOLS.find(t => t.slug === 'reconciliation')?.capabilities ?? []
-
 
 const pageVariants = {
   hidden: {},
@@ -119,6 +90,7 @@ export function ReconciliationClient() {
   const { currency } = useCurrency()
   const { toast } = useToast()
   const [activeTab, setActiveTab] = useState<Tab>('overview')
+  const [recType, setRecType] = useState<RecType>('bank')
   const [runs, setRuns] = useState<ReconciliationRun[]>([])
   const [runsLoading, setRunsLoading] = useState(true)
   const [selectedRun, setSelectedRun] = useState<ReconciliationRun | null>(null)
@@ -327,7 +299,7 @@ export function ReconciliationClient() {
     <motion.div variants={pageVariants} initial="hidden" animate="show" className="p-6 space-y-6">
       <motion.div variants={sectionVariants}>
         <Link href="/tools" className="text-[12px] font-body text-brand-muted hover:text-brand-secondary transition-colors">
-          ← Tools
+          &larr; Tools
         </Link>
       </motion.div>
 
@@ -338,7 +310,7 @@ export function ReconciliationClient() {
             {badge && <span className={`text-[11px] font-body px-2 py-0.5 rounded-sm ${badge.className}`}>{badge.label}</span>}
           </div>
           <p className="text-xs font-body text-brand-muted">
-            Match bank transactions against invoices. Detects unmatched items and flags anomalies.
+            Match transactions against source records. Detects anomalies and flags discrepancies across Bank and Payroll.
           </p>
         </div>
         {canConfigure && (
@@ -399,14 +371,56 @@ export function ReconciliationClient() {
         >
           {activeTab === 'overview' && (
             <div className="space-y-4">
-              <OverviewTab
-                periodStart={periodStart} periodEnd={periodEnd}
-                toolId={deployed?.id ?? null} running={running}
-                runs={runs} runsLoading={runsLoading} selectedId={selectedRun?.id ?? null}
-                onPeriodStartChange={setPeriodStart} onPeriodEndChange={setPeriodEnd}
-                onRun={handleRun}
-                onSelectRun={(r) => { setSelectedRun(r); fetchItems(r.id); setModalOpen(true) }}
-              />
+              {/* Rec type selector */}
+              <div className="flex items-center gap-1 p-1 bg-brand-elevated border border-brand-border rounded-sm w-fit">
+                {REC_TYPES.map(({ key, label, soon }) => (
+                  <button
+                    key={key}
+                    type="button"
+                    disabled={!!soon}
+                    onClick={() => !soon && setRecType(key as RecType)}
+                    className={`text-[11px] font-body px-3 py-1.5 rounded-[2px] transition-colors ${
+                      recType === key
+                        ? 'bg-brand-surface text-brand-text border border-brand-border'
+                        : soon
+                        ? 'text-brand-muted opacity-40 cursor-not-allowed'
+                        : 'text-brand-muted hover:text-brand-text'
+                    }`}
+                  >
+                    {label}
+                    {soon && <span className="ml-1 text-[9px] uppercase tracking-wider">soon</span>}
+                  </button>
+                ))}
+              </div>
+
+              {/* Bank reconciliation */}
+              {recType === 'bank' && (
+                <>
+                  <RunControls
+                    periodStart={periodStart}
+                    periodEnd={periodEnd}
+                    toolReady={!!deployed?.id}
+                    running={running}
+                    onPeriodStartChange={setPeriodStart}
+                    onPeriodEndChange={setPeriodEnd}
+                    onRun={handleRun}
+                  />
+                  <div className="space-y-2 mt-5">
+                    <p className="text-[11px] font-body uppercase tracking-widest text-brand-muted">Run History</p>
+                    <RunHistory
+                      runs={runs}
+                      loading={runsLoading}
+                      selectedId={selectedRun?.id ?? null}
+                      onSelect={(r) => { setSelectedRun(r); fetchItems(r.id); setModalOpen(true) }}
+                    />
+                  </div>
+                </>
+              )}
+
+              {/* Payroll reconciliation */}
+              {recType === 'payroll' && (
+                <PayrollRecSection toolId={deployed?.id ?? null} />
+              )}
 
               {/* How it works */}
               <div className="bg-brand-surface border border-brand-border rounded-sm overflow-hidden">
@@ -484,6 +498,7 @@ export function ReconciliationClient() {
         onCreated={() => setJeSuggestion(null)}
       />
 
+      {/* Bank rec results modal */}
       <AnimatePresence>
         {modalOpen && selectedRun && (
           <motion.div
