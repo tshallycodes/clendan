@@ -26,10 +26,10 @@ type RecType = 'bank' | 'payroll'
 
 const TABS: { key: Tab; label: string }[] = [
   { key: 'overview', label: 'Overview' },
-  { key: 'reconcile', label: 'Reconcile' },
   { key: 'executions', label: 'Executions' },
   { key: 'approvals', label: 'Approvals' },
   { key: 'audit', label: 'Audit' },
+  { key: 'reconcile', label: 'Reconcile' },
 ]
 
 const REC_TYPES: { key: string; label: string; soon?: boolean }[] = [
