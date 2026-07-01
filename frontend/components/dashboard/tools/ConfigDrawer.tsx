@@ -19,6 +19,13 @@ const SOURCE_NAMES: Record<string, string> = {
   quickbooks: 'QuickBooks',
   freshbooks: 'FreshBooks',
   sage: 'Sage',
+  'sage-intacct': 'Sage Intacct',
+  stripe: 'Stripe',
+  gocardless: 'GoCardless',
+  adyen: 'Adyen',
+  wise: 'Wise',
+  square: 'Square',
+  paypal: 'PayPal',
 }
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
@@ -48,6 +55,11 @@ export function ConfigDrawer({ tool, toolType, onClose, onSaved }: Props) {
   const [accounts, setAccounts] = useState<BankAccount[]>([])
   const [accountsLoading, setAccountsLoading] = useState(toolType === 'reconciliation')
   const [accountingSources, setAccountingSources] = useState<string[]>([])
+  const [paymentSources, setPaymentSources] = useState<string[]>([])
+  const [selectedPaymentSources, setSelectedPaymentSources] = useState<string[]>(() => {
+    const existing = (tool?.config_json as Record<string, unknown> | null)?.payment_sources
+    return Array.isArray(existing) ? (existing as string[]) : []
+  })
   const [connected, setConnected] = useState<{
     bank: string[]; accounting: string[]; payment: string[]; erp: string[]; crm: string[]; document: string[]
   }>({ bank: [], accounting: [], payment: [], erp: [], crm: [], document: [] })
@@ -76,10 +88,11 @@ export function ConfigDrawer({ tool, toolType, onClose, onSaved }: Props) {
         if (intRes.ok) {
           const json = await intRes.json()
           const acct: string[] = json.data?.accounting_sources ?? []
+          const pay: string[] = json.data?.payment_sources ?? []
           setAccountingSources(acct)
-          setSelectedIntegrationSources(prev =>
-            prev.length === 0 ? acct : prev
-          )
+          setPaymentSources(pay)
+          setSelectedIntegrationSources(prev => prev.length === 0 ? acct : prev)
+          setSelectedPaymentSources(prev => prev.length === 0 ? pay : prev)
         }
       } finally {
         setAccountsLoading(false)
@@ -108,7 +121,7 @@ export function ConfigDrawer({ tool, toolType, onClose, onSaved }: Props) {
     try {
       const token = await getToken()
       const fullConfig = toolType === 'reconciliation'
-        ? { ...config, account_ids: selectedAccountIds, integration_sources: selectedIntegrationSources }
+        ? { ...config, account_ids: selectedAccountIds, integration_sources: selectedIntegrationSources, payment_sources: selectedPaymentSources }
         : config
       const res = tool
         ? await fetch(`${API}/tools/${tool.id}`, {
@@ -242,6 +255,48 @@ export function ConfigDrawer({ tool, toolType, onClose, onSaved }: Props) {
                     </p>
                   )}
                 </>
+              )}
+            </div>
+          )}
+
+          {toolType === 'reconciliation' && paymentSources.length > 0 && (
+            <div className="space-y-2">
+              <label className={labelClass}>Payment Integrations</label>
+              <p className="text-[11px] font-body text-brand-muted">Uncheck integrations to exclude their transactions from reconciliation.</p>
+              <div className="bg-brand-bg border border-brand-border rounded-sm divide-y divide-brand-border">
+                {paymentSources.map((source) => {
+                  const checked = selectedPaymentSources.length === 0 || selectedPaymentSources.includes(source)
+                  return (
+                    <button
+                      key={source}
+                      type="button"
+                      onClick={() => {
+                        if (!checked) {
+                          const next = [...selectedPaymentSources, source]
+                          setSelectedPaymentSources(next.length === paymentSources.length ? [] : next)
+                        } else {
+                          const next = (selectedPaymentSources.length === 0 ? paymentSources : selectedPaymentSources).filter(s => s !== source)
+                          setSelectedPaymentSources(next)
+                        }
+                      }}
+                      className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-brand-elevated transition-colors text-left"
+                    >
+                      <span className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center shrink-0 transition-colors ${checked ? 'bg-[#00C853] border-[#00C853]' : 'bg-brand-bg border-brand-border'}`}>
+                        {checked && (
+                          <svg width="8" height="6" viewBox="0 0 8 6" fill="none">
+                            <path d="M1 3L3 5L7 1" stroke="black" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                          </svg>
+                        )}
+                      </span>
+                      <p className="text-xs font-body text-brand-text">{SOURCE_NAMES[source] ?? source}</p>
+                    </button>
+                  )
+                })}
+              </div>
+              {selectedPaymentSources.length > 0 && selectedPaymentSources.length < paymentSources.length && (
+                <p className="text-[11px] font-body text-[#f5a623]">
+                  {selectedPaymentSources.length} of {paymentSources.length} integrations selected
+                </p>
               )}
             </div>
           )}
