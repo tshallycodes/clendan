@@ -19,6 +19,13 @@ from app.integrations.encryption import decrypt_credentials, encrypt_credentials
 logger = get_logger(__name__)
 router = APIRouter(tags=["integrations"])
 
+_BANK_INTEGRATION_TYPES = {"plaid", "truelayer", "mono", "codat"}
+_ACCOUNTING_INTEGRATION_TYPES = {"xero", "quickbooks", "freshbooks", "sage", "sage-intacct"}
+_PAYMENT_INTEGRATION_TYPES = {"stripe", "gocardless", "adyen", "wise", "square", "paypal"}
+_ERP_INTEGRATION_TYPES = {"netsuite", "sap", "dynamics365"}
+_CRM_INTEGRATION_TYPES = {"salesforce", "hubspot"}
+_DOCUMENT_INTEGRATION_TYPES = {"gmail", "outlook", "google-drive", "dropbox", "onedrive"}
+
 
 @router.get("/integrations/quickbooks/connect")
 async def quickbooks_connect(
@@ -392,6 +399,27 @@ async def xero_disconnect(
         data={"status": "disconnected", "encrypted_credentials": "{}"},
     )
     return standard_response(data={"status": "disconnected"})
+
+
+@router.get("/integrations/connected")
+async def get_connected_integrations(
+    current_user: RequireOrgAuth,
+    db: Annotated[Prisma, Depends(get_db_dep)],
+):
+    """Returns all connected integrations grouped by category for the authenticated tenant."""
+    integrations = await db.integration.find_many(
+        where={"tenant_id": current_user.tenant_id, "status": {"in": ["connected", "syncing"]}},
+        order={"type": "asc"},
+    )
+    types = {i.type for i in integrations}
+    return standard_response(data={
+        "bank":       sorted(types & _BANK_INTEGRATION_TYPES),
+        "accounting": sorted(types & _ACCOUNTING_INTEGRATION_TYPES),
+        "payment":    sorted(types & _PAYMENT_INTEGRATION_TYPES),
+        "erp":        sorted(types & _ERP_INTEGRATION_TYPES),
+        "crm":        sorted(types & _CRM_INTEGRATION_TYPES),
+        "document":   sorted(types & _DOCUMENT_INTEGRATION_TYPES),
+    })
 
 
 @router.get("/integrations/{slug}/sync-log")

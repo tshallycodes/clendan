@@ -48,7 +48,9 @@ export function ConfigDrawer({ tool, toolType, onClose, onSaved }: Props) {
   const [accounts, setAccounts] = useState<BankAccount[]>([])
   const [accountsLoading, setAccountsLoading] = useState(toolType === 'reconciliation')
   const [accountingSources, setAccountingSources] = useState<string[]>([])
-  const [connectedAccountingSources, setConnectedAccountingSources] = useState<string[]>([])
+  const [connected, setConnected] = useState<{
+    bank: string[]; accounting: string[]; payment: string[]; erp: string[]; crm: string[]; document: string[]
+  }>({ bank: [], accounting: [], payment: [], erp: [], crm: [], document: [] })
   const [selectedAccountIds, setSelectedAccountIds] = useState<string[]>(() => {
     const existing = (tool?.config_json as Record<string, unknown> | null)?.account_ids
     return Array.isArray(existing) ? (existing as string[]) : []
@@ -87,20 +89,18 @@ export function ConfigDrawer({ tool, toolType, onClose, onSaved }: Props) {
   }, [toolType, getToken])
 
   useEffect(() => {
-    if (toolType !== 'document_intelligence') return
-    async function fetchConnectedIntegrations() {
+    if (toolType === 'reconciliation') return
+    async function fetchConnected() {
       try {
         const token = await getToken()
-        const res = await fetch(`${API}/reconciliation/integrations`, { headers: { Authorization: `Bearer ${token}` } })
+        const res = await fetch(`${API}/integrations/connected`, { headers: { Authorization: `Bearer ${token}` } })
         if (res.ok) {
           const json = await res.json()
-          setConnectedAccountingSources(json.data?.accounting_sources ?? [])
+          setConnected(json.data ?? { bank: [], accounting: [], payment: [], erp: [], crm: [], document: [] })
         }
-      } catch {
-        // leave as empty — multiselect will show "no connected integrations"
-      }
+      } catch { /* multiselects show "no connected integrations" until resolved */ }
     }
-    fetchConnectedIntegrations()
+    fetchConnected()
   }, [toolType, getToken])
 
   async function handleSave() {
@@ -178,7 +178,15 @@ export function ConfigDrawer({ tool, toolType, onClose, onSaved }: Props) {
             toolType={toolType}
             config={config}
             onChange={(key, value) => setConfig(prev => ({ ...prev, [key]: value }))}
-            dynamicOptions={toolType === 'document_intelligence' ? { accounting_integrations: connectedAccountingSources } : undefined}
+            dynamicOptions={toolType === 'reconciliation' ? undefined : {
+            accounting_integrations: connected.accounting,
+            accounting_sources: connected.accounting,
+            bank_sources: connected.bank,
+            payment_sources: connected.payment,
+            erp_sources: connected.erp,
+            crm_sources: connected.crm,
+            document_sources: connected.document,
+          }}
           />
 
           {toolType === 'reconciliation' && (
