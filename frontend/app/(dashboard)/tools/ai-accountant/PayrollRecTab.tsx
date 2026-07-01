@@ -242,7 +242,7 @@ export function PayrollRecTab({ toolId }: { toolId: string | null }) {
   const parseErrors = parsed.filter(p => p.error)
   const validRoster = parsed.filter(p => !p.error)
   const canSave = validRoster.length > 0 && parseErrors.length === 0 && !saving
-  const canRun = !!toolId && savedRoster.length > 0 && !running
+  const canRun = !!toolId && !running
 
   const loadHistory = useCallback(async () => {
     if (historyLoaded) return
@@ -351,6 +351,7 @@ export function PayrollRecTab({ toolId }: { toolId: string | null }) {
 
   async function handleRun() {
     if (!toolId || !canRun) return
+    if (savedRoster.length === 0) { toast('Add and save employees before running payroll reconciliation', 'error'); return }
     setRunning(true)
     setError(null)
     try {
@@ -546,9 +547,6 @@ export function PayrollRecTab({ toolId }: { toolId: string | null }) {
           </div>
         )}
 
-        {!canRun && savedRoster.length === 0 && (
-          <p className="text-[11px] font-body text-brand-muted">Save employees above to enable payroll reconciliation.</p>
-        )}
 
         {error && <p className="text-xs font-body text-[#ff4d6d]">{error}</p>}
       </div>
