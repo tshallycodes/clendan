@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import { useState, useCallback, useEffect, useMemo, useRef } from 'react'
 import { useAuth } from '@clerk/nextjs'
@@ -190,6 +190,7 @@ export function PayrollRecTab({ toolId }: { toolId: string | null }) {
   })
   const [rosterText, setRosterText] = useState('')
   const [running, setRunning] = useState(false)
+  const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const [activeRun, setActiveRun] = useState<PayrollRun | null>(null)
@@ -199,26 +200,48 @@ export function PayrollRecTab({ toolId }: { toolId: string | null }) {
   const [loadingHistory, setLoadingHistory] = useState(false)
   const [historyLoaded, setHistoryLoaded] = useState(false)
   const [savedRoster, setSavedRoster] = useState<RosterEntry[]>([])
+
+  const toolConfigRef = useRef<Record<string, unknown>>({})
   const fileInputRef = useRef<HTMLInputElement>(null)
 
+  // Load saved employees from tool config on mount, fall back to last run roster
   useEffect(() => {
     if (!toolId) return
-    async function fetchSavedRoster() {
+    async function init() {
       const token = await getToken()
-      const res = await fetch(`${API}/payroll-runs`, { headers: { Authorization: `Bearer ${token}` } })
-      if (!res.ok) return
-      const json = await res.json()
-      const runs: PayrollRun[] = json.data?.runs ?? []
-      if (runs.length > 0) setSavedRoster(runs[0].roster_json ?? [])
+      const toolRes = await fetch(`${API}/tools/${toolId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      if (toolRes.ok) {
+        const toolJson = await toolRes.json()
+        const cfg = (toolJson.data?.config ?? {}) as Record<string, unknown>
+        toolConfigRef.current = cfg
+        const employees = cfg.saved_employees as RosterEntry[] | undefined
+        if (employees?.length) {
+          setSavedRoster(employees)
+          return
+        }
+      }
+      // Fall back to last run's roster_json for users who haven't saved yet
+      const runsRes = await fetch(`${API}/payroll-runs`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      if (runsRes.ok) {
+        const runsJson = await runsRes.json()
+        const runs: PayrollRun[] = runsJson.data?.runs ?? []
+        if (runs.length > 0 && runs[0].roster_json?.length) {
+          setSavedRoster(runs[0].roster_json)
+        }
+      }
     }
-    fetchSavedRoster()
+    init()
   }, [toolId, getToken])
 
   const parsed = useMemo(() => parseRosterText(rosterText), [rosterText])
   const parseErrors = parsed.filter(p => p.error)
   const validRoster = parsed.filter(p => !p.error)
-  const rosterReady = validRoster.length > 0 && parseErrors.length === 0 && !running
-  const canRun = !!toolId && rosterReady
+  const canSave = validRoster.length > 0 && parseErrors.length === 0 && !saving
+  const canRun = !!toolId && savedRoster.length > 0 && !running
 
   const loadHistory = useCallback(async () => {
     if (historyLoaded) return
@@ -243,22 +266,39 @@ export function PayrollRecTab({ toolId }: { toolId: string | null }) {
     reader.onload = ev => {
       const text = ev.target?.result as string
       const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean)
-      // Detect header row — skip if first cell is non-numeric name-like header
       const start = /^(name|employee|full\s*name|staff)/i.test(lines[0]?.split(',')[0] ?? '') ? 1 : 0
       const normalised = lines.slice(start).map(line => {
         const cols = line.split(',').map(c => c.trim().replace(/^"|"$/g, ''))
-        // Support: Name, Salary  OR  Name, Salary, ...extra columns ignored
         if (cols.length < 2) return line
         const name = cols[0]
-        // Find first numeric-looking column after name
         const salary = cols.slice(1).find(c => /^[\d.]+$/.test(c.replace(/[,\s]/g, ''))) ?? cols[1]
         return `${name}, ${salary}`
       })
       setRosterText(normalised.join('\n'))
-      // Reset so the same file can be re-imported
       e.target.value = ''
     }
     reader.readAsText(file)
+  }
+
+  async function handleSaveEmployees() {
+    if (!toolId || !canSave) return
+    setSaving(true)
+    try {
+      const token = await getToken()
+      const newConfig = { ...toolConfigRef.current, saved_employees: validRoster }
+      const res = await fetch(`${API}/tools/${toolId}`, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ config: newConfig }),
+      })
+      if (!res.ok) { toast('Failed to save employees', 'error'); return }
+      toolConfigRef.current = newConfig
+      setSavedRoster(validRoster)
+      setRosterText('')
+      toast(`${validRoster.length} employee${validRoster.length !== 1 ? 's' : ''} saved`, 'success')
+    } finally {
+      setSaving(false)
+    }
   }
 
   async function handleExport() {
@@ -284,13 +324,11 @@ export function PayrollRecTab({ toolId }: { toolId: string | null }) {
   }
 
   async function handleRun() {
-    if (!toolId) { toast('Deploy the tool to continue', 'error'); return }
-    if (!canRun) return
+    if (!toolId || !canRun) return
     setRunning(true)
     setError(null)
     try {
       const token = await getToken()
-      const rosterPayload = validRoster.map(e => ({ name: e.name, expected_minor: e.expected_minor }))
       const res = await fetch(`${API}/payroll-runs`, {
         method: 'POST',
         headers: {
@@ -298,7 +336,7 @@ export function PayrollRecTab({ toolId }: { toolId: string | null }) {
           'Content-Type': 'application/json',
           'Idempotency-Key': `payroll-rec-${toolId}-${period}-${Date.now()}`,
         },
-        body: JSON.stringify({ period, roster: rosterPayload, tool_id: toolId }),
+        body: JSON.stringify({ period, roster: savedRoster, tool_id: toolId }),
       })
       const json = await res.json()
       if (!res.ok) { setError(json.detail ?? `Error ${res.status}`); toast(json.detail ?? 'Run failed', 'error'); return }
@@ -318,7 +356,6 @@ export function PayrollRecTab({ toolId }: { toolId: string | null }) {
             setActiveRun(run)
             setResults(run.results_json ?? null)
             setHistoryLoaded(false)
-            setSavedRoster(rosterPayload)
             completed = true
             const issues = (run.ghost_count ?? 0) + (run.missing_count ?? 0) + (run.discrepancy_count ?? 0)
             toast(issues > 0 ? `Rec complete — ${issues} issue${issues !== 1 ? 's' : ''} found` : 'Payroll rec complete — all clear', issues > 0 ? 'info' : 'success')
@@ -346,7 +383,19 @@ export function PayrollRecTab({ toolId }: { toolId: string | null }) {
     >
       {/* Config card */}
       <div className="bg-brand-surface border border-brand-border rounded-sm p-4 space-y-4">
-        <p className="text-[11px] font-body uppercase tracking-widest text-brand-muted">Run Payroll Reconciliation</p>
+
+        {/* Header row — label + Run button */}
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-[11px] font-body uppercase tracking-widest text-brand-muted">Payroll Reconciliation</p>
+          <button
+            type="button"
+            onClick={handleRun}
+            disabled={!canRun}
+            className="bg-[#00C853] text-black text-xs font-body rounded-sm px-4 py-1.5 hover:bg-[#00a844] active:scale-[0.97] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            {running ? 'Running…' : 'Run Payroll Rec'}
+          </button>
+        </div>
 
         {/* Period */}
         <div className="flex flex-col gap-1">
@@ -354,17 +403,11 @@ export function PayrollRecTab({ toolId }: { toolId: string | null }) {
           <MonthPicker value={period} onChange={setPeriod} />
         </div>
 
-        {/* Roster — bulk paste or CSV import */}
+        {/* Employee input */}
         <div className="flex flex-col gap-2">
           <div className="flex items-center justify-between gap-2">
-            <label className="text-[11px] font-body text-brand-muted uppercase tracking-widest">Employee Roster</label>
+            <label className="text-[11px] font-body text-brand-muted uppercase tracking-widest">Employees</label>
             <div className="flex items-center gap-2">
-              {validRoster.length > 0 && parseErrors.length === 0 && (
-                <span className="text-[11px] font-body text-[#00C853]">{validRoster.length} employee{validRoster.length !== 1 ? 's' : ''} ready</span>
-              )}
-              {parseErrors.length > 0 && (
-                <span className="text-[11px] font-body text-[#ff4d6d]">{parseErrors.length} line{parseErrors.length !== 1 ? 's' : ''} with errors</span>
-              )}
               <input
                 ref={fileInputRef}
                 type="file"
@@ -381,20 +424,62 @@ export function PayrollRecTab({ toolId }: { toolId: string | null }) {
               </button>
             </div>
           </div>
-          {savedRoster.length > 0 && (
+
+          <textarea
+            rows={5}
+            value={rosterText}
+            onChange={e => setRosterText(e.target.value)}
+            placeholder={`Paste your roster — one employee per line:\n\nJane Smith, 5000\nBob Jones, 4500\nAlice Chen, 6200\n\nFormat: Name, Monthly salary`}
+            className="w-full bg-brand-bg border border-brand-border focus:border-[#00C853] text-brand-text placeholder:text-brand-muted text-xs font-body rounded-sm px-3 py-2.5 outline-none transition-colors resize-y leading-relaxed"
+          />
+
+          {/* Parse feedback + Save button */}
+          <div className="flex items-center justify-between gap-2">
+            <div>
+              {parseErrors.length > 0 && (
+                <p className="text-[11px] font-body text-[#ff4d6d]">{parseErrors.length} line{parseErrors.length !== 1 ? 's' : ''} with errors</p>
+              )}
+              {validRoster.length > 0 && parseErrors.length === 0 && (
+                <p className="text-[11px] font-body text-[#00C853]">{validRoster.length} employee{validRoster.length !== 1 ? 's' : ''} ready to save</p>
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={handleSaveEmployees}
+              disabled={!canSave}
+              className="bg-transparent border border-brand-border text-brand-text text-[11px] font-body rounded-sm px-3 py-1.5 hover:bg-brand-elevated active:scale-[0.97] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              {saving ? 'Saving…' : 'Save Employees'}
+            </button>
+          </div>
+
+          {parseErrors.length > 0 && (
+            <div className="space-y-1">
+              {parseErrors.map((e, i) => (
+                <p key={i} className="text-[11px] font-body text-[#ff4d6d]">
+                  Line {parsed.indexOf(e) + 1}: {e.error} — <span className="text-brand-muted">{e.raw}</span>
+                </p>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Saved employees table */}
+        {savedRoster.length > 0 && (
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-[11px] font-body uppercase tracking-widest text-brand-muted">
+                Saved · {savedRoster.length} employee{savedRoster.length !== 1 ? 's' : ''}
+              </p>
+              <button
+                type="button"
+                onClick={() => setRosterText(savedRoster.map(e => `${e.name}, ${(e.expected_minor / 100).toFixed(0)}`).join('\n'))}
+                className="text-[10px] font-body text-brand-muted hover:text-brand-text transition-colors"
+              >
+                Load into editor
+              </button>
+            </div>
             <div className="bg-brand-bg border border-brand-border rounded-sm overflow-hidden">
-              <div className="flex items-center justify-between px-3 py-2 border-b border-brand-border">
-                <span className="text-[10px] font-body uppercase tracking-widest text-brand-muted">
-                  Saved · {savedRoster.length} employee{savedRoster.length !== 1 ? 's' : ''}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setRosterText(savedRoster.map(e => `${e.name}, ${(e.expected_minor / 100).toFixed(0)}`).join('\n'))}
-                  className="text-[10px] font-body text-brand-muted hover:text-brand-text transition-colors"
-                >
-                  Load into editor
-                </button>
-              </div>
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-brand-border">
@@ -412,35 +497,14 @@ export function PayrollRecTab({ toolId }: { toolId: string | null }) {
                 </tbody>
               </table>
             </div>
-          )}
-          <textarea
-            rows={savedRoster.length > 0 ? 5 : 8}
-            value={rosterText}
-            onChange={e => setRosterText(e.target.value)}
-            placeholder={`Paste your roster — one employee per line:\n\nJane Smith, 5000\nBob Jones, 4500\nAlice Chen, 6200\n\nFormat: Name, Monthly salary`}
-            className="w-full bg-brand-bg border border-brand-border focus:border-[#00C853] text-brand-text placeholder:text-brand-muted text-xs font-body rounded-sm px-3 py-2.5 outline-none transition-colors resize-y leading-relaxed"
-          />
-          {parseErrors.length > 0 && (
-            <div className="space-y-1">
-              {parseErrors.map((e, i) => (
-                <p key={i} className="text-[11px] font-body text-[#ff4d6d]">
-                  Line {parsed.indexOf(e) + 1}: {e.error} — <span className="text-brand-muted">{e.raw}</span>
-                </p>
-              ))}
-            </div>
-          )}
-        </div>
+          </div>
+        )}
+
+        {!canRun && savedRoster.length === 0 && (
+          <p className="text-[11px] font-body text-brand-muted">Save employees above to enable payroll reconciliation.</p>
+        )}
 
         {error && <p className="text-xs font-body text-[#ff4d6d]">{error}</p>}
-
-        <button
-          type="button"
-          onClick={handleRun}
-          disabled={!rosterReady}
-          className="bg-[#00C853] text-black text-xs font-body rounded-sm px-4 py-2 hover:bg-[#00a844] active:scale-[0.97] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-        >
-          {running ? 'Running…' : 'Run Payroll Rec'}
-        </button>
       </div>
 
       {/* Results panel */}
