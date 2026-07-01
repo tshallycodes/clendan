@@ -11,6 +11,7 @@ import { ReconciliationRun, ReconciliationItem } from './types'
 import { RunControls } from './RunControls'
 import { RunHistory } from './RunHistory'
 import { ReconciliationTable } from './ReconciliationTable'
+import { ReconcileAllSection } from './ReconcileAllSection'
 import { PayrollRecSection } from './PayrollRecSection'
 import { InvoiceRecSection } from './InvoiceRecSection'
 import { VatRecSection } from './VatRecSection'
@@ -24,7 +25,7 @@ import { CreateJournalEntryModal, type JournalEntrySuggestion } from '@/componen
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
 type Tab = 'overview' | 'reconcile' | 'executions' | 'approvals' | 'audit'
-type RecType = 'bank' | 'payroll' | 'invoice' | 'vat'
+type RecType = 'all' | 'bank' | 'payroll' | 'invoice' | 'vat'
 
 const TABS: { key: Tab; label: string }[] = [
   { key: 'overview', label: 'Overview' },
@@ -35,10 +36,11 @@ const TABS: { key: Tab; label: string }[] = [
 ]
 
 const REC_TYPES: { key: string; label: string }[] = [
-  { key: 'bank', label: 'Bank' },
+  { key: 'all',     label: 'All' },
+  { key: 'bank',    label: 'Bank' },
   { key: 'payroll', label: 'Payroll' },
   { key: 'invoice', label: 'Invoice' },
-  { key: 'vat', label: 'VAT' },
+  { key: 'vat',     label: 'VAT' },
 ]
 
 function defaultPeriodStart() {
@@ -93,7 +95,7 @@ export function ReconciliationClient() {
   const { currency } = useCurrency()
   const { toast } = useToast()
   const [activeTab, setActiveTab] = useState<Tab>('overview')
-  const [recType, setRecType] = useState<RecType>('bank')
+  const [recType, setRecType] = useState<RecType>('all')
   const [runs, setRuns] = useState<ReconciliationRun[]>([])
   const [runsLoading, setRunsLoading] = useState(true)
   const [selectedRun, setSelectedRun] = useState<ReconciliationRun | null>(null)
@@ -449,6 +451,14 @@ export function ReconciliationClient() {
                   </button>
                 ))}
               </div>
+
+              {/* Run all */}
+              {recType === 'all' && (
+                <ReconcileAllSection
+                  toolId={deployed?.id ?? null}
+                  onSelectType={t => setRecType(t as RecType)}
+                />
+              )}
 
               {/* Bank reconciliation */}
               {recType === 'bank' && (
