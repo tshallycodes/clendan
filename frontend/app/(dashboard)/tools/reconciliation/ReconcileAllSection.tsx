@@ -242,6 +242,10 @@ export function ReconcileAllSection({ toolId, onSelectType }: Props) {
     }
   }, [anyRunning, month, toolId, getToken, toast])
 
+  const monthLabel = month
+    ? `${MONTH_FULL[parseInt(month.slice(5, 7)) - 1]} ${month.slice(0, 4)}`
+    : ''
+
   const closePeriod = useCallback(async () => {
     if (!month || closing) return
     setClosing(true)
@@ -264,10 +268,6 @@ export function ReconcileAllSection({ toolId, onSelectType }: Props) {
       setClosing(false)
     }
   }, [month, closing, monthLabel, getToken, toast])
-
-  const monthLabel = month
-    ? `${MONTH_FULL[parseInt(month.slice(5, 7)) - 1]} ${month.slice(0, 4)}`
-    : ''
 
   const allDone = bankStatus === 'done' && invoiceStatus === 'done' && vatStatus === 'done'
 
