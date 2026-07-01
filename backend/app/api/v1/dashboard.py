@@ -130,9 +130,9 @@ async def list_approvals(
     offset: int = Query(0, ge=0),
     tool_id: str | None = Query(None),
 ):
-    """Lists pending approvals for the tenant. Optionally filter by tool_id."""
+    """Lists approvals for the tenant. Optionally filter by tool_id."""
     tenant_id = current_user.tenant_id
-    where: dict = {"tenant_id": tenant_id, "status": "pending"}
+    where: dict = {"tenant_id": tenant_id}
     if tool_id:
         execs = await db.execution.find_many(
             where={"tenant_id": tenant_id, "tool_id": tool_id},
@@ -142,7 +142,7 @@ async def list_approvals(
 
     approvals = await db.approval.find_many(
         where=where,
-        order={"requested_at": "asc"},
+        order={"requested_at": "desc"},
         take=limit,
         skip=offset,
         include={"execution": {"include": {"tool": True}}},
