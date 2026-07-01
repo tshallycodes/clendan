@@ -301,6 +301,7 @@ async def get_invoice_summary(
     period_start: str = Query(...),
     period_end: str = Query(...),
     source: Optional[str] = Query(None),
+    tool_id: Optional[str] = Query(None),
 ) -> dict:
     """Summarise accounting invoices for the given period."""
     db = get_db()
@@ -319,6 +320,12 @@ async def get_invoice_summary(
     if source:
         where["source"] = source
 
+    overdue_grace_days = 0
+    if tool_id:
+        tool_rec = await db.tool.find_first(where={"id": tool_id, "tenant_id": tenant_id})
+        if tool_rec and isinstance(tool_rec.config_json, dict):
+            overdue_grace_days = int(tool_rec.config_json.get("invoice_overdue_grace_days", 0))
+
     invoices = await db.accountinginvoice.find_many(where=where, order={"issue_date": "desc"})
 
     total_subtotal = sum(i.subtotal_cents or 0 for i in invoices)
@@ -326,9 +333,11 @@ async def get_invoice_summary(
     total_amount = sum(i.total_cents or 0 for i in invoices)
     total_outstanding = sum(i.outstanding_cents or 0 for i in invoices)
     paid_count = sum(1 for i in invoices if i.paid_at is not None)
+    from datetime import timedelta
+    overdue_cutoff = datetime.now(UTC).replace(tzinfo=None) - timedelta(days=overdue_grace_days)
     overdue_count = sum(
         1 for i in invoices
-        if i.paid_at is None and i.due_date is not None and i.due_date < datetime.now(UTC).replace(tzinfo=None)
+        if i.paid_at is None and i.due_date is not None and i.due_date < overdue_cutoff
     )
     flagged = [
         {
@@ -393,6 +402,7 @@ async def get_vat_summary(
     period_start: str = Query(...),
     period_end: str = Query(...),
     source: Optional[str] = Query(None),
+    tool_id: Optional[str] = Query(None),
 ) -> dict:
     """Summarise VAT position for the given period using accounting invoices."""
     db = get_db()
@@ -403,6 +413,12 @@ async def get_vat_summary(
         end_dt = datetime.fromisoformat(period_end)
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=f"Invalid date format: {exc}") from exc
+
+    expected_vat_rate = 20.0  # default UK standard rate
+    if tool_id:
+        tool_rec = await db.tool.find_first(where={"id": tool_id, "tenant_id": tenant_id})
+        if tool_rec and isinstance(tool_rec.config_json, dict):
+            expected_vat_rate = float(tool_rec.config_json.get("expected_vat_rate_pct", 20.0))
 
     inv_where: dict = {
         "tenant_id": tenant_id,
@@ -417,6 +433,17 @@ async def get_vat_summary(
     net_sales = sum(i.subtotal_cents or 0 for i in invoices)
     vat_position = output_vat  # input VAT not available without bill tax_cents
 
+    def _vat_flag_reason(inv) -> str | None:  # type: ignore[no-untyped-def]
+        sub = inv.subtotal_cents or 0
+        tax = inv.tax_cents or 0
+        if sub > 0 and tax == 0:
+            return "Missing VAT — sales invoice with no tax recorded"
+        if sub > 0 and tax > 0:
+            effective_rate = (tax / sub) * 100
+            if abs(effective_rate - expected_vat_rate) > 1.0:
+                return f"Unexpected VAT rate — effective {effective_rate:.1f}%, expected {expected_vat_rate:.0f}%"
+        return None
+
     flagged = [
         {
             "id": i.id,
@@ -427,10 +454,10 @@ async def get_vat_summary(
             "tax_cents": i.tax_cents,
             "total_cents": i.total_cents,
             "source": i.source,
-            "flag_reason": "Missing VAT — sales invoice with no tax recorded",
+            "flag_reason": _vat_flag_reason(i),
         }
         for i in invoices
-        if (i.subtotal_cents or 0) > 0 and (i.tax_cents or 0) == 0
+        if _vat_flag_reason(i) is not None
     ]
 
     invoice_lines = [

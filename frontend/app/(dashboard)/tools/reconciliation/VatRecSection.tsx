@@ -92,6 +92,7 @@ export function VatRecSection({ toolId }: Props) {
       const token = await getToken()
       const params = new URLSearchParams({ period_start: periodStart, period_end: periodEnd })
       if (source) params.set('source', source)
+      if (toolId) params.set('tool_id', toolId)
       const res = await fetch(`${API}/reconciliation/vat-summary?${params}`, {
         headers: { Authorization: `Bearer ${token}` },
       })

@@ -111,6 +111,7 @@ class PayrollReconciliationTool:
         tool_id: str,
         roster: list[dict[str, Any]],
         keywords: list[str] | None = None,
+        discrepancy_threshold: float = DISCREPANCY_THRESHOLD,
         payroll_run_id: str | None = None,
         execution_id: str | None = None,
     ) -> dict[str, Any]:
@@ -193,7 +194,7 @@ class PayrollReconciliationTool:
                 matched_roster_names.add(roster_match.name)
                 diff = abs(txn.amount_minor - roster_match.expected_minor)
                 diff_pct = diff / roster_match.expected_minor if roster_match.expected_minor > 0 else 0.0
-                if diff_pct > DISCREPANCY_THRESHOLD:
+                if diff_pct > discrepancy_threshold:
                     discrepancies.append(DiscrepancyEntry(
                         name=roster_match.name,
                         expected_minor=roster_match.expected_minor,
@@ -477,6 +478,8 @@ async def run_payroll_rec_job(
         if isinstance(raw_keywords, str) and raw_keywords.strip()
         else None
     )
+    salary_tolerance_pct = float(cfg.get("payroll_salary_tolerance_pct", 5))
+    discrepancy_threshold = salary_tolerance_pct / 100
 
     tool = PayrollReconciliationTool()
     try:
@@ -486,6 +489,7 @@ async def run_payroll_rec_job(
             tool_id=tool_id,
             roster=roster,
             keywords=keywords,
+            discrepancy_threshold=discrepancy_threshold,
             payroll_run_id=payroll_run_id,
             execution_id=execution_id,
         )
