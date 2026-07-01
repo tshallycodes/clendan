@@ -49,6 +49,18 @@ interface VatStats {
   flagged_count: number
 }
 
+interface RosterEntry {
+  name: string
+  expected_minor: number
+}
+
+interface PayrollStats {
+  matched_count: number
+  ghost_count: number
+  missing_count: number
+  discrepancy_count: number
+}
+
 function fmt(cents: number, symbol: string) {
   return `${symbol}${(cents / 100).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 }
@@ -125,16 +137,34 @@ export function ReconcileAllSection({ toolId, onSelectType }: Props) {
   const [month, setMonth] = useState(currentMonthValue)
   const [anyRunning, setAnyRunning] = useState(false)
 
+  const [roster, setRoster]               = useState<RosterEntry[]>([])
   const [bankStatus, setBankStatus]       = useState<Status>('idle')
   const [invoiceStatus, setInvoiceStatus] = useState<Status>('idle')
   const [vatStatus, setVatStatus]         = useState<Status>('idle')
+  const [payrollStatus, setPayrollStatus] = useState<Status>('idle')
   const [bankData, setBankData]           = useState<BankStats | null>(null)
   const [invoiceData, setInvoiceData]     = useState<InvoiceStats | null>(null)
   const [vatData, setVatData]             = useState<VatStats | null>(null)
+  const [payrollData, setPayrollData]     = useState<PayrollStats | null>(null)
   const [closing, setClosing]             = useState(false)
   const [closedAt, setClosedAt]           = useState<string | null>(null)
   const [closedBy, setClosedBy]           = useState<string | null>(null)
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  useEffect(() => {
+    if (!toolId) return
+    async function loadRoster() {
+      const token = await getToken()
+      const res = await fetch(`${API}/tools/${toolId}`, { headers: { Authorization: `Bearer ${token}` } })
+      if (!res.ok) return
+      const json = await res.json()
+      const employees = (json.data?.config_json as Record<string, unknown> | null)?.saved_employees
+      if (Array.isArray(employees) && employees.length > 0) {
+        setRoster(employees as RosterEntry[])
+      }
+    }
+    loadRoster()
+  }, [toolId, getToken])
 
   const runAll = useCallback(async () => {
     if (anyRunning || !month) return
@@ -149,6 +179,10 @@ export function ReconcileAllSection({ toolId, onSelectType }: Props) {
     setBankData(null)
     setInvoiceData(null)
     setVatData(null)
+    if (roster.length > 0) {
+      setPayrollStatus('running')
+      setPayrollData(null)
+    }
 
     const token = await getToken()
     const headers: Record<string, string> = { Authorization: `Bearer ${token}` }
@@ -240,7 +274,56 @@ export function ReconcileAllSection({ toolId, onSelectType }: Props) {
       setBankStatus('error')
       setAnyRunning(false)
     }
-  }, [anyRunning, month, toolId, getToken, toast])
+
+    // Payroll — runs in background if roster is loaded
+    if (roster.length > 0) {
+      ;(async () => {
+        try {
+          const pt = await getToken()
+          const payRes = await fetch(`${API}/payroll-runs`, {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${pt}`,
+              'Content-Type': 'application/json',
+              'Idempotency-Key': `payroll-all-${toolId}-${month}-${Date.now()}`,
+            },
+            body: JSON.stringify({ period: month, roster, tool_id: toolId }),
+          })
+          if (!payRes.ok) { setPayrollStatus('error'); return }
+          const payJson = await payRes.json()
+          const runId: string = payJson.data?.run_id
+          if (!runId) { setPayrollStatus('error'); return }
+
+          let attempts = 0
+          while (attempts < 30) {
+            await new Promise(r => setTimeout(r, 2000))
+            const pollToken = await getToken()
+            const poll = await fetch(`${API}/payroll-runs/${runId}`, {
+              headers: { Authorization: `Bearer ${pollToken}` },
+            })
+            if (poll.ok) {
+              const pollJson = await poll.json()
+              const run = pollJson.data
+              if (run.status !== 'pending') {
+                setPayrollData({
+                  matched_count:     run.matched_count ?? 0,
+                  ghost_count:       run.ghost_count ?? 0,
+                  missing_count:     run.missing_count ?? 0,
+                  discrepancy_count: run.discrepancy_count ?? 0,
+                })
+                setPayrollStatus('done')
+                return
+              }
+            }
+            attempts++
+          }
+          setPayrollStatus('error')
+        } catch {
+          setPayrollStatus('error')
+        }
+      })()
+    }
+  }, [anyRunning, month, toolId, roster, getToken, toast])
 
   const monthLabel = month
     ? `${MONTH_FULL[parseInt(month.slice(5, 7)) - 1]} ${month.slice(0, 4)}`
@@ -270,6 +353,7 @@ export function ReconcileAllSection({ toolId, onSelectType }: Props) {
   }, [month, closing, monthLabel, getToken, toast])
 
   const allDone = bankStatus === 'done' && invoiceStatus === 'done' && vatStatus === 'done'
+    && (roster.length === 0 || payrollStatus === 'done')
 
   return (
     <div className="space-y-4">
@@ -296,8 +380,8 @@ export function ReconcileAllSection({ toolId, onSelectType }: Props) {
         )}
       </div>
 
-      {/* 3-column summary */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      {/* Summary grid — 4 cols when roster loaded, 3 otherwise */}
+      <div className={`grid gap-3 ${roster.length > 0 ? 'grid-cols-2 lg:grid-cols-4' : 'grid-cols-1 sm:grid-cols-3'}`}>
         <SummaryCard title="Bank" accent="#00a8cc" status={bankStatus} onDrillIn={() => onSelectType('bank')}>
           {bankData && (
             <div className="grid grid-cols-2 gap-3">
@@ -330,19 +414,34 @@ export function ReconcileAllSection({ toolId, onSelectType }: Props) {
             </div>
           )}
         </SummaryCard>
+
+        {roster.length > 0 && (
+          <SummaryCard title="Payroll" accent="#00a8cc" status={payrollStatus} onDrillIn={() => onSelectType('payroll')}>
+            {payrollData && (
+              <div className="grid grid-cols-2 gap-3">
+                <Stat label="Matched"      value={String(payrollData.matched_count)} />
+                <Stat label="Ghosts"       value={String(payrollData.ghost_count)}       danger={payrollData.ghost_count > 0} />
+                <Stat label="Missing"      value={String(payrollData.missing_count)}      danger={payrollData.missing_count > 0} />
+                <Stat label="Discrepancy"  value={String(payrollData.discrepancy_count)}  danger={payrollData.discrepancy_count > 0} />
+              </div>
+            )}
+          </SummaryCard>
+        )}
       </div>
 
-      {/* Payroll — needs roster */}
-      <div className="bg-brand-surface border border-brand-border rounded-sm px-4 py-3 flex items-center justify-between">
-        <div>
-          <p className="text-[11px] font-body text-brand-muted uppercase tracking-widest mb-0.5">Payroll</p>
-          <p className="text-[11px] font-body text-brand-muted">Requires an employee roster — run manually from the Payroll tab.</p>
+      {/* Payroll no-roster fallback */}
+      {roster.length === 0 && (
+        <div className="bg-brand-surface border border-brand-border rounded-sm px-4 py-3 flex items-center justify-between">
+          <div>
+            <p className="text-[11px] font-body text-brand-muted uppercase tracking-widest mb-0.5">Payroll</p>
+            <p className="text-[11px] font-body text-brand-muted">No roster saved — add employees in the Payroll tab to include payroll here.</p>
+          </div>
+          <button type="button" onClick={() => onSelectType('payroll')}
+            className="text-[11px] font-body text-brand-muted hover:text-brand-text transition-colors shrink-0 ml-4">
+            Go to Payroll →
+          </button>
         </div>
-        <button type="button" onClick={() => onSelectType('payroll')}
-          className="text-[11px] font-body text-brand-muted hover:text-brand-text transition-colors shrink-0 ml-4">
-          Go to Payroll →
-        </button>
-      </div>
+      )}
 
       {/* Close Period */}
       {allDone && !closedAt && (
