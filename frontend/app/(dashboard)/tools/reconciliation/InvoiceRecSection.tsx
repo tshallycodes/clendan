@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { useAuth } from '@clerk/nextjs'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useCurrency, useToast } from '@/components/Providers'
@@ -125,6 +125,11 @@ export function InvoiceRecSection({ toolId }: Props) {
       setLoading(false)
     }
   }, [toolId, periodStart, periodEnd, source, getToken, toast])
+
+  useEffect(() => {
+    if (toolId) run()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [toolId])
 
   const inputClass = 'bg-brand-bg border border-brand-border focus:border-[#00C853] rounded-sm px-3 py-1.5 text-xs font-body text-brand-text outline-none transition-colors'
   const labelClass = 'text-[11px] font-body text-brand-muted uppercase tracking-widest'
