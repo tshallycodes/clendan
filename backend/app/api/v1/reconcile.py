@@ -343,10 +343,11 @@ async def get_invoice_summary(
     total_outstanding = sum(i.outstanding_cents or 0 for i in invoices)
     paid_count = sum(1 for i in invoices if i.paid_at is not None)
     from datetime import timedelta
-    overdue_cutoff = datetime.now(UTC).replace(tzinfo=None) - timedelta(days=overdue_grace_days)
+    overdue_cutoff = datetime.now(UTC) - timedelta(days=overdue_grace_days)
     overdue_count = sum(
         1 for i in invoices
-        if i.paid_at is None and i.due_date is not None and i.due_date < overdue_cutoff
+        if i.paid_at is None and i.due_date is not None
+        and (i.due_date if i.due_date.tzinfo else i.due_date.replace(tzinfo=UTC)) < overdue_cutoff
     )
     flagged = [
         {
