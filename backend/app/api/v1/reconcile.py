@@ -291,6 +291,178 @@ async def trigger_reconciliation_run(
 
 
 # ---------------------------------------------------------------------------
+# GET /v1/reconciliation/invoice-summary
+# ---------------------------------------------------------------------------
+
+
+@router.get("/reconciliation/invoice-summary")
+async def get_invoice_summary(
+    current_user: RequireOrgAuth,
+    period_start: str = Query(...),
+    period_end: str = Query(...),
+    source: Optional[str] = Query(None),
+) -> dict:
+    """Summarise accounting invoices for the given period."""
+    db = get_db()
+    tenant_id = current_user.tenant_id
+
+    try:
+        start_dt = datetime.fromisoformat(period_start)
+        end_dt = datetime.fromisoformat(period_end)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=f"Invalid date format: {exc}") from exc
+
+    where: dict = {
+        "tenant_id": tenant_id,
+        "issue_date": {"gte": start_dt, "lte": end_dt},
+    }
+    if source:
+        where["source"] = source
+
+    invoices = await db.accountinginvoice.find_many(where=where, order={"issue_date": "desc"})
+
+    total_subtotal = sum(i.subtotal_cents or 0 for i in invoices)
+    total_tax = sum(i.tax_cents or 0 for i in invoices)
+    total_amount = sum(i.total_cents or 0 for i in invoices)
+    total_outstanding = sum(i.outstanding_cents or 0 for i in invoices)
+    paid_count = sum(1 for i in invoices if i.paid_at is not None)
+    overdue_count = sum(
+        1 for i in invoices
+        if i.paid_at is None and i.due_date is not None and i.due_date < datetime.now(UTC).replace(tzinfo=None)
+    )
+    flagged = [
+        {
+            "id": i.id,
+            "number": i.number,
+            "contact_name": i.contact_name,
+            "issue_date": i.issue_date.isoformat() if i.issue_date else None,
+            "due_date": i.due_date.isoformat() if i.due_date else None,
+            "subtotal_cents": i.subtotal_cents,
+            "tax_cents": i.tax_cents,
+            "total_cents": i.total_cents,
+            "outstanding_cents": i.outstanding_cents,
+            "status": i.status,
+            "source": i.source,
+            "flag_reason": "Missing tax — subtotal present but tax is zero",
+        }
+        for i in invoices
+        if (i.subtotal_cents or 0) > 0 and (i.tax_cents or 0) == 0
+    ]
+    items = [
+        {
+            "id": i.id,
+            "number": i.number,
+            "contact_name": i.contact_name,
+            "issue_date": i.issue_date.isoformat() if i.issue_date else None,
+            "due_date": i.due_date.isoformat() if i.due_date else None,
+            "subtotal_cents": i.subtotal_cents,
+            "tax_cents": i.tax_cents,
+            "total_cents": i.total_cents,
+            "outstanding_cents": i.outstanding_cents,
+            "paid_at": i.paid_at.isoformat() if i.paid_at else None,
+            "status": i.status,
+            "source": i.source,
+            "currency": i.currency,
+        }
+        for i in invoices
+    ]
+
+    return standard_response(data={
+        "period_start": period_start,
+        "period_end": period_end,
+        "total_invoices": len(invoices),
+        "paid_count": paid_count,
+        "overdue_count": overdue_count,
+        "total_subtotal_cents": total_subtotal,
+        "total_tax_cents": total_tax,
+        "total_amount_cents": total_amount,
+        "total_outstanding_cents": total_outstanding,
+        "flagged": flagged,
+        "items": items,
+    })
+
+
+# ---------------------------------------------------------------------------
+# GET /v1/reconciliation/vat-summary
+# ---------------------------------------------------------------------------
+
+
+@router.get("/reconciliation/vat-summary")
+async def get_vat_summary(
+    current_user: RequireOrgAuth,
+    period_start: str = Query(...),
+    period_end: str = Query(...),
+    source: Optional[str] = Query(None),
+) -> dict:
+    """Summarise VAT position for the given period using accounting invoices."""
+    db = get_db()
+    tenant_id = current_user.tenant_id
+
+    try:
+        start_dt = datetime.fromisoformat(period_start)
+        end_dt = datetime.fromisoformat(period_end)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=f"Invalid date format: {exc}") from exc
+
+    inv_where: dict = {
+        "tenant_id": tenant_id,
+        "issue_date": {"gte": start_dt, "lte": end_dt},
+    }
+    if source:
+        inv_where["source"] = source
+
+    invoices = await db.accountinginvoice.find_many(where=inv_where, order={"issue_date": "desc"})
+
+    output_vat = sum(i.tax_cents or 0 for i in invoices)
+    net_sales = sum(i.subtotal_cents or 0 for i in invoices)
+    vat_position = output_vat  # input VAT not available without bill tax_cents
+
+    flagged = [
+        {
+            "id": i.id,
+            "number": i.number,
+            "contact_name": i.contact_name,
+            "issue_date": i.issue_date.isoformat() if i.issue_date else None,
+            "subtotal_cents": i.subtotal_cents,
+            "tax_cents": i.tax_cents,
+            "total_cents": i.total_cents,
+            "source": i.source,
+            "flag_reason": "Missing VAT — sales invoice with no tax recorded",
+        }
+        for i in invoices
+        if (i.subtotal_cents or 0) > 0 and (i.tax_cents or 0) == 0
+    ]
+
+    invoice_lines = [
+        {
+            "id": i.id,
+            "number": i.number,
+            "contact_name": i.contact_name,
+            "issue_date": i.issue_date.isoformat() if i.issue_date else None,
+            "subtotal_cents": i.subtotal_cents,
+            "tax_cents": i.tax_cents,
+            "total_cents": i.total_cents,
+            "status": i.status,
+            "source": i.source,
+            "currency": i.currency,
+        }
+        for i in invoices
+    ]
+
+    return standard_response(data={
+        "period_start": period_start,
+        "period_end": period_end,
+        "output_vat_cents": output_vat,
+        "net_sales_cents": net_sales,
+        "vat_position_cents": vat_position,
+        "total_invoices": len(invoices),
+        "flagged_count": len(flagged),
+        "flagged": flagged,
+        "invoice_lines": invoice_lines,
+    })
+
+
+# ---------------------------------------------------------------------------
 # GET /v1/reconciliation/runs/{run_id}/export
 # ---------------------------------------------------------------------------
 

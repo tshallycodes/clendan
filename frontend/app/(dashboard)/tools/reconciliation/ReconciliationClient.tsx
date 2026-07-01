@@ -12,6 +12,8 @@ import { RunControls } from './RunControls'
 import { RunHistory } from './RunHistory'
 import { ReconciliationTable } from './ReconciliationTable'
 import { PayrollRecSection } from './PayrollRecSection'
+import { InvoiceRecSection } from './InvoiceRecSection'
+import { VatRecSection } from './VatRecSection'
 import { ToolExecutionsTab } from '@/components/dashboard/tools/ToolExecutionsTab'
 import { ToolApprovalsTab } from '@/components/dashboard/tools/ToolApprovalsTab'
 import { ToolAuditTab } from '@/components/dashboard/tools/ToolAuditTab'
@@ -22,7 +24,7 @@ import { CreateJournalEntryModal, type JournalEntrySuggestion } from '@/componen
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
 type Tab = 'overview' | 'reconcile' | 'executions' | 'approvals' | 'audit'
-type RecType = 'bank' | 'payroll'
+type RecType = 'bank' | 'payroll' | 'invoice' | 'vat'
 
 const TABS: { key: Tab; label: string }[] = [
   { key: 'overview', label: 'Overview' },
@@ -32,11 +34,11 @@ const TABS: { key: Tab; label: string }[] = [
   { key: 'reconcile', label: 'Reconcile' },
 ]
 
-const REC_TYPES: { key: string; label: string; soon?: boolean }[] = [
+const REC_TYPES: { key: string; label: string }[] = [
   { key: 'bank', label: 'Bank' },
   { key: 'payroll', label: 'Payroll' },
-  { key: 'invoice', label: 'Invoice', soon: true },
-  { key: 'vat', label: 'VAT', soon: true },
+  { key: 'invoice', label: 'Invoice' },
+  { key: 'vat', label: 'VAT' },
 ]
 
 function defaultPeriodStart() {
@@ -269,6 +271,7 @@ export function ReconciliationClient() {
       })
       if (!res.ok) { toast('Failed to load suggestion', 'error'); return }
       const json = await res.json()
+      setModalOpen(false)
       setJeSuggestion(json.data?.suggestion ?? null)
     } catch {
       toast('Network error', 'error')
@@ -431,22 +434,18 @@ export function ReconciliationClient() {
             <div className="space-y-4">
               {/* Rec type selector */}
               <div className="flex items-center gap-1 p-1 bg-brand-elevated border border-brand-border rounded-sm w-fit">
-                {REC_TYPES.map(({ key, label, soon }) => (
+                {REC_TYPES.map(({ key, label }) => (
                   <button
                     key={key}
                     type="button"
-                    disabled={!!soon}
-                    onClick={() => !soon && setRecType(key as RecType)}
+                    onClick={() => setRecType(key as RecType)}
                     className={`text-[11px] font-body px-3 py-1.5 rounded-[2px] transition-colors ${
                       recType === key
                         ? 'bg-brand-surface text-brand-text border border-brand-border'
-                        : soon
-                        ? 'text-brand-muted opacity-40 cursor-not-allowed'
                         : 'text-brand-muted hover:text-brand-text'
                     }`}
                   >
                     {label}
-                    {soon && <span className="ml-1 text-[9px] uppercase tracking-wider">soon</span>}
                   </button>
                 ))}
               </div>
@@ -478,6 +477,16 @@ export function ReconciliationClient() {
               {/* Payroll reconciliation */}
               {recType === 'payroll' && (
                 <PayrollRecSection toolId={deployed?.id ?? null} />
+              )}
+
+              {/* Invoice reconciliation */}
+              {recType === 'invoice' && (
+                <InvoiceRecSection toolId={deployed?.id ?? null} />
+              )}
+
+              {/* VAT reconciliation */}
+              {recType === 'vat' && (
+                <VatRecSection toolId={deployed?.id ?? null} />
               )}
             </div>
           )}
