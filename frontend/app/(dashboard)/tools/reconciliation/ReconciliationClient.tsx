@@ -123,6 +123,7 @@ export function ReconciliationClient() {
   const { toast } = useToast()
   const [activeTab, setActiveTab] = useState<Tab>('overview')
   const [recType, setRecType] = useState<RecType>('all')
+  const recTypeSelectorRef = useRef<HTMLDivElement>(null)
   const [runs, setRuns] = useState<ReconciliationRun[]>([])
   const [runsLoading, setRunsLoading] = useState(true)
   const [selectedRun, setSelectedRun] = useState<ReconciliationRun | null>(null)
@@ -481,7 +482,7 @@ export function ReconciliationClient() {
           {activeTab === 'reconcile' && (
             <div className="space-y-4">
               {/* Rec type selector */}
-              <div className="flex items-center gap-1 p-1 bg-brand-elevated border border-brand-border rounded-sm w-fit">
+              <div ref={recTypeSelectorRef} className="flex items-center gap-1 p-1 bg-brand-elevated border border-brand-border rounded-sm w-fit">
                 {REC_TYPES.map(({ key, label }) => (
                   <button
                     key={key}
@@ -502,7 +503,10 @@ export function ReconciliationClient() {
               {recType === 'all' && (
                 <ReconcileAllSection
                   toolId={deployed?.id ?? null}
-                  onSelectType={t => setRecType(t as RecType)}
+                  onSelectType={t => {
+                    setRecType(t as RecType)
+                    recTypeSelectorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                  }}
                 />
               )}
 
