@@ -29,7 +29,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
       <Sidebar />
       <MobileNav />
       <div className="flex-1 overflow-auto flex flex-col pt-[57px] lg:pt-0">
-        <main className="flex-1">{children}</main>
+        <main className="flex-1 pb-24">{children}</main>
       </div>
       <div className="fixed bottom-6 right-6 z-30">
         <ClenDashboard />
