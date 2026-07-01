@@ -186,6 +186,37 @@ async def trigger_payroll_run(
 
 
 # ---------------------------------------------------------------------------
+# GET /v1/payroll-runs/by-execution/{execution_id}
+# ---------------------------------------------------------------------------
+
+
+@router.get("/payroll-runs/by-execution/{execution_id}")
+async def get_payroll_run_by_execution(execution_id: str, current_user: RequireOrgAuth) -> dict:
+    """Look up a payroll run by its execution_id."""
+    db = get_db()
+    tenant_id = current_user.tenant_id
+
+    run = await db.payrollrun.find_first(
+        where={"execution_id": execution_id, "tenant_id": tenant_id}
+    )
+    if run is None:
+        raise HTTPException(status_code=404, detail="Payroll run not found")
+
+    results = run.results_json if isinstance(run.results_json, dict) else {}
+    return standard_response(data={
+        "id": run.id,
+        "period": run.period,
+        "status": run.status,
+        "missing": results.get("missing", []),
+        "ghosts": [
+            {"name": g.get("extracted_name", ""), "amount_minor": g.get("amount_minor", 0)}
+            for g in results.get("ghosts", [])
+        ],
+        "discrepancies": results.get("discrepancies", []),
+    })
+
+
+# ---------------------------------------------------------------------------
 # GET /v1/payroll-runs/{run_id}
 # ---------------------------------------------------------------------------
 

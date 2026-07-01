@@ -1,6 +1,6 @@
 ﻿'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useAuth } from '@clerk/nextjs'
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
@@ -261,7 +261,7 @@ function CategoriseAndMatchTrace({ trace }: { trace: Record<string, unknown> }) 
   )
 }
 
-function PayrollRecTrace({ trace }: { trace: Record<string, unknown> }) {
+function PayrollRecTrace({ trace, executionId, getToken }: { trace: Record<string, unknown>; executionId: string | null; getToken: () => Promise<string | null> }) {
   const status = (trace.status as string) || 'clean'
   const period = trace.period as string
   const rosterSize = (trace.roster_size as number) ?? 0
@@ -271,9 +271,41 @@ function PayrollRecTrace({ trace }: { trace: Record<string, unknown> }) {
   const discrepancyCount = (trace.discrepancy_count as number) ?? 0
   const totalPayrollMinor = (trace.total_payroll_minor as number) ?? 0
   const durationMs = trace.duration_ms as number
-  const missingList = (trace.missing as Array<{ name: string; expected_minor: number }>) || []
-  const ghostList = (trace.ghosts as Array<{ name: string; amount_minor: number }>) || []
-  const discrepancyList = (trace.discrepancies as Array<{ name: string; expected_minor: number; actual_minor: number; diff_pct: number }>) || []
+
+  const traceMissingList = (trace.missing as Array<{ name: string; expected_minor: number }>) || []
+  const traceGhostList = (trace.ghosts as Array<{ name: string; amount_minor: number }>) || []
+  const traceDiscrepancyList = (trace.discrepancies as Array<{ name: string; expected_minor: number; actual_minor: number; diff_pct: number }>) || []
+
+  const needsFetch = traceMissingList.length === 0 && traceGhostList.length === 0 && traceDiscrepancyList.length === 0
+    && (missingCount > 0 || ghostCount > 0 || discrepancyCount > 0)
+
+  const [fetched, setFetched] = useState<{ missing: typeof traceMissingList; ghosts: typeof traceGhostList; discrepancies: typeof traceDiscrepancyList } | null>(null)
+
+  const fetchDetails = useCallback(async () => {
+    if (!executionId) return
+    try {
+      const token = await getToken()
+      const res = await fetch(`${API}/v1/payroll-runs/by-execution/${executionId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      if (res.ok) {
+        const json = await res.json()
+        setFetched({
+          missing: json.data?.missing ?? [],
+          ghosts: json.data?.ghosts ?? [],
+          discrepancies: json.data?.discrepancies ?? [],
+        })
+      }
+    } catch { /* silent — detail is optional */ }
+  }, [executionId, getToken])
+
+  useEffect(() => {
+    if (needsFetch) fetchDetails()
+  }, [needsFetch, fetchDetails])
+
+  const missingList = traceMissingList.length > 0 ? traceMissingList : (fetched?.missing ?? [])
+  const ghostList = traceGhostList.length > 0 ? traceGhostList : (fetched?.ghosts ?? [])
+  const discrepancyList = traceDiscrepancyList.length > 0 ? traceDiscrepancyList : (fetched?.discrepancies ?? [])
 
   const missingPct = rosterSize > 0 ? Math.round((missingCount / rosterSize) * 100) : 0
 
@@ -473,7 +505,7 @@ function ApprovalTrace({ entry, trace }: { entry: AuditEntry; trace: Record<stri
   )
 }
 
-function TraceView({ entry }: { entry: AuditEntry }) {
+function TraceView({ entry, getToken }: { entry: AuditEntry; getToken: () => Promise<string | null> }) {
   const [showRaw, setShowRaw] = useState(false)
   const trace = typeof entry.reasoning_trace_json === 'object' ? entry.reasoning_trace_json : null
   const isApproval = entry.action === 'approval_approved' || entry.action === 'approval_rejected'

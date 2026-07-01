@@ -306,7 +306,7 @@ export function ReconciliationClient() {
     <motion.div variants={pageVariants} initial="hidden" animate="show" className="p-6 space-y-6">
       <motion.div variants={sectionVariants}>
         <Link href="/tools" className="text-[12px] font-body text-brand-muted hover:text-brand-secondary transition-colors">
-          ← Tools
+          ← Tools
         </Link>
       </motion.div>
 
