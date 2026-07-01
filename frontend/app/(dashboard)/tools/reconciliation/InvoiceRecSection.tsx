@@ -99,6 +99,7 @@ export function InvoiceRecSection({ toolId }: Props) {
   const [loading, setLoading] = useState(false)
   const [summary, setSummary] = useState<InvoiceSummary | null>(null)
   const [showFlagged, setShowFlagged] = useState(true)
+  const [showItems, setShowItems] = useState(false)
 
   const run = useCallback(async () => {
     if (!toolId) { toast('Deploy the tool first', 'error'); return }
@@ -241,49 +242,56 @@ export function InvoiceRecSection({ toolId }: Props) {
 
             {/* All invoices */}
             <div className="bg-brand-surface border border-brand-border rounded-sm overflow-hidden">
-              <div className="px-4 py-3 border-b border-brand-border">
+              <button
+                type="button"
+                onClick={() => setShowItems(s => !s)}
+                className="w-full flex items-center justify-between px-4 py-3 border-b border-brand-border text-left"
+              >
                 <p className="text-[11px] font-body uppercase tracking-widest text-brand-muted">
-                  All invoices · {fmtDate(summary.period_start)} – {fmtDate(summary.period_end)}
+                  All invoices · {fmtDate(summary.period_start)} – {fmtDate(summary.period_end)} ({summary.items.length})
                 </p>
-              </div>
-              {summary.items.length === 0 ? (
-                <div className="px-4 py-8 text-center text-[11px] font-body text-brand-muted">
-                  No invoices found for this period.
-                </div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="border-b border-brand-border">
-                        {['Number', 'Contact', 'Issue date', 'Due date', 'Subtotal', 'Tax', 'Total', 'Outstanding', 'Status', 'Source'].map(h => (
-                          <th key={h} className="px-3 py-2 text-left text-[10px] font-body uppercase tracking-widest text-brand-muted">{h}</th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-brand-border">
-                      {summary.items.map(inv => (
-                        <tr key={inv.id} className="hover:bg-brand-elevated transition-colors">
-                          <td className="px-3 py-2 text-[11px] font-body text-brand-text">{inv.number ?? '—'}</td>
-                          <td className="px-3 py-2 text-[11px] font-body text-brand-secondary">{inv.contact_name ?? '—'}</td>
-                          <td className="px-3 py-2 text-[11px] font-body text-brand-muted">{fmtDate(inv.issue_date)}</td>
-                          <td className="px-3 py-2 text-[11px] font-body text-brand-muted">{fmtDate(inv.due_date)}</td>
-                          <td className="px-3 py-2 text-[11px] font-body text-brand-text">{fmt(inv.subtotal_cents, symbol)}</td>
-                          <td className="px-3 py-2 text-[11px] font-body text-brand-text">{fmt(inv.tax_cents, symbol)}</td>
-                          <td className="px-3 py-2 text-[11px] font-body text-brand-text font-medium">{fmt(inv.total_cents, symbol)}</td>
-                          <td className="px-3 py-2 text-[11px] font-body text-brand-text">{fmt(inv.outstanding_cents, symbol)}</td>
-                          <td className="px-3 py-2">
-                            {inv.status && (
-                              <span className={`text-[10px] font-body px-1.5 py-0.5 rounded-[2px] capitalize ${statusClass(inv.status)}`}>
-                                {inv.status}
-                              </span>
-                            )}
-                          </td>
-                          <td className="px-3 py-2 text-[11px] font-body text-brand-muted capitalize">{inv.source ?? '—'}</td>
+                <span className="text-brand-muted text-xs">{showItems ? '↑' : '↓'}</span>
+              </button>
+              {showItems && (
+                summary.items.length === 0 ? (
+                  <div className="px-4 py-8 text-center text-[11px] font-body text-brand-muted">
+                    No invoices found for this period.
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="border-b border-brand-border">
+                          {['Number', 'Contact', 'Issue date', 'Due date', 'Subtotal', 'Tax', 'Total', 'Outstanding', 'Status', 'Source'].map(h => (
+                            <th key={h} className="px-3 py-2 text-left text-[10px] font-body uppercase tracking-widest text-brand-muted">{h}</th>
+                          ))}
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                      </thead>
+                      <tbody className="divide-y divide-brand-border">
+                        {summary.items.map(inv => (
+                          <tr key={inv.id} className="hover:bg-brand-elevated transition-colors">
+                            <td className="px-3 py-2 text-[11px] font-body text-brand-text">{inv.number ?? '—'}</td>
+                            <td className="px-3 py-2 text-[11px] font-body text-brand-secondary">{inv.contact_name ?? '—'}</td>
+                            <td className="px-3 py-2 text-[11px] font-body text-brand-muted">{fmtDate(inv.issue_date)}</td>
+                            <td className="px-3 py-2 text-[11px] font-body text-brand-muted">{fmtDate(inv.due_date)}</td>
+                            <td className="px-3 py-2 text-[11px] font-body text-brand-text">{fmt(inv.subtotal_cents, symbol)}</td>
+                            <td className="px-3 py-2 text-[11px] font-body text-brand-text">{fmt(inv.tax_cents, symbol)}</td>
+                            <td className="px-3 py-2 text-[11px] font-body text-brand-text font-medium">{fmt(inv.total_cents, symbol)}</td>
+                            <td className="px-3 py-2 text-[11px] font-body text-brand-text">{fmt(inv.outstanding_cents, symbol)}</td>
+                            <td className="px-3 py-2">
+                              {inv.status && (
+                                <span className={`text-[10px] font-body px-1.5 py-0.5 rounded-[2px] capitalize ${statusClass(inv.status)}`}>
+                                  {inv.status}
+                                </span>
+                              )}
+                            </td>
+                            <td className="px-3 py-2 text-[11px] font-body text-brand-muted capitalize">{inv.source ?? '—'}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )
               )}
             </div>
           </motion.div>
