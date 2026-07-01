@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useCurrency, useToast } from '@/components/Providers'
 import { CURRENCY_MAP } from '@/lib/currency'
 import { CreateJournalEntryModal, type JournalEntrySuggestion } from '@/components/dashboard/tools/CreateJournalEntryModal'
+import { MonthPicker } from '@/components/ui/MonthPicker'
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
@@ -451,12 +452,7 @@ export function PayrollRecSection({ toolId }: { toolId: string | null }) {
         {/* Period */}
         <div className="flex flex-col gap-1">
           <label className="text-[11px] font-body text-brand-muted uppercase tracking-widest">Period</label>
-          <input
-            type="month"
-            value={period}
-            onChange={e => setPeriod(e.target.value)}
-            className="bg-brand-bg border border-brand-border focus:border-[#00C853] text-brand-text text-xs font-body rounded-sm px-3 py-1.5 outline-none transition-colors w-fit"
-          />
+          <MonthPicker value={period} onChange={setPeriod} className="w-48" />
         </div>
 
         {/* Employee input */}
