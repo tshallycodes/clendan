@@ -408,7 +408,7 @@ async def get_connected_integrations(
 ):
     """Returns all connected integrations grouped by category for the authenticated tenant."""
     integrations = await db.integration.find_many(
-        where={"tenant_id": current_user.tenant_id, "status": {"in": ["connected", "syncing"]}},
+        where={"tenant_id": current_user.tenant_id, "status": {"not": "disconnected"}},
         order={"type": "asc"},
     )
     types = {i.type for i in integrations}

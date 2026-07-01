@@ -211,7 +211,7 @@ async def list_reconciliation_integrations(current_user: RequireOrgAuth) -> dict
     accounts, connected = await asyncio.gather(
         db.bankaccount.find_many(where={"tenant_id": tenant_id}),
         db.integration.find_many(
-            where={"tenant_id": tenant_id, "status": {"in": ["connected", "syncing"]}}
+            where={"tenant_id": tenant_id, "status": {"not": "disconnected"}}
         ),
     )
 
