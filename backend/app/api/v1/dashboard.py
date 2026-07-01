@@ -1,4 +1,5 @@
-﻿from collections import defaultdict
+﻿import asyncio
+from collections import defaultdict
 from datetime import datetime, timedelta, UTC
 from typing import Annotated
 from fastapi import APIRouter, Depends, Query
@@ -195,11 +196,22 @@ async def list_audit(
     tenant_id = current_user.tenant_id
     where: dict = {"tenant_id": tenant_id}
     if tool_id:
-        execs = await db.execution.find_many(
-            where={"tenant_id": tenant_id, "tool_id": tool_id},
-            take=500,
+        tool_rec, execs = await asyncio.gather(
+            db.tool.find_first(where={"id": tool_id, "tenant_id": tenant_id}),
+            db.execution.find_many(where={"tenant_id": tenant_id, "tool_id": tool_id}, take=500),
         )
-        where["execution_id"] = {"in": [e.id for e in execs]}
+        exec_ids = [e.id for e in execs]
+        # Reconciliation tools also write execution-less audit entries for invoice/VAT reads
+        if tool_rec and tool_rec.type == "reconciliation":
+            where["OR"] = [
+                {"execution_id": {"in": exec_ids}},
+                {"execution_id": None, "actor": {"in": [
+                    "tool:invoice_reconciliation:v1",
+                    "tool:vat_reconciliation:v1",
+                ]}},
+            ]
+        else:
+            where["execution_id"] = {"in": exec_ids}
 
     entries = await db.auditlog.find_many(
         where=where,
