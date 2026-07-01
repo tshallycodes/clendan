@@ -12,6 +12,7 @@ from datetime import date, datetime
 from typing import Any
 
 import anthropic
+from prisma import Json
 
 from app.core.config import get_settings
 from app.core.db import get_db
@@ -110,6 +111,8 @@ class PayrollReconciliationTool:
         tool_id: str,
         roster: list[dict[str, Any]],
         keywords: list[str] | None = None,
+        payroll_run_id: str | None = None,
+        execution_id: str | None = None,
     ) -> dict[str, Any]:
         start = time.monotonic()
         trace_id = get_trace_id()
@@ -225,7 +228,7 @@ class PayrollReconciliationTool:
         duration_ms = int((time.monotonic() - start) * 1000)
 
         # STEP 5: Write PayrollRun record
-        results_json: dict[str, Any] = {
+        results_payload: dict[str, Any] = {
             "trace_id": trace_id,
             "matched": [
                 {
@@ -263,48 +266,78 @@ class PayrollReconciliationTool:
             ],
         }
 
-        run = await db.payrollrun.create(
-            data={
-                "tenant_id": tenant_id,
-                "period": period,
-                "status": status,
-                "total_payroll_minor": total_payroll_minor,
-                "matched_count": len(matched),
-                "ghost_count": len(ghosts),
-                "missing_count": len(missing),
-                "discrepancy_count": len(discrepancies),
-                "results_json": results_json,
-                "roster_json": [
-                    {"name": r.name, "expected_minor": r.expected_minor}
-                    for r in roster_entries
-                ],
-            }
-        )
+        results_json_wrapped = Json(results_payload)
+
+        if payroll_run_id:
+            run = await db.payrollrun.update(
+                where={"id": payroll_run_id},
+                data={
+                    "status": status,
+                    "total_payroll_minor": total_payroll_minor,
+                    "matched_count": len(matched),
+                    "ghost_count": len(ghosts),
+                    "missing_count": len(missing),
+                    "discrepancy_count": len(discrepancies),
+                    "results_json": results_json_wrapped,
+                },
+            )
+        else:
+            run = await db.payrollrun.create(
+                data={
+                    "tenant_id": tenant_id,
+                    "period": period,
+                    "status": status,
+                    "total_payroll_minor": total_payroll_minor,
+                    "matched_count": len(matched),
+                    "ghost_count": len(ghosts),
+                    "missing_count": len(missing),
+                    "discrepancy_count": len(discrepancies),
+                    "results_json": results_json_wrapped,
+                    "roster_json": Json([
+                        {"name": r.name, "expected_minor": r.expected_minor}
+                        for r in roster_entries
+                    ]),
+                }
+            )
 
         # STEP 6: Write Execution record
-        execution = await db.execution.create(
-            data={
-                "tenant_id": tenant_id,
-                "tool_id": tool_id,
-                "input_ref": json.dumps({"period": period, "trace_id": trace_id}),
-                "decision": status,
-                "confidence": 1.0 if status == "clean" else 0.6 if status == "flagged" else 0.0,
-                "status": "completed",
-                "duration_ms": duration_ms,
-            }
-        )
+        confidence = 1.0 if status == "clean" else 0.6 if status == "flagged" else 0.0
 
-        # Update PayrollRun with execution_id
-        await db.payrollrun.update(
-            where={"id": run.id},
-            data={"execution_id": execution.id},
-        )
+        if execution_id:
+            await db.execution.update(
+                where={"id": execution_id},
+                data={
+                    "decision": status,
+                    "confidence": confidence,
+                    "status": "completed",
+                    "duration_ms": duration_ms,
+                    "input_ref": f"payroll-run:{run.id}:{trace_id[:8]}",
+                },
+            )
+            resolved_execution_id = execution_id
+        else:
+            execution = await db.execution.create(
+                data={
+                    "tenant_id": tenant_id,
+                    "tool_id": tool_id,
+                    "decision": status,
+                    "confidence": confidence,
+                    "status": "completed",
+                    "duration_ms": duration_ms,
+                    "input_ref": f"payroll-run:{run.id}:{trace_id[:8]}",
+                }
+            )
+            resolved_execution_id = execution.id
+            await db.payrollrun.update(
+                where={"id": run.id},
+                data={"execution_id": resolved_execution_id},
+            )
 
         # STEP 7: Audit — append-only, must succeed or operation fails
         await db.auditlog.create(
             data={
                 "tenant_id": tenant_id,
-                "execution_id": execution.id,
+                "execution_id": resolved_execution_id,
                 "actor": f"tool:{tool_id}",
                 "action": "payroll_reconciliation:run",
                 "reasoning_trace_json": {
@@ -420,6 +453,10 @@ async def run_payroll_rec_job(
 ) -> dict[str, Any]:
     """arq job wrapper for the Payroll Reconciliation Tool."""
     db = get_db()
+
+    existing_run = await db.payrollrun.find_unique(where={"id": payroll_run_id})
+    execution_id = existing_run.execution_id if existing_run else None
+
     tool_record = await db.tool.find_unique(where={"id": tool_id})
     cfg = (tool_record.config_json or {}) if tool_record else {}
     raw_keywords = cfg.get("payroll_keywords", "")
@@ -437,6 +474,8 @@ async def run_payroll_rec_job(
             tool_id=tool_id,
             roster=roster,
             keywords=keywords,
+            payroll_run_id=payroll_run_id,
+            execution_id=execution_id,
         )
         return result
     except Exception as exc:
