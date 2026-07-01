@@ -9,7 +9,6 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
 const TOOL_TYPES = [
   { value: 'invoice_processing',  label: 'Invoice Processing'  },
-  { value: 'ai_accountant',       label: 'AI Accountant'       },
   { value: 'receipt_processing',  label: 'Receipt Processing'  },
   { value: 'reconciliation',      label: 'Reconciliation'      },
   { value: 'expense_control',     label: 'Expense Control'     },

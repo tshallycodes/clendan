@@ -21,11 +21,12 @@ import { CreateJournalEntryModal, type JournalEntrySuggestion } from '@/componen
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
-type Tab = 'overview' | 'executions' | 'approvals' | 'audit'
+type Tab = 'overview' | 'reconcile' | 'executions' | 'approvals' | 'audit'
 type RecType = 'bank' | 'payroll'
 
 const TABS: { key: Tab; label: string }[] = [
   { key: 'overview', label: 'Overview' },
+  { key: 'reconcile', label: 'Reconcile' },
   { key: 'executions', label: 'Executions' },
   { key: 'approvals', label: 'Approvals' },
   { key: 'audit', label: 'Audit' },
@@ -371,57 +372,6 @@ export function ReconciliationClient() {
         >
           {activeTab === 'overview' && (
             <div className="space-y-4">
-              {/* Rec type selector */}
-              <div className="flex items-center gap-1 p-1 bg-brand-elevated border border-brand-border rounded-sm w-fit">
-                {REC_TYPES.map(({ key, label, soon }) => (
-                  <button
-                    key={key}
-                    type="button"
-                    disabled={!!soon}
-                    onClick={() => !soon && setRecType(key as RecType)}
-                    className={`text-[11px] font-body px-3 py-1.5 rounded-[2px] transition-colors ${
-                      recType === key
-                        ? 'bg-brand-surface text-brand-text border border-brand-border'
-                        : soon
-                        ? 'text-brand-muted opacity-40 cursor-not-allowed'
-                        : 'text-brand-muted hover:text-brand-text'
-                    }`}
-                  >
-                    {label}
-                    {soon && <span className="ml-1 text-[9px] uppercase tracking-wider">soon</span>}
-                  </button>
-                ))}
-              </div>
-
-              {/* Bank reconciliation */}
-              {recType === 'bank' && (
-                <>
-                  <RunControls
-                    periodStart={periodStart}
-                    periodEnd={periodEnd}
-                    toolReady={!!deployed?.id}
-                    running={running}
-                    onPeriodStartChange={setPeriodStart}
-                    onPeriodEndChange={setPeriodEnd}
-                    onRun={handleRun}
-                  />
-                  <div className="space-y-2 mt-5">
-                    <p className="text-[11px] font-body uppercase tracking-widest text-brand-muted">Run History</p>
-                    <RunHistory
-                      runs={runs}
-                      loading={runsLoading}
-                      selectedId={selectedRun?.id ?? null}
-                      onSelect={(r) => { setSelectedRun(r); fetchItems(r.id); setModalOpen(true) }}
-                    />
-                  </div>
-                </>
-              )}
-
-              {/* Payroll reconciliation */}
-              {recType === 'payroll' && (
-                <PayrollRecSection toolId={deployed?.id ?? null} />
-              )}
-
               {/* How it works */}
               <div className="bg-brand-surface border border-brand-border rounded-sm overflow-hidden">
                 <div className="px-4 py-3 border-b border-brand-border">
@@ -475,6 +425,60 @@ export function ReconciliationClient() {
                   ))}
                 </motion.ul>
               </div>
+            </div>
+          )}
+          {activeTab === 'reconcile' && (
+            <div className="space-y-4">
+              {/* Rec type selector */}
+              <div className="flex items-center gap-1 p-1 bg-brand-elevated border border-brand-border rounded-sm w-fit">
+                {REC_TYPES.map(({ key, label, soon }) => (
+                  <button
+                    key={key}
+                    type="button"
+                    disabled={!!soon}
+                    onClick={() => !soon && setRecType(key as RecType)}
+                    className={`text-[11px] font-body px-3 py-1.5 rounded-[2px] transition-colors ${
+                      recType === key
+                        ? 'bg-brand-surface text-brand-text border border-brand-border'
+                        : soon
+                        ? 'text-brand-muted opacity-40 cursor-not-allowed'
+                        : 'text-brand-muted hover:text-brand-text'
+                    }`}
+                  >
+                    {label}
+                    {soon && <span className="ml-1 text-[9px] uppercase tracking-wider">soon</span>}
+                  </button>
+                ))}
+              </div>
+
+              {/* Bank reconciliation */}
+              {recType === 'bank' && (
+                <>
+                  <RunControls
+                    periodStart={periodStart}
+                    periodEnd={periodEnd}
+                    toolReady={!!deployed?.id}
+                    running={running}
+                    onPeriodStartChange={setPeriodStart}
+                    onPeriodEndChange={setPeriodEnd}
+                    onRun={handleRun}
+                  />
+                  <div className="space-y-2 mt-5">
+                    <p className="text-[11px] font-body uppercase tracking-widest text-brand-muted">Run History</p>
+                    <RunHistory
+                      runs={runs}
+                      loading={runsLoading}
+                      selectedId={selectedRun?.id ?? null}
+                      onSelect={(r) => { setSelectedRun(r); fetchItems(r.id); setModalOpen(true) }}
+                    />
+                  </div>
+                </>
+              )}
+
+              {/* Payroll reconciliation */}
+              {recType === 'payroll' && (
+                <PayrollRecSection toolId={deployed?.id ?? null} />
+              )}
             </div>
           )}
           {activeTab === 'executions' && <ToolExecutionsTab toolId={deployed?.id ?? null} />}

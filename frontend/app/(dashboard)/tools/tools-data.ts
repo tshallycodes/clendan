@@ -44,22 +44,6 @@ export const TOOLS: ToolDef[] = [
     ],
   },
   {
-    slug: 'ai-accountant',
-    type: 'ai_accountant',
-    name: 'AI Accountant',
-    desc: 'Automate transaction categorisation, invoice matching, and payroll reconciliation with AI.',
-    capabilities: [
-      'Automatic transaction categorisation with confidence scoring',
-      'Human review queue for low-confidence categorisations',
-      'Learns from manual corrections over time',
-      'Strict chart-of-accounts mode enforcement',
-      'Payroll reconciliation against HR data with ghost employee detection',
-      'Payroll journal entry posting with automated approval routing',
-      'Batch processing for high-volume transaction periods',
-      'Configurable model retraining frequency',
-    ],
-  },
-  {
     slug: 'month-end-close',
     type: 'month_end_close',
     name: 'Month-End Close',
