@@ -167,6 +167,69 @@ function DocumentIntelligenceTrace({ trace }: { trace: Record<string, unknown> }
   )
 }
 
+function PayrollRecTrace({ trace }: { trace: Record<string, unknown> }) {
+  const status = (trace.status as string) || 'clean'
+  const period = trace.period as string
+  const matchedCount = (trace.matched_count as number) ?? 0
+  const missingCount = (trace.missing_count as number) ?? 0
+  const ghostCount = (trace.ghost_count as number) ?? 0
+  const discrepancyCount = (trace.discrepancy_count as number) ?? 0
+  const totalPayrollMinor = (trace.total_payroll_minor as number) ?? 0
+  const durationMs = trace.duration_ms as number
+
+  const statusConfig = {
+    clean:   { label: 'Clean — no issues found',      color: 'text-[#00C853]', bg: 'bg-[rgba(0,200,83,0.08)]',   border: 'border-[rgba(0,200,83,0.2)]' },
+    flagged: { label: 'Flagged — review required',     color: 'text-[#f5a623]', bg: 'bg-[rgba(245,166,35,0.08)]', border: 'border-[rgba(245,166,35,0.2)]' },
+    blocked: { label: 'Blocked — too many missing',    color: 'text-[#ff4d6d]', bg: 'bg-[rgba(255,77,109,0.08)]', border: 'border-[rgba(255,77,109,0.2)]' },
+  }
+  const sc = statusConfig[status as keyof typeof statusConfig] ?? statusConfig.clean
+
+  return (
+    <div className="space-y-4 pt-2">
+      <div className="flex items-center gap-3 flex-wrap">
+        <div className={`inline-flex px-3 py-1.5 rounded-sm border ${sc.bg} ${sc.border}`}>
+          <span className={`text-xs font-body font-medium ${sc.color}`}>{sc.label}</span>
+        </div>
+        {period && (
+          <span className="text-[11px] font-body text-brand-muted">Period: {period}</span>
+        )}
+      </div>
+
+      <div className="grid grid-cols-4 gap-2">
+        <div className="bg-brand-bg border border-brand-border rounded-sm p-3">
+          <p className="text-[11px] font-body text-brand-muted uppercase tracking-widest">Matched</p>
+          <p className="text-xl font-heading font-bold text-[#00C853] mt-1">{matchedCount}</p>
+        </div>
+        <div className="bg-brand-bg border border-brand-border rounded-sm p-3">
+          <p className="text-[11px] font-body text-brand-muted uppercase tracking-widest">Missing</p>
+          <p className={`text-xl font-heading font-bold mt-1 ${missingCount > 0 ? 'text-[#ff4d6d]' : 'text-brand-text'}`}>
+            {missingCount}
+          </p>
+        </div>
+        <div className="bg-brand-bg border border-brand-border rounded-sm p-3">
+          <p className="text-[11px] font-body text-brand-muted uppercase tracking-widest">Ghosts</p>
+          <p className={`text-xl font-heading font-bold mt-1 ${ghostCount > 0 ? 'text-[#f5a623]' : 'text-brand-text'}`}>
+            {ghostCount}
+          </p>
+        </div>
+        <div className="bg-brand-bg border border-brand-border rounded-sm p-3">
+          <p className="text-[11px] font-body text-brand-muted uppercase tracking-widest">Discrepancies</p>
+          <p className={`text-xl font-heading font-bold mt-1 ${discrepancyCount > 0 ? 'text-[#f5a623]' : 'text-brand-text'}`}>
+            {discrepancyCount}
+          </p>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-6 text-[11px] font-body text-brand-muted">
+        {totalPayrollMinor > 0 && (
+          <span>Total payroll: {(totalPayrollMinor / 100).toLocaleString('en-GB', { minimumFractionDigits: 2 })}</span>
+        )}
+        {durationMs != null && <span>Duration: {durationMs}ms</span>}
+      </div>
+    </div>
+  )
+}
+
 const DECISION_CONFIG: Record<string, { label: string; color: string; bg: string; border: string }> = {
   routed:            { label: 'Routed to tool',      color: 'text-[#00a8cc]', bg: 'bg-[rgba(0,168,204,0.08)]',  border: 'border-[rgba(0,168,204,0.2)]' },
   auto_approved:     { label: 'Auto-approved',        color: 'text-[#00C853]', bg: 'bg-[rgba(0,200,83,0.08)]',   border: 'border-[rgba(0,200,83,0.2)]' },
@@ -279,9 +342,10 @@ function TraceView({ entry }: { entry: AuditEntry }) {
   const isApproval = entry.action === 'approval_approved' || entry.action === 'approval_rejected'
   const isReconciliation = !isApproval && entry.action?.startsWith('reconciliation:') && trace && 'overall_decision' in trace
   const isDocumentIntelligence = !isApproval && !isReconciliation && entry.action?.startsWith('document_processed:') && trace != null
-  const isOrchestrator = !isApproval && !isReconciliation && !isDocumentIntelligence && trace && 'decision' in trace
+  const isPayrollRec = !isApproval && !isReconciliation && !isDocumentIntelligence && entry.action === 'payroll_reconciliation:run' && trace != null
+  const isOrchestrator = !isApproval && !isReconciliation && !isDocumentIntelligence && !isPayrollRec && trace && 'decision' in trace
 
-  const hasFormatted = isApproval || isReconciliation || isDocumentIntelligence || isOrchestrator
+  const hasFormatted = isApproval || isReconciliation || isDocumentIntelligence || isPayrollRec || isOrchestrator
 
   return (
     <div className="space-y-2">
@@ -303,7 +367,9 @@ function TraceView({ entry }: { entry: AuditEntry }) {
             ? <ReconciliationTrace trace={trace!} />
             : isDocumentIntelligence
               ? <DocumentIntelligenceTrace trace={trace!} />
-              : <OrchestratorTrace trace={trace!} />
+              : isPayrollRec
+                ? <PayrollRecTrace trace={trace!} />
+                : <OrchestratorTrace trace={trace!} />
       ) : (
         entry.reasoning_trace_json && (
           <pre className="text-[11px] font-body text-brand-secondary whitespace-pre-wrap bg-brand-bg border border-brand-border rounded-sm p-3 overflow-x-auto max-h-64">
