@@ -12,6 +12,7 @@ import { ToolAuditTab } from '@/components/dashboard/tools/ToolAuditTab'
 import { CloseRunChecklist } from './CloseRunChecklist'
 import { CloseRunBottlenecks } from './CloseRunBottlenecks'
 import type { Tool } from '@/components/dashboard/tools/ToolCard'
+import { TOOLS } from '../tools-data'
 import { motion, AnimatePresence } from 'framer-motion'
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
@@ -21,29 +22,16 @@ function currentMonth(): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
 }
 
-interface SignOff {
-  email: string
-  signed_at: string
-}
-
+interface SignOff { email: string; signed_at: string }
 interface CloseTask {
-  task_key: string
-  label: string
+  task_key: string; label: string
   status: 'pending' | 'complete' | 'blocked'
-  completed_at: string | null
-  completed_by: string | null
-  notes: string | null
+  completed_at: string | null; completed_by: string | null; notes: string | null
 }
-
 interface CloseRun {
-  id: string
-  period: string
-  status: 'open' | 'in_progress' | 'closed'
-  tasks: CloseTask[]
-  sign_offs: SignOff[]
-  created_at: string
-  closed_at: string | null
-  closed_by_email: string | null
+  id: string; period: string; status: 'open' | 'in_progress' | 'closed'
+  tasks: CloseTask[]; sign_offs: SignOff[]
+  created_at: string; closed_at: string | null; closed_by_email: string | null
 }
 
 const RUN_STATUS_BADGE: Record<string, string> = {
@@ -57,17 +45,34 @@ const AUTONOMY_BADGE: Record<string, { label: string; className: string }> = {
   approve: { label: 'Approve', className: 'bg-[rgba(0,168,204,0.08)] text-[#00a8cc] border border-[rgba(0,168,204,0.2)]' },
 }
 
-type Tab = 'overview' | 'executions' | 'approvals' | 'audit'
+const AUTONOMY_DESC: Record<string, string> = {
+  auto:    'Executes automatically — no approval required before acting.',
+  approve: 'Every decision is routed to you for review before the agent acts.',
+}
+
+const HOW_IT_WORKS = [
+  { step: '01', label: 'Open',     desc: 'Select a period and click "Open Close Run". Clendan opens the checklist and queues an immediate evaluation.' },
+  { step: '02', label: 'Evaluate', desc: 'Auto-checks run against transaction categorisation, reconciliation status, and pending approvals — no manual input needed.' },
+  { step: '03', label: 'Confirm',  desc: 'Payroll must be manually confirmed by your team. Mark each manual gate complete before sign-offs can proceed.' },
+  { step: '04', label: 'Close',    desc: 'Once all tasks pass, required approvers click Sign Off. Clendan locks the period and writes the full audit record.' },
+]
+
+const MONTH_END_CLOSE_CAPABILITIES = TOOLS.find(t => t.slug === 'month-end-close')?.capabilities ?? []
+
+type Tab = 'overview' | 'close-books' | 'executions' | 'approvals' | 'audit'
 const TABS: { key: Tab; label: string }[] = [
-  { key: 'overview',   label: 'Overview' },
-  { key: 'executions', label: 'Executions' },
-  { key: 'approvals',  label: 'Approvals' },
-  { key: 'audit',      label: 'Audit' },
+  { key: 'overview',    label: 'Overview' },
+  { key: 'close-books', label: 'Close Books' },
+  { key: 'executions',  label: 'Executions' },
+  { key: 'approvals',   label: 'Approvals' },
+  { key: 'audit',       label: 'Audit' },
 ]
 
 const EASE = [0.25, 0.46, 0.45, 0.94] as const
 const pageVariants = { hidden: {}, show: { transition: { staggerChildren: 0.07 } } }
 const sectionVariants = { hidden: { opacity: 0, y: 14 }, show: { opacity: 1, y: 0, transition: { duration: 0.38, ease: EASE } } }
+const capabilityVariants = { hidden: {}, show: { transition: { staggerChildren: 0.05 } } }
+const capItemVariants = { hidden: { opacity: 0, x: -8 }, show: { opacity: 1, x: 0, transition: { duration: 0.25, ease: EASE } } }
 
 export function MonthEndCloseClient() {
   const { getToken } = useAuth()
@@ -121,8 +126,7 @@ export function MonthEndCloseClient() {
 
   async function handleOpen() {
     if (!deployed?.id) { toast('Deploy this tool to open a close run', 'error'); return }
-    setOpening(true)
-    setError(null)
+    setOpening(true); setError(null)
     try {
       const token = await getToken()
       const res = await fetch(`${API}/close-runs`, {
@@ -315,15 +319,61 @@ export function MonthEndCloseClient() {
 
           {activeTab === 'overview' && (
             <div className="space-y-4">
-              <div className="bg-brand-surface border border-brand-border rounded-sm px-4 py-3">
-                <p className="text-xs font-body text-brand-secondary leading-relaxed">
-                  Month-end close is a structured checklist for closing your books on a given period.
-                  Clendan automatically checks whether your transactions are categorised, reconciliation
-                  is complete, and all approvals are resolved. Payroll and sign-offs require manual
-                  confirmation from your team before the period can be marked closed.
-                </p>
+              <div className="bg-brand-surface border border-brand-border rounded-sm overflow-hidden">
+                <div className="px-4 py-3 border-b border-brand-border">
+                  <p className="text-[11px] font-body uppercase tracking-widest text-brand-muted">How it works</p>
+                  <p className="text-[11px] font-body text-brand-muted mt-0.5">Every close run follows this fixed flow — no step can be skipped</p>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-4 divide-x divide-brand-border">
+                  {HOW_IT_WORKS.map(({ step, label, desc }) => (
+                    <div key={step} className="px-4 py-4 space-y-1.5">
+                      <p className="text-[11px] font-body text-brand-muted">{step}</p>
+                      <p className="text-xs font-body font-medium text-brand-text">{label}</p>
+                      <p className="text-[11px] font-body text-brand-muted leading-relaxed">{desc}</p>
+                    </div>
+                  ))}
+                </div>
               </div>
 
+              {deployed && (
+                <div className="bg-brand-surface border border-brand-border rounded-sm overflow-hidden">
+                  <div className="px-4 py-3 border-b border-brand-border">
+                    <p className="text-[11px] font-body uppercase tracking-widest text-brand-muted">Configuration</p>
+                  </div>
+                  <div className="px-4 py-4 grid grid-cols-2 gap-6">
+                    <div className="space-y-1.5">
+                      <p className="text-[11px] font-body text-brand-muted uppercase tracking-widest">Autonomy</p>
+                      {badge && <span className={`text-[11px] font-body px-2 py-0.5 rounded-sm inline-block ${badge.className}`}>{badge.label}</span>}
+                      <p className="text-[11px] font-body text-brand-muted leading-relaxed">{AUTONOMY_DESC[deployed.autonomy_level] ?? ''}</p>
+                    </div>
+                    <div className="space-y-1.5">
+                      <p className="text-[11px] font-body text-brand-muted uppercase tracking-widest">Status</p>
+                      <p className="text-xs font-body text-brand-text">{deployed.status === 'active' ? 'Running' : 'Paused'}</p>
+                      <p className="text-[11px] font-body text-brand-muted">{deployed.status === 'active' ? 'Agent is live and processing' : 'Agent is paused — no runs will fire'}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div className="bg-brand-surface border border-brand-border rounded-sm overflow-hidden">
+                <div className="px-4 py-3 border-b border-brand-border">
+                  <p className="text-[11px] font-body uppercase tracking-widest text-brand-muted">Capabilities</p>
+                  <p className="text-[11px] font-body text-brand-muted mt-0.5">What this agent does once deployed and connected to your data</p>
+                </div>
+                <motion.ul variants={capabilityVariants} initial="hidden" animate="show" className="divide-y divide-brand-border">
+                  {MONTH_END_CLOSE_CAPABILITIES.map(cap => (
+                    <motion.li key={cap} variants={capItemVariants} className="flex items-start gap-3 px-4 py-3">
+                      <span className="text-brand-muted font-body text-[11px] mt-0.5 shrink-0">→</span>
+                      <span className="text-xs font-body text-brand-secondary">{cap}</span>
+                    </motion.li>
+                  ))}
+                </motion.ul>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'close-books' && (
+            <div className="space-y-4">
               <div className="flex items-center gap-3 flex-wrap">
                 <div className="flex flex-col gap-1">
                   <label className="text-[11px] font-body text-brand-muted uppercase tracking-widest">Period</label>
