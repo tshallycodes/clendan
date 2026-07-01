@@ -8,7 +8,7 @@ import asyncio
 import json
 import time
 from dataclasses import dataclass, field
-from datetime import date, datetime
+from datetime import datetime
 from typing import Any
 
 import anthropic
@@ -340,7 +340,7 @@ class PayrollReconciliationTool:
                 "execution_id": resolved_execution_id,
                 "actor": f"tool:{tool_id}",
                 "action": "payroll_reconciliation:run",
-                "reasoning_trace_json": {
+                "reasoning_trace_json": Json({
                     "trace_id": trace_id,
                     "period": period,
                     "status": status,
@@ -350,7 +350,7 @@ class PayrollReconciliationTool:
                     "discrepancy_count": len(discrepancies),
                     "total_payroll_minor": total_payroll_minor,
                     "duration_ms": duration_ms,
-                },
+                }),
                 "model_version": get_settings().claude_model,
             }
         )
