@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
@@ -9,25 +9,19 @@ import { ConfigDrawer } from '@/components/dashboard/tools/ConfigDrawer'
 import { ToolExecutionsTab } from '@/components/dashboard/tools/ToolExecutionsTab'
 import { ToolApprovalsTab } from '@/components/dashboard/tools/ToolApprovalsTab'
 import { ToolAuditTab } from '@/components/dashboard/tools/ToolAuditTab'
-import { TransactionsTab, type StatusFilter } from './TransactionsTab'
-import { MonthEndCloseTab } from './MonthEndCloseTab'
 import { PayrollRecTab } from './PayrollRecTab'
 import { JournalEntriesTab } from './JournalEntriesTab'
 import type { Tool } from '@/components/dashboard/tools/ToolCard'
-import type { Transaction } from '@/components/dashboard/transactions/TransactionRow'
 import { motion, AnimatePresence } from 'framer-motion'
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
-const PAGE_SIZE = 50
 
-type Tab = 'overview' | 'transactions' | 'executions' | 'approvals' | 'audit' | 'month-end-close' | 'payroll' | 'journal-entries'
+type Tab = 'overview' | 'executions' | 'approvals' | 'audit' | 'payroll' | 'journal-entries'
 const TABS: { key: Tab; label: string }[] = [
   { key: 'overview',        label: 'Overview' },
   { key: 'executions',      label: 'Executions' },
   { key: 'approvals',       label: 'Approvals' },
   { key: 'audit',           label: 'Audit' },
-  { key: 'transactions',    label: 'Transactions' },
-  { key: 'month-end-close', label: 'Month-End Close' },
   { key: 'payroll',         label: 'Payroll Rec' },
   { key: 'journal-entries', label: 'Journal Entries' },
 ]
@@ -44,7 +38,6 @@ const CAPABILITIES = [
   'Human review queue for low-confidence categorisations',
   'Learns from your team\'s manual corrections — configurable example window',
   'Strict chart-of-accounts enforcement — only codes that exist in your COA',
-  'Month-end close orchestration — auto-triggered on your configured day each month',
   'Payroll reconciliation with keyword-matched transaction detection and ghost employee flagging',
   'Payroll journal entry posting with automated approval routing',
   'Batch processing for high-volume transaction periods',
@@ -77,17 +70,9 @@ export function AiAccountantClient() {
   const { toast } = useToast()
   const [activeTab, setActiveTab] = useState<Tab>('overview')
   const [deployed, setDeployed] = useState<Tool | null>(null)
-  const [transactions, setTransactions] = useState<Transaction[]>([])
-  const [listTotal, setListTotal] = useState(0)
   const [pendingCount, setPendingCount] = useState(0)
   const [categorisedCount, setCategorisedCount] = useState(0)
   const [matchedCount, setMatchedCount] = useState(0)
-  const [offset, setOffset] = useState(0)
-  const [loadingMore, setLoadingMore] = useState(false)
-  const [categories, setCategories] = useState<{ income: string[]; expenses: string[] }>({ income: [], expenses: [] })
-  const [filter, setFilter] = useState<StatusFilter>('all')
-  const filterRef = useRef<StatusFilter>('all')
-  const filterMountedRef = useRef(false)
   const [running, setRunning] = useState(false)
   const [polling, setPolling] = useState(false)
   const [showConfig, setShowConfig] = useState(false)
@@ -108,33 +93,18 @@ export function AiAccountantClient() {
     return found
   }, [getToken])
 
-  const fetchTransactions = useCallback(async (fromOffset = 0, replace = true, statusFilter?: StatusFilter) => {
+  const fetchCounts = useCallback(async (): Promise<{ pending: number; categorised: number; matched: number } | undefined> => {
     const token = await getToken()
-    const params = new URLSearchParams({ limit: String(PAGE_SIZE), offset: String(fromOffset) })
-    const sf = statusFilter ?? filterRef.current
-    if (sf && sf !== 'all') params.set('status', sf)
-    const res = await fetch(`${API}/transactions?${params}`, { headers: { Authorization: `Bearer ${token}` } })
+    const res = await fetch(`${API}/transactions?limit=0`, { headers: { Authorization: `Bearer ${token}` } })
     if (!res.ok) return
     const json = await res.json()
-    const txns: Transaction[] = json.data?.transactions ?? []
-    const serverPending: number = json.data?.pending_count ?? 0
-    const serverCategorised: number = json.data?.categorised_count ?? 0
-    const serverMatched: number = json.data?.matched_count ?? 0
-    setListTotal(json.data?.total ?? 0)
-    setPendingCount(serverPending)
-    setCategorisedCount(serverCategorised)
-    setMatchedCount(serverMatched)
-    if (replace) { setTransactions(txns); setOffset(txns.length) }
-    else { setTransactions(prev => [...prev, ...txns]); setOffset(prev => prev + txns.length) }
-    return { txns, pending: serverPending, categorised: serverCategorised, matched: serverMatched }
-  }, [getToken])
-
-  const fetchCategories = useCallback(async () => {
-    const token = await getToken()
-    const res = await fetch(`${API}/transactions/categories`, { headers: { Authorization: `Bearer ${token}` } })
-    if (!res.ok) return
-    const json = await res.json()
-    if (json.data) setCategories(json.data)
+    const pending: number = json.data?.pending_count ?? 0
+    const categorised: number = json.data?.categorised_count ?? 0
+    const matched: number = json.data?.matched_count ?? 0
+    setPendingCount(pending)
+    setCategorisedCount(categorised)
+    setMatchedCount(matched)
+    return { pending, categorised, matched }
   }, [getToken])
 
   const fetchPendingApprovals = useCallback(async (toolId: string) => {
@@ -151,7 +121,7 @@ export function AiAccountantClient() {
   useEffect(() => {
     async function init() {
       const deployedTool = await fetchDeployed()
-      await Promise.all([fetchTransactions(), fetchCategories()])
+      await fetchCounts()
       if (deployedTool?.id) fetchPendingApprovals(deployedTool.id)
     }
     init()
@@ -189,7 +159,7 @@ export function AiAccountantClient() {
         active = false
         setPolling(false)
         setRunning(false)
-        await fetchTransactions(0, true)
+        await fetchCounts()
         toast('Categorisation stopped', 'info')
         return
       }
@@ -204,12 +174,12 @@ export function AiAccountantClient() {
         active = false
         setPolling(false)
         setRunning(false)
-        await fetchTransactions(0, true)
+        await fetchCounts()
         toast('Categorisation blocked — confidence too low. Lower the confidence threshold in tool config.', 'error')
         return
       }
 
-      const result = await fetchTransactions(0, true)
+      const result = await fetchCounts()
       if (!result) return
       const newCategorisedCount = result.categorised + result.matched
       if (execState === 'done' || newCategorisedCount > pollStartCategorisedRef.current) {
@@ -226,13 +196,7 @@ export function AiAccountantClient() {
       setRunning(false)
     }, 12 * 60 * 1000)
     return () => { active = false; clearInterval(interval); clearTimeout(timeout) }
-  }, [polling, fetchTransactions, fetchPendingApprovals, toast, getToken, deployed?.id])
-
-  useEffect(() => {
-    filterRef.current = filter
-    if (!filterMountedRef.current) { filterMountedRef.current = true; return }
-    fetchTransactions(0, true, filter !== 'all' ? filter : undefined)
-  }, [filter, fetchTransactions])
+  }, [polling, fetchCounts, fetchPendingApprovals, toast, getToken, deployed?.id])
 
   async function handleToggle() {
     if (!deployed) return
@@ -319,47 +283,18 @@ export function AiAccountantClient() {
     }
   }
 
-  async function handleExportCsv() {
-    const token = await getToken()
-    const params = new URLSearchParams()
-    if (filter !== 'all') params.set('status', filter)
-    const res = await fetch(`${API}/transactions/export?${params}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-    if (!res.ok) { toast('Export failed — please try again', 'error'); return }
-    const blob = await res.blob()
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `transactions${filter !== 'all' ? `_${filter}` : ''}.csv`
-    a.click()
-    URL.revokeObjectURL(url)
-  }
-
-  async function handleLoadMore() {
-    setLoadingMore(true)
-    try { await fetchTransactions(offset, false, filter !== 'all' ? filter : undefined) } finally { setLoadingMore(false) }
-  }
-
-  function handleCategoryUpdate(id: string, category: string) {
-    setTransactions(prev => prev.map(t => t.id === id ? { ...t, ai_category: category, status: 'categorised' } : t))
-  }
-
   const isActive = deployed?.status === 'active'
   const badge = deployed ? (AUTONOMY_BADGE[deployed.autonomy_level] ?? AUTONOMY_BADGE.approve) : null
   const actionLoading = toggling || deploying
 
   const totalAll = pendingCount + categorisedCount + matchedCount
   const categorisedPct = totalAll > 0 ? Math.round(((categorisedCount + matchedCount) / totalAll) * 100) : 0
-  const counts: Record<StatusFilter, number> = {
-    all: totalAll, pending: pendingCount, categorised: categorisedCount, matched: matchedCount,
-  }
 
   return (
     <motion.div variants={pageVariants} initial="hidden" animate="show" className="px-6 pt-6 pb-24 space-y-6">
       <motion.div variants={sectionVariants}>
         <Link href="/tools" className="text-[12px] font-body text-brand-muted hover:text-brand-secondary transition-colors">
-          ← Tools
+          &larr; Tools
         </Link>
       </motion.div>
 
@@ -370,7 +305,7 @@ export function AiAccountantClient() {
             {badge && <span className={`text-[11px] font-body px-2 py-0.5 rounded-sm ${badge.className}`}>{badge.label}</span>}
           </div>
           <p className="text-xs font-body text-brand-muted max-w-xl">
-            Automate transaction categorisation, invoice matching, and month-end close with AI.
+            Automate transaction categorisation, invoice matching, and payroll reconciliation with AI.
           </p>
         </div>
         {canConfigure && (
@@ -489,20 +424,11 @@ export function AiAccountantClient() {
                     ) : (
                       <>
                         <p className="text-xs font-body text-brand-text">{pendingCount} transaction{pendingCount !== 1 ? 's' : ''} not yet categorised</p>
-                        <p className="text-[11px] font-body text-brand-muted mt-0.5">Run the AI to categorise automatically, or review and categorise manually in the Transactions tab</p>
+                        <p className="text-[11px] font-body text-brand-muted mt-0.5">Run the AI to categorise automatically.</p>
                       </>
                     )}
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
-                    {!running && (
-                      <button
-                        type="button"
-                        onClick={() => { setActiveTab('transactions'); setFilter('pending') }}
-                        className="text-xs font-body bg-transparent border border-brand-border text-brand-text hover:bg-brand-elevated rounded-sm px-4 py-1.5 transition-colors"
-                      >
-                        View
-                      </button>
-                    )}
                     {running ? (
                       <button
                         type="button"
@@ -583,28 +509,6 @@ export function AiAccountantClient() {
             </div>
           )}
 
-          {activeTab === 'transactions' && (
-            <TransactionsTab
-              transactions={transactions}
-              total={listTotal}
-              offset={offset}
-              loadingMore={loadingMore}
-              filter={filter}
-              counts={counts}
-              categories={categories}
-              running={running}
-              deployedId={deployed?.id ?? null}
-              pendingCount={pendingCount}
-              onFilterChange={setFilter}
-              onCategoryUpdate={handleCategoryUpdate}
-              onCategoriseNow={handleCategoriseNow}
-              onStop={handleStopCategorise}
-              onExportCsv={handleExportCsv}
-              onLoadMore={handleLoadMore}
-            />
-          )}
-
-          {activeTab === 'month-end-close' && <MonthEndCloseTab toolId={deployed?.id ?? null} />}
           {activeTab === 'payroll' && <PayrollRecTab toolId={deployed?.id ?? null} />}
           {activeTab === 'journal-entries' && <JournalEntriesTab toolId={deployed?.id ?? null} />}
           {activeTab === 'executions' && <ToolExecutionsTab toolId={deployed?.id ?? null} />}

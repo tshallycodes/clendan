@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import json
 import time
-from datetime import date, datetime, UTC
+from datetime import datetime, UTC
 from typing import Any
 
 from app.core.db import get_db
@@ -247,7 +247,7 @@ async def run_month_end_close_scheduled(_ctx: dict) -> None:
     now_utc = datetime.now(UTC)
     pool = await get_queue_pool()
 
-    tools = await db.tool.find_many(where={"type": "ai_accountant", "status": "active"})
+    tools = await db.tool.find_many(where={"type": "month_end_close", "status": "active"})
     for tool in tools:
         try:
             cfg = tool.config_json or {}
