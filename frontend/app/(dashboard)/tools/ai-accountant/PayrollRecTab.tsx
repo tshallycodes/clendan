@@ -215,7 +215,7 @@ export function PayrollRecTab({ toolId }: { toolId: string | null }) {
       })
       if (toolRes.ok) {
         const toolJson = await toolRes.json()
-        const cfg = (toolJson.data?.config ?? {}) as Record<string, unknown>
+        const cfg = (toolJson.data?.config_json ?? {}) as Record<string, unknown>
         toolConfigRef.current = cfg
         const employees = cfg.saved_employees as RosterEntry[] | undefined
         if (employees?.length) {
