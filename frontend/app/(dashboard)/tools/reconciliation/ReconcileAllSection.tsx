@@ -448,13 +448,18 @@ export function ReconcileAllSection({ toolId, onViewAudit }: Props) {
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ period_start: start, period_end: end }),
       })
-      if (!res.ok) { toast('Failed to close period', 'error'); return }
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => null)
+        toast(errJson?.error ?? `Failed to close period (${res.status})`, 'error')
+        return
+      }
       const json = await res.json()
-      setClosedAt(json.data.closed_at)
-      setClosedBy(json.data.closed_by)
+      setClosedAt(json.data?.closed_at ?? null)
+      setClosedBy(json.data?.closed_by ?? null)
       toast(`${monthLabel} closed`, 'success')
-    } catch {
-      toast('Network error', 'error')
+    } catch (err) {
+      console.error('[close-period]', err)
+      toast('Network error — check console for details', 'error')
     } finally {
       setClosing(false)
     }
