@@ -11,6 +11,7 @@ import uuid
 
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
+from prisma import Json
 from pydantic import BaseModel, field_validator
 
 from app.core.db import get_db
@@ -135,7 +136,7 @@ async def trigger_payroll_run(
             "tenant_id": tenant_id,
             "period": body.period,
             "status": "pending",
-            "roster_json": roster_raw,
+            "roster_json": Json(roster_raw),
         }
     )
 
