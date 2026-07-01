@@ -40,6 +40,8 @@ interface InvoiceStats {
   total_outstanding_cents: number
   total_tax_cents: number
   flagged_count: number
+  paid_count?: number
+  overdue_count?: number
 }
 
 interface VatStats {
@@ -147,6 +149,7 @@ export function ReconcileAllSection({ toolId, onViewAudit }: Props) {
   const [vatData, setVatData]             = useState<VatStats | null>(null)
   const [payrollData, setPayrollData]     = useState<PayrollStats | null>(null)
   const [closing, setClosing]             = useState(false)
+  const [reopening, setReopening]         = useState(false)
   const [closedAt, setClosedAt]           = useState<string | null>(null)
   const [closedBy, setClosedBy]           = useState<string | null>(null)
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -227,7 +230,7 @@ export function ReconcileAllSection({ toolId, onViewAudit }: Props) {
         const j = await invoiceRes.value.json()
         const d = j.data
         if (d) {
-          setInvoiceData({ total_invoices: d.total_invoices, total_amount_cents: d.total_amount_cents, total_outstanding_cents: d.total_outstanding_cents, total_tax_cents: d.total_tax_cents, flagged_count: d.flagged?.length ?? d.flagged_count ?? 0 })
+          setInvoiceData({ total_invoices: d.total_invoices, total_amount_cents: d.total_amount_cents, total_outstanding_cents: d.total_outstanding_cents, total_tax_cents: d.total_tax_cents, flagged_count: d.flagged?.length ?? d.flagged_count ?? 0, paid_count: d.paid_count, overdue_count: d.overdue_count })
           setInvoiceStatus('done')
         }
       }
@@ -300,11 +303,13 @@ export function ReconcileAllSection({ toolId, onViewAudit }: Props) {
       const j = await invRes.value.json()
       const d = j.data
       setInvoiceData({
-        total_invoices:         d.total_invoices,
-        total_amount_cents:     d.total_amount_cents,
+        total_invoices:          d.total_invoices,
+        total_amount_cents:      d.total_amount_cents,
         total_outstanding_cents: d.total_outstanding_cents,
-        total_tax_cents:        d.total_tax_cents,
-        flagged_count:          d.flagged?.length ?? 0,
+        total_tax_cents:         d.total_tax_cents,
+        flagged_count:           d.flagged?.length ?? 0,
+        paid_count:              d.paid_count,
+        overdue_count:           d.overdue_count,
       })
       setInvoiceStatus('done')
     } else {
@@ -455,6 +460,105 @@ export function ReconcileAllSection({ toolId, onViewAudit }: Props) {
     }
   }, [month, closing, monthLabel, getToken, toast])
 
+  const reopenPeriod = useCallback(async () => {
+    if (!month || reopening) return
+    setReopening(true)
+    try {
+      const { start, end } = monthToRange(month)
+      const token = await getToken()
+      const res = await fetch(`${API}/reconciliation/reopen-period`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ period_start: start, period_end: end }),
+      })
+      if (!res.ok) { toast('Failed to reopen period', 'error'); return }
+      setClosedAt(null)
+      setClosedBy(null)
+      toast(`${monthLabel} reopened`, 'success')
+    } catch {
+      toast('Network error', 'error')
+    } finally {
+      setReopening(false)
+    }
+  }, [month, reopening, monthLabel, getToken, toast])
+
+  const exportPDF = useCallback(() => {
+    if (!month) return
+    const { start, end } = monthToRange(month)
+    const fmtDate = (s: string) => new Date(s).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+    const fmtAmt = (c: number | null | undefined) => c == null ? '—' : `${symbol}${(c / 100).toLocaleString('en-GB', { minimumFractionDigits: 2 })}`
+
+    const rows = [
+      bankData ? [
+        'Bank reconciliation',
+        `${bankData.matched_count} matched`,
+        `${bankData.unmatched_count} unmatched`,
+        `${bankData.flagged_count} flagged`,
+        `${bankData.total_txn_count} total transactions`,
+      ] : null,
+      invoiceData ? [
+        'Invoice reconciliation',
+        `${invoiceData.total_invoices} invoices`,
+        `${invoiceData.paid_count ?? 0} paid · ${invoiceData.overdue_count ?? 0} overdue`,
+        `${fmtAmt(invoiceData.total_outstanding_cents)} outstanding`,
+        `${fmtAmt(invoiceData.total_tax_cents)} tax`,
+      ] : null,
+      vatData ? [
+        'VAT reconciliation',
+        `${fmtAmt(vatData.output_vat_cents)} output VAT`,
+        `${fmtAmt(vatData.net_sales_cents)} net sales`,
+        `${fmtAmt(vatData.vat_position_cents)} position`,
+        `${vatData.flagged_count} flagged`,
+      ] : null,
+      payrollData ? [
+        'Payroll reconciliation',
+        `${payrollData.matched_count} matched`,
+        `${payrollData.missing_count} missing`,
+        `${payrollData.ghost_count} ghosts`,
+        `${payrollData.discrepancy_count} discrepancies`,
+      ] : null,
+    ].filter(Boolean) as string[][]
+
+    const tableRows = rows.map(r => `
+      <tr>
+        <td style="padding:10px 14px;font-weight:600;color:#0d1117;border-bottom:1px solid #e0e0e0">${r[0]}</td>
+        ${r.slice(1).map(v => `<td style="padding:10px 14px;color:#3d4754;border-bottom:1px solid #e0e0e0">${v}</td>`).join('')}
+      </tr>`).join('')
+
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8">
+      <title>Reconciliation Report — ${monthLabel}</title>
+      <style>
+        body{font-family:'Helvetica Neue',Arial,sans-serif;color:#0d1117;margin:0;padding:40px}
+        h1{font-size:22px;font-weight:700;margin:0 0 4px}
+        .sub{font-size:13px;color:#5d6b7a;margin:0 0 32px}
+        table{width:100%;border-collapse:collapse;font-size:13px}
+        th{text-align:left;padding:8px 14px;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:#5d6b7a;border-bottom:2px solid #0d1117}
+        .footer{margin-top:40px;font-size:11px;color:#5d6b7a;border-top:1px solid #e0e0e0;padding-top:16px}
+        @media print{body{padding:24px}}
+      </style>
+    </head><body>
+      <h1>Reconciliation Report</h1>
+      <p class="sub">Period: ${fmtDate(start)} – ${fmtDate(end)}</p>
+      <table>
+        <thead><tr>
+          <th>Section</th><th>Stat 1</th><th>Stat 2</th><th>Stat 3</th><th>Stat 4</th>
+        </tr></thead>
+        <tbody>${tableRows}</tbody>
+      </table>
+      <div class="footer">
+        ${closedAt ? `Closed by ${closedBy?.split('@')[0] ?? closedBy} · ${new Date(closedAt).toLocaleString('en-GB')}` : ''}
+        &nbsp;·&nbsp; Generated ${new Date().toLocaleString('en-GB')}
+      </div>
+    </body></html>`
+
+    const win = window.open('', '_blank')
+    if (!win) { toast('Allow pop-ups to export PDF', 'error'); return }
+    win.document.write(html)
+    win.document.close()
+    win.focus()
+    setTimeout(() => win.print(), 400)
+  }, [month, monthLabel, symbol, bankData, invoiceData, vatData, payrollData, closedAt, closedBy, toast])
+
   const allDone = bankStatus === 'done' && invoiceStatus === 'done' && vatStatus === 'done'
     && (roster.length === 0 || payrollStatus === 'done')
 
@@ -563,11 +667,28 @@ export function ReconcileAllSection({ toolId, onViewAudit }: Props) {
       {closedAt && (
         <div className="bg-[rgba(0,200,83,0.06)] border border-[rgba(0,200,83,0.2)] rounded-sm px-4 py-3 flex items-center gap-3">
           <span className="text-[#00C853] text-sm">✓</span>
-          <div>
+          <div className="flex-1 min-w-0">
             <p className="text-xs font-body text-[#00C853]">{monthLabel} closed</p>
             <p className="text-[11px] font-body text-brand-muted">
               by {closedBy?.split('@')[0]} · {new Date(closedAt).toLocaleString('en-GB')}
             </p>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={exportPDF}
+              className="text-[11px] font-body px-3 py-1.5 rounded-sm border border-brand-border text-brand-text hover:bg-brand-elevated transition-colors"
+            >
+              Export PDF
+            </button>
+            <button
+              type="button"
+              onClick={reopenPeriod}
+              disabled={reopening}
+              className="text-[11px] font-body px-3 py-1.5 rounded-sm border border-[rgba(255,77,109,0.3)] text-[#ff4d6d] hover:bg-[rgba(255,77,109,0.06)] transition-colors disabled:opacity-40"
+            >
+              {reopening ? 'Reopening…' : 'Reopen'}
+            </button>
           </div>
         </div>
       )}

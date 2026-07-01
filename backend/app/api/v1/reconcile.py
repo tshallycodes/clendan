@@ -598,12 +598,16 @@ async def close_period_status(
     period_start: str = Query(...),
     period_end: str = Query(...),
 ) -> dict:
-    """Check whether a period has been closed via the audit log."""
+    """Check whether a period has been closed via the audit log.
+    The most recent period_closed / period_reopened entry wins."""
     db = get_db()
     logs = await db.auditlog.find_many(
-        where={"tenant_id": current_user.tenant_id, "action": "period_closed"},
+        where={
+            "tenant_id": current_user.tenant_id,
+            "action": {"in": ["period_closed", "period_reopened"]},
+        },
         order={"created_at": "desc"},
-        take=100,
+        take=200,
     )
     for log in logs:
         trace = log.reasoning_trace_json
@@ -612,12 +616,58 @@ async def close_period_status(
             and trace.get("period_start") == period_start
             and trace.get("period_end") == period_end
         ):
-            return standard_response(data={
-                "closed": True,
-                "closed_at": trace.get("closed_at"),
-                "closed_by": trace.get("closed_by"),
-            })
+            if log.action == "period_closed":
+                return standard_response(data={
+                    "closed": True,
+                    "closed_at": trace.get("closed_at"),
+                    "closed_by": trace.get("closed_by"),
+                })
+            else:  # period_reopened
+                return standard_response(data={"closed": False, "closed_at": None, "closed_by": None})
     return standard_response(data={"closed": False, "closed_at": None, "closed_by": None})
+
+
+# ---------------------------------------------------------------------------
+# POST /v1/reconciliation/reopen-period
+# ---------------------------------------------------------------------------
+
+
+@router.post("/reconciliation/reopen-period")
+async def reopen_period(
+    body: ClosePeriodRequest,
+    current_user: RequireOrgAuth,
+) -> dict:
+    """Reopen a previously closed period. Appends an immutable audit log entry."""
+    db = get_db()
+    tenant_id = current_user.tenant_id
+
+    try:
+        datetime.fromisoformat(body.period_start)
+        datetime.fromisoformat(body.period_end)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=f"Invalid date format: {exc}") from exc
+
+    reopened_at = datetime.now(UTC)
+
+    await db.auditlog.create(data={
+        "tenant_id": tenant_id,
+        "actor": current_user.email or "unknown",
+        "action": "period_reopened",
+        "reasoning_trace_json": {
+            "period_start": body.period_start,
+            "period_end": body.period_end,
+            "reopened_by": current_user.email,
+            "reopened_at": reopened_at.isoformat(),
+        },
+        "model_version": "manual",
+    })
+
+    return standard_response(data={
+        "reopened_at": reopened_at.isoformat(),
+        "reopened_by": current_user.email,
+        "period_start": body.period_start,
+        "period_end": body.period_end,
+    })
 
 
 # ---------------------------------------------------------------------------
