@@ -180,8 +180,9 @@ function DiscrepancyTable({ rows, symbol }: { rows: DiscrepancyRow[]; symbol: st
 
 export function PayrollRecTab({ toolId }: { toolId: string | null }) {
   const { getToken } = useAuth()
-  const { currency } = useCurrency()
+  const { currency, rates } = useCurrency()
   const currencySymbol = CURRENCY_MAP[currency]?.symbol ?? currency
+  const usdToTarget = currency === 'USD' ? 1 : (rates[currency] ?? 1)
   const { toast } = useToast()
 
   const [period, setPeriod] = useState(() => {
@@ -285,7 +286,12 @@ export function PayrollRecTab({ toolId }: { toolId: string | null }) {
     setSaving(true)
     try {
       const token = await getToken()
-      const newConfig = { ...toolConfigRef.current, saved_employees: validRoster }
+      // Convert USD input to tenant currency before persisting
+      const convertedRoster: RosterEntry[] = validRoster.map(e => ({
+        name: e.name,
+        expected_minor: Math.round(e.expected_minor * usdToTarget),
+      }))
+      const newConfig = { ...toolConfigRef.current, saved_employees: convertedRoster }
       const res = await fetch(`${API}/tools/${toolId}`, {
         method: 'PATCH',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
@@ -293,7 +299,7 @@ export function PayrollRecTab({ toolId }: { toolId: string | null }) {
       })
       if (!res.ok) { toast('Failed to save employees', 'error'); return }
       toolConfigRef.current = newConfig
-      setSavedRoster(validRoster)
+      setSavedRoster(convertedRoster)
       setRosterText('')
       toast(`${validRoster.length} employee${validRoster.length !== 1 ? 's' : ''} saved`, 'success')
     } finally {
@@ -406,7 +412,9 @@ export function PayrollRecTab({ toolId }: { toolId: string | null }) {
         {/* Employee input */}
         <div className="flex flex-col gap-2">
           <div className="flex items-center justify-between gap-2">
-            <label className="text-[11px] font-body text-brand-muted uppercase tracking-widest">Employees</label>
+            <label className="text-[11px] font-body text-brand-muted uppercase tracking-widest">
+              Employees <span className="normal-case tracking-normal text-brand-muted opacity-60">· salary in USD</span>
+            </label>
             <div className="flex items-center gap-2">
               <input
                 ref={fileInputRef}
@@ -429,7 +437,7 @@ export function PayrollRecTab({ toolId }: { toolId: string | null }) {
             rows={5}
             value={rosterText}
             onChange={e => setRosterText(e.target.value)}
-            placeholder={`Paste your roster — one employee per line:\n\nJane Smith, 5000\nBob Jones, 4500\nAlice Chen, 6200\n\nFormat: Name, Monthly salary`}
+            placeholder={`Paste your roster — one employee per line:\n\nJane Smith, 5000\nBob Jones, 4500\nAlice Chen, 6200\n\nFormat: Name, Monthly salary (USD)`}
             className="w-full bg-brand-bg border border-brand-border focus:border-[#00C853] text-brand-text placeholder:text-brand-muted text-xs font-body rounded-sm px-3 py-2.5 outline-none transition-colors resize-y leading-relaxed"
           />
 
@@ -440,7 +448,12 @@ export function PayrollRecTab({ toolId }: { toolId: string | null }) {
                 <p className="text-[11px] font-body text-[#ff4d6d]">{parseErrors.length} line{parseErrors.length !== 1 ? 's' : ''} with errors</p>
               )}
               {validRoster.length > 0 && parseErrors.length === 0 && (
-                <p className="text-[11px] font-body text-[#00C853]">{validRoster.length} employee{validRoster.length !== 1 ? 's' : ''} ready to save</p>
+                <p className="text-[11px] font-body text-[#00C853]">
+                  {validRoster.length} employee{validRoster.length !== 1 ? 's' : ''} ready
+                  {currency !== 'USD' && usdToTarget > 0 && (
+                    <span className="text-brand-muted ml-1">· 1 USD = {currencySymbol}{usdToTarget.toFixed(4)}</span>
+                  )}
+                </p>
               )}
             </div>
             <button
@@ -473,7 +486,7 @@ export function PayrollRecTab({ toolId }: { toolId: string | null }) {
               </p>
               <button
                 type="button"
-                onClick={() => setRosterText(savedRoster.map(e => `${e.name}, ${(e.expected_minor / 100).toFixed(0)}`).join('\n'))}
+                onClick={() => setRosterText(savedRoster.map(e => `${e.name}, ${Math.round(e.expected_minor / usdToTarget / 100)}`).join('\n'))}
                 className="text-[10px] font-body text-brand-muted hover:text-brand-text transition-colors"
               >
                 Load into editor
