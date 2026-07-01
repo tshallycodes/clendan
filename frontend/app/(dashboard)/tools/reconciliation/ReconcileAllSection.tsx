@@ -155,12 +155,29 @@ export function ReconcileAllSection({ toolId, onSelectType }: Props) {
     if (!toolId) return
     async function loadRoster() {
       const token = await getToken()
-      const res = await fetch(`${API}/tools/${toolId}`, { headers: { Authorization: `Bearer ${token}` } })
-      if (!res.ok) return
-      const json = await res.json()
-      const employees = (json.data?.config_json as Record<string, unknown> | null)?.saved_employees
-      if (Array.isArray(employees) && employees.length > 0) {
-        setRoster(employees as RosterEntry[])
+      const h = { Authorization: `Bearer ${token}` }
+
+      // Primary: saved_employees in tool config_json
+      const toolRes = await fetch(`${API}/tools/${toolId}`, { headers: h })
+      if (toolRes.ok) {
+        const toolJson = await toolRes.json()
+        const cfg = (toolJson.data?.config_json ?? {}) as Record<string, unknown>
+        const employees = cfg.saved_employees as RosterEntry[] | undefined
+        if (Array.isArray(employees) && employees.length > 0) {
+          setRoster(employees)
+          return
+        }
+      }
+
+      // Fallback: roster_json from the most recent payroll run
+      const runsRes = await fetch(`${API}/payroll-runs`, { headers: h })
+      if (runsRes.ok) {
+        const runsJson = await runsRes.json()
+        const runs: Array<{ roster_json?: RosterEntry[] }> = runsJson.data?.runs ?? []
+        const roster = runs[0]?.roster_json
+        if (Array.isArray(roster) && roster.length > 0) {
+          setRoster(roster)
+        }
       }
     }
     loadRoster()
