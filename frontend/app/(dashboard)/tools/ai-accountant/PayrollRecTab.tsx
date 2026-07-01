@@ -286,18 +286,23 @@ export function PayrollRecTab({ toolId }: { toolId: string | null }) {
     const prev = savedRoster
     const updated = savedRoster.filter(e => e.name !== name)
     setSavedRoster(updated)
-    const token = await getToken()
-    const newConfig = { ...toolConfigRef.current, saved_employees: updated }
-    const res = await fetch(`${API}/tools/${toolId}`, {
-      method: 'PATCH',
-      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ config: newConfig }),
-    })
-    if (res.ok) {
-      toolConfigRef.current = newConfig
-    } else {
+    try {
+      const token = await getToken()
+      const newConfig = { ...toolConfigRef.current, saved_employees: updated }
+      const res = await fetch(`${API}/tools/${toolId}`, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ config: newConfig }),
+      })
+      if (res.ok) {
+        toolConfigRef.current = newConfig
+      } else {
+        setSavedRoster(prev)
+        toast('Failed to remove employee', 'error')
+      }
+    } catch {
       setSavedRoster(prev)
-      toast('Failed to remove employee', 'error')
+      toast('Failed to remove employee — network error', 'error')
     }
   }
 
@@ -322,6 +327,8 @@ export function PayrollRecTab({ toolId }: { toolId: string | null }) {
       setSavedRoster(convertedRoster)
       setRosterText('')
       toast(`${validRoster.length} employee${validRoster.length !== 1 ? 's' : ''} saved`, 'success')
+    } catch {
+      toast('Failed to save employees — network error', 'error')
     } finally {
       setSaving(false)
     }
