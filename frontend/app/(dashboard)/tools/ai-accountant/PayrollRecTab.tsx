@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useCurrency, useToast } from '@/components/Providers'
 import { CURRENCY_MAP } from '@/lib/currency'
 import { MonthPicker } from './MonthPicker'
+import { CreateJournalEntryModal, type JournalEntrySuggestion } from '@/components/dashboard/tools/CreateJournalEntryModal'
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
@@ -197,6 +198,8 @@ export function PayrollRecTab({ toolId }: { toolId: string | null }) {
   const [activeRun, setActiveRun] = useState<PayrollRun | null>(null)
   const [results, setResults] = useState<RunResults | null>(null)
   const [exporting, setExporting] = useState(false)
+  const [jeSuggestion, setJeSuggestion] = useState<JournalEntrySuggestion | null>(null)
+  const [fetchingJE, setFetchingJE] = useState(false)
   const [history, setHistory] = useState<PayrollRun[]>([])
   const [loadingHistory, setLoadingHistory] = useState(false)
   const [historyLoaded, setHistoryLoaded] = useState(false)
@@ -353,6 +356,24 @@ export function PayrollRecTab({ toolId }: { toolId: string | null }) {
       toast('Export downloaded', 'success')
     } finally {
       setExporting(false)
+    }
+  }
+
+  async function handleCreateJE() {
+    if (!activeRun) return
+    setFetchingJE(true)
+    try {
+      const token = await getToken()
+      const res = await fetch(`${API}/journal-entries/suggest/payroll-run/${activeRun.id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      if (!res.ok) { toast('Failed to load suggestion', 'error'); return }
+      const json = await res.json()
+      setJeSuggestion(json.data?.suggestion ?? null)
+    } catch {
+      toast('Network error', 'error')
+    } finally {
+      setFetchingJE(false)
     }
   }
 
@@ -584,6 +605,14 @@ export function PayrollRecTab({ toolId }: { toolId: string | null }) {
                 >
                   {exporting ? 'Exporting…' : 'Export CSV'}
                 </button>
+                <button
+                  type="button"
+                  onClick={handleCreateJE}
+                  disabled={fetchingJE}
+                  className="text-[11px] font-body bg-[#00C853] text-black hover:bg-[#00a844] active:scale-[0.97] rounded-sm px-3 py-1 transition-all disabled:opacity-40"
+                >
+                  {fetchingJE ? 'Loading…' : 'Create Journal Entry'}
+                </button>
               </div>
               <div className="flex gap-3 flex-wrap">
                 <span className="text-[11px] font-body px-2 py-1 rounded-sm bg-[rgba(0,200,83,0.08)] text-[#00C853] border border-[rgba(0,200,83,0.2)]">
@@ -604,6 +633,12 @@ export function PayrollRecTab({ toolId }: { toolId: string | null }) {
           </motion.div>
         )}
       </AnimatePresence>
+
+      <CreateJournalEntryModal
+        suggestion={jeSuggestion}
+        onClose={() => setJeSuggestion(null)}
+        onCreated={() => setJeSuggestion(null)}
+      />
 
       {/* Run history */}
       <div className="space-y-2">

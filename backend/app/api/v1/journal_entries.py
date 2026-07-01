@@ -5,6 +5,7 @@ All queries scoped to current_user.tenant_id — no cross-tenant access.
 """
 from __future__ import annotations
 
+from datetime import UTC, datetime
 from typing import Optional
 
 from fastapi import APIRouter, HTTPException
@@ -295,3 +296,184 @@ async def void_journal_entry(
     )
 
     return standard_response(data={"entry_id": updated.id, "status": updated.status})
+
+
+# ---------------------------------------------------------------------------
+# GET /v1/journal-entries/suggest/payroll-run/{run_id}
+# ---------------------------------------------------------------------------
+
+
+@router.get("/journal-entries/suggest/payroll-run/{run_id}")
+async def suggest_payroll_journal_entry(
+    run_id: str,
+    current_user: RequireOrgAuth,
+) -> dict:
+    """Return a pre-filled journal entry suggestion from a completed payroll run."""
+    db = get_db()
+    tenant_id = current_user.tenant_id
+
+    run = await db.payrollrun.find_first(
+        where={"id": run_id, "tenant_id": tenant_id}
+    )
+    if run is None:
+        raise HTTPException(status_code=404, detail="Payroll run not found")
+
+    roster: list[dict] = run.roster_json or []
+    lines: list[dict] = []
+    for employee in roster:
+        name: str = employee.get("name", "Unknown")
+        expected_minor: int = employee.get("expected_minor", 0)
+        lines.append({
+            "account_code": "5000",
+            "account_name": f"Salary Expense — {name}",
+            "debit_minor": expected_minor,
+            "credit_minor": 0,
+        })
+
+    lines.append({
+        "account_code": "2100",
+        "account_name": "Wages Payable",
+        "debit_minor": 0,
+        "credit_minor": run.total_payroll_minor,
+    })
+
+    return standard_response(data={
+        "suggestion": {
+            "period": run.period,
+            "description": f"Payroll — {run.period}",
+            "entry_type": "payroll",
+            "lines": lines,
+        }
+    })
+
+
+# ---------------------------------------------------------------------------
+# GET /v1/journal-entries/suggest/reconciliation-run/{run_id}
+# ---------------------------------------------------------------------------
+
+
+@router.get("/journal-entries/suggest/reconciliation-run/{run_id}")
+async def suggest_reconciliation_journal_entry(
+    run_id: str,
+    current_user: RequireOrgAuth,
+) -> dict:
+    """Return a pre-filled journal entry suggestion from a completed reconciliation run."""
+    db = get_db()
+    tenant_id = current_user.tenant_id
+
+    run = await db.reconciliationrun.find_first(
+        where={"id": run_id, "tenant_id": tenant_id}
+    )
+    if run is None:
+        raise HTTPException(status_code=404, detail="Reconciliation run not found")
+
+    txns = await db.banktransaction.find_many(
+        where={
+            "tenant_id": tenant_id,
+            "date": {"gte": run.period_start, "lte": run.period_end},
+            "status": {"in": ["flagged", "unmatched"]},
+        },
+        include={"account": True},
+    )
+
+    period_str: str = run.period_start.strftime("%Y-%m")
+
+    if not txns:
+        lines: list[dict] = [
+            {
+                "account_code": "3000",
+                "account_name": "Reconciliation Adjustment — No Items",
+                "debit_minor": 0,
+                "credit_minor": 0,
+            },
+            {
+                "account_code": "3999",
+                "account_name": "Reconciliation Clearing Account",
+                "debit_minor": 0,
+                "credit_minor": 0,
+            },
+        ]
+    else:
+        groups: dict[str, int] = {}
+        for t in txns:
+            group_name = t.account.name if t.account else "Unknown Account"
+            groups[group_name] = groups.get(group_name, 0) + t.amount_minor
+
+        lines = []
+        for group_name, group_total in groups.items():
+            lines.append({
+                "account_code": "3000",
+                "account_name": f"Reconciliation Adjustment — {group_name}",
+                "debit_minor": group_total,
+                "credit_minor": 0,
+            })
+
+        lines.append({
+            "account_code": "3999",
+            "account_name": "Reconciliation Clearing Account",
+            "debit_minor": 0,
+            "credit_minor": sum(groups.values()),
+        })
+
+    return standard_response(data={
+        "suggestion": {
+            "period": period_str,
+            "description": f"Reconciliation Adjustment — {period_str}",
+            "entry_type": "adjustment",
+            "lines": lines,
+        }
+    })
+
+
+# ---------------------------------------------------------------------------
+# GET /v1/journal-entries/suggest/categorisation
+# ---------------------------------------------------------------------------
+
+
+@router.get("/journal-entries/suggest/categorisation")
+async def suggest_categorisation_journal_entry(
+    current_user: RequireOrgAuth,
+) -> dict:
+    """Return a pre-filled journal entry suggestion from categorised/matched transactions."""
+    db = get_db()
+    tenant_id = current_user.tenant_id
+
+    txns = await db.banktransaction.find_many(
+        where={
+            "tenant_id": tenant_id,
+            "status": {"in": ["categorised", "matched"]},
+            "ai_category": {"not": None},
+        }
+    )
+
+    current_period: str = datetime.now(UTC).strftime("%Y-%m")
+
+    groups: dict[str, int] = {}
+    for t in txns:
+        category: str = t.ai_category or "uncategorised"
+        groups[category] = groups.get(category, 0) + t.amount_minor
+
+    lines: list[dict] = []
+    for category, group_total in groups.items():
+        lines.append({
+            "account_code": "4000",
+            "account_name": category.replace("_", " ").title(),
+            "debit_minor": group_total,
+            "credit_minor": 0,
+        })
+
+    lines.append({
+        "account_code": "1000",
+        "account_name": "Bank Account",
+        "debit_minor": 0,
+        "credit_minor": sum(groups.values()),
+    })
+
+    return standard_response(data={
+        "suggestion": {
+            "period": current_period,
+            "description": f"Transaction Accruals — {current_period}",
+            "entry_type": "accrual",
+            "lines": lines,
+        }
+    })

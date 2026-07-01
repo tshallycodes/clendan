@@ -16,6 +16,7 @@ import { ToolApprovalsTab } from '@/components/dashboard/tools/ToolApprovalsTab'
 import { ToolAuditTab } from '@/components/dashboard/tools/ToolAuditTab'
 import { TOOLS } from '../tools-data'
 import { motion, AnimatePresence } from 'framer-motion'
+import { CreateJournalEntryModal, type JournalEntrySuggestion } from '@/components/dashboard/tools/CreateJournalEntryModal'
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
@@ -133,6 +134,8 @@ export function ReconciliationClient() {
   const [modalOpen, setModalOpen] = useState(false)
   const [polling, setPolling] = useState(false)
   const pollRunCountRef = useRef(0)
+  const [jeSuggestion, setJeSuggestion] = useState<JournalEntrySuggestion | null>(null)
+  const [fetchingJE, setFetchingJE] = useState(false)
 
   const fetchDeployed = useCallback(async () => {
     const token = await getToken()
@@ -280,6 +283,24 @@ export function ReconciliationClient() {
     } catch (err) {
       toast(err instanceof Error ? err.message : 'Network error', 'error')
       setRunning(false)
+    }
+  }
+
+  async function handleCreateJE() {
+    if (!selectedRun) return
+    setFetchingJE(true)
+    try {
+      const token = await getToken()
+      const res = await fetch(`${API}/journal-entries/suggest/reconciliation-run/${selectedRun.id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      if (!res.ok) { toast('Failed to load suggestion', 'error'); return }
+      const json = await res.json()
+      setJeSuggestion(json.data?.suggestion ?? null)
+    } catch {
+      toast('Network error', 'error')
+    } finally {
+      setFetchingJE(false)
     }
   }
 
@@ -457,6 +478,12 @@ export function ReconciliationClient() {
         />
       )}
 
+      <CreateJournalEntryModal
+        suggestion={jeSuggestion}
+        onClose={() => setJeSuggestion(null)}
+        onCreated={() => setJeSuggestion(null)}
+      />
+
       <AnimatePresence>
         {modalOpen && selectedRun && (
           <motion.div
@@ -488,13 +515,23 @@ export function ReconciliationClient() {
                     </p>
                   )}
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setModalOpen(false)}
-                  className="text-brand-muted hover:text-brand-text transition-colors"
-                >
-                  <span className="text-lg leading-none">✕</span>
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handleCreateJE}
+                    disabled={fetchingJE}
+                    className="text-[11px] font-body bg-[#00C853] text-black hover:bg-[#00a844] active:scale-[0.97] rounded-sm px-3 py-1.5 transition-all disabled:opacity-40"
+                  >
+                    {fetchingJE ? 'Loading…' : 'Create Journal Entry'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setModalOpen(false)}
+                    className="text-brand-muted hover:text-brand-text transition-colors"
+                  >
+                    <span className="text-lg leading-none">✕</span>
+                  </button>
+                </div>
               </div>
               <ReconciliationTable items={items} loading={itemsLoading} runId={selectedRun.id} onExport={handleExport} />
             </motion.div>

@@ -1,8 +1,13 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useAuth } from '@clerk/nextjs'
 import { TransactionRow, type Transaction } from '@/components/dashboard/transactions/TransactionRow'
 import { cn } from '@/lib/utils'
+import { useToast } from '@/components/Providers'
+import { CreateJournalEntryModal, type JournalEntrySuggestion } from '@/components/dashboard/tools/CreateJournalEntryModal'
+
+const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
 export type StatusFilter = 'all' | 'pending' | 'categorised' | 'matched'
 const FILTER_KEYS: StatusFilter[] = ['all', 'pending', 'categorised', 'matched']
@@ -230,6 +235,29 @@ export function TransactionsTab({
   filter, counts, categories, running, deployedId, pendingCount,
   onFilterChange, onCategoryUpdate, onCategoriseNow, onStop, onExportCsv, onLoadMore,
 }: Props) {
+  /* ── Accrual entry state ─────────────────────────────────────── */
+  const { getToken } = useAuth()
+  const { toast } = useToast()
+  const [jeSuggestion, setJeSuggestion] = useState<JournalEntrySuggestion | null>(null)
+  const [fetchingJE, setFetchingJE] = useState(false)
+
+  async function handleCreateAccrualEntry() {
+    setFetchingJE(true)
+    try {
+      const token = await getToken()
+      const res = await fetch(`${API}/journal-entries/suggest/categorisation`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      if (!res.ok) { toast('Failed to load suggestion', 'error'); return }
+      const json = await res.json()
+      setJeSuggestion(json.data?.suggestion ?? null)
+    } catch {
+      toast('Network error', 'error')
+    } finally {
+      setFetchingJE(false)
+    }
+  }
+
   /* ── Column filter state ─────────────────────────────────────── */
   const [columnFilters, setColumnFilters] = useState<Record<ColumnFilterKey, Set<string>>>({
     account: new Set(), merchant: new Set(), category: new Set(), invoice: new Set(), status: new Set(),
@@ -323,6 +351,16 @@ export function TransactionsTab({
                 <path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
               </svg>
               Clear {activeFilterCount} filter{activeFilterCount !== 1 ? 's' : ''}
+            </button>
+          )}
+          {transactions.filter(t => t.status === 'categorised' || t.status === 'matched').length > 0 && (
+            <button
+              type="button"
+              onClick={handleCreateAccrualEntry}
+              disabled={fetchingJE}
+              className="text-[11px] font-body border border-brand-border text-brand-muted hover:text-brand-text rounded-sm px-3 py-1.5 transition-colors disabled:opacity-40 shrink-0"
+            >
+              {fetchingJE ? 'Loading…' : 'Create Accrual Entry'}
             </button>
           )}
           <button
@@ -436,6 +474,12 @@ export function TransactionsTab({
           </button>
         </div>
       )}
+
+      <CreateJournalEntryModal
+        suggestion={jeSuggestion}
+        onClose={() => setJeSuggestion(null)}
+        onCreated={() => setJeSuggestion(null)}
+      />
     </div>
   )
 }
