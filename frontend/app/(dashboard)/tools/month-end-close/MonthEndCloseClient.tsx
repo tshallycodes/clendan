@@ -62,10 +62,10 @@ const MONTH_END_CLOSE_CAPABILITIES = TOOLS.find(t => t.slug === 'month-end-close
 type Tab = 'overview' | 'close-books' | 'executions' | 'approvals' | 'audit'
 const TABS: { key: Tab; label: string }[] = [
   { key: 'overview',    label: 'Overview' },
-  { key: 'close-books', label: 'Close Books' },
   { key: 'executions',  label: 'Executions' },
   { key: 'approvals',   label: 'Approvals' },
   { key: 'audit',       label: 'Audit' },
+  { key: 'close-books', label: 'Close Books' },
 ]
 
 const EASE = [0.25, 0.46, 0.45, 0.94] as const
