@@ -310,7 +310,7 @@ function PayrollRecTrace({ trace }: { trace: Record<string, unknown> }) {
       <div className="grid grid-cols-4 gap-2">
         <div className="bg-brand-bg border border-brand-border rounded-sm p-3">
           <p className="text-[11px] font-body text-brand-muted uppercase tracking-widest">Matched</p>
-          <p className="text-xl font-heading font-bold text-[#00C853] mt-1">{matchedCount}</p>
+          <p className={`text-xl font-heading font-bold mt-1 ${matchedCount > 0 ? 'text-[#00C853]' : 'text-brand-text'}`}>{matchedCount}</p>
         </div>
         <div className="bg-brand-bg border border-brand-border rounded-sm p-3">
           <p className="text-[11px] font-body text-brand-muted uppercase tracking-widest">Missing</p>
