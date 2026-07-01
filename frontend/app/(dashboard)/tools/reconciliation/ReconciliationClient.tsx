@@ -123,6 +123,7 @@ export function ReconciliationClient() {
   const { toast } = useToast()
   const [activeTab, setActiveTab] = useState<Tab>('overview')
   const [recType, setRecType] = useState<RecType>('all')
+  const [auditTarget, setAuditTarget] = useState<string | undefined>(undefined)
   const recTypeSelectorRef = useRef<HTMLDivElement>(null)
   const [runs, setRuns] = useState<ReconciliationRun[]>([])
   const [runsLoading, setRunsLoading] = useState(true)
@@ -503,9 +504,9 @@ export function ReconciliationClient() {
               {recType === 'all' && (
                 <ReconcileAllSection
                   toolId={deployed?.id ?? null}
-                  onSelectType={t => {
-                    setRecType(t as RecType)
-                    recTypeSelectorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                  onViewAudit={prefix => {
+                    setAuditTarget(prefix)
+                    setActiveTab('audit')
                   }}
                 />
               )}
@@ -552,7 +553,7 @@ export function ReconciliationClient() {
           )}
           {activeTab === 'executions' && <ToolExecutionsTab toolId={deployed?.id ?? null} />}
           {activeTab === 'approvals' && <ToolApprovalsTab toolId={deployed?.id ?? null} />}
-          {activeTab === 'audit' && <ToolAuditTab toolId={deployed?.id ?? null} />}
+          {activeTab === 'audit' && <ToolAuditTab key={auditTarget ?? 'audit'} toolId={deployed?.id ?? null} initialAction={auditTarget} />}
         </motion.div>
       </AnimatePresence>
 

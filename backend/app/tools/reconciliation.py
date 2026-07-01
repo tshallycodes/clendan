@@ -22,8 +22,8 @@ from app.tools.base import BaseTool, ToolOutput, ToolType
 
 logger = get_logger(__name__)
 
-_ACTOR = "tool:reconciliation:v1"
-_MODEL_VERSION = "reconciliation-v1"
+_ACTOR = "tool:bank_reconciliation:v1"
+_MODEL_VERSION = "bank_reconciliation-v1"
 
 
 
@@ -597,7 +597,7 @@ async def _execute_reconciliation(
     await write_audit_log(
         tenant_id=tenant_id,
         actor=_ACTOR,
-        action=f"reconciliation:{overall_decision}",
+        action=f"bank_reconciliation:{overall_decision}",
         reasoning_trace=reasoning_trace,
         model_version=_MODEL_VERSION,
         execution_id=execution_id,

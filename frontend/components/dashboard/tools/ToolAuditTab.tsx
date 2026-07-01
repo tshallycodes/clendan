@@ -505,17 +505,114 @@ function ApprovalTrace({ entry, trace }: { entry: AuditEntry; trace: Record<stri
   )
 }
 
+function fmtCents(cents: number | null | undefined, symbol = '$') {
+  if (cents == null) return `${symbol}0.00`
+  return `${symbol}${(cents / 100).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+}
+
+function fmtPeriod(start: string, end: string) {
+  const fmt = (s: string) => new Date(s).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' })
+  return `${fmt(start)} – ${fmt(end)}`
+}
+
+function AuditStatGrid({ stats }: { stats: { label: string; value: string; danger?: boolean }[] }) {
+  return (
+    <div className={`grid gap-2 grid-cols-${Math.min(stats.length, 4)}`}>
+      {stats.map(s => (
+        <div key={s.label} className="bg-brand-bg border border-brand-border rounded-sm p-3">
+          <p className="text-[11px] font-body text-brand-muted uppercase tracking-widest">{s.label}</p>
+          <p className={`text-xl font-heading font-bold mt-1 ${s.danger ? 'text-[#ff4d6d]' : 'text-brand-text'}`}>{s.value}</p>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function InvoiceRecAuditTrace({ trace }: { trace: Record<string, unknown> }) {
+  const start = trace.period_start as string
+  const end = trace.period_end as string
+  const source = trace.source as string
+  const total = (trace.total_invoices as number) ?? 0
+  const paid = (trace.paid_count as number) ?? 0
+  const overdue = (trace.overdue_count as number) ?? 0
+  const flagged = (trace.flagged_count as number) ?? 0
+  const amount = trace.total_amount_cents as number
+  const outstanding = trace.total_outstanding_cents as number
+  const tax = trace.total_tax_cents as number
+
+  return (
+    <div className="space-y-4 pt-2">
+      <div className="flex items-center gap-3 flex-wrap">
+        <div className="inline-flex px-3 py-1.5 rounded-sm border bg-[rgba(245,166,35,0.08)] border-[rgba(245,166,35,0.2)]">
+          <span className="text-xs font-body font-medium text-[#f5a623]">Invoice reconciliation</span>
+        </div>
+        {start && end && <span className="text-[11px] font-body text-brand-muted">{fmtPeriod(start, end)}</span>}
+        {source && source !== 'all' && <span className="text-[11px] font-body text-brand-muted capitalize">Source: {source}</span>}
+      </div>
+      <AuditStatGrid stats={[
+        { label: 'Total invoices', value: String(total) },
+        { label: 'Paid', value: String(paid) },
+        { label: 'Overdue', value: String(overdue), danger: overdue > 0 },
+        { label: 'Flagged', value: String(flagged), danger: flagged > 0 },
+      ]} />
+      <AuditStatGrid stats={[
+        { label: 'Total amount', value: fmtCents(amount) },
+        { label: 'Outstanding', value: fmtCents(outstanding), danger: outstanding > 0 },
+        { label: 'Tax collected', value: fmtCents(tax) },
+      ]} />
+    </div>
+  )
+}
+
+function VatRecAuditTrace({ trace }: { trace: Record<string, unknown> }) {
+  const start = trace.period_start as string
+  const end = trace.period_end as string
+  const source = trace.source as string
+  const total = (trace.total_invoices as number) ?? 0
+  const outputVat = trace.output_vat_cents as number
+  const netSales = trace.net_sales_cents as number
+  const vatPosition = trace.vat_position_cents as number
+  const flagged = (trace.flagged_count as number) ?? 0
+  const rate = trace.expected_vat_rate_pct as number
+
+  return (
+    <div className="space-y-4 pt-2">
+      <div className="flex items-center gap-3 flex-wrap">
+        <div className="inline-flex px-3 py-1.5 rounded-sm border bg-[rgba(0,200,83,0.08)] border-[rgba(0,200,83,0.2)]">
+          <span className="text-xs font-body font-medium text-[#00C853]">VAT reconciliation</span>
+        </div>
+        {start && end && <span className="text-[11px] font-body text-brand-muted">{fmtPeriod(start, end)}</span>}
+        {source && source !== 'all' && <span className="text-[11px] font-body text-brand-muted capitalize">Source: {source}</span>}
+        {rate != null && <span className="text-[11px] font-body text-brand-muted">Expected rate: {rate}%</span>}
+      </div>
+      <AuditStatGrid stats={[
+        { label: 'Output VAT', value: fmtCents(outputVat) },
+        { label: 'Net sales', value: fmtCents(netSales) },
+        { label: 'VAT position', value: fmtCents(vatPosition) },
+        { label: 'Total invoices', value: String(total) },
+      ]} />
+      {flagged > 0 && (
+        <div className="bg-[rgba(255,77,109,0.04)] border border-[rgba(255,77,109,0.15)] rounded-sm px-3 py-2.5">
+          <p className="text-[12px] font-body text-[#ff4d6d]">{flagged} invoice{flagged !== 1 ? 's' : ''} flagged — missing or unexpected VAT rate</p>
+        </div>
+      )}
+    </div>
+  )
+}
+
 function TraceView({ entry, getToken }: { entry: AuditEntry; getToken: () => Promise<string | null> }) {
   const [showRaw, setShowRaw] = useState(false)
   const trace = typeof entry.reasoning_trace_json === 'object' ? entry.reasoning_trace_json : null
   const isApproval = entry.action === 'approval_approved' || entry.action === 'approval_rejected'
-  const isReconciliation = !isApproval && entry.action?.startsWith('reconciliation:') && trace && 'overall_decision' in trace
-  const isDocumentIntelligence = !isApproval && !isReconciliation && entry.action?.startsWith('document_processed:') && trace != null
-  const isPayrollRec = !isApproval && !isReconciliation && !isDocumentIntelligence && entry.action === 'payroll_reconciliation:run' && trace != null
-  const isCategoriseAndMatch = !isApproval && !isReconciliation && !isDocumentIntelligence && !isPayrollRec && entry.action === 'ai_accountant:categorise_and_match' && trace != null
-  const isOrchestrator = !isApproval && !isReconciliation && !isDocumentIntelligence && !isPayrollRec && !isCategoriseAndMatch && trace && 'decision' in trace
+  const isReconciliation = !isApproval && entry.action?.startsWith('bank_reconciliation:') && trace && 'overall_decision' in trace
+  const isInvoiceRec = !isApproval && entry.action === 'invoice_reconciliation:run' && trace != null
+  const isVatRec = !isApproval && entry.action === 'vat_reconciliation:run' && trace != null
+  const isDocumentIntelligence = !isApproval && !isReconciliation && !isInvoiceRec && !isVatRec && entry.action?.startsWith('document_processed:') && trace != null
+  const isPayrollRec = !isApproval && !isReconciliation && !isInvoiceRec && !isVatRec && !isDocumentIntelligence && entry.action === 'payroll_reconciliation:run' && trace != null
+  const isCategoriseAndMatch = !isApproval && !isReconciliation && !isInvoiceRec && !isVatRec && !isDocumentIntelligence && !isPayrollRec && entry.action === 'ai_accountant:categorise_and_match' && trace != null
+  const isOrchestrator = !isApproval && !isReconciliation && !isInvoiceRec && !isVatRec && !isDocumentIntelligence && !isPayrollRec && !isCategoriseAndMatch && trace && 'decision' in trace
 
-  const hasFormatted = isApproval || isReconciliation || isDocumentIntelligence || isPayrollRec || isCategoriseAndMatch || isOrchestrator
+  const hasFormatted = isApproval || isReconciliation || isInvoiceRec || isVatRec || isDocumentIntelligence || isPayrollRec || isCategoriseAndMatch || isOrchestrator
 
   return (
     <div className="space-y-2">
@@ -535,13 +632,17 @@ function TraceView({ entry, getToken }: { entry: AuditEntry; getToken: () => Pro
           ? <ApprovalTrace entry={entry} trace={trace ?? {}} />
           : isReconciliation
             ? <ReconciliationTrace trace={trace!} />
-            : isDocumentIntelligence
-              ? <DocumentIntelligenceTrace trace={trace!} />
-              : isPayrollRec
-                ? <PayrollRecTrace trace={trace!} executionId={entry.execution_id} getToken={getToken} />
-                : isCategoriseAndMatch
-                  ? <CategoriseAndMatchTrace trace={trace!} />
-                  : <OrchestratorTrace trace={trace!} />
+            : isInvoiceRec
+              ? <InvoiceRecAuditTrace trace={trace!} />
+              : isVatRec
+                ? <VatRecAuditTrace trace={trace!} />
+                : isDocumentIntelligence
+                  ? <DocumentIntelligenceTrace trace={trace!} />
+                  : isPayrollRec
+                    ? <PayrollRecTrace trace={trace!} executionId={entry.execution_id} getToken={getToken} />
+                    : isCategoriseAndMatch
+                      ? <CategoriseAndMatchTrace trace={trace!} />
+                      : <OrchestratorTrace trace={trace!} />
       ) : (
         entry.reasoning_trace_json && (
           <pre className="text-[11px] font-body text-brand-secondary whitespace-pre-wrap bg-brand-bg border border-brand-border rounded-sm p-3 overflow-x-auto max-h-64">
@@ -555,7 +656,7 @@ function TraceView({ entry, getToken }: { entry: AuditEntry; getToken: () => Pro
   )
 }
 
-export function ToolAuditTab({ toolId }: { toolId: string | null }) {
+export function ToolAuditTab({ toolId, initialAction }: { toolId: string | null; initialAction?: string }) {
   const { getToken } = useAuth()
   const [entries, setEntries] = useState<AuditEntry[]>([])
   const [loading, setLoading] = useState(false)
@@ -573,14 +674,19 @@ export function ToolAuditTab({ toolId }: { toolId: string | null }) {
         })
         if (res.ok) {
           const json = await res.json()
-          setEntries(json.data?.entries ?? [])
+          const loaded: AuditEntry[] = json.data?.entries ?? []
+          setEntries(loaded)
+          if (initialAction) {
+            const match = loaded.find(e => e.action?.startsWith(initialAction))
+            if (match) setExpanded(match.id)
+          }
         }
       } finally {
         setLoading(false)
       }
     }
     load()
-  }, [toolId, getToken])
+  }, [toolId, getToken, initialAction])
 
   const filtered = useMemo(() => {
     if (!search) return entries

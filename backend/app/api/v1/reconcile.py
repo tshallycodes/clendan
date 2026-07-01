@@ -17,6 +17,7 @@ from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
+from app.audit.logger import write_audit_log
 from app.core.db import get_db
 from app.core.responses import standard_response
 from app.core.security import RequireOrgAuth
@@ -386,6 +387,29 @@ async def get_invoice_summary(
         for i in invoices
     ]
 
+    try:
+        await write_audit_log(
+            tenant_id=tenant_id,
+            actor="tool:invoice_reconciliation:v1",
+            action="invoice_reconciliation:run",
+            reasoning_trace={
+                "period_start": period_start,
+                "period_end": period_end,
+                "source": source or "all",
+                "total_invoices": len(invoices),
+                "paid_count": paid_count,
+                "overdue_count": overdue_count,
+                "flagged_count": len(flagged),
+                "total_subtotal_cents": total_subtotal,
+                "total_tax_cents": total_tax,
+                "total_amount_cents": total_amount,
+                "total_outstanding_cents": total_outstanding,
+            },
+            model_version="invoice_reconciliation-v1",
+        )
+    except Exception:
+        pass  # audit is best-effort for read endpoints
+
     return standard_response(data={
         "period_start": period_start,
         "period_end": period_end,
@@ -485,6 +509,27 @@ async def get_vat_summary(
         }
         for i in invoices
     ]
+
+    try:
+        await write_audit_log(
+            tenant_id=tenant_id,
+            actor="tool:vat_reconciliation:v1",
+            action="vat_reconciliation:run",
+            reasoning_trace={
+                "period_start": period_start,
+                "period_end": period_end,
+                "source": source or "all",
+                "total_invoices": len(invoices),
+                "output_vat_cents": output_vat,
+                "net_sales_cents": net_sales,
+                "vat_position_cents": vat_position,
+                "flagged_count": len(flagged),
+                "expected_vat_rate_pct": expected_vat_rate,
+            },
+            model_version="vat_reconciliation-v1",
+        )
+    except Exception:
+        pass  # audit is best-effort for read endpoints
 
     return standard_response(data={
         "period_start": period_start,

@@ -125,10 +125,10 @@ function SummaryCard({
 
 interface Props {
   toolId: string | null
-  onSelectType: (type: string) => void
+  onViewAudit: (actionPrefix: string) => void
 }
 
-export function ReconcileAllSection({ toolId, onSelectType }: Props) {
+export function ReconcileAllSection({ toolId, onViewAudit }: Props) {
   const { getToken } = useAuth()
   const { currency } = useCurrency()
   const { toast } = useToast()
@@ -485,7 +485,7 @@ export function ReconcileAllSection({ toolId, onSelectType }: Props) {
 
       {/* Summary grid — 4 cols when roster loaded, 3 otherwise */}
       <div className={`grid gap-3 ${roster.length > 0 ? 'grid-cols-2 lg:grid-cols-4' : 'grid-cols-1 sm:grid-cols-3'}`}>
-        <SummaryCard title="Bank" accent="#00a8cc" status={bankStatus} onDrillIn={() => onSelectType('bank')}>
+        <SummaryCard title="Bank" accent="#00a8cc" status={bankStatus} onDrillIn={() => onViewAudit('bank_reconciliation:')}>
           {bankData && (
             <div className="grid grid-cols-2 gap-3">
               <Stat label="Matched"   value={String(bankData.matched_count)} />
@@ -496,7 +496,7 @@ export function ReconcileAllSection({ toolId, onSelectType }: Props) {
           )}
         </SummaryCard>
 
-        <SummaryCard title="Invoices" accent="#f5a623" status={invoiceStatus} onDrillIn={() => onSelectType('invoice')}>
+        <SummaryCard title="Invoices" accent="#f5a623" status={invoiceStatus} onDrillIn={() => onViewAudit('invoice_reconciliation:')}>
           {invoiceData && (
             <div className="grid grid-cols-2 gap-3">
               <Stat label="Invoices"    value={String(invoiceData.total_invoices)} />
@@ -507,7 +507,7 @@ export function ReconcileAllSection({ toolId, onSelectType }: Props) {
           )}
         </SummaryCard>
 
-        <SummaryCard title="VAT" accent="#00C853" status={vatStatus} onDrillIn={() => onSelectType('vat')}>
+        <SummaryCard title="VAT" accent="#00C853" status={vatStatus} onDrillIn={() => onViewAudit('vat_reconciliation:')}>
           {vatData && (
             <div className="grid grid-cols-2 gap-3">
               <Stat label="Output VAT" value={fmt(vatData.output_vat_cents, symbol)} />
@@ -519,7 +519,7 @@ export function ReconcileAllSection({ toolId, onSelectType }: Props) {
         </SummaryCard>
 
         {roster.length > 0 && (
-          <SummaryCard title="Payroll" accent="#00a8cc" status={payrollStatus} onDrillIn={() => onSelectType('payroll')}>
+          <SummaryCard title="Payroll" accent="#00a8cc" status={payrollStatus} onDrillIn={() => onViewAudit('payroll_reconciliation:')}>
             {payrollData && (
               <div className="grid grid-cols-2 gap-3">
                 <Stat label="Matched"      value={String(payrollData.matched_count)} />
@@ -539,10 +539,7 @@ export function ReconcileAllSection({ toolId, onSelectType }: Props) {
             <p className="text-[11px] font-body text-brand-muted uppercase tracking-widest mb-0.5">Payroll</p>
             <p className="text-[11px] font-body text-brand-muted">No roster saved — add employees in the Payroll tab to include payroll here.</p>
           </div>
-          <button type="button" onClick={() => onSelectType('payroll')}
-            className="text-[11px] font-body text-brand-muted hover:text-brand-text transition-colors shrink-0 ml-4">
-            Go to Payroll →
-          </button>
+          <span className="text-[11px] font-body text-brand-muted shrink-0 ml-4">Use the Payroll tab →</span>
         </div>
       )}
 
