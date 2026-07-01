@@ -356,7 +356,7 @@ export function AiAccountantClient() {
   }
 
   return (
-    <motion.div variants={pageVariants} initial="hidden" animate="show" className="p-6 space-y-6">
+    <motion.div variants={pageVariants} initial="hidden" animate="show" className="px-6 pt-6 pb-24 space-y-6">
       <motion.div variants={sectionVariants}>
         <Link href="/tools" className="text-[12px] font-body text-brand-muted hover:text-brand-secondary transition-colors">
           ← Tools
