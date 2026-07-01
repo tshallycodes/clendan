@@ -69,14 +69,6 @@ const WORKER_FIELDS: Record<string, FieldDef[]> = {
     { key: 'payroll_salary_tolerance_pct', type: 'number', label: 'Payroll · Salary discrepancy tolerance', unit: '%', step: 0.1, min: 0, max: 20, default: 1,
       description: 'Maximum % difference between the expected salary in your roster and the actual bank payment before it is flagged as a discrepancy. 1% covers minor deductions or rounding.' },
   ],
-  month_end_close: [
-    { key: 'close_run_day_of_month', type: 'number', label: 'Auto-open day of month', unit: 'day of month', min: 1, max: 28, default: 1,
-      description: 'The day of each month when a month-end close run is automatically opened. Day 1 = the first of every month. Clendan skips if a run already exists for that period.' },
-    { key: 'required_sign_offs', type: 'number', label: 'Required sign-offs', unit: 'approvers', min: 1, max: 10, default: 1,
-      description: 'Minimum number of team members who must sign off before a period can be marked closed.' },
-    { key: 'auto_refresh_on_open', type: 'boolean', label: 'Auto-evaluate on open', default: true,
-      description: 'When on, Clendan automatically evaluates all auto-checked tasks (categorisation, reconciliation, approvals) immediately when a close run is opened.' },
-  ],
   ai_accountant: [
     { key: 'auto_categorise_confidence_min', type: 'number', label: 'Auto-categorise min confidence', unit: '%', step: 1, min: 0, max: 100, default: 90,
       description: "Transactions where Claude's confidence is at or above this are categorised automatically into your chart of accounts." },

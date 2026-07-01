@@ -47,22 +47,6 @@ export const TOOLS: ToolDef[] = [
     ],
   },
   {
-    slug: 'month-end-close',
-    type: 'month_end_close',
-    name: 'Month-End Close',
-    desc: 'Structured close-the-books orchestrator. Auto-evaluates data readiness, enforces payroll confirmation, and collects team sign-offs before marking a period closed.',
-    capabilities: [
-      'Auto-evaluates transaction categorisation completeness for the period',
-      'Reconciliation status check — passes when a completed rec run exists',
-      'Approvals resolution check — no pending items allowed before close',
-      'Manual payroll confirmation gate for team verification',
-      'Team sign-off collection — multiple approvers supported',
-      'Bottleneck detection — surfaces exactly which tasks are blocking close',
-      'Period close audit trail with full task completion history',
-      'Scheduled auto-open on configurable day of month',
-    ],
-  },
-  {
     slug: 'spend-control',
     type: 'spend_control',
     name: 'Spend Control',

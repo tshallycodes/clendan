@@ -131,6 +131,9 @@ export function ReconcileAllSection({ toolId, onSelectType }: Props) {
   const [bankData, setBankData]           = useState<BankStats | null>(null)
   const [invoiceData, setInvoiceData]     = useState<InvoiceStats | null>(null)
   const [vatData, setVatData]             = useState<VatStats | null>(null)
+  const [closing, setClosing]             = useState(false)
+  const [closedAt, setClosedAt]           = useState<string | null>(null)
+  const [closedBy, setClosedBy]           = useState<string | null>(null)
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const runAll = useCallback(async () => {
@@ -239,6 +242,29 @@ export function ReconcileAllSection({ toolId, onSelectType }: Props) {
     }
   }, [anyRunning, month, toolId, getToken, toast])
 
+  const closePeriod = useCallback(async () => {
+    if (!month || closing) return
+    setClosing(true)
+    try {
+      const { start, end } = monthToRange(month)
+      const token = await getToken()
+      const res = await fetch(`${API}/reconciliation/close-period`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ period_start: start, period_end: end }),
+      })
+      if (!res.ok) { toast('Failed to close period', 'error'); return }
+      const json = await res.json()
+      setClosedAt(json.data.closed_at)
+      setClosedBy(json.data.closed_by)
+      toast(`${monthLabel} closed`, 'success')
+    } catch {
+      toast('Network error', 'error')
+    } finally {
+      setClosing(false)
+    }
+  }, [month, closing, monthLabel, getToken, toast])
+
   const monthLabel = month
     ? `${MONTH_FULL[parseInt(month.slice(5, 7)) - 1]} ${month.slice(0, 4)}`
     : ''
@@ -317,6 +343,35 @@ export function ReconcileAllSection({ toolId, onSelectType }: Props) {
           Go to Payroll →
         </button>
       </div>
+
+      {/* Close Period */}
+      {allDone && !closedAt && (
+        <div className="bg-brand-surface border border-brand-border rounded-sm p-4 flex items-center justify-between">
+          <div>
+            <p className="text-[11px] font-body uppercase tracking-widest text-brand-muted mb-0.5">Ready to close</p>
+            <p className="text-xs font-body text-brand-text">All reconciliations passed for {monthLabel}.</p>
+          </div>
+          <button
+            type="button"
+            onClick={closePeriod}
+            disabled={closing}
+            className="bg-[#00C853] text-black hover:bg-[#00a844] active:scale-[0.97] rounded-sm px-4 py-1.5 text-xs font-body font-medium transition-all disabled:opacity-40 shrink-0 ml-4"
+          >
+            {closing ? 'Closing…' : `Close ${monthLabel}`}
+          </button>
+        </div>
+      )}
+      {closedAt && (
+        <div className="bg-[rgba(0,200,83,0.06)] border border-[rgba(0,200,83,0.2)] rounded-sm px-4 py-3 flex items-center gap-3">
+          <span className="text-[#00C853] text-sm">✓</span>
+          <div>
+            <p className="text-xs font-body text-[#00C853]">{monthLabel} closed</p>
+            <p className="text-[11px] font-body text-brand-muted">
+              by {closedBy?.split('@')[0]} · {new Date(closedAt).toLocaleString('en-GB')}
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

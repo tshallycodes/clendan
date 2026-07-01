@@ -37,6 +37,11 @@ class TriggerRunRequest(BaseModel):
     integration_sources: Optional[list[str]] = None
 
 
+class ClosePeriodRequest(BaseModel):
+    period_start: str
+    period_end: str
+
+
 # ---------------------------------------------------------------------------
 # GET /v1/reconciliation/runs
 # ---------------------------------------------------------------------------
@@ -486,6 +491,49 @@ async def get_vat_summary(
         "flagged_count": len(flagged),
         "flagged": flagged,
         "invoice_lines": invoice_lines,
+    })
+
+
+# ---------------------------------------------------------------------------
+# POST /v1/reconciliation/close-period
+# ---------------------------------------------------------------------------
+
+
+@router.post("/reconciliation/close-period")
+async def close_period(
+    body: ClosePeriodRequest,
+    current_user: RequireOrgAuth,
+) -> dict:
+    """Mark a period as closed. Writes an immutable audit log entry."""
+    db = get_db()
+    tenant_id = current_user.tenant_id
+
+    try:
+        datetime.fromisoformat(body.period_start)
+        datetime.fromisoformat(body.period_end)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=f"Invalid date format: {exc}") from exc
+
+    closed_at = datetime.now(UTC)
+
+    await db.auditlog.create(data={
+        "tenant_id": tenant_id,
+        "actor": current_user.email or "unknown",
+        "action": "period_closed",
+        "reasoning_trace_json": {
+            "period_start": body.period_start,
+            "period_end": body.period_end,
+            "closed_by": current_user.email,
+            "closed_at": closed_at.isoformat(),
+        },
+        "model_version": "manual",
+    })
+
+    return standard_response(data={
+        "closed_at": closed_at.isoformat(),
+        "closed_by": current_user.email,
+        "period_start": body.period_start,
+        "period_end": body.period_end,
     })
 
 
