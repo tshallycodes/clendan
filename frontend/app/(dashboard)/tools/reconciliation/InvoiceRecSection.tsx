@@ -5,6 +5,7 @@ import { useAuth } from '@clerk/nextjs'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useCurrency, useToast } from '@/components/Providers'
 import { CURRENCY_MAP } from '@/lib/currency'
+import { DatePicker } from '@/components/ui/DatePicker'
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
@@ -142,11 +143,11 @@ export function InvoiceRecSection({ toolId }: Props) {
         <div className="flex flex-wrap items-end gap-3">
           <div className="space-y-1">
             <p className={labelClass}>Period start</p>
-            <input type="date" value={periodStart} onChange={e => setPeriodStart(e.target.value)} className={inputClass} />
+            <DatePicker value={periodStart} onChange={setPeriodStart} />
           </div>
           <div className="space-y-1">
             <p className={labelClass}>Period end</p>
-            <input type="date" value={periodEnd} onChange={e => setPeriodEnd(e.target.value)} className={inputClass} />
+            <DatePicker value={periodEnd} onChange={setPeriodEnd} />
           </div>
           <div className="space-y-1">
             <p className={labelClass}>Source (optional)</p>
