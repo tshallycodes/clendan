@@ -83,10 +83,37 @@ const AUTONOMY_DESC: Record<string, string> = {
 }
 
 const HOW_IT_WORKS = [
-  { step: '01', label: 'Trigger',       desc: 'Tool activates on a schedule or incoming event. Data is pulled from connected integrations.' },
-  { step: '02', label: 'Execute',       desc: 'Agent processes the data using your configured rules and AI reasoning.' },
-  { step: '03', label: 'Policy check',  desc: 'Every output is validated by the policy engine before any action is taken. Cannot be skipped.' },
-  { step: '04', label: 'Audit',         desc: 'Full decision and reasoning trace written to the immutable audit log before returning.' },
+  { step: '01', label: 'Connect',        desc: 'Link your bank accounts (Plaid, TrueLayer) and accounting software (Xero, QuickBooks, FreshBooks). Clendan pulls live data from all of them.' },
+  { step: '02', label: 'Pick a period',  desc: 'Choose a month. One click runs Bank, Invoice, and VAT reconciliations in parallel — no setup needed per run.' },
+  { step: '03', label: 'Review',         desc: 'Summary cards show matched transactions, outstanding invoices, VAT position, and any flagged items that need your attention.' },
+  { step: '04', label: 'Act',            desc: 'Create journal entries for unmatched items, investigate flagged invoices, export results to CSV, or drill into any rec type for the full detail.' },
+]
+
+const WHAT_IS_COVERED = [
+  {
+    key: 'bank',
+    label: 'Bank',
+    color: '#00a8cc',
+    desc: 'Matches every transaction in your bank accounts against invoices and bills in your accounting system. Flags payments with no matching record — catches fraud, duplicates, and missing invoices.',
+  },
+  {
+    key: 'invoice',
+    label: 'Invoice',
+    color: '#f5a623',
+    desc: 'Reviews all sales invoices for the period. Surfaces invoices that are overdue, missing tax, or still outstanding. Gives you the total tax collected and what remains unpaid.',
+  },
+  {
+    key: 'vat',
+    label: 'VAT',
+    color: '#00C853',
+    desc: 'Totals the VAT recorded on your sales invoices and flags any invoice where tax is missing. Acts as a pre-filing sanity check so you know exactly what you owe HMRC before submitting.',
+  },
+  {
+    key: 'payroll',
+    label: 'Payroll',
+    color: '#a78bfa',
+    desc: 'Cross-references payroll payments from your bank against your employee roster. Detects ghost employees (payments to unknown names), missing payments, and salary discrepancies.',
+  },
 ]
 
 export function ReconciliationClient() {
@@ -381,13 +408,32 @@ export function ReconciliationClient() {
               <div className="bg-brand-surface border border-brand-border rounded-sm overflow-hidden">
                 <div className="px-4 py-3 border-b border-brand-border">
                   <p className="text-[11px] font-body uppercase tracking-widest text-brand-muted">How it works</p>
-                  <p className="text-[11px] font-body text-brand-muted mt-0.5">Every run follows this fixed execution flow — no step can be skipped</p>
+                  <p className="text-[11px] font-body text-brand-muted mt-0.5">Connect your data, pick a month, review results — that&apos;s it</p>
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-4 divide-x divide-brand-border">
                   {HOW_IT_WORKS.map(({ step, label, desc }) => (
                     <div key={step} className="px-4 py-4 space-y-1.5">
                       <p className="text-[11px] font-body text-brand-muted">{step}</p>
                       <p className="text-xs font-body font-medium text-brand-text">{label}</p>
+                      <p className="text-[11px] font-body text-brand-muted leading-relaxed">{desc}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* What's covered */}
+              <div className="bg-brand-surface border border-brand-border rounded-sm overflow-hidden">
+                <div className="px-4 py-3 border-b border-brand-border">
+                  <p className="text-[11px] font-body uppercase tracking-widest text-brand-muted">What&apos;s covered</p>
+                  <p className="text-[11px] font-body text-brand-muted mt-0.5">Four reconciliation types — run all at once or drill into each individually</p>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 divide-y sm:divide-y-0 sm:divide-x divide-brand-border">
+                  {WHAT_IS_COVERED.map(({ key, label, color, desc }) => (
+                    <div key={key} className="px-4 py-4 space-y-1.5 border-b border-brand-border last:border-b-0 sm:[&:nth-child(n+3)]:border-t sm:[&:nth-child(n+3)]:border-brand-border">
+                      <div className="flex items-center gap-2">
+                        <span className="h-1.5 w-1.5 rounded-full shrink-0" style={{ background: color }} />
+                        <p className="text-xs font-body font-medium text-brand-text">{label}</p>
+                      </div>
                       <p className="text-[11px] font-body text-brand-muted leading-relaxed">{desc}</p>
                     </div>
                   ))}
