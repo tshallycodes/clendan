@@ -1,4 +1,6 @@
-﻿from typing import Annotated
+﻿from collections import defaultdict
+from datetime import datetime, timedelta, UTC
+from typing import Annotated
 from fastapi import APIRouter, Depends, Query
 from prisma import Prisma
 
@@ -82,6 +84,41 @@ async def list_executions(
         "limit": limit,
         "offset": offset,
     })
+
+
+@router.get("/dashboard/executions/chart")
+async def execution_chart(
+    current_user: RequireOrgAuth,
+    db: Annotated[Prisma, Depends(get_db_dep)],
+    days: int = Query(7, ge=1, le=30),
+):
+    """Execution counts grouped by day for the last N days. Used by the dashboard chart."""
+    tenant_id = current_user.tenant_id
+    since = datetime.now(UTC) - timedelta(days=days)
+
+    executions = await db.execution.find_many(
+        where={"tenant_id": tenant_id, "created_at": {"gte": since}},
+        order={"created_at": "asc"},
+    )
+
+    AUTO_DECISIONS = {"auto_approved", "clean"}
+    PENDING_DECISIONS = {"approval_required"}
+
+    counts: dict[str, dict[str, int]] = defaultdict(lambda: {"auto": 0, "pending": 0})
+    for e in executions:
+        day = e.created_at.strftime("%Y-%m-%d")
+        if e.decision in AUTO_DECISIONS:
+            counts[day]["auto"] += 1
+        elif e.decision in PENDING_DECISIONS:
+            counts[day]["pending"] += 1
+
+    result = []
+    for i in range(days):
+        d = (datetime.now(UTC) - timedelta(days=days - 1 - i)).strftime("%Y-%m-%d")
+        label = (datetime.now(UTC) - timedelta(days=days - 1 - i)).strftime("%a")
+        result.append({"date": d, "label": label, "auto": counts[d]["auto"], "pending": counts[d]["pending"]})
+
+    return standard_response(data={"chart": result})
 
 
 @router.get("/dashboard/approvals")

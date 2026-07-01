@@ -1,25 +1,16 @@
-﻿'use client'
+'use client'
 
 import { useEffect, useState } from 'react'
+import { useAuth } from '@clerk/nextjs'
 
-// TODO: wire to /dashboard/executions?grouped_by=day
+const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
 interface DayData {
+  date: string
   label: string
   auto: number
   pending: number
 }
-
-// Static placeholder data — replace with API response when endpoint is ready
-const PLACEHOLDER_DATA: DayData[] = [
-  { label: 'Mon', auto: 12, pending: 3 },
-  { label: 'Tue', auto: 18, pending: 5 },
-  { label: 'Wed', auto: 9,  pending: 8 },
-  { label: 'Thu', auto: 24, pending: 2 },
-  { label: 'Fri', auto: 20, pending: 6 },
-  { label: 'Sat', auto: 6,  pending: 1 },
-  { label: 'Sun', auto: 14, pending: 4 },
-]
 
 interface TooltipState {
   visible: boolean
@@ -36,7 +27,6 @@ function BarGroup({ day, maxValue, animated }: { day: DayData; maxValue: number;
 
   return (
     <div className="group relative flex flex-col items-center gap-1 flex-1">
-      {/* Tooltip */}
       <div
         className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 z-10
           bg-brand-elevated border border-brand-border rounded-sm px-3 py-2
@@ -56,7 +46,6 @@ function BarGroup({ day, maxValue, animated }: { day: DayData; maxValue: number;
         </div>
       </div>
 
-      {/* Bars */}
       <div className="flex items-end gap-px w-full h-32">
         <div
           className="flex-1 bg-brand-green/70 rounded-none"
@@ -82,14 +71,32 @@ function BarGroup({ day, maxValue, animated }: { day: DayData; maxValue: number;
 }
 
 export function ExecutionChart() {
+  const { getToken } = useAuth()
+  const [data, setData] = useState<DayData[]>([])
   const [animated, setAnimated] = useState(false)
 
   useEffect(() => {
+    async function load() {
+      try {
+        const token = await getToken()
+        const res = await fetch(`${API}/dashboard/executions/chart?days=7`, {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+        if (res.ok) {
+          const json = await res.json()
+          setData(json.data?.chart ?? [])
+        }
+      } catch { /* chart is non-critical */ }
+    }
+    load()
+  }, [getToken])
+
+  useEffect(() => {
+    if (data.length === 0) return
     const id = requestAnimationFrame(() => setAnimated(true))
     return () => cancelAnimationFrame(id)
-  }, [])
+  }, [data])
 
-  const data = PLACEHOLDER_DATA
   const maxValue = Math.max(...data.map(d => d.auto + d.pending), 1)
   const isEmpty = data.every(d => d.auto === 0 && d.pending === 0)
 
@@ -110,7 +117,7 @@ export function ExecutionChart() {
       </div>
 
       <div className="px-5 py-5">
-        {isEmpty ? (
+        {data.length === 0 || isEmpty ? (
           <div className="flex flex-col items-center justify-center h-32 gap-2">
             <div className="w-full h-px bg-brand-border" />
             <p className="text-xs font-body text-brand-muted">No execution data yet</p>
@@ -118,7 +125,7 @@ export function ExecutionChart() {
         ) : (
           <div className="flex items-end gap-2">
             {data.map((day) => (
-              <BarGroup key={day.label} day={day} maxValue={maxValue} animated={animated} />
+              <BarGroup key={day.date} day={day} maxValue={maxValue} animated={animated} />
             ))}
           </div>
         )}
