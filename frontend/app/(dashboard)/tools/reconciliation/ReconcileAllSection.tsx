@@ -166,6 +166,92 @@ export function ReconcileAllSection({ toolId, onSelectType }: Props) {
     loadRoster()
   }, [toolId, getToken])
 
+  // Restore the most recent results whenever month or toolId changes
+  useEffect(() => {
+    setBankStatus('idle');    setBankData(null)
+    setInvoiceStatus('idle'); setInvoiceData(null)
+    setVatStatus('idle');     setVatData(null)
+    setPayrollStatus('idle'); setPayrollData(null)
+    setClosedAt(null);        setClosedBy(null)
+
+    if (!month || !toolId) return
+
+    let cancelled = false
+    async function loadRecentResults() {
+      const token = await getToken()
+      const { start, end } = monthToRange(month)
+      const h = { Authorization: `Bearer ${token}` }
+
+      const [bankRunsRes, invoiceRes, vatRes, payrollRunsRes, closeRes] = await Promise.allSettled([
+        fetch(`${API}/reconciliation/runs?limit=100`, { headers: h }),
+        fetch(`${API}/reconciliation/invoice-summary?period_start=${start}&period_end=${end}&tool_id=${toolId}`, { headers: h }),
+        fetch(`${API}/reconciliation/vat-summary?period_start=${start}&period_end=${end}&tool_id=${toolId}`, { headers: h }),
+        fetch(`${API}/payroll-runs`, { headers: h }),
+        fetch(`${API}/reconciliation/close-period-status?period_start=${start}&period_end=${end}`, { headers: h }),
+      ])
+
+      if (cancelled) return
+
+      // Bank — restore from most recent completed stored run for this period
+      if (bankRunsRes.status === 'fulfilled' && bankRunsRes.value.ok) {
+        const j = await bankRunsRes.value.json()
+        type BankRun = { period_start: string; status: string; matched_count: number; unmatched_count: number; flagged_count: number; total_txn_count: number }
+        const run: BankRun | undefined = (j.data?.runs ?? []).find(
+          (r: BankRun) => r.period_start.startsWith(start) && r.status === 'completed'
+        )
+        if (run && !cancelled) {
+          setBankData({ matched_count: run.matched_count, unmatched_count: run.unmatched_count, flagged_count: run.flagged_count, total_txn_count: run.total_txn_count })
+          setBankStatus('done')
+        }
+      }
+
+      // Invoice — live query, always reflects current accounting data
+      if (invoiceRes.status === 'fulfilled' && invoiceRes.value.ok && !cancelled) {
+        const j = await invoiceRes.value.json()
+        const d = j.data
+        if (d) {
+          setInvoiceData({ total_invoices: d.total_invoices, total_amount_cents: d.total_amount_cents, total_outstanding_cents: d.total_outstanding_cents, total_tax_cents: d.total_tax_cents, flagged_count: d.flagged?.length ?? d.flagged_count ?? 0 })
+          setInvoiceStatus('done')
+        }
+      }
+
+      // VAT — live query
+      if (vatRes.status === 'fulfilled' && vatRes.value.ok && !cancelled) {
+        const j = await vatRes.value.json()
+        const d = j.data
+        if (d && !cancelled) {
+          setVatData({ output_vat_cents: d.output_vat_cents, net_sales_cents: d.net_sales_cents, vat_position_cents: d.vat_position_cents, flagged_count: d.flagged_count ?? 0 })
+          setVatStatus('done')
+        }
+      }
+
+      // Payroll — restore from most recent completed run for this month
+      if (payrollRunsRes.status === 'fulfilled' && payrollRunsRes.value.ok && !cancelled) {
+        const j = await payrollRunsRes.value.json()
+        type PayRun = { period: string; status: string; matched_count: number; ghost_count: number; missing_count: number; discrepancy_count: number }
+        const run: PayRun | undefined = (j.data?.runs ?? []).find(
+          (r: PayRun) => r.period === month && r.status !== 'pending'
+        )
+        if (run && !cancelled) {
+          setPayrollData({ matched_count: run.matched_count, ghost_count: run.ghost_count, missing_count: run.missing_count, discrepancy_count: run.discrepancy_count })
+          setPayrollStatus('done')
+        }
+      }
+
+      // Close period — restore closed state from audit log
+      if (closeRes.status === 'fulfilled' && closeRes.value.ok && !cancelled) {
+        const j = await closeRes.value.json()
+        if (j.data?.closed) {
+          setClosedAt(j.data.closed_at)
+          setClosedBy(j.data.closed_by)
+        }
+      }
+    }
+
+    loadRecentResults()
+    return () => { cancelled = true }
+  }, [month, toolId, getToken])
+
   const runAll = useCallback(async () => {
     if (anyRunning || !month) return
     if (!toolId) { toast('Deploy the tool first', 'error'); return }

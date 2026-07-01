@@ -538,6 +538,39 @@ async def close_period(
 
 
 # ---------------------------------------------------------------------------
+# GET /v1/reconciliation/close-period-status
+# ---------------------------------------------------------------------------
+
+
+@router.get("/reconciliation/close-period-status")
+async def close_period_status(
+    current_user: RequireOrgAuth,
+    period_start: str = Query(...),
+    period_end: str = Query(...),
+) -> dict:
+    """Check whether a period has been closed via the audit log."""
+    db = get_db()
+    logs = await db.auditlog.find_many(
+        where={"tenant_id": current_user.tenant_id, "action": "period_closed"},
+        order={"created_at": "desc"},
+        take=100,
+    )
+    for log in logs:
+        trace = log.reasoning_trace_json
+        if (
+            isinstance(trace, dict)
+            and trace.get("period_start") == period_start
+            and trace.get("period_end") == period_end
+        ):
+            return standard_response(data={
+                "closed": True,
+                "closed_at": trace.get("closed_at"),
+                "closed_by": trace.get("closed_by"),
+            })
+    return standard_response(data={"closed": False, "closed_at": None, "closed_by": None})
+
+
+# ---------------------------------------------------------------------------
 # GET /v1/reconciliation/runs/{run_id}/export
 # ---------------------------------------------------------------------------
 
