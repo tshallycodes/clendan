@@ -14,6 +14,7 @@ import { CloseRunBottlenecks } from './CloseRunBottlenecks'
 import type { Tool } from '@/components/dashboard/tools/ToolCard'
 import { TOOLS } from '../tools-data'
 import { motion, AnimatePresence } from 'framer-motion'
+import { MonthPicker } from '@/components/ui/MonthPicker'
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
@@ -377,12 +378,7 @@ export function MonthEndCloseClient() {
               <div className="flex items-center gap-3 flex-wrap">
                 <div className="flex flex-col gap-1">
                   <label className="text-[11px] font-body text-brand-muted uppercase tracking-widest">Period</label>
-                  <input
-                    type="month"
-                    value={period}
-                    onChange={e => setPeriod(e.target.value)}
-                    className="bg-brand-bg border border-brand-border text-brand-text text-xs font-body rounded-sm px-3 py-1.5 focus:outline-none focus:border-[#00C853]"
-                  />
+                  <MonthPicker value={period} onChange={setPeriod} />
                 </div>
                 {!loading && !run && (
                   <button type="button" onClick={handleOpen} disabled={opening}
