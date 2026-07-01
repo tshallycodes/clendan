@@ -94,7 +94,8 @@ export function MonthPicker({ value, onChange, className, placeholder = 'Select 
             <button
               type="button"
               onClick={() => setViewYear(y => y + 1)}
-              className="text-brand-secondary hover:text-brand-text transition-colors w-7 h-7 flex items-center justify-center rounded-sm hover:bg-brand-elevated text-sm"
+              disabled={viewYear >= today.getFullYear()}
+              className="text-brand-secondary hover:text-brand-text transition-colors w-7 h-7 flex items-center justify-center rounded-sm hover:bg-brand-elevated text-sm disabled:opacity-30 disabled:cursor-not-allowed"
             >
               ›
             </button>
@@ -105,13 +106,17 @@ export function MonthPicker({ value, onChange, className, placeholder = 'Select 
             {MONTH_LABELS.map((label, i) => {
               const isSelected = selectedYear === viewYear && selectedMonth === i
               const isCurrentMonth = today.getFullYear() === viewYear && today.getMonth() === i
+              const isFuture = viewYear > today.getFullYear() || (viewYear === today.getFullYear() && i > today.getMonth())
               return (
                 <button
                   key={label}
                   type="button"
-                  onClick={() => select(i)}
+                  onClick={() => !isFuture && select(i)}
+                  disabled={isFuture}
                   className={`text-[12px] font-body py-1.5 rounded-sm transition-colors ${
-                    isSelected
+                    isFuture
+                      ? 'text-brand-muted opacity-30 cursor-not-allowed'
+                      : isSelected
                       ? 'bg-[#00C853] text-black font-medium'
                       : isCurrentMonth
                       ? 'border border-brand-border text-brand-text hover:bg-brand-elevated'

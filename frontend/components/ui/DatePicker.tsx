@@ -62,6 +62,8 @@ export function DatePicker({ value, onChange, className }: Props) {
     else setViewMonth(m => m - 1)
   }
   function nextMonth() {
+    const isLastAllowed = viewYear === today.getFullYear() && viewMonth === today.getMonth()
+    if (isLastAllowed) return
     if (viewMonth === 11) { setViewMonth(0); setViewYear(y => y + 1) }
     else setViewMonth(m => m + 1)
   }
@@ -91,7 +93,8 @@ export function DatePicker({ value, onChange, className }: Props) {
               {MONTHS[viewMonth]} {viewYear}
             </span>
             <button type="button" onClick={nextMonth}
-              className="text-brand-secondary hover:text-brand-text transition-colors w-7 h-7 flex items-center justify-center rounded-sm hover:bg-brand-elevated">
+              disabled={viewYear === today.getFullYear() && viewMonth === today.getMonth()}
+              className="text-brand-secondary hover:text-brand-text transition-colors w-7 h-7 flex items-center justify-center rounded-sm hover:bg-brand-elevated disabled:opacity-30 disabled:cursor-not-allowed">
               ↓
             </button>
           </div>
@@ -108,13 +111,17 @@ export function DatePicker({ value, onChange, className }: Props) {
               const dateStr = `${viewYear}-${String(viewMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
               const isSelected = dateStr === value
               const isToday = dateStr === todayStr
+              const isFuture = dateStr > todayStr
               return (
                 <button
                   key={i}
                   type="button"
-                  onClick={() => select(day)}
+                  onClick={() => !isFuture && select(day)}
+                  disabled={isFuture}
                   className={`text-[12px] font-body h-7 w-full rounded-sm transition-colors ${
-                    isSelected
+                    isFuture
+                      ? 'text-brand-muted opacity-30 cursor-not-allowed'
+                      : isSelected
                       ? 'bg-[#00C853] text-black font-medium'
                       : isToday
                       ? 'border border-brand-border text-brand-text hover:bg-brand-elevated'
