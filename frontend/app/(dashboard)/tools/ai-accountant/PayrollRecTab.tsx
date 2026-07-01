@@ -281,6 +281,26 @@ export function PayrollRecTab({ toolId }: { toolId: string | null }) {
     reader.readAsText(file)
   }
 
+  async function handleDeleteEmployee(name: string) {
+    if (!toolId) return
+    const prev = savedRoster
+    const updated = savedRoster.filter(e => e.name !== name)
+    setSavedRoster(updated)
+    const token = await getToken()
+    const newConfig = { ...toolConfigRef.current, saved_employees: updated }
+    const res = await fetch(`${API}/tools/${toolId}`, {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ config: newConfig }),
+    })
+    if (res.ok) {
+      toolConfigRef.current = newConfig
+    } else {
+      setSavedRoster(prev)
+      toast('Failed to remove employee', 'error')
+    }
+  }
+
   async function handleSaveEmployees() {
     if (!toolId || !canSave) return
     setSaving(true)
@@ -498,13 +518,26 @@ export function PayrollRecTab({ toolId }: { toolId: string | null }) {
                   <tr className="border-b border-brand-border">
                     <th className="text-left text-[10px] font-body uppercase tracking-widest text-brand-muted px-3 py-2">Name</th>
                     <th className="text-right text-[10px] font-body uppercase tracking-widest text-brand-muted px-3 py-2">Monthly Salary</th>
+                    <th className="w-8" />
                   </tr>
                 </thead>
                 <tbody>
                   {savedRoster.map(e => (
-                    <tr key={e.name} className="border-b border-brand-border last:border-0 hover:bg-brand-elevated transition-colors">
+                    <tr key={e.name} className="border-b border-brand-border last:border-0 hover:bg-brand-elevated transition-colors group">
                       <td className="px-3 py-2 text-xs font-body text-brand-text">{e.name}</td>
                       <td className="px-3 py-2 text-xs font-body text-brand-secondary text-right">{formatMinor(e.expected_minor, currencySymbol)}</td>
+                      <td className="pr-2 py-2 text-right">
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteEmployee(e.name)}
+                          className="opacity-0 group-hover:opacity-100 text-brand-muted hover:text-[#ff4d6d] transition-all p-1 rounded-sm"
+                          title="Remove employee"
+                        >
+                          <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                            <path d="M1.5 3h9M4.5 3V2h3v1M3 3l.5 7h5l.5-7H3z" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+                          </svg>
+                        </button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
