@@ -538,7 +538,7 @@ function TraceView({ entry, getToken }: { entry: AuditEntry; getToken: () => Pro
             : isDocumentIntelligence
               ? <DocumentIntelligenceTrace trace={trace!} />
               : isPayrollRec
-                ? <PayrollRecTrace trace={trace!} />
+                ? <PayrollRecTrace trace={trace!} executionId={entry.execution_id} getToken={getToken} />
                 : isCategoriseAndMatch
                   ? <CategoriseAndMatchTrace trace={trace!} />
                   : <OrchestratorTrace trace={trace!} />
@@ -640,7 +640,7 @@ export function ToolAuditTab({ toolId }: { toolId: string | null }) {
                   {e.model_version && (
                     <p className="text-[11px] font-body text-brand-muted">model: {e.model_version}</p>
                   )}
-                  <TraceView entry={e} />
+                  <TraceView entry={e} getToken={getToken} />
                 </div>
               )}
             </div>
