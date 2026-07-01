@@ -344,12 +344,24 @@ class PayrollReconciliationTool:
                     "trace_id": trace_id,
                     "period": period,
                     "status": status,
+                    "roster_size": len(roster_entries),
                     "matched_count": len(matched),
                     "ghost_count": len(ghosts),
                     "missing_count": len(missing),
                     "discrepancy_count": len(discrepancies),
                     "total_payroll_minor": total_payroll_minor,
                     "duration_ms": duration_ms,
+                    "missing": [{"name": m.name, "expected_minor": m.expected_minor} for m in missing],
+                    "ghosts": [{"name": g.extracted_name, "amount_minor": g.amount_minor} for g in ghosts],
+                    "discrepancies": [
+                        {
+                            "name": d.name,
+                            "expected_minor": d.expected_minor,
+                            "actual_minor": d.actual_minor,
+                            "diff_pct": d.diff_pct,
+                        }
+                        for d in discrepancies
+                    ],
                 }),
                 "model_version": get_settings().claude_model,
             }

@@ -282,17 +282,23 @@ function CategoriseAndMatchTrace({ trace }: { trace: Record<string, unknown> }) 
 function PayrollRecTrace({ trace }: { trace: Record<string, unknown> }) {
   const status = (trace.status as string) || 'clean'
   const period = trace.period as string
+  const rosterSize = (trace.roster_size as number) ?? 0
   const matchedCount = (trace.matched_count as number) ?? 0
   const missingCount = (trace.missing_count as number) ?? 0
   const ghostCount = (trace.ghost_count as number) ?? 0
   const discrepancyCount = (trace.discrepancy_count as number) ?? 0
   const totalPayrollMinor = (trace.total_payroll_minor as number) ?? 0
   const durationMs = trace.duration_ms as number
+  const missingList = (trace.missing as Array<{ name: string; expected_minor: number }>) || []
+  const ghostList = (trace.ghosts as Array<{ name: string; amount_minor: number }>) || []
+  const discrepancyList = (trace.discrepancies as Array<{ name: string; expected_minor: number; actual_minor: number; diff_pct: number }>) || []
+
+  const missingPct = rosterSize > 0 ? Math.round((missingCount / rosterSize) * 100) : 0
 
   const statusConfig = {
-    clean:   { label: 'Clean — no issues found',      color: 'text-[#00C853]', bg: 'bg-[rgba(0,200,83,0.08)]',   border: 'border-[rgba(0,200,83,0.2)]' },
-    flagged: { label: 'Flagged — review required',     color: 'text-[#f5a623]', bg: 'bg-[rgba(245,166,35,0.08)]', border: 'border-[rgba(245,166,35,0.2)]' },
-    blocked: { label: 'Blocked — too many missing',    color: 'text-[#ff4d6d]', bg: 'bg-[rgba(255,77,109,0.08)]', border: 'border-[rgba(255,77,109,0.2)]' },
+    clean:   { label: 'Clean — no issues found',   color: 'text-[#00C853]', bg: 'bg-[rgba(0,200,83,0.08)]',   border: 'border-[rgba(0,200,83,0.2)]' },
+    flagged: { label: 'Flagged — review required',  color: 'text-[#f5a623]', bg: 'bg-[rgba(245,166,35,0.08)]', border: 'border-[rgba(245,166,35,0.2)]' },
+    blocked: { label: 'Blocked — too many missing', color: 'text-[#ff4d6d]', bg: 'bg-[rgba(255,77,109,0.08)]', border: 'border-[rgba(255,77,109,0.2)]' },
   }
   const sc = statusConfig[status as keyof typeof statusConfig] ?? statusConfig.clean
 
@@ -302,9 +308,8 @@ function PayrollRecTrace({ trace }: { trace: Record<string, unknown> }) {
         <div className={`inline-flex px-3 py-1.5 rounded-sm border ${sc.bg} ${sc.border}`}>
           <span className={`text-xs font-body font-medium ${sc.color}`}>{sc.label}</span>
         </div>
-        {period && (
-          <span className="text-[11px] font-body text-brand-muted">Period: {period}</span>
-        )}
+        {period && <span className="text-[11px] font-body text-brand-muted">Period: {period}</span>}
+        {rosterSize > 0 && <span className="text-[11px] font-body text-brand-muted">Roster: {rosterSize} employees</span>}
       </div>
 
       <div className="grid grid-cols-4 gap-2">
@@ -314,23 +319,61 @@ function PayrollRecTrace({ trace }: { trace: Record<string, unknown> }) {
         </div>
         <div className="bg-brand-bg border border-brand-border rounded-sm p-3">
           <p className="text-[11px] font-body text-brand-muted uppercase tracking-widest">Missing</p>
-          <p className={`text-xl font-heading font-bold mt-1 ${missingCount > 0 ? 'text-[#ff4d6d]' : 'text-brand-text'}`}>
-            {missingCount}
-          </p>
+          <p className={`text-xl font-heading font-bold mt-1 ${missingCount > 0 ? 'text-[#ff4d6d]' : 'text-brand-text'}`}>{missingCount}</p>
+          {missingCount > 0 && rosterSize > 0 && (
+            <p className="text-[10px] font-body text-brand-muted mt-0.5">{missingPct}% of roster · blocks above 30%</p>
+          )}
         </div>
         <div className="bg-brand-bg border border-brand-border rounded-sm p-3">
           <p className="text-[11px] font-body text-brand-muted uppercase tracking-widest">Ghosts</p>
-          <p className={`text-xl font-heading font-bold mt-1 ${ghostCount > 0 ? 'text-[#f5a623]' : 'text-brand-text'}`}>
-            {ghostCount}
-          </p>
+          <p className={`text-xl font-heading font-bold mt-1 ${ghostCount > 0 ? 'text-[#f5a623]' : 'text-brand-text'}`}>{ghostCount}</p>
         </div>
         <div className="bg-brand-bg border border-brand-border rounded-sm p-3">
           <p className="text-[11px] font-body text-brand-muted uppercase tracking-widest">Discrepancies</p>
-          <p className={`text-xl font-heading font-bold mt-1 ${discrepancyCount > 0 ? 'text-[#f5a623]' : 'text-brand-text'}`}>
-            {discrepancyCount}
-          </p>
+          <p className={`text-xl font-heading font-bold mt-1 ${discrepancyCount > 0 ? 'text-[#f5a623]' : 'text-brand-text'}`}>{discrepancyCount}</p>
         </div>
       </div>
+
+      {missingList.length > 0 && (
+        <div className="space-y-1.5">
+          <p className="text-[11px] font-body uppercase tracking-widest text-[#ff4d6d]">Missing employees · {missingList.length}</p>
+          {missingList.map((m, i) => (
+            <div key={i} className="bg-[rgba(255,77,109,0.04)] border border-[rgba(255,77,109,0.15)] rounded-sm px-3 py-2.5 flex items-center justify-between">
+              <span className="text-[12px] font-body text-brand-secondary">{m.name}</span>
+              <span className="text-[11px] font-body text-brand-muted">Expected: {(m.expected_minor / 100).toLocaleString('en-GB', { minimumFractionDigits: 2 })}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {ghostList.length > 0 && (
+        <div className="space-y-1.5">
+          <p className="text-[11px] font-body uppercase tracking-widest text-[#f5a623]">Ghost employees · {ghostList.length}</p>
+          {ghostList.map((g, i) => (
+            <div key={i} className="bg-[rgba(245,166,35,0.04)] border border-[rgba(245,166,35,0.2)] rounded-sm px-3 py-2.5 flex items-center justify-between">
+              <span className="text-[12px] font-body text-brand-secondary">{g.name}</span>
+              <span className="text-[11px] font-body text-brand-muted">Amount: {(g.amount_minor / 100).toLocaleString('en-GB', { minimumFractionDigits: 2 })}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {discrepancyList.length > 0 && (
+        <div className="space-y-1.5">
+          <p className="text-[11px] font-body uppercase tracking-widest text-[#f5a623]">Salary discrepancies · {discrepancyList.length}</p>
+          {discrepancyList.map((d, i) => (
+            <div key={i} className="bg-[rgba(245,166,35,0.04)] border border-[rgba(245,166,35,0.2)] rounded-sm px-3 py-2.5">
+              <div className="flex items-center justify-between">
+                <span className="text-[12px] font-body text-brand-secondary">{d.name}</span>
+                <span className="text-[12px] font-body font-medium text-[#f5a623]">+{d.diff_pct}% off</span>
+              </div>
+              <p className="text-[11px] font-body text-brand-muted mt-0.5">
+                Expected: {(d.expected_minor / 100).toLocaleString('en-GB', { minimumFractionDigits: 2 })} · Actual: {(d.actual_minor / 100).toLocaleString('en-GB', { minimumFractionDigits: 2 })}
+              </p>
+            </div>
+          ))}
+        </div>
+      )}
 
       <div className="flex items-center gap-6 text-[11px] font-body text-brand-muted">
         {totalPayrollMinor > 0 && (
