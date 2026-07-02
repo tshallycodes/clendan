@@ -72,13 +72,16 @@ _DAY_MAP = {
 
 def _apply_autonomy_override(decision: str, autonomy_level: str) -> str:
     """Override policy decision based on tool autonomy level.
-    auto: promote approval_required → auto_approved (blocked is never overridden).
-    approve: no change.
+    auto: promote approval_required → auto_approved.
+    approve: demote auto_approved → approval_required.
+    blocked is never overridden in either direction.
     """
     if decision == Decision.BLOCKED.value:
         return decision
     if autonomy_level == "auto" and decision == Decision.APPROVAL_REQUIRED.value:
         return Decision.AUTO_APPROVED.value
+    if autonomy_level == "approve" and decision == Decision.AUTO_APPROVED.value:
+        return Decision.APPROVAL_REQUIRED.value
     return decision
 
 

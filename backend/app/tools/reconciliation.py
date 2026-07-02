@@ -745,16 +745,32 @@ async def run_reconciliation_job(
             triggered_by_email=triggered_by_email,
         )
         duration_ms = int(time.time() * 1000) - start_ms
+
+        # Apply autonomy override — blocked is never changed
+        tool_record = await db.tool.find_first(where={"id": tool_id, "tenant_id": tenant_id})
+        autonomy_level = tool_record.autonomy_level if tool_record else "approve"
+        ai_decision = result["decision"]
+        if ai_decision != "blocked":
+            if autonomy_level == "approve" and ai_decision == "auto_approved":
+                ai_decision = "approval_required"
+            elif autonomy_level == "auto" and ai_decision == "approval_required":
+                ai_decision = "auto_approved"
+        if ai_decision != result["decision"]:
+            logger.info(
+                "reconciliation_autonomy_override",
+                extra={"execution_id": execution_id, "original": result["decision"], "overridden": ai_decision, "autonomy_level": autonomy_level},
+            )
+
         await db.execution.update(
             where={"id": execution_id},
             data={
                 "status": "completed",
-                "decision": result["decision"],
+                "decision": ai_decision,
                 "confidence": result["confidence"],
                 "duration_ms": duration_ms,
             },
         )
-        if result["decision"] == "approval_required":
+        if ai_decision == "approval_required":
             await db.approval.create(
                 data={
                     "tenant_id": tenant_id,
@@ -763,7 +779,7 @@ async def run_reconciliation_job(
                     + timedelta(seconds=settings_obj.approval_ttl_seconds),
                 }
             )
-        return result
+        return {**result, "decision": ai_decision}
     except Exception as exc:
         logger.error(
             "reconciliation_job_failed",
