@@ -850,7 +850,7 @@ async def export_reconciliation_to_drive(
     tenant_id = current_user.tenant_id
 
     integration = await db.integration.find_first(
-        where={"tenant_id": tenant_id, "type": "google_drive", "status": "connected"},
+        where={"tenant_id": tenant_id, "type": "google_drive", "status": {"not": "disconnected"}},
     )
     if integration is None:
         raise HTTPException(status_code=400, detail="Google Drive not connected. Connect it via Integrations first.")
@@ -896,7 +896,7 @@ async def export_reconciliation_to_dropbox(
     tenant_id = current_user.tenant_id
 
     integration = await db.integration.find_first(
-        where={"tenant_id": tenant_id, "type": "dropbox", "status": "connected"},
+        where={"tenant_id": tenant_id, "type": "dropbox", "status": {"not": "disconnected"}},
     )
     if integration is None:
         raise HTTPException(status_code=400, detail="Dropbox not connected. Connect it via Integrations first.")
@@ -942,7 +942,7 @@ async def export_reconciliation_to_onedrive(
     tenant_id = current_user.tenant_id
 
     integration = await db.integration.find_first(
-        where={"tenant_id": tenant_id, "type": "onedrive", "status": "connected"},
+        where={"tenant_id": tenant_id, "type": "onedrive", "status": {"not": "disconnected"}},
     )
     if integration is None:
         raise HTTPException(status_code=400, detail="OneDrive not connected. Connect it via Integrations first.")
