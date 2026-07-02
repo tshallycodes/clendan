@@ -493,66 +493,89 @@ export function ReconcileAllSection({ toolId, onViewAudit }: Props) {
     const fmtDate = (s: string) => new Date(s).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
     const fmtAmt = (c: number | null | undefined) => c == null ? '—' : `${symbol}${(c / 100).toLocaleString('en-GB', { minimumFractionDigits: 2 })}`
 
-    const rows = [
-      bankData ? [
-        'Bank reconciliation',
-        `${bankData.matched_count} matched`,
-        `${bankData.unmatched_count} unmatched`,
-        `${bankData.flagged_count} flagged`,
-        `${bankData.total_txn_count} total transactions`,
-      ] : null,
-      invoiceData ? [
-        'Invoice reconciliation',
-        `${invoiceData.total_invoices} invoices`,
-        `${invoiceData.paid_count ?? 0} paid · ${invoiceData.overdue_count ?? 0} overdue`,
-        `${fmtAmt(invoiceData.total_outstanding_cents)} outstanding`,
-        `${fmtAmt(invoiceData.total_tax_cents)} tax`,
-      ] : null,
-      vatData ? [
-        'VAT reconciliation',
-        `${fmtAmt(vatData.output_vat_cents)} output VAT`,
-        `${fmtAmt(vatData.net_sales_cents)} net sales`,
-        `${fmtAmt(vatData.vat_position_cents)} position`,
-        `${vatData.flagged_count} flagged`,
-      ] : null,
-      payrollData ? [
-        'Payroll reconciliation',
-        `${payrollData.matched_count} matched`,
-        `${payrollData.missing_count} missing`,
-        `${payrollData.ghost_count} ghosts`,
-        `${payrollData.discrepancy_count} discrepancies`,
-      ] : null,
-    ].filter(Boolean) as string[][]
+    function statBlock(label: string, value: string, flag?: boolean) {
+      return `<div style="flex:1;min-width:120px">
+        <div style="font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:#5d6b7a;margin-bottom:4px">${label}</div>
+        <div style="font-size:18px;font-weight:700;color:${flag ? '#c0392b' : '#0d1117'}">${value}</div>
+      </div>`
+    }
 
-    const tableRows = rows.map(r => `
-      <tr>
-        <td style="padding:10px 14px;font-weight:600;color:#0d1117;border-bottom:1px solid #e0e0e0">${r[0]}</td>
-        ${r.slice(1).map(v => `<td style="padding:10px 14px;color:#3d4754;border-bottom:1px solid #e0e0e0">${v}</td>`).join('')}
-      </tr>`).join('')
+    function section(title: string, accent: string, stats: string, note?: string) {
+      return `<div style="border:1px solid #e0e0e0;border-radius:4px;overflow:hidden;margin-bottom:16px">
+        <div style="background:${accent}12;border-bottom:1px solid #e0e0e0;padding:10px 16px;display:flex;align-items:center;gap:8px">
+          <span style="width:8px;height:8px;border-radius:50%;background:${accent};display:inline-block"></span>
+          <span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:#0d1117">${title}</span>
+        </div>
+        <div style="padding:16px">
+          <div style="display:flex;flex-wrap:wrap;gap:24px">${stats}</div>
+          ${note ? `<div style="margin-top:12px;font-size:11px;color:#c0392b;background:#fdf2f2;border:1px solid #f5c6cb;border-radius:3px;padding:6px 10px">${note}</div>` : ''}
+        </div>
+      </div>`
+    }
+
+    const bankSection = bankData ? section(
+      'Bank Reconciliation', '#00a8cc',
+      statBlock('Matched', String(bankData.matched_count)) +
+      statBlock('Unmatched', String(bankData.unmatched_count), bankData.unmatched_count > 0) +
+      statBlock('Flagged', String(bankData.flagged_count), bankData.flagged_count > 0) +
+      statBlock('Total transactions', String(bankData.total_txn_count)),
+      bankData.unmatched_count > 0 ? `${bankData.unmatched_count} transaction${bankData.unmatched_count !== 1 ? 's' : ''} could not be matched — review required.` : undefined,
+    ) : ''
+
+    const invSection = invoiceData ? section(
+      'Invoice Reconciliation', '#f5a623',
+      statBlock('Total invoices', String(invoiceData.total_invoices)) +
+      statBlock('Paid', String(invoiceData.paid_count ?? 0)) +
+      statBlock('Overdue', String(invoiceData.overdue_count ?? 0), (invoiceData.overdue_count ?? 0) > 0) +
+      statBlock('Outstanding', fmtAmt(invoiceData.total_outstanding_cents), (invoiceData.total_outstanding_cents ?? 0) > 0) +
+      statBlock('Tax collected', fmtAmt(invoiceData.total_tax_cents)),
+      (invoiceData.overdue_count ?? 0) > 0 ? `${invoiceData.overdue_count} overdue invoice${invoiceData.overdue_count !== 1 ? 's' : ''} require follow-up.` : undefined,
+    ) : ''
+
+    const vatSection = vatData ? section(
+      'VAT Reconciliation', '#00C853',
+      statBlock('Output VAT', fmtAmt(vatData.output_vat_cents)) +
+      statBlock('Net sales', fmtAmt(vatData.net_sales_cents)) +
+      statBlock('VAT position', fmtAmt(vatData.vat_position_cents)) +
+      statBlock('Flagged invoices', String(vatData.flagged_count), vatData.flagged_count > 0),
+      vatData.flagged_count > 0 ? `${vatData.flagged_count} invoice${vatData.flagged_count !== 1 ? 's' : ''} with missing or unexpected VAT — review before filing.` : undefined,
+    ) : ''
+
+    const paySection = payrollData ? section(
+      'Payroll Reconciliation', '#00a8cc',
+      statBlock('Matched', String(payrollData.matched_count)) +
+      statBlock('Missing', String(payrollData.missing_count), payrollData.missing_count > 0) +
+      statBlock('Ghost employees', String(payrollData.ghost_count), payrollData.ghost_count > 0) +
+      statBlock('Discrepancies', String(payrollData.discrepancy_count), payrollData.discrepancy_count > 0),
+      (payrollData.missing_count > 0 || payrollData.ghost_count > 0 || payrollData.discrepancy_count > 0)
+        ? 'Payroll anomalies detected — verify with HR before processing next pay run.'
+        : undefined,
+    ) : ''
 
     const html = `<!DOCTYPE html><html><head><meta charset="utf-8">
       <title>Reconciliation Report — ${monthLabel}</title>
       <style>
-        body{font-family:'Helvetica Neue',Arial,sans-serif;color:#0d1117;margin:0;padding:40px}
-        h1{font-size:22px;font-weight:700;margin:0 0 4px}
-        .sub{font-size:13px;color:#5d6b7a;margin:0 0 32px}
-        table{width:100%;border-collapse:collapse;font-size:13px}
-        th{text-align:left;padding:8px 14px;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:#5d6b7a;border-bottom:2px solid #0d1117}
-        .footer{margin-top:40px;font-size:11px;color:#5d6b7a;border-top:1px solid #e0e0e0;padding-top:16px}
-        @media print{body{padding:24px}}
+        *{box-sizing:border-box;margin:0;padding:0}
+        body{font-family:'Helvetica Neue',Arial,sans-serif;color:#0d1117;background:#fff;padding:40px 48px}
+        @media print{body{padding:24px 32px}@page{margin:16mm}}
       </style>
     </head><body>
-      <h1>Reconciliation Report</h1>
-      <p class="sub">Period: ${fmtDate(start)} – ${fmtDate(end)}</p>
-      <table>
-        <thead><tr>
-          <th>Section</th><th>Stat 1</th><th>Stat 2</th><th>Stat 3</th><th>Stat 4</th>
-        </tr></thead>
-        <tbody>${tableRows}</tbody>
-      </table>
-      <div class="footer">
-        ${closedAt ? `Closed by ${closedBy?.split('@')[0] ?? closedBy} · ${new Date(closedAt).toLocaleString('en-GB')}` : ''}
-        &nbsp;·&nbsp; Generated ${new Date().toLocaleString('en-GB')}
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:32px;padding-bottom:20px;border-bottom:2px solid #0d1117">
+        <div>
+          <div style="font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:#5d6b7a;margin-bottom:6px">Clendan · Financial Report</div>
+          <div style="font-size:26px;font-weight:800;letter-spacing:-0.5px;color:#0d1117">Reconciliation Report</div>
+          <div style="font-size:13px;color:#5d6b7a;margin-top:4px">Period: ${fmtDate(start)} – ${fmtDate(end)}</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:11px;color:#5d6b7a">Generated</div>
+          <div style="font-size:12px;font-weight:600;color:#0d1117">${new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</div>
+          ${closedAt ? `<div style="margin-top:8px;font-size:11px;color:#5d6b7a">Closed by</div><div style="font-size:12px;font-weight:600;color:#0d1117">${closedBy?.split('@')[0]}</div>` : ''}
+        </div>
+      </div>
+      ${bankSection}${invSection}${vatSection}${paySection}
+      <div style="margin-top:24px;padding-top:16px;border-top:1px solid #e0e0e0;display:flex;justify-content:space-between;font-size:10px;color:#5d6b7a">
+        <span>Clendan AI Financial Agent OS</span>
+        <span>${fmtDate(start)} – ${fmtDate(end)} · ${monthLabel}</span>
       </div>
     </body></html>`
 
