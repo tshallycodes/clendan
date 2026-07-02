@@ -211,6 +211,11 @@ async def list_reconciliation_runs(
     )
     total = await db.reconciliationrun.count(where={"tenant_id": tenant_id})
 
+    # Fetch execution decisions so the frontend can track approval state
+    exec_ids = [r.execution_id for r in runs if r.execution_id]
+    executions = await db.execution.find_many(where={"id": {"in": exec_ids}}) if exec_ids else []
+    decision_by_exec_id = {e.id: e.decision for e in executions}
+
     runs_out = [
         {
             "id": r.id,
@@ -218,6 +223,7 @@ async def list_reconciliation_runs(
             "period_start": r.period_start.isoformat(),
             "period_end": r.period_end.isoformat(),
             "status": r.status,
+            "decision": decision_by_exec_id.get(r.execution_id or ""),
             "matched_count": r.matched_count,
             "unmatched_count": r.unmatched_count,
             "flagged_count": r.flagged_count,

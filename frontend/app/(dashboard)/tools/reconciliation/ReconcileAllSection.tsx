@@ -153,7 +153,9 @@ export function ReconcileAllSection({ toolId, onViewAudit }: Props) {
   const [reopening, setReopening]         = useState(false)
   const [closedAt, setClosedAt]           = useState<string | null>(null)
   const [closedBy, setClosedBy]           = useState<string | null>(null)
+  const [bankApprovalState, setBankApprovalState] = useState<'none' | 'pending' | 'approved' | 'rejected'>('none')
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const approvalPollRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   useEffect(() => {
     if (!toolId) return
@@ -194,6 +196,7 @@ export function ReconcileAllSection({ toolId, onViewAudit }: Props) {
     setVatStatus('idle');     setVatData(null)
     setPayrollStatus('idle'); setPayrollData(null)
     setClosedAt(null);        setClosedBy(null)
+    setBankApprovalState('none')
 
     if (!month || !toolId) return
 
@@ -216,13 +219,18 @@ export function ReconcileAllSection({ toolId, onViewAudit }: Props) {
       // Bank — restore from most recent completed stored run for this period
       if (bankRunsRes.status === 'fulfilled' && bankRunsRes.value.ok) {
         const j = await bankRunsRes.value.json()
-        type BankRun = { period_start: string; status: string; matched_count: number; unmatched_count: number; flagged_count: number; total_txn_count: number }
+        type BankRun = { period_start: string; status: string; decision: string | null; matched_count: number; unmatched_count: number; flagged_count: number; total_txn_count: number }
         const run: BankRun | undefined = (j.data?.runs ?? []).find(
           (r: BankRun) => r.period_start.startsWith(start) && r.status === 'completed'
         )
         if (run && !cancelled) {
           setBankData({ matched_count: run.matched_count, unmatched_count: run.unmatched_count, flagged_count: run.flagged_count, total_txn_count: run.total_txn_count })
           setBankStatus('done')
+          const dec = run.decision ?? ''
+          if (dec === 'approval_required') setBankApprovalState('pending')
+          else if (dec === 'approved') setBankApprovalState('approved')
+          else if (dec === 'rejected') setBankApprovalState('rejected')
+          else setBankApprovalState('none')
         }
       }
 
@@ -362,7 +370,7 @@ export function ReconcileAllSection({ toolId, onViewAudit }: Props) {
         })
         if (!pr.ok) return
         const pj = await pr.json()
-        type Run = { period_start: string; status: string; matched_count: number; unmatched_count: number; flagged_count: number; total_txn_count: number }
+        type Run = { period_start: string; status: string; decision: string | null; matched_count: number; unmatched_count: number; flagged_count: number; total_txn_count: number }
         const runs: Run[] = pj.data?.runs ?? []
         const completed = runs.find(
           r => r.period_start.startsWith(start) && r.status === 'completed'
@@ -377,6 +385,11 @@ export function ReconcileAllSection({ toolId, onViewAudit }: Props) {
           })
           setBankStatus('done')
           setAnyRunning(false)
+          const dec = completed.decision ?? ''
+          if (dec === 'approval_required') setBankApprovalState('pending')
+          else if (dec === 'approved') setBankApprovalState('approved')
+          else if (dec === 'rejected') setBankApprovalState('rejected')
+          else setBankApprovalState('none')
         }
       }, 2000)
     } catch {
@@ -433,6 +446,30 @@ export function ReconcileAllSection({ toolId, onViewAudit }: Props) {
       })()
     }
   }, [anyRunning, month, toolId, roster, getToken, toast])
+
+  // Poll every 5s while waiting for a pending bank rec approval to be actioned
+  useEffect(() => {
+    if (bankApprovalState !== 'pending' || !month) {
+      if (approvalPollRef.current) { clearInterval(approvalPollRef.current); approvalPollRef.current = null }
+      return
+    }
+    approvalPollRef.current = setInterval(async () => {
+      const { start } = monthToRange(month)
+      const pt = await getToken()
+      const pr = await fetch(`${API}/reconciliation/runs?limit=10`, { headers: { Authorization: `Bearer ${pt}` } })
+      if (!pr.ok) return
+      const pj = await pr.json()
+      type PR = { period_start: string; status: string; decision: string | null }
+      const run: PR | undefined = (pj.data?.runs ?? []).find(
+        (r: PR) => r.period_start.startsWith(start) && r.status === 'completed'
+      )
+      if (!run) return
+      const dec = run.decision ?? ''
+      if (dec === 'approved') { clearInterval(approvalPollRef.current!); approvalPollRef.current = null; setBankApprovalState('approved') }
+      else if (dec === 'rejected') { clearInterval(approvalPollRef.current!); approvalPollRef.current = null; setBankApprovalState('rejected') }
+    }, 5000)
+    return () => { if (approvalPollRef.current) { clearInterval(approvalPollRef.current); approvalPollRef.current = null } }
+  }, [bankApprovalState, month, getToken])
 
   const monthLabel = month
     ? `${MONTH_FULL[parseInt(month.slice(5, 7)) - 1]} ${month.slice(0, 4)}`
@@ -558,7 +595,8 @@ export function ReconcileAllSection({ toolId, onViewAudit }: Props) {
     }
   }, [reportPayload, exportLoading, getToken, toast])
 
-  const allDone = bankStatus === 'done' && invoiceStatus === 'done' && vatStatus === 'done'
+  const allDone = bankStatus === 'done' && bankApprovalState !== 'pending'
+    && invoiceStatus === 'done' && vatStatus === 'done'
     && (roster.length === 0 || payrollStatus === 'done')
 
   return (
@@ -643,6 +681,34 @@ export function ReconcileAllSection({ toolId, onViewAudit }: Props) {
             <p className="text-[11px] font-body text-brand-muted">No roster saved — add employees in the Payroll tab to include payroll here.</p>
           </div>
           <span className="text-[11px] font-body text-brand-muted shrink-0 ml-4">Use the Payroll tab →</span>
+        </div>
+      )}
+
+      {/* Approval state banners */}
+      {bankApprovalState === 'pending' && (
+        <div className="bg-[rgba(0,168,204,0.06)] border border-[rgba(0,168,204,0.2)] rounded-sm px-4 py-3 flex items-center justify-between">
+          <div>
+            <p className="text-[11px] font-body uppercase tracking-widest text-[#00a8cc] mb-0.5">Awaiting approval</p>
+            <p className="text-xs font-body text-brand-secondary">Bank reconciliation is complete but requires sign-off before you can close the period.</p>
+          </div>
+          <a href="/approvals" className="shrink-0 ml-4 text-[11px] font-body text-[#00a8cc] hover:underline transition-colors">
+            Review in Approvals →
+          </a>
+        </div>
+      )}
+      {bankApprovalState === 'rejected' && (
+        <div className="bg-[rgba(255,77,109,0.06)] border border-[rgba(255,77,109,0.2)] rounded-sm px-4 py-3 flex items-center justify-between">
+          <div>
+            <p className="text-[11px] font-body uppercase tracking-widest text-[#ff4d6d] mb-0.5">Reconciliation rejected</p>
+            <p className="text-xs font-body text-brand-secondary">The bank reconciliation was rejected. Re-run to try again.</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => { setBankApprovalState('none'); setBankStatus('idle'); setBankData(null) }}
+            className="shrink-0 ml-4 text-[11px] font-body text-[#ff4d6d] hover:underline transition-colors"
+          >
+            Re-run →
+          </button>
         </div>
       )}
 
