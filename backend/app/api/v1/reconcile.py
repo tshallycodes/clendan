@@ -555,7 +555,6 @@ async def close_period(
     current_user: RequireOrgAuth,
 ) -> dict:
     """Mark a period as closed. Writes an immutable audit log entry."""
-    db = get_db()
     tenant_id = current_user.tenant_id
 
     try:
@@ -566,18 +565,18 @@ async def close_period(
 
     closed_at = datetime.now(UTC)
 
-    await db.auditlog.create(data={
-        "tenant_id": tenant_id,
-        "actor": current_user.email or "unknown",
-        "action": "period_closed",
-        "reasoning_trace_json": {
+    await write_audit_log(
+        tenant_id=tenant_id,
+        actor=current_user.email or "unknown",
+        action="period_closed",
+        reasoning_trace={
             "period_start": body.period_start,
             "period_end": body.period_end,
             "closed_by": current_user.email,
             "closed_at": closed_at.isoformat(),
         },
-        "model_version": "manual",
-    })
+        model_version="manual",
+    )
 
     return standard_response(data={
         "closed_at": closed_at.isoformat(),
@@ -638,7 +637,6 @@ async def reopen_period(
     current_user: RequireOrgAuth,
 ) -> dict:
     """Reopen a previously closed period. Appends an immutable audit log entry."""
-    db = get_db()
     tenant_id = current_user.tenant_id
 
     try:
@@ -649,18 +647,18 @@ async def reopen_period(
 
     reopened_at = datetime.now(UTC)
 
-    await db.auditlog.create(data={
-        "tenant_id": tenant_id,
-        "actor": current_user.email or "unknown",
-        "action": "period_reopened",
-        "reasoning_trace_json": {
+    await write_audit_log(
+        tenant_id=tenant_id,
+        actor=current_user.email or "unknown",
+        action="period_reopened",
+        reasoning_trace={
             "period_start": body.period_start,
             "period_end": body.period_end,
             "reopened_by": current_user.email,
             "reopened_at": reopened_at.isoformat(),
         },
-        "model_version": "manual",
-    })
+        model_version="manual",
+    )
 
     return standard_response(data={
         "reopened_at": reopened_at.isoformat(),
