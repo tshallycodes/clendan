@@ -13,7 +13,6 @@ interface Tool {
 
 const WORKERS: Tool[] = [
   { name: 'Invoice Processing', phase: 'MVP', desc: 'Receive, extract, validate, and route invoices automatically.' },
-  { name: 'AI Accountant', phase: 'MVP', desc: 'Journal entries, GL coding, and month-end close tasks.' },
   { name: 'Reconciliation', phase: 'V2', desc: 'Match transactions across bank, ERP, and payment processors.' },
   { name: 'Expense Control', phase: 'V2', desc: 'Enforce spend policy and flag out-of-policy submissions.' },
   { name: 'Collections', phase: 'V2', desc: 'Automated AR follow-ups, escalations, and payment matching.' },
@@ -49,7 +48,7 @@ export function ToolShowcase() {
         <FadeInUp>
           <p className="text-xs font-body text-brand-muted uppercase tracking-widest mb-3">Tools</p>
           <h2 className="font-heading text-2xl font-bold text-brand-text mb-10">
-            10 AI Tools. Every Finance Function Covered.
+            9 AI Tools. Every Finance Function Covered.
           </h2>
         </FadeInUp>
         <StaggerContainer className="grid grid-cols-2 md:grid-cols-4 gap-3">

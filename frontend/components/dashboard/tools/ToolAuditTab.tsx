@@ -171,100 +171,6 @@ function DocumentIntelligenceTrace({ trace }: { trace: Record<string, unknown> }
   )
 }
 
-function CategoriseAndMatchTrace({ trace }: { trace: Record<string, unknown> }) {
-  const results = (trace.results as Array<{
-    transaction_id: string
-    ai_category: string
-    matched_invoice_id: string | null
-    confidence: number
-    reasoning: string
-  }>) || []
-  const policyViolations = (trace.policy_violations as string[]) || []
-  const categoryDistribution = (trace.category_distribution as Record<string, number>) || {}
-  const categoryShifts = (trace.category_shifts as Array<{
-    category: string
-    change_pct: number
-    current: number
-    prior: number
-  }>) || []
-  const hasSignificantShifts = trace.has_significant_shifts as boolean
-
-  const matchedCount = results.filter(r => r.matched_invoice_id).length
-  const avgConfidence = results.length > 0
-    ? results.reduce((acc, r) => acc + r.confidence, 0) / results.length
-    : 0
-
-  const sc = policyViolations.length > 0
-    ? { label: 'Blocked — policy violations',    color: 'text-[#ff4d6d]', bg: 'bg-[rgba(255,77,109,0.08)]', border: 'border-[rgba(255,77,109,0.2)]' }
-    : hasSignificantShifts
-      ? { label: 'Categorised — shifts detected', color: 'text-[#f5a623]', bg: 'bg-[rgba(245,166,35,0.08)]', border: 'border-[rgba(245,166,35,0.2)]' }
-      : { label: 'Categorised',                   color: 'text-[#00C853]', bg: 'bg-[rgba(0,200,83,0.08)]',  border: 'border-[rgba(0,200,83,0.2)]' }
-
-  return (
-    <div className="space-y-4 pt-2">
-      <div className={`inline-flex px-3 py-1.5 rounded-sm border ${sc.bg} ${sc.border}`}>
-        <span className={`text-xs font-body font-medium ${sc.color}`}>{sc.label}</span>
-      </div>
-
-      <div className="grid grid-cols-3 gap-2">
-        <div className="bg-brand-bg border border-brand-border rounded-sm p-3">
-          <p className="text-[11px] font-body text-brand-muted uppercase tracking-widest">Transactions</p>
-          <p className="text-xl font-heading font-bold text-brand-text mt-1">{results.length}</p>
-        </div>
-        <div className="bg-brand-bg border border-brand-border rounded-sm p-3">
-          <p className="text-[11px] font-body text-brand-muted uppercase tracking-widest">Invoices matched</p>
-          <p className="text-xl font-heading font-bold text-brand-text mt-1">{matchedCount}</p>
-        </div>
-        <div className="bg-brand-bg border border-brand-border rounded-sm p-3">
-          <p className="text-[11px] font-body text-brand-muted uppercase tracking-widest">Avg confidence</p>
-          <p className={`text-xl font-heading font-bold mt-1 ${avgConfidence >= 0.9 ? 'text-[#00C853]' : 'text-brand-text'}`}>
-            {Math.round(avgConfidence * 100)}%
-          </p>
-        </div>
-      </div>
-
-      {Object.keys(categoryDistribution).length > 0 && (
-        <div>
-          <p className="text-[11px] font-body text-brand-muted uppercase tracking-widest mb-1.5">Categories</p>
-          <div className="flex flex-wrap gap-1.5">
-            {Object.entries(categoryDistribution).map(([cat, count]) => (
-              <span key={cat} className="text-[11px] font-body text-brand-secondary bg-brand-bg border border-brand-border rounded-sm px-2 py-0.5">
-                {cat.replace(/_/g, ' ')} · {count}
-              </span>
-            ))}
-          </div>
-        </div>
-      )}
-
-
-      {policyViolations.length > 0 && (
-        <div className="space-y-1.5">
-          <p className="text-[11px] font-body uppercase tracking-widest text-[#ff4d6d]">Policy violations · {policyViolations.length}</p>
-          {policyViolations.map((v, i) => (
-            <div key={i} className="bg-[rgba(255,77,109,0.04)] border border-[rgba(255,77,109,0.15)] rounded-sm px-3 py-2.5">
-              <p className="text-[12px] font-body text-brand-secondary">{v}</p>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {categoryShifts.length > 0 && (
-        <div className="space-y-1.5">
-          <p className="text-[11px] font-body uppercase tracking-widest text-[#f5a623]">Category shifts · {categoryShifts.length}</p>
-          {categoryShifts.map((s, i) => (
-            <div key={i} className="bg-[rgba(245,166,35,0.04)] border border-[rgba(245,166,35,0.2)] rounded-sm px-3 py-2.5 flex items-center justify-between">
-              <span className="text-[12px] font-body text-brand-secondary">{s.category.replace(/_/g, ' ')}</span>
-              <span className={`text-[12px] font-body font-medium ${s.change_pct > 0 ? 'text-[#f5a623]' : 'text-[#ff4d6d]'}`}>
-                {s.change_pct > 0 ? '+' : ''}{s.change_pct}% ({s.prior} → {s.current})
-              </span>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  )
-}
-
 function PayrollRecTrace({ trace, executionId, getToken, currencySymbol }: { trace: Record<string, unknown>; executionId: string | null; getToken: () => Promise<string | null>; currencySymbol: string }) {
   const status = (trace.status as string) || 'clean'
   const period = trace.period as string
@@ -613,10 +519,9 @@ function TraceView({ entry, getToken, currencySymbol }: { entry: AuditEntry; get
   const isVatRec = !isApproval && entry.action === 'vat_reconciliation:run' && trace != null
   const isDocumentIntelligence = !isApproval && !isReconciliation && !isInvoiceRec && !isVatRec && entry.action?.startsWith('document_processed:') && trace != null
   const isPayrollRec = !isApproval && !isReconciliation && !isInvoiceRec && !isVatRec && !isDocumentIntelligence && entry.action === 'payroll_reconciliation:run' && trace != null
-  const isCategoriseAndMatch = !isApproval && !isReconciliation && !isInvoiceRec && !isVatRec && !isDocumentIntelligence && !isPayrollRec && entry.action === 'ai_accountant:categorise_and_match' && trace != null
-  const isOrchestrator = !isApproval && !isReconciliation && !isInvoiceRec && !isVatRec && !isDocumentIntelligence && !isPayrollRec && !isCategoriseAndMatch && trace && 'decision' in trace
+  const isOrchestrator = !isApproval && !isReconciliation && !isInvoiceRec && !isVatRec && !isDocumentIntelligence && !isPayrollRec && trace && 'decision' in trace
 
-  const hasFormatted = isApproval || isReconciliation || isInvoiceRec || isVatRec || isDocumentIntelligence || isPayrollRec || isCategoriseAndMatch || isOrchestrator
+  const hasFormatted = isApproval || isReconciliation || isInvoiceRec || isVatRec || isDocumentIntelligence || isPayrollRec || isOrchestrator
 
   return (
     <div className="space-y-2">
@@ -644,9 +549,7 @@ function TraceView({ entry, getToken, currencySymbol }: { entry: AuditEntry; get
                   ? <DocumentIntelligenceTrace trace={trace!} />
                   : isPayrollRec
                     ? <PayrollRecTrace trace={trace!} executionId={entry.execution_id} getToken={getToken} currencySymbol={currencySymbol} />
-                    : isCategoriseAndMatch
-                      ? <CategoriseAndMatchTrace trace={trace!} />
-                      : <OrchestratorTrace trace={trace!} />
+                    : <OrchestratorTrace trace={trace!} />
       ) : (
         entry.reasoning_trace_json && (
           <pre className="text-[11px] font-body text-brand-secondary whitespace-pre-wrap bg-brand-bg border border-brand-border rounded-sm p-3 overflow-x-auto max-h-64">

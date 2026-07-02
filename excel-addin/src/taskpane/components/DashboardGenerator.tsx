@@ -9,7 +9,6 @@ const SHEET_NAME = "Clendan Analysis";
 const TOOLS = [
   "Invoice Processing",
   "Fraud Detection",
-  "AI Accountant",
   "Collections",
   "Expense Control",
   "Reconciliation",
@@ -21,7 +20,6 @@ const TOOLS = [
 const TOOL_API_KEYS: Record<string, string> = {
   "Invoice Processing": "invoice_processing",
   "Fraud Detection": "fraud_detection",
-  "AI Accountant": "ai_accountant",
   "Collections": "collections",
   "Expense Control": "expense_control",
   "Reconciliation": "reconciliation",

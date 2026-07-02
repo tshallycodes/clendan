@@ -14,22 +14,22 @@
 | **Stripe** (Read-only) | Read-only access to Stripe account data: balances, customers, payment intents, invoices, products | Revenue Recognition Tool, analytics layer | https://mcpmarket.com/search?q=stripe | – | Free/OSS |
 | **Stripe Server** | Payment processing, customer management, and refund handling via MCP | AP automation — executing payments and refunds | https://mcpmarket.com/search?q=stripe | ⭐ 44 | Free/OSS |
 | **Stripe Billing** | Comprehensive Stripe billing operations: customers, subscriptions, revenue metrics | Revenue Recognition Tool | https://mcpmarket.com/search?q=stripe | – | Free/OSS |
-| **FlowCheck** | Connects Stripe payouts and bank data to AI agents for financial analysis | AI Accountant Tool — reconciling Stripe payouts to bank | https://mcpmarket.com/search?q=plaid | – | Free/OSS |
+| **FlowCheck** | Connects Stripe payouts and bank data to AI agents for financial analysis | Reconciliation Tool — reconciling Stripe payouts to bank | https://mcpmarket.com/search?q=plaid | – | Free/OSS |
 | **QuickBooks Online** (invoices) | Manages QBO data: customers, invoices, expenses, payments, reports | Invoice Processing Tool — writing bills to QuickBooks | https://mcpmarket.com/search?q=quickbooks | – | Free/OSS |
 | **QuickBooks Online** (AI-driven) | AI-driven management of financial entities via QBO + automated OAuth | Invoice Processing Tool MVP integration | https://mcpmarket.com/search?q=quickbooks | – | Free/OSS |
 | **QuickBooks** (NL query) | Natural language querying and modification of QuickBooks Online accounting data | Control plane dashboard — querying QBO data | https://mcpmarket.com/search?q=quickbooks | – | Free/OSS |
-| **LedgerLink** | AI assistants manage QuickBooks Online data through natural language conversations | AI Accountant Tool — ledger management | https://mcpmarket.com/search?q=quickbooks | – | Free/OSS |
+| **LedgerLink** | AI assistants manage QuickBooks Online data through natural language conversations | Reconciliation Tool — journal entry creation and ledger sync | https://mcpmarket.com/search?q=quickbooks | – | Free/OSS |
 | **Xero** (top) | Connects MCP to Xero's API for standardised access to accounting and business features | V2 — when Clendan adds Xero as a second ERP integration | https://mcpmarket.com/search?q=xero | ⭐ 288 | Free/OSS |
 | **Xero** (full management) | Manages Xero accounting data: contacts, invoices, payments, accounts, reports | V2 ERP integration | https://mcpmarket.com/search?q=xero | ⭐ 20 | Free/OSS |
 | **GoCardless** | AI assistants manage GoCardless payment data: customers, payments, mandates, subscriptions | Collections Tool — direct debit collection automation | https://mcpmarket.com/search?q=xero | – | Free/OSS |
-| **Personal Finance (Plaid)** | Connects bank accounts via Plaid to MCP server, enabling natural language finance queries | AI Accountant Tool — bank feed ingestion via Plaid | https://mcpmarket.com/search?q=plaid | – | Free/OSS |
+| **Personal Finance (Plaid)** | Connects bank accounts via Plaid to MCP server, enabling natural language finance queries | Reconciliation Tool — bank feed ingestion via Plaid | https://mcpmarket.com/search?q=plaid | – | Free/OSS |
 | **BankSync** | Connects AI agents to bank accounts, transactions, balances, and investments across 15,000+ institutions | Reconciliation Tool — multi-bank aggregation | https://mcpmarket.com/search?q=plaid | – | Free/OSS |
 | **InvoicePilot** | Automate professional invoice creation, delivery, and follow-up with escalating payment reminders | Collections Tool — automated payment chasing | https://mcpmarket.com/search?q=invoice | – | Free/OSS |
 | **InvoiceFlow** | Automate invoice creation, predict late payments with AI, manage reminders, reconcile payments | Invoice Processing Tool + Collections Tool | https://mcpmarket.com/search?q=invoice | – | Free/OSS |
 | **Invoice Parser** | Extracts structured data from invoices, receipts, financial documents into JSON using Claude Vision | Invoice Parser API — core AI extraction engine | https://mcpmarket.com/search?q=invoice | – | Free/OSS |
 | **Invapi** | Converts, validates, extracts e-invoices: UBL, CII, ZUGFeRD, Excel formats | Invoice Parser API — multi-format support | https://mcpmarket.com/search?q=invoice | – | Free/OSS |
 | **Payments Agent** | Automates overdue invoice reminder emails with human-in-the-loop approval | Collections Tool — overdue invoice automation | https://mcpmarket.com/search?q=invoice | – | Free/OSS |
-| **Accounting Practice** | Automates bookkeeping, tax planning, payroll, sales tax compliance, client management | AI Accountant Tool — multi-workflow accounting | https://mcpmarket.com/search?q=quickbooks | – | Free/OSS |
+| **Accounting Practice** | Automates bookkeeping, tax planning, payroll, sales tax compliance, client management | Tax Compliance Tool — bookkeeping and tax workflows | https://mcpmarket.com/search?q=quickbooks | – | Free/OSS |
 | **SaaS Brain** | Connects Claude AI to Stripe and Supabase data for natural language SaaS business metric insights | Analytics for the control plane dashboard | https://mcpmarket.com/search?q=stripe | – | Free/OSS |
 | **DebtStack.ai** | Pre-computed, quality-assured credit data for financial analysis | Credit Underwriting Tool (V3) | https://mcpmarket.com/search?q=posthog | – | Paid |
 

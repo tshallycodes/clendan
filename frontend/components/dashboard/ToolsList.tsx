@@ -22,7 +22,6 @@ interface DeployedTool {
 
 const TOOL_NAMES: Record<string, string> = {
   document_intelligence: 'Document Intelligence',
-  ai_accountant: 'AI Accountant',
   spend_control: 'Spend Control',
   ar_collections: 'AR & Collections',
   risk_compliance: 'Risk & Compliance',

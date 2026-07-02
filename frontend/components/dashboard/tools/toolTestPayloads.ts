@@ -1,7 +1,6 @@
 export const TEST_PAYLOADS: Record<string, { event_type: string; payload: Record<string, unknown> }> = {
   reconciliation:      { event_type: 'reconciliation_run',         payload: { period_days: 30 } },
   document_intelligence: { event_type: 'document_received',        payload: { document_type: 'invoice' } },
-  ai_accountant:       { event_type: 'transaction_posted',         payload: { transaction_ids: [] } },
   spend_control:       { event_type: 'spend_control_run',          payload: { transaction_ids: [] } },
   ar_collections:      { event_type: 'ar_collections_run',         payload: {} },
   risk_compliance:     { event_type: 'risk_compliance_run',        payload: { transaction_ids: [], frameworks: ['AML', 'KYC'] } },

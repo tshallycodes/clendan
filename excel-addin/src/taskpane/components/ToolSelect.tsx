@@ -14,7 +14,6 @@ interface ToolOption {
 const TOOLS: ToolOption[] = [
   { value: "invoice_processing", label: "Invoice Processing" },
   { value: "fraud_detection", label: "Fraud Detection" },
-  { value: "ai_accountant", label: "AI Accountant" },
   { value: "collections", label: "Collections" },
   { value: "expense_control", label: "Expense Control" },
   { value: "reconciliation", label: "Reconciliation" },

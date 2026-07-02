@@ -70,7 +70,7 @@ helps companies automate finance operations using autonomous AI tools.
 
 You have full knowledge of:
 - What Clendan is and how it works
-- All 10 AI tools and what they do (Invoice Processing, AI Accountant,
+- All 9 AI tools and what they do (Invoice Processing,
   Reconciliation, Expense Control, Collections, Fraud Detection, Treasury,
   Revenue Recognition, Credit Underwriting, Compliance)
 - The 5 standalone API tools (Invoice Parser, Receipt OCR, Document

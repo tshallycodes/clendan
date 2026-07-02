@@ -9,7 +9,6 @@ const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 const TOOLS = [
   'reconciliation',
   'document_intelligence',
-  'ai_accountant',
   'spend_control',
   'ar_collections',
   'risk_compliance',
@@ -47,7 +46,6 @@ const POLL_INTERVAL_MS = 4000
 const DEFAULT_PAYLOADS: Record<ToolName, object> = {
   reconciliation:        { period_start: '2026-05-01', period_end: '2026-05-31', policy: { unmatched_pct_threshold: 0.2, match_amount_tolerance_minor: 150, match_date_window_days: 5, include_reconciled: false } },
   document_intelligence: { source: 'gmail', integration_id: '<your_integration_id>', document_type: 'invoice', message_id: '<gmail_message_id>', attachment_id: '<gmail_attachment_id>', filename: 'invoice.pdf' },
-  ai_accountant:         { transaction_ids: ['txn_abc123', 'txn_def456'] },
   spend_control:         { transaction_ids: ['txn_001', 'txn_002'], policy_config: {} },
   ar_collections:        { policy_config: {} },
   risk_compliance:       { transaction_ids: ['txn_001', 'txn_002'], frameworks: ['AML', 'KYC'] },

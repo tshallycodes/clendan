@@ -553,16 +553,64 @@ These patterns apply to every tool, not just any one integration. Do not re-deri
 
 ### Autonomy Level Enforcement (`backend/app/tool.py`)
 
-Every tool has an `autonomy_level` field (`auto` / `approve`) that overrides the policy engine decision in `run_orchestrator_job`, after the decision is set but before the audit write. `blocked` is never overridden.
+Every tool has an `autonomy_level` field (`auto` / `approve`) that overrides the policy engine's raw decision. `blocked` is never overridden in either direction.
 
 ```python
 def _apply_autonomy_override(decision: str, autonomy_level: str) -> str:
-    if autonomy_level == "auto" and decision == "approval_required":
-        return "auto_approved"
+    if decision == Decision.BLOCKED.value:
+        return decision
+    if autonomy_level == "auto" and decision == Decision.APPROVAL_REQUIRED.value:
+        return Decision.AUTO_APPROVED.value
+    if autonomy_level == "approve" and decision == Decision.AUTO_APPROVED.value:
+        return Decision.APPROVAL_REQUIRED.value
     return decision
 ```
 
-The override is logged in the reasoning trace: `[autonomy=auto: approval_required→auto_approved]`. Every new tool must pass through this function.
+#### Two execution paths — each requires different handling
+
+**Path A — inline decisions through `run_orchestrator_job`:**
+Tools whose policy decision resolves synchronously inside `run_orchestrator_job` (e.g. `_orchestrate_invoice_received`) get the override applied automatically at the end of `run_orchestrator_job`, before the audit write. No extra work needed.
+
+**Path B — tools with their own arq job runners:**
+When `run_orchestrator_job` routes to a separate arq job (`run_document_intelligence_job`, `run_reconciliation_job`, `run_payroll_rec_job`, etc.), `decision` is set to `"routed"` and the override guard in `run_orchestrator_job` skips it. The override **must be applied inside the job runner itself**, after the policy decision is set and before writing `Execution.decision`.
+
+Required pattern inside every tool-specific arq job runner:
+
+```python
+# After policy decision is resolved:
+tool_record = await db.tool.find_first(where={"id": tool_id, "tenant_id": tenant_id})
+autonomy_level = tool_record.autonomy_level if tool_record else "approve"
+if final_decision != "blocked":
+    if autonomy_level == "approve" and final_decision == "auto_approved":
+        final_decision = "approval_required"
+    elif autonomy_level == "auto" and final_decision == "approval_required":
+        final_decision = "auto_approved"
+
+# Write overridden decision to Execution:
+await db.execution.update(where={"id": execution_id}, data={"decision": final_decision, ...})
+
+# Create Approval record when required:
+if final_decision == "approval_required":
+    existing = await db.approval.find_first(where={"execution_id": execution_id})
+    if not existing:
+        await db.approval.create(data={
+            "tenant_id": tenant_id,
+            "execution_id": execution_id,
+            "expires_at": datetime.now(UTC) + timedelta(seconds=settings.approval_ttl_seconds),
+        })
+```
+
+Note: `_apply_autonomy_override` cannot be called directly from tools that live in `backend/app/tools/` because `tool.py` imports from those files — circular import. Inline the 4-line logic instead.
+
+#### Tool status
+
+| Job runner | Override applied? |
+| --- | --- |
+| `run_reconciliation_job` | Yes — fixed |
+| `run_payroll_rec_job` | **No — needs fix** |
+| `run_document_intelligence_job` | **No — needs fix** (file-upload path only; inline path through `run_orchestrator_job` works) |
+| `run_expense_control_job` | Needs audit |
+| `run_treasury_job` | Needs audit |
 
 ### Scheduled Tool Pattern (`backend/app/tool.py`)
 

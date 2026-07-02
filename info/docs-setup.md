@@ -962,7 +962,6 @@ Financial Orchestrator (Master Agent)
 ├── Routes to the correct tool
 └── Tools execute as sub-agents
     ├── Invoice Processing Tool
-    ├── AI Accountant Tool
     ├── Reconciliation Tool
     └── ... (all others)
 ```
@@ -985,7 +984,6 @@ Every tool is configured with one of three autonomy levels:
 | Tool | Phase | Purpose |
 |---|---|---|
 | Invoice Processing | MVP | Automate invoice lifecycle end to end |
-| AI Accountant | MVP | Categorise transactions, update ledger |
 | Reconciliation | V2 | Match accounts across multiple systems |
 | Expense Control | V2 | Enforce spending policy on expense claims |
 | Collections | V2 | Recover overdue invoices automatically |

@@ -59,13 +59,6 @@ class TestFinancialOrchestrator:
         assert result.event_id == event.event_id
 
     @pytest.mark.asyncio
-    async def test_transaction_posted_routes_to_accountant(self):
-        orchestrator = FinancialOrchestrator()
-        event = _make_event("transaction_posted")
-        result = await orchestrator.handle_event(event, tenant_id="tenant_test")
-        assert result.tool_type == ToolType.ACCOUNTANT
-
-    @pytest.mark.asyncio
     async def test_fraud_check_routes_to_fraud_detection(self):
         """Test classification only — invoke tool directly via classify to avoid validation."""
         orchestrator = FinancialOrchestrator()
