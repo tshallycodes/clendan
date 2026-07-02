@@ -1091,7 +1091,7 @@ async def run_reconciliation_scheduled_check(_ctx: dict) -> None:
             current_weekday = now_local.weekday()  # 0=Monday, 6=Sunday
             date_key = now_local.strftime("%Y-%m-%d")
 
-            run_hour = int(cfg.get("run_hour_utc", 2))
+            run_hour = int(cfg.get("run_hour", cfg.get("run_hour_utc", 2)))
             if current_hour != run_hour:
                 continue
 

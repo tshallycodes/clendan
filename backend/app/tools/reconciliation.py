@@ -29,11 +29,9 @@ _MODEL_VERSION = "bank_reconciliation-v1"
 
 class _ToolPolicy(BaseModel):
     unmatched_pct_threshold: float = 0.20
-    match_amount_tolerance_pct: float = 0.0003
     match_amount_tolerance_minor: int = 150
     match_date_window_days: int = 5
     staleness_days: int = 30  # retained for backward-compat
-    auto_match_confidence_min: float = 0.95
     reconciliation_frequency: str = "daily"
     stale_open_item_days: int = 90
     unmatched_alert_days: int = 5
@@ -87,12 +85,14 @@ def _parse_policy(config_json: dict, overrides: dict | None = None) -> _ToolPoli
     raw = config_json.get("policy", config_json)
     merged = {k: v for k, v in raw.items() if k in _ToolPolicy.model_fields}
     # Frontend key → backend field remapping
-    if "amount_tolerance_pct" in raw:
-        merged["match_amount_tolerance_pct"] = float(raw["amount_tolerance_pct"])
     if "amount_tolerance_minor_units" in raw:
         merged["match_amount_tolerance_minor"] = int(raw["amount_tolerance_minor_units"])
     if "date_tolerance_days" in raw:
         merged["match_date_window_days"] = int(raw["date_tolerance_days"])
+    # unmatched_pct_threshold stored as percentage (e.g. 20) → convert to fraction (0.20)
+    if "unmatched_pct_threshold" in raw:
+        val = float(raw["unmatched_pct_threshold"])
+        merged["unmatched_pct_threshold"] = val / 100 if val > 1 else val
     if overrides:
         merged.update({k: v for k, v in overrides.items() if k in _ToolPolicy.model_fields})
     return _ToolPolicy.model_validate(merged)
@@ -607,13 +607,6 @@ async def _execute_reconciliation(
     matched_count = len(matched_txn_ids) + len(matched_inv_ids) + len(matched_bill_ids)
     confidence = round(matched_count / total_items, 4) if total_items > 0 else 1.0
 
-    # Enforce auto_match_confidence_min: if match confidence is below threshold,
-    # downgrade auto_approved to approval_required.
-    confidence_gate_triggered = False
-    if overall_decision == "auto_approved" and confidence < policy.auto_match_confidence_min:
-        overall_decision = "approval_required"
-        confidence_gate_triggered = True
-
     reasoning_trace: dict = {
         "overall_decision": overall_decision,
         "period_start": period_start.isoformat(),
@@ -630,7 +623,6 @@ async def _execute_reconciliation(
         "unmatched_bills": len(unmatched_bills),
         "unmatched_pct": round(unmatched_pct, 4),
         "policy_breach": policy_breach,
-        "confidence_gate_triggered": confidence_gate_triggered,
         "claude_assessments": [r.model_dump() for r in claude_results],
     }
 
