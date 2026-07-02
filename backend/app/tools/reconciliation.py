@@ -34,12 +34,9 @@ class _ToolPolicy(BaseModel):
     match_date_window_days: int = 5
     staleness_days: int = 30  # retained for backward-compat
     auto_match_confidence_min: float = 0.95
-    partial_match_enabled: bool = True
     reconciliation_frequency: str = "daily"
     stale_open_item_days: int = 90
     unmatched_alert_days: int = 5
-    period_lock_respect: bool = True
-    segregation_of_duties_enforced: bool = True
     include_reconciled: bool = False
 
 
@@ -560,6 +557,42 @@ async def _execute_reconciliation(
         "total_assessments": len(claude_results),
     })
 
+    # Enforce stale_open_item_days (→ flag) and unmatched_alert_days (→ review).
+    # Claude and pre-classify only set action=ok on unmatched transactions — upgrade
+    # those that have breached the configured age thresholds.
+    txn_by_id = {t.id: t for t in unmatched_txns}
+    _tz = UTC
+    _now = period_end if period_end.tzinfo else period_end.replace(tzinfo=_tz)
+    stale_cutoff = _now - timedelta(days=policy.stale_open_item_days)
+    alert_cutoff = _now - timedelta(days=policy.unmatched_alert_days)
+    upgraded: list[_ClaudeItemResult] = []
+    for result in claude_results:
+        if result.item_type == "transaction" and result.action == "ok":
+            txn = txn_by_id.get(result.item_id)
+            if txn:
+                txn_date = txn.date if txn.date.tzinfo else txn.date.replace(tzinfo=_tz)
+                age_days = (_now - txn_date).days
+                if txn_date < stale_cutoff:
+                    upgraded.append(_ClaudeItemResult(
+                        item_id=result.item_id,
+                        item_type="transaction",
+                        severity="high",
+                        action="flag",
+                        reasoning=f"Stale: unmatched for {age_days} day(s) — exceeds stale threshold of {policy.stale_open_item_days} day(s).",
+                    ))
+                    continue
+                if txn_date < alert_cutoff:
+                    upgraded.append(_ClaudeItemResult(
+                        item_id=result.item_id,
+                        item_type="transaction",
+                        severity="medium",
+                        action="review",
+                        reasoning=f"Unmatched for {age_days} day(s) — exceeds alert threshold of {policy.unmatched_alert_days} day(s).",
+                    ))
+                    continue
+        upgraded.append(result)
+    claude_results = upgraded
+
     has_flag = any(r.action == "flag" for r in claude_results) or policy_breach
     has_review = any(r.action == "review" for r in claude_results)
 
@@ -573,6 +606,13 @@ async def _execute_reconciliation(
     total_items = len(transactions) + len(invoices) + len(bills)
     matched_count = len(matched_txn_ids) + len(matched_inv_ids) + len(matched_bill_ids)
     confidence = round(matched_count / total_items, 4) if total_items > 0 else 1.0
+
+    # Enforce auto_match_confidence_min: if match confidence is below threshold,
+    # downgrade auto_approved to approval_required.
+    confidence_gate_triggered = False
+    if overall_decision == "auto_approved" and confidence < policy.auto_match_confidence_min:
+        overall_decision = "approval_required"
+        confidence_gate_triggered = True
 
     reasoning_trace: dict = {
         "overall_decision": overall_decision,
@@ -590,6 +630,7 @@ async def _execute_reconciliation(
         "unmatched_bills": len(unmatched_bills),
         "unmatched_pct": round(unmatched_pct, 4),
         "policy_breach": policy_breach,
+        "confidence_gate_triggered": confidence_gate_triggered,
         "claude_assessments": [r.model_dump() for r in claude_results],
     }
 

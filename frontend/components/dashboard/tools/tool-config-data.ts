@@ -39,6 +39,8 @@ export const WORKER_FIELDS: Record<string, FieldDef[]> = {
       description: 'Flag any bank transaction that has been unmatched for longer than this many days. Prevents items slipping through unnoticed.' },
     { key: 'stale_open_item_days', type: 'number', label: 'Bank · Stale open item threshold', unit: 'days', default: 90,
       description: 'Mark open items as stale if they remain unmatched beyond this threshold. Prompts a write-off or escalation review.' },
+    { key: 'unmatched_pct_threshold', type: 'number', label: 'Bank · Unmatched % breach threshold', unit: '0.0–1.0 fraction', step: 0.01, min: 0, max: 1, default: 0.20,
+      description: 'If more than this fraction of transactions remain unmatched after reconciliation, the run is flagged. 0.20 = flag when more than 20% are unmatched.' },
     { key: 'include_reconciled', type: 'boolean', label: 'Bank · Re-reconcile already matched transactions', default: false,
       description: 'When on, transactions already matched in a previous run are re-checked. Use this to audit or correct prior runs.' },
     // ── Schedule ──────────────────────────────────────────────────────────
