@@ -5,6 +5,7 @@ import { useAuth } from '@clerk/nextjs'
 import { useCurrency, useToast } from '@/components/Providers'
 import { CURRENCY_MAP } from '@/lib/currency'
 import { MonthPicker } from '@/components/ui/MonthPicker'
+import { IntegrationLogo } from '@/app/(dashboard)/dashboard/integrations/IntegrationLogo'
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
@@ -487,108 +488,75 @@ export function ReconcileAllSection({ toolId, onViewAudit }: Props) {
     }
   }, [month, reopening, monthLabel, getToken, toast])
 
-  const exportPDF = useCallback(() => {
-    if (!month) return
+  const [exportLoading, setExportLoading] = useState<null | 'pdf' | 'google-drive' | 'dropbox' | 'onedrive'>(null)
+
+  const reportPayload = useCallback(() => {
+    if (!month) return null
     const { start, end } = monthToRange(month)
-    const fmtDate = (s: string) => new Date(s).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
-    const fmtAmt = (c: number | null | undefined) => c == null ? '—' : `${symbol}${(c / 100).toLocaleString('en-GB', { minimumFractionDigits: 2 })}`
-    const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-
-    function li(label: string, value: string, flag = false) {
-      return `<li><b>${esc(label)}:</b> <span style="color:${flag ? '#a00020' : '#1a1a1a'}">${esc(value)}</span></li>`
+    return {
+      period_start: start,
+      period_end: end,
+      month_label: monthLabel,
+      currency_symbol: symbol,
+      bank: bankData ?? undefined,
+      invoice: invoiceData ?? undefined,
+      vat: vatData ?? undefined,
+      payroll: payrollData ?? undefined,
+      closed_at: closedAt ?? undefined,
+      closed_by: closedBy ?? undefined,
     }
+  }, [month, monthLabel, symbol, bankData, invoiceData, vatData, payrollData, closedAt, closedBy])
 
-    const sections: string[] = []
-
-    if (bankData) {
-      const items = [
-        li('Matched', String(bankData.matched_count)),
-        li('Unmatched', String(bankData.unmatched_count), bankData.unmatched_count > 0),
-        li('Flagged', String(bankData.flagged_count), bankData.flagged_count > 0),
-        li('Total transactions', String(bankData.total_txn_count)),
-      ]
-      const note = bankData.unmatched_count > 0
-        ? `<p class="warn">${bankData.unmatched_count} transaction${bankData.unmatched_count !== 1 ? 's' : ''} could not be matched — review required before closing.</p>`
-        : ''
-      sections.push(`<h2>Bank Reconciliation</h2><ul>${items.join('')}</ul>${note}`)
+  const downloadPDF = useCallback(async () => {
+    const payload = reportPayload()
+    if (!payload || exportLoading) return
+    setExportLoading('pdf')
+    try {
+      const token = await getToken()
+      const res = await fetch(`${API}/reconciliation/pdf`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+      if (!res.ok) { toast('PDF generation failed', 'error'); return }
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `reconciliation_${monthLabel.replace(' ', '_')}.pdf`
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch {
+      toast('Network error', 'error')
+    } finally {
+      setExportLoading(null)
     }
+  }, [reportPayload, exportLoading, monthLabel, getToken, toast])
 
-    if (invoiceData) {
-      const items = [
-        li('Total invoices', String(invoiceData.total_invoices)),
-        li('Paid', String(invoiceData.paid_count ?? 0)),
-        li('Overdue', String(invoiceData.overdue_count ?? 0), (invoiceData.overdue_count ?? 0) > 0),
-        li('Outstanding', fmtAmt(invoiceData.total_outstanding_cents), (invoiceData.total_outstanding_cents ?? 0) > 0),
-        li('Tax collected', fmtAmt(invoiceData.total_tax_cents)),
-      ]
-      const note = (invoiceData.overdue_count ?? 0) > 0
-        ? `<p class="warn">${invoiceData.overdue_count} overdue invoice${invoiceData.overdue_count !== 1 ? 's' : ''} require follow-up.</p>`
-        : ''
-      sections.push(`<h2>Invoice Reconciliation</h2><ul>${items.join('')}</ul>${note}`)
+  const cloudExport = useCallback(async (destination: 'google-drive' | 'dropbox' | 'onedrive') => {
+    const payload = reportPayload()
+    if (!payload || exportLoading) return
+    setExportLoading(destination)
+    try {
+      const token = await getToken()
+      const res = await fetch(`${API}/reconciliation/export/${destination}`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+      if (!res.ok) {
+        const j = await res.json().catch(() => null)
+        toast(j?.detail ?? j?.error ?? `Export failed (${res.status})`, 'error')
+        return
+      }
+      const label = destination === 'google-drive' ? 'Google Drive' : destination === 'dropbox' ? 'Dropbox' : 'OneDrive'
+      toast(`Uploaded to ${label}`, 'success')
+    } catch {
+      toast('Network error', 'error')
+    } finally {
+      setExportLoading(null)
     }
-
-    if (vatData) {
-      const items = [
-        li('Output VAT', fmtAmt(vatData.output_vat_cents)),
-        li('Net sales', fmtAmt(vatData.net_sales_cents)),
-        li('VAT position', fmtAmt(vatData.vat_position_cents)),
-        li('Flagged invoices', String(vatData.flagged_count), vatData.flagged_count > 0),
-      ]
-      const note = vatData.flagged_count > 0
-        ? `<p class="warn">${vatData.flagged_count} invoice${vatData.flagged_count !== 1 ? 's' : ''} with missing or unexpected VAT — review before filing.</p>`
-        : ''
-      sections.push(`<h2>VAT Reconciliation</h2><ul>${items.join('')}</ul>${note}`)
-    }
-
-    if (payrollData) {
-      const anomaly = payrollData.missing_count > 0 || payrollData.ghost_count > 0 || payrollData.discrepancy_count > 0
-      const items = [
-        li('Matched', String(payrollData.matched_count)),
-        li('Missing', String(payrollData.missing_count), payrollData.missing_count > 0),
-        li('Ghost employees', String(payrollData.ghost_count), payrollData.ghost_count > 0),
-        li('Discrepancies', String(payrollData.discrepancy_count), payrollData.discrepancy_count > 0),
-      ]
-      const note = anomaly
-        ? '<p class="warn">Payroll anomalies detected — verify with HR before processing next pay run.</p>'
-        : ''
-      sections.push(`<h2>Payroll Reconciliation</h2><ul>${items.join('')}</ul>${note}`)
-    }
-
-    const meta = [
-      `<p class="meta"><b>Period:</b> ${fmtDate(start)} – ${fmtDate(end)}</p>`,
-      closedAt ? `<p class="meta"><b>Closed by:</b> ${esc(closedBy?.split('@')[0] ?? closedBy ?? '')} · ${new Date(closedAt).toLocaleString('en-GB')}</p>` : '',
-      `<p class="meta"><b>Generated:</b> ${new Date().toLocaleString('en-GB')}</p>`,
-    ].join('')
-
-    const css = `
-body   { font-family: Helvetica, Arial, sans-serif; font-size: 9pt; color: #1a1a1a; }
-h1     { font-size: 14pt; color: #0d1117; margin: 0 0 8pt 0; }
-h2     { font-size: 10pt; color: #0d1117; margin: 14pt 0 4pt 0; border-bottom: 1px solid #e0e0e0; padding-bottom: 3pt; }
-p      { margin: 2pt 0; line-height: 1.4; }
-p.meta { font-size: 8.5pt; color: #444; margin: 1pt 0; }
-p.warn { font-size: 8pt; color: #a00020; margin: 4pt 0 0 0; }
-p.footer { font-size: 7.5pt; color: #999; margin-top: 14pt; border-top: 1px solid #e0e0e0; padding-top: 6pt; }
-ul     { margin: 3pt 0 3pt 14pt; padding: 0; }
-li     { margin: 2pt 0; line-height: 1.5; font-size: 8.5pt; }
-`
-
-    const html = `<!DOCTYPE html><html><head><meta charset="utf-8">
-      <title>Reconciliation Report — ${monthLabel}</title>
-      <style>${css}</style>
-    </head><body>
-      <h1>Reconciliation Report</h1>
-      ${meta}
-      ${sections.join('')}
-      <p class="footer">Generated by Clendan AI Financial Agent OS</p>
-    </body></html>`
-
-    const win = window.open('', '_blank')
-    if (!win) { toast('Allow pop-ups to export PDF', 'error'); return }
-    win.document.write(html)
-    win.document.close()
-    win.focus()
-    setTimeout(() => win.print(), 400)
-  }, [month, monthLabel, symbol, bankData, invoiceData, vatData, payrollData, closedAt, closedBy, toast])
+  }, [reportPayload, exportLoading, getToken, toast])
 
   const allDone = bankStatus === 'done' && invoiceStatus === 'done' && vatStatus === 'done'
     && (roster.length === 0 || payrollStatus === 'done')
@@ -704,22 +672,45 @@ li     { margin: 2pt 0; line-height: 1.5; font-size: 8.5pt; }
               by {closedBy?.split('@')[0]} · {new Date(closedAt).toLocaleString('en-GB')}
             </p>
           </div>
-          <div className="flex items-center gap-2 shrink-0">
+          <button
+            type="button"
+            onClick={reopenPeriod}
+            disabled={reopening}
+            className="text-[11px] font-body px-3 py-1.5 rounded-sm border border-[rgba(255,77,109,0.3)] text-[#ff4d6d] hover:bg-[rgba(255,77,109,0.06)] transition-colors disabled:opacity-40 shrink-0"
+          >
+            {reopening ? 'Reopening…' : 'Reopen'}
+          </button>
+        </div>
+      )}
+
+      {/* Quick Actions — shown when all reconciliations are done */}
+      {allDone && (
+        <div className="bg-brand-surface border border-brand-border rounded-sm p-4">
+          <p className="text-[11px] font-body text-brand-muted uppercase tracking-widest mb-2">Quick actions</p>
+          <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
-              onClick={exportPDF}
-              className="text-[11px] font-body px-3 py-1.5 rounded-sm border border-brand-border text-brand-text hover:bg-brand-elevated transition-colors"
+              onClick={downloadPDF}
+              disabled={exportLoading !== null}
+              className="text-[11px] font-body px-3 py-1.5 rounded-sm border border-brand-border text-brand-text bg-transparent hover:bg-brand-elevated transition-colors disabled:opacity-50"
             >
-              Export PDF
+              {exportLoading === 'pdf' ? 'Generating…' : 'Download PDF'}
             </button>
-            <button
-              type="button"
-              onClick={reopenPeriod}
-              disabled={reopening}
-              className="text-[11px] font-body px-3 py-1.5 rounded-sm border border-[rgba(255,77,109,0.3)] text-[#ff4d6d] hover:bg-[rgba(255,77,109,0.06)] transition-colors disabled:opacity-40"
-            >
-              {reopening ? 'Reopening…' : 'Reopen'}
-            </button>
+            {(['google-drive', 'dropbox', 'onedrive'] as const).map((dest) => {
+              const labels: Record<string, string> = { 'google-drive': 'Google Drive', dropbox: 'Dropbox', onedrive: 'OneDrive' }
+              return (
+                <button
+                  key={dest}
+                  type="button"
+                  onClick={() => cloudExport(dest)}
+                  disabled={exportLoading !== null}
+                  className="flex items-center gap-1.5 text-[11px] font-body px-2.5 py-1.5 rounded-sm border border-brand-border bg-brand-surface hover:bg-brand-elevated text-brand-secondary transition-colors disabled:opacity-40"
+                >
+                  <IntegrationLogo slug={dest} size={13} />
+                  {exportLoading === dest ? 'Uploading…' : `Export to ${labels[dest]}`}
+                </button>
+              )
+            })}
           </div>
         </div>
       )}

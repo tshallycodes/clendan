@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import asyncio
 import csv
+import html as _html_lib
 import io
 import uuid
 from datetime import UTC, datetime, timedelta
@@ -41,6 +42,150 @@ class TriggerRunRequest(BaseModel):
 class ClosePeriodRequest(BaseModel):
     period_start: str
     period_end: str
+
+
+class ReconciliationReportData(BaseModel):
+    period_start: str
+    period_end: str
+    month_label: str
+    currency_symbol: str = "£"
+    bank: Optional[dict] = None
+    invoice: Optional[dict] = None
+    vat: Optional[dict] = None
+    payroll: Optional[dict] = None
+    closed_at: Optional[str] = None
+    closed_by: Optional[str] = None
+
+
+def _build_reconciliation_pdf(data: ReconciliationReportData) -> bytes:
+    """Generate a reconciliation PDF using the same style as the Document Intelligence report."""
+    import fitz
+
+    sym = data.currency_symbol
+
+    def esc(v: object) -> str:
+        return _html_lib.escape(str(v) if v is not None else "—")
+
+    def fmt_amt(cents: int | None) -> str:
+        if cents is None:
+            return "—"
+        return f"{sym}{cents / 100:,.2f}"
+
+    def fmt_date(s: str) -> str:
+        try:
+            return datetime.fromisoformat(s).strftime("%d %b %Y")
+        except Exception:
+            return s
+
+    def li(label: str, value: str, flag: bool = False) -> str:
+        color = ' style="color:#a00020"' if flag else ""
+        return f"<li{color}><b>{esc(label)}:</b> {esc(value)}</li>"
+
+    meta: list[str] = [
+        f"<p class='meta'><b>Period:</b> {esc(fmt_date(data.period_start))} – {esc(fmt_date(data.period_end))}</p>",
+    ]
+    if data.closed_at:
+        by_name = (data.closed_by or "").split("@")[0]
+        try:
+            closed_str = datetime.fromisoformat(data.closed_at).strftime("%d %b %Y, %H:%M")
+        except Exception:
+            closed_str = data.closed_at or ""
+        meta.append(f"<p class='meta'><b>Closed by:</b> {esc(by_name)} · {esc(closed_str)}</p>")
+    generated = datetime.now(UTC).strftime("%d %b %Y, %H:%M UTC")
+    meta.append(f"<p class='meta'><b>Generated:</b> {esc(generated)}</p>")
+
+    sections: list[str] = []
+
+    if data.bank:
+        b = data.bank
+        unmatched = int(b.get("unmatched_count", 0) or 0)
+        flagged = int(b.get("flagged_count", 0) or 0)
+        items = [
+            li("Matched", str(b.get("matched_count", 0))),
+            li("Unmatched", str(unmatched), unmatched > 0),
+            li("Flagged", str(flagged), flagged > 0),
+            li("Total transactions", str(b.get("total_txn_count", 0))),
+        ]
+        warn = f"<p class='warn'>{unmatched} transaction{'s' if unmatched != 1 else ''} could not be matched.</p>" if unmatched > 0 else ""
+        sections.append(f"<h2>Bank Reconciliation</h2><ul>{''.join(items)}</ul>{warn}")
+
+    if data.invoice:
+        inv = data.invoice
+        overdue = int(inv.get("overdue_count", 0) or 0)
+        outstanding = int(inv.get("total_outstanding_cents", 0) or 0)
+        items = [
+            li("Total invoices", str(inv.get("total_invoices", 0))),
+            li("Paid", str(inv.get("paid_count", 0) or 0)),
+            li("Overdue", str(overdue), overdue > 0),
+            li("Outstanding", fmt_amt(outstanding), outstanding > 0),
+            li("Tax collected", fmt_amt(inv.get("total_tax_cents"))),
+        ]
+        warn = f"<p class='warn'>{overdue} overdue invoice{'s' if overdue != 1 else ''} require follow-up.</p>" if overdue > 0 else ""
+        sections.append(f"<h2>Invoice Reconciliation</h2><ul>{''.join(items)}</ul>{warn}")
+
+    if data.vat:
+        v = data.vat
+        flagged = int(v.get("flagged_count", 0) or 0)
+        items = [
+            li("Output VAT", fmt_amt(v.get("output_vat_cents"))),
+            li("Net sales", fmt_amt(v.get("net_sales_cents"))),
+            li("VAT position", fmt_amt(v.get("vat_position_cents"))),
+            li("Flagged invoices", str(flagged), flagged > 0),
+        ]
+        warn = f"<p class='warn'>{flagged} invoice{'s' if flagged != 1 else ''} with missing or unexpected VAT.</p>" if flagged > 0 else ""
+        sections.append(f"<h2>VAT Reconciliation</h2><ul>{''.join(items)}</ul>{warn}")
+
+    if data.payroll:
+        p = data.payroll
+        missing = int(p.get("missing_count", 0) or 0)
+        ghosts = int(p.get("ghost_count", 0) or 0)
+        discrepancies = int(p.get("discrepancy_count", 0) or 0)
+        anomaly = missing > 0 or ghosts > 0 or discrepancies > 0
+        items = [
+            li("Matched", str(p.get("matched_count", 0))),
+            li("Missing", str(missing), missing > 0),
+            li("Ghost employees", str(ghosts), ghosts > 0),
+            li("Discrepancies", str(discrepancies), discrepancies > 0),
+        ]
+        warn = "<p class='warn'>Payroll anomalies detected — verify with HR before processing next pay run.</p>" if anomaly else ""
+        sections.append(f"<h2>Payroll Reconciliation</h2><ul>{''.join(items)}</ul>{warn}")
+
+    body_html = (
+        "<h1>Reconciliation Report</h1>"
+        + "".join(meta)
+        + "".join(sections)
+        + f"<p class='footer'>Generated by Clendan AI Financial Agent OS · {esc(generated)}</p>"
+    )
+    css = """
+body   { font-family: Helvetica; font-size: 9pt; color: #1a1a1a; }
+h1     { font-size: 14pt; color: #0d1117; margin: 0 0 8pt 0; }
+h2     { font-size: 10pt; color: #0d1117; margin: 14pt 0 4pt 0; }
+p      { margin: 2pt 0; line-height: 1.4; }
+p.meta { font-size: 8.5pt; color: #444; margin: 1pt 0; }
+p.warn { font-size: 8pt; color: #a00020; margin: 4pt 0 0 0; }
+p.footer { font-size: 7.5pt; color: #999; margin-top: 14pt; }
+ul     { margin: 3pt 0 3pt 14pt; padding: 0; }
+li     { margin: 2pt 0; line-height: 1.5; font-size: 8.5pt; }
+"""
+    story = fitz.Story(html=body_html, user_css=css)
+    buf = io.BytesIO()
+    writer = fitz.DocumentWriter(buf)
+    mediabox = fitz.Rect(0, 0, 595, 842)
+    where = fitz.Rect(50, 50, 545, 792)
+    more = True
+    while more:
+        device = writer.begin_page(mediabox)
+        more, _ = story.place(where)
+        story.draw(device)
+        writer.end_page()
+    writer.close()
+    return buf.getvalue()
+
+
+def _rec_pdf_and_filename(body: ReconciliationReportData) -> tuple[bytes, str]:
+    pdf_bytes = _build_reconciliation_pdf(body)
+    filename = f"reconciliation_{body.month_label.replace(' ', '_')}.pdf"
+    return pdf_bytes, filename
 
 
 # ---------------------------------------------------------------------------
@@ -666,6 +811,163 @@ async def reopen_period(
         "period_start": body.period_start,
         "period_end": body.period_end,
     })
+
+
+# ---------------------------------------------------------------------------
+# POST /v1/reconciliation/pdf
+# ---------------------------------------------------------------------------
+
+
+@router.post("/reconciliation/pdf")
+async def download_reconciliation_pdf(
+    body: ReconciliationReportData,
+    _auth: RequireOrgAuth,
+) -> StreamingResponse:
+    """Generate and stream a reconciliation PDF for the given period and stats."""
+    pdf_bytes, filename = _rec_pdf_and_filename(body)
+    return StreamingResponse(
+        iter([pdf_bytes]),
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+# ---------------------------------------------------------------------------
+# POST /v1/reconciliation/export/google-drive
+# ---------------------------------------------------------------------------
+
+
+@router.post("/reconciliation/export/google-drive")
+async def export_reconciliation_to_drive(
+    body: ReconciliationReportData,
+    current_user: RequireOrgAuth,
+) -> dict:
+    """Generate reconciliation PDF and upload to Google Drive."""
+    from app.integrations.encryption import decrypt_credentials
+    from app.integrations.google import client as _google
+
+    db = get_db()
+    tenant_id = current_user.tenant_id
+
+    integration = await db.integration.find_first(
+        where={"tenant_id": tenant_id, "type": "google_drive", "status": "connected"},
+    )
+    if integration is None:
+        raise HTTPException(status_code=400, detail="Google Drive not connected. Connect it via Integrations first.")
+
+    try:
+        creds = decrypt_credentials(integration.encrypted_credentials, tenant_id)
+    except ValueError:
+        raise HTTPException(status_code=500, detail="Credential decryption failed")
+
+    pdf_bytes, filename = _rec_pdf_and_filename(body)
+
+    try:
+        file_id = await _google.upload_file_to_drive(creds.get("access_token", ""), pdf_bytes, filename)
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail="Upload to Google Drive failed") from exc
+
+    await write_audit_log(
+        tenant_id=tenant_id,
+        actor=current_user.email or "unknown",
+        action="reconciliation:export:google_drive",
+        reasoning_trace={"filename": filename, "file_id": file_id, "period": body.month_label},
+        model_version="manual",
+    )
+
+    return standard_response(data={"file_id": file_id, "filename": filename, "destination": "google_drive"})
+
+
+# ---------------------------------------------------------------------------
+# POST /v1/reconciliation/export/dropbox
+# ---------------------------------------------------------------------------
+
+
+@router.post("/reconciliation/export/dropbox")
+async def export_reconciliation_to_dropbox(
+    body: ReconciliationReportData,
+    current_user: RequireOrgAuth,
+) -> dict:
+    """Generate reconciliation PDF and upload to Dropbox."""
+    from app.integrations.encryption import decrypt_credentials
+    from app.integrations.dropbox import client as _dropbox
+
+    db = get_db()
+    tenant_id = current_user.tenant_id
+
+    integration = await db.integration.find_first(
+        where={"tenant_id": tenant_id, "type": "dropbox", "status": "connected"},
+    )
+    if integration is None:
+        raise HTTPException(status_code=400, detail="Dropbox not connected. Connect it via Integrations first.")
+
+    try:
+        creds = decrypt_credentials(integration.encrypted_credentials, tenant_id)
+    except ValueError:
+        raise HTTPException(status_code=500, detail="Credential decryption failed")
+
+    pdf_bytes, filename = _rec_pdf_and_filename(body)
+
+    try:
+        result = await _dropbox.upload_file(creds.get("access_token", ""), pdf_bytes, filename)
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail="Upload to Dropbox failed") from exc
+
+    await write_audit_log(
+        tenant_id=tenant_id,
+        actor=current_user.email or "unknown",
+        action="reconciliation:export:dropbox",
+        reasoning_trace={"filename": filename, "path": result.get("path_display", ""), "period": body.month_label},
+        model_version="manual",
+    )
+
+    return standard_response(data={"path": result.get("path_display", ""), "filename": filename, "destination": "dropbox"})
+
+
+# ---------------------------------------------------------------------------
+# POST /v1/reconciliation/export/onedrive
+# ---------------------------------------------------------------------------
+
+
+@router.post("/reconciliation/export/onedrive")
+async def export_reconciliation_to_onedrive(
+    body: ReconciliationReportData,
+    current_user: RequireOrgAuth,
+) -> dict:
+    """Generate reconciliation PDF and upload to OneDrive."""
+    from app.integrations.encryption import decrypt_credentials
+    from app.integrations.onedrive import client as _onedrive
+
+    db = get_db()
+    tenant_id = current_user.tenant_id
+
+    integration = await db.integration.find_first(
+        where={"tenant_id": tenant_id, "type": "onedrive", "status": "connected"},
+    )
+    if integration is None:
+        raise HTTPException(status_code=400, detail="OneDrive not connected. Connect it via Integrations first.")
+
+    try:
+        creds = decrypt_credentials(integration.encrypted_credentials, tenant_id)
+    except ValueError:
+        raise HTTPException(status_code=500, detail="Credential decryption failed")
+
+    pdf_bytes, filename = _rec_pdf_and_filename(body)
+
+    try:
+        item = await _onedrive.upload_file(creds.get("access_token", ""), pdf_bytes, filename)
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail="Upload to OneDrive failed") from exc
+
+    await write_audit_log(
+        tenant_id=tenant_id,
+        actor=current_user.email or "unknown",
+        action="reconciliation:export:onedrive",
+        reasoning_trace={"filename": filename, "item_id": item.get("id", ""), "period": body.month_label},
+        model_version="manual",
+    )
+
+    return standard_response(data={"item_id": item.get("id", ""), "filename": filename, "destination": "onedrive"})
 
 
 # ---------------------------------------------------------------------------
