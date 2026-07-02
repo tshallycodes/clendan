@@ -28,7 +28,7 @@ export const WORKER_FIELDS: Record<string, FieldDef[]> = {
   reconciliation: [
     // ── Bank ──────────────────────────────────────────────────────────────
     { key: 'amount_tolerance_minor_units', type: 'number', label: 'Bank · Amount tolerance', penceDisplay: true, default: 150,
-      description: 'Max pence difference between a bank transaction and an invoice for them to count as a match. £1.50 covers minor bank charges or rounding.' },
+      description: 'Max difference in minor currency units (pence, cents) between a bank transaction and invoice amount for them to count as a match. The amount shown below reflects your set currency.' },
     { key: 'date_tolerance_days', type: 'number', label: 'Bank · Date tolerance', unit: 'days', default: 5,
       description: 'How many days apart a bank transaction and an invoice date can be and still match. 5 days covers typical end-of-month timing differences.' },
     { key: 'unmatched_alert_days', type: 'number', label: 'Bank · Alert on unmatched after', unit: 'days', default: 5,
