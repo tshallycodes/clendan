@@ -12,7 +12,6 @@ from clendan_mcp.auth import MCPError, api_get
 
 VALID_TOOL_TYPES = {
     "invoice_processing",
-    "ai_accountant",
     "receipt_processing",
     "reconciliation",
     "expense_control",
@@ -42,7 +41,7 @@ async def get_audit_trail(
 
     Args:
         tool_type: Filter by tool type. Valid values:
-            invoice_processing, ai_accountant, receipt_processing,
+            invoice_processing, receipt_processing,
             reconciliation, expense_control, collections, fraud_detection,
             treasury, revenue_recognition, credit_underwriting, compliance.
             Leave empty to see all tool types.

@@ -219,18 +219,25 @@ export function ReconcileAllSection({ toolId, onViewAudit }: Props) {
       // Bank — restore from most recent completed stored run for this period
       if (bankRunsRes.status === 'fulfilled' && bankRunsRes.value.ok) {
         const j = await bankRunsRes.value.json()
-        type BankRun = { period_start: string; status: string; decision: string | null; matched_count: number; unmatched_count: number; flagged_count: number; total_txn_count: number }
+        type BankRun = { period_start: string; status: string; matched_count: number; unmatched_count: number; flagged_count: number; total_txn_count: number }
         const run: BankRun | undefined = (j.data?.runs ?? []).find(
           (r: BankRun) => r.period_start.startsWith(start) && r.status === 'completed'
         )
         if (run && !cancelled) {
           setBankData({ matched_count: run.matched_count, unmatched_count: run.unmatched_count, flagged_count: run.flagged_count, total_txn_count: run.total_txn_count })
           setBankStatus('done')
-          const dec = run.decision ?? ''
-          if (dec === 'approval_required') setBankApprovalState('pending')
-          else if (dec === 'approved') setBankApprovalState('approved')
-          else if (dec === 'rejected') setBankApprovalState('rejected')
-          else setBankApprovalState('none')
+          // Check approval table directly for this period
+          try {
+            const token = await getToken()
+            const apr = await fetch(`${API}/reconciliation/approval-status?period_start=${start}&period_end=${end}`, { headers: { Authorization: `Bearer ${token}` } })
+            if (apr.ok && !cancelled) {
+              const aData = (await apr.json()).data
+              if (aData.approval_status === 'pending') setBankApprovalState('pending')
+              else if (aData.approval_status === 'approved') setBankApprovalState('approved')
+              else if (aData.approval_status === 'rejected') setBankApprovalState('rejected')
+              else setBankApprovalState('none')
+            }
+          } catch { setBankApprovalState('none') }
         }
       }
 
@@ -370,7 +377,7 @@ export function ReconcileAllSection({ toolId, onViewAudit }: Props) {
         })
         if (!pr.ok) return
         const pj = await pr.json()
-        type Run = { period_start: string; status: string; decision: string | null; matched_count: number; unmatched_count: number; flagged_count: number; total_txn_count: number }
+        type Run = { period_start: string; status: string; matched_count: number; unmatched_count: number; flagged_count: number; total_txn_count: number }
         const runs: Run[] = pj.data?.runs ?? []
         const completed = runs.find(
           r => r.period_start.startsWith(start) && r.status === 'completed'
@@ -385,11 +392,18 @@ export function ReconcileAllSection({ toolId, onViewAudit }: Props) {
           })
           setBankStatus('done')
           setAnyRunning(false)
-          const dec = completed.decision ?? ''
-          if (dec === 'approval_required') setBankApprovalState('pending')
-          else if (dec === 'approved') setBankApprovalState('approved')
-          else if (dec === 'rejected') setBankApprovalState('rejected')
-          else setBankApprovalState('none')
+          // Check approval table directly — more reliable than reading execution.decision
+          try {
+            const at = await getToken()
+            const apr = await fetch(`${API}/reconciliation/approval-status?period_start=${start}&period_end=${end}`, { headers: { Authorization: `Bearer ${at}` } })
+            if (apr.ok) {
+              const aData = (await apr.json()).data
+              if (aData.approval_status === 'pending') setBankApprovalState('pending')
+              else if (aData.approval_status === 'approved') setBankApprovalState('approved')
+              else if (aData.approval_status === 'rejected') setBankApprovalState('rejected')
+              else setBankApprovalState('none')
+            }
+          } catch { setBankApprovalState('none') }
         }
       }, 2000)
     } catch {
@@ -453,20 +467,17 @@ export function ReconcileAllSection({ toolId, onViewAudit }: Props) {
       if (approvalPollRef.current) { clearInterval(approvalPollRef.current); approvalPollRef.current = null }
       return
     }
+    const { start, end } = monthToRange(month)
     approvalPollRef.current = setInterval(async () => {
-      const { start } = monthToRange(month)
-      const pt = await getToken()
-      const pr = await fetch(`${API}/reconciliation/runs?limit=10`, { headers: { Authorization: `Bearer ${pt}` } })
-      if (!pr.ok) return
-      const pj = await pr.json()
-      type PR = { period_start: string; status: string; decision: string | null }
-      const run: PR | undefined = (pj.data?.runs ?? []).find(
-        (r: PR) => r.period_start.startsWith(start) && r.status === 'completed'
-      )
-      if (!run) return
-      const dec = run.decision ?? ''
-      if (dec === 'approved') { clearInterval(approvalPollRef.current!); approvalPollRef.current = null; setBankApprovalState('approved') }
-      else if (dec === 'rejected') { clearInterval(approvalPollRef.current!); approvalPollRef.current = null; setBankApprovalState('rejected') }
+      try {
+        const pt = await getToken()
+        const pr = await fetch(`${API}/reconciliation/approval-status?period_start=${start}&period_end=${end}`, { headers: { Authorization: `Bearer ${pt}` } })
+        if (!pr.ok) return
+        const aData = (await pr.json()).data
+        const s = aData.approval_status
+        if (s === 'approved') { clearInterval(approvalPollRef.current!); approvalPollRef.current = null; setBankApprovalState('approved') }
+        else if (s === 'rejected') { clearInterval(approvalPollRef.current!); approvalPollRef.current = null; setBankApprovalState('rejected') }
+      } catch { /* silent — approval polling is best-effort */ }
     }, 5000)
     return () => { if (approvalPollRef.current) { clearInterval(approvalPollRef.current); approvalPollRef.current = null } }
   }, [bankApprovalState, month, getToken])

@@ -47,9 +47,6 @@ def parse_stripe_event_type(event_type: str) -> str | None:
         "invoice.payment_succeeded": "invoice_received",
         "invoice.finalized": "invoice_received",
         "invoice.payment_failed": "invoice_payment_failed",
-        # Transactions
-        "charge.succeeded": "transaction_posted",
-        "payment_intent.succeeded": "transaction_posted",
         "charge.refunded": "charge_refunded",
         # Disputes
         "charge.dispute.created": "dispute_created",

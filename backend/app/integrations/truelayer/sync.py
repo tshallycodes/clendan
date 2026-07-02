@@ -333,13 +333,6 @@ async def _do_sync_truelayer_connection(integration_id: str, tenant_id: str) -> 
                     txn_ids = [t.id for t in new_txns]
                     await enqueue_orchestrator_event(
                         tenant_id=tenant_id,
-                        event_type="transaction_posted",
-                        payload={"transaction_ids": txn_ids},
-                        idempotency_key=f"truelayer:sync:{integration_id}:{from_date}",
-                        db=db,
-                    )
-                    await enqueue_orchestrator_event(
-                        tenant_id=tenant_id,
                         event_type="compliance_check_requested",
                         payload={"transaction_ids": txn_ids},
                         idempotency_key=f"truelayer:compliance:{integration_id}:{from_date}",

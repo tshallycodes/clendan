@@ -42,7 +42,7 @@ async def freshbooks_webhook(
 ):
     """
     Receives FreshBooks event notifications.
-    Emits orchestrator events for invoice and payment events.
+    Emits orchestrator events for invoice events.
     """
     settings = get_settings()
     body = await request.body()
@@ -67,7 +67,7 @@ async def freshbooks_webhook(
     event_type: str = payload.get("name", "")
     data: dict = payload.get("object", {})
 
-    if event_type not in ("invoice.create", "invoice.update", "payment.create"):
+    if event_type not in ("invoice.create", "invoice.update"):
         return standard_response(data={"received": True})
 
     db = get_db()
@@ -82,25 +82,15 @@ async def freshbooks_webhook(
     object_id = str(data.get("id", ""))
     idempotency_key = f"freshbooks:{event_type}:{object_id}"
 
-    if event_type in ("invoice.create", "invoice.update"):
-        orchestrator_event = "invoice_received"
-        event_payload = {
-            "source": "freshbooks",
-            "invoice_id": object_id,
-            "account_id": str(data.get("accountid", "")),
-        }
-    else:
-        orchestrator_event = "transaction_posted"
-        event_payload = {
-            "source": "freshbooks",
-            "payment_id": object_id,
-            "amount_minor": int(float(data.get("amount", 0)) * 100),
-            "currency": "USD",
-        }
+    event_payload = {
+        "source": "freshbooks",
+        "invoice_id": object_id,
+        "account_id": str(data.get("accountid", "")),
+    }
 
     execution_id = await enqueue_orchestrator_event(
         tenant_id=tenant_id,
-        event_type=orchestrator_event,
+        event_type="invoice_received",
         payload=event_payload,
         idempotency_key=idempotency_key,
         db=db,
@@ -112,7 +102,6 @@ async def freshbooks_webhook(
             extra={
                 "execution_id": execution_id,
                 "event_type": event_type,
-                "orchestrator_event": orchestrator_event,
                 "tenant_id": tenant_id,
             },
         )

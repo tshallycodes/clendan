@@ -37,7 +37,6 @@ from app.integrations.wise.sync import sync_wise_connection
 from app.integrations.exchange_rates.service import fetch_exchange_rates_daily
 from app.policy.engine import Decision, evaluate_policy
 from app.queue.pool import get_queue_pool, push_to_dlq
-from app.tools.ai_accountant import run_ai_accountant
 from app.tools.invoice_processing import run_invoice_job
 from app.tools.receipt_processing import run_receipt_job
 from app.api.v1.parse.invoice import run_parse_invoice_job
@@ -118,23 +117,7 @@ async def run_orchestrator_job(
             data={"status": "running"},
         )
 
-        if event_type == "transaction_posted":
-            logger.info(
-                "orchestrator_dispatching",
-                extra={"execution_id": execution_id, "event_type": event_type, "tool_id": tool_id},
-            )
-            decision, confidence, reasoning = await _orchestrate_transaction_posted(
-                payload, tenant_id, tool_id, execution_id
-            )
-            logger.info(
-                "orchestrator_dispatch_done",
-                extra={
-                    "execution_id": execution_id,
-                    "decision": decision,
-                    "confidence": confidence,
-                },
-            )
-        elif event_type == "invoice_received":
+        if event_type == "invoice_received":
             decision, confidence, reasoning = await _orchestrate_invoice_received(
                 payload, tenant_id, tool_id
             )
@@ -579,70 +562,6 @@ async def run_orchestrator_job(
                 error=str(exc),
             )
         raise
-
-
-async def _orchestrate_transaction_posted(
-    payload: dict, tenant_id: str, tool_id: str, execution_id: str
-) -> tuple[str, float, str]:
-    """Runs the AI Accountant inline so the execution record reflects the real result."""
-    from app.tools.ai_accountant import AIAccountantTool
-    transaction_ids = payload.get("transaction_ids", [])
-    logger.info(
-        "transaction_posted_enter",
-        extra={
-            "execution_id": execution_id,
-            "tool_id": tool_id,
-            "transaction_count": len(transaction_ids),
-        },
-    )
-    db = get_db()
-    if not transaction_ids:
-        logger.info("transaction_posted_fetch_all_pending", extra={"execution_id": execution_id, "tenant_id": tenant_id})
-        pending_txns = await db.banktransaction.find_many(
-            where={
-                "tenant_id": tenant_id,
-                "AND": [
-                    {"NOT": {"status": {"equals": "categorised"}}},
-                    {"NOT": {"status": {"equals": "matched"}}},
-                ],
-            },
-            take=2000,
-            order={"date": "desc"},
-        )
-        transaction_ids = [t.id for t in pending_txns]
-        if not transaction_ids:
-            logger.info("transaction_posted_nothing_pending", extra={"execution_id": execution_id})
-            return "blocked", 0.0, "No pending transactions to categorise"
-        logger.info("transaction_posted_all_pending", extra={"execution_id": execution_id, "count": len(transaction_ids)})
-    tool_record = await db.tool.find_unique(where={"id": tool_id})
-    policy_config = (
-        tool_record.config_json if tool_record and isinstance(tool_record.config_json, dict) else {}
-    )
-    logger.info(
-        "transaction_posted_policy_loaded",
-        extra={"execution_id": execution_id, "policy_keys": list(policy_config.keys())},
-    )
-
-    result = await AIAccountantTool().run(
-        transaction_ids=transaction_ids,
-        tenant_id=tenant_id,
-        tool_id=tool_id,
-        policy_config=policy_config,
-        execution_id=execution_id,
-    )
-
-    n = len(result.results)
-    logger.info(
-        "transaction_posted_done",
-        extra={
-            "execution_id": execution_id,
-            "categorised": n,
-            "of_total": len(transaction_ids),
-            "decision": result.decision,
-            "confidence": result.confidence,
-        },
-    )
-    return result.decision, result.confidence, f"Categorised {n} of {len(transaction_ids)} transactions"
 
 
 async def _orchestrate_invoice_received(
@@ -1145,7 +1064,6 @@ class ToolSettings:
         sync_quickbooks_connection,
         sync_plaid_transactions,
         reconcile_plaid_transactions,
-        run_ai_accountant,
         run_invoice_job,
         run_receipt_job,
         run_parse_invoice_job,

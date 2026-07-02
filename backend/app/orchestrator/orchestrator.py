@@ -19,7 +19,6 @@ logger = get_logger(__name__)
 
 EVENT_TO_WORKER: dict[str, ToolType] = {
     "invoice_received": ToolType.INVOICE_PROCESSING,
-    "transaction_posted": ToolType.ACCOUNTANT,
     "expense_submitted": ToolType.EXPENSE_CONTROL,
     "reconciliation_requested": ToolType.RECONCILIATION,
     "reconciliation_run": ToolType.RECONCILIATION,
@@ -43,7 +42,6 @@ EVENT_TO_WORKER: dict[str, ToolType] = {
 
 EventType = Literal[
     "invoice_received",
-    "transaction_posted",
     "expense_submitted",
     "reconciliation_requested",
     "reconciliation_run",

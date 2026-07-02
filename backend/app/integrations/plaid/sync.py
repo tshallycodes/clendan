@@ -223,13 +223,6 @@ async def sync_plaid_transactions(ctx: dict, integration_id: str, tenant_id: str
                     sync_key = cursor[:24] if cursor else "initial"
                     await enqueue_orchestrator_event(
                         tenant_id=tenant_id,
-                        event_type="transaction_posted",
-                        payload={"transaction_ids": txn_ids},
-                        idempotency_key=f"plaid:sync:{integration_id}:{sync_key}",
-                        db=db,
-                    )
-                    await enqueue_orchestrator_event(
-                        tenant_id=tenant_id,
                         event_type="compliance_check_requested",
                         payload={"transaction_ids": txn_ids},
                         idempotency_key=f"plaid:compliance:{integration_id}:{sync_key}",

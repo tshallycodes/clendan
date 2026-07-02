@@ -17,7 +17,6 @@ from fastapi.responses import PlainTextResponse
 from app.core.config import get_settings
 from app.core.db import get_db
 from app.core.logging import get_logger
-from app.orchestrator.events import enqueue_orchestrator_event
 
 _logger = get_logger(__name__)
 router = APIRouter(prefix="/webhooks", tags=["webhooks"])
@@ -65,7 +64,6 @@ async def adyen_webhook(request: Request):
     """
     Receives Adyen notification events.
     Verifies HMAC-SHA256 signature per item when key is configured.
-    Emits orchestrator events for AUTHORISATION, REFUND, and CAPTURE events.
     Always responds with plain text '[accepted]' as required by Adyen.
     """
     settings = get_settings()
@@ -87,8 +85,6 @@ async def adyen_webhook(request: Request):
     if not integration:
         _logger.warning("adyen_webhook_no_integration")
         return PlainTextResponse("[accepted]")
-
-    tenant_id = integration.tenant_id
 
     for wrapper in notification_items:
         item: dict = wrapper.get("NotificationRequestItem", {})
@@ -112,32 +108,9 @@ async def adyen_webhook(request: Request):
         if event_code == "AUTHORISATION" and success != "true":
             continue
 
-        psp_reference = item.get("pspReference", "")
-        amount = item.get("amount", {})
-        idempotency_key = f"adyen:{event_code}:{psp_reference}"
-
-        execution_id = await enqueue_orchestrator_event(
-            tenant_id=tenant_id,
-            event_type="transaction_posted",
-            payload={
-                "source": "adyen",
-                "psp_reference": psp_reference,
-                "amount_minor": int(amount.get("value", 0)),
-                "currency": amount.get("currency", "USD"),
-            },
-            idempotency_key=idempotency_key,
-            db=db,
+        _logger.info(
+            "adyen_event_accepted",
+            extra={"event_code": event_code, "psp_reference": item.get("pspReference", "")},
         )
-
-        if execution_id:
-            _logger.info(
-                "adyen_event_queued",
-                extra={
-                    "execution_id": execution_id,
-                    "event_code": event_code,
-                    "psp_reference": psp_reference,
-                    "tenant_id": tenant_id,
-                },
-            )
 
     return PlainTextResponse("[accepted]")

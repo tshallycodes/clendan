@@ -13,7 +13,7 @@ logger = get_logger(__name__)
 router = APIRouter(prefix="/tools", tags=["tools"])
 
 VALID_TYPES = {
-    "invoice_processing", "ai_accountant", "receipt_processing",
+    "invoice_processing", "receipt_processing",
     "reconciliation", "expense_control", "collections",
     "fraud_detection", "treasury", "revenue_recognition",
     "credit_underwriting", "compliance",

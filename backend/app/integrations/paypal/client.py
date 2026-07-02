@@ -17,7 +17,6 @@ BACKOFF_SECONDS = 1.0
 _circuit = CircuitBreaker("paypal")
 
 _EVENT_MAP: dict[str, str] = {
-    "PAYMENT.CAPTURE.COMPLETED": "transaction_posted",
     "INVOICING.INVOICE.PAID": "invoice_received",
 }
 

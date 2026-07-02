@@ -46,15 +46,6 @@ class InvoiceProcessingToolStub(BaseTool):
         return _queued(self.TOOL_TYPE)
 
 
-class AccountantToolStub(BaseTool):
-    TOOL_TYPE = ToolType.ACCOUNTANT
-    REQUIRED_TOOLS = ["bank_transaction_api", "accounting_ledger_api", "invoice_system_api"]
-    VERSION = 1
-
-    async def execute(self, _input_data: dict, _tenant_id: str) -> ToolOutput:
-        return _queued(self.TOOL_TYPE)
-
-
 class ReceiptProcessingToolStub(BaseTool):
     TOOL_TYPE = ToolType.RECEIPT_PROCESSING
     REQUIRED_TOOLS = ["receipt_ocr_tool", "policy_engine_api"]
@@ -111,7 +102,6 @@ class TreasuryCashToolStub(BaseTool):
 
 WORKER_REGISTRY: dict[ToolType, type[BaseTool]] = {
     ToolType.INVOICE_PROCESSING: InvoiceProcessingToolStub,
-    ToolType.ACCOUNTANT: AccountantToolStub,
     ToolType.RECEIPT_PROCESSING: ReceiptProcessingToolStub,
     ToolType.RECONCILIATION: ReconciliationTool,
     ToolType.EXPENSE_CONTROL: ExpenseControlTool,

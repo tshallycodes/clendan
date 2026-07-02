@@ -12,7 +12,6 @@ from pydantic import BaseModel
 
 class ToolType(str, Enum):
     INVOICE_PROCESSING = "invoice_processing"
-    ACCOUNTANT = "ai_accountant"
     RECEIPT_PROCESSING = "receipt_processing"
     RECONCILIATION = "reconciliation"
     EXPENSE_CONTROL = "expense_control"

@@ -743,6 +743,55 @@ async def close_period(
 
 
 # ---------------------------------------------------------------------------
+# GET /v1/reconciliation/approval-status
+# ---------------------------------------------------------------------------
+
+
+@router.get("/reconciliation/approval-status")
+async def get_reconciliation_approval_status(
+    current_user: RequireOrgAuth,
+    period_start: str = Query(...),
+    period_end: str = Query(...),
+) -> dict:
+    """Return approval state for the most recent bank rec run in this period."""
+    db = get_db()
+    tenant_id = current_user.tenant_id
+
+    try:
+        start_dt = datetime.fromisoformat(period_start)
+        end_dt = datetime.fromisoformat(period_end)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=f"Invalid date format: {exc}") from exc
+
+    run = await db.reconciliationrun.find_first(
+        where={
+            "tenant_id": tenant_id,
+            "period_start": {"gte": start_dt},
+            "period_end": {"lte": end_dt},
+            "status": "completed",
+        },
+        order={"created_at": "desc"},
+    )
+
+    if not run or not run.execution_id:
+        return standard_response(data={"approval_status": None})
+
+    approval = await db.approval.find_first(
+        where={"tenant_id": tenant_id, "execution_id": run.execution_id},
+    )
+
+    if not approval:
+        return standard_response(data={"approval_status": None})
+
+    return standard_response(data={
+        "approval_status": approval.status,
+        "approval_id": approval.id,
+        "requested_at": approval.requested_at.isoformat(),
+        "expires_at": approval.expires_at.isoformat(),
+    })
+
+
+# ---------------------------------------------------------------------------
 # GET /v1/reconciliation/close-period-status
 # ---------------------------------------------------------------------------
 

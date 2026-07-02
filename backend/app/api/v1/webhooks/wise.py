@@ -10,7 +10,6 @@ from fastapi import APIRouter, HTTPException, Request
 from app.core.db import get_db
 from app.core.logging import get_logger
 from app.core.responses import standard_response
-from app.orchestrator.events import enqueue_orchestrator_event
 
 _logger = get_logger(__name__)
 router = APIRouter(prefix="/webhooks", tags=["webhooks"])
@@ -21,7 +20,6 @@ async def wise_webhook(request: Request):
     """
     Receives Wise event notifications.
     RSA signature verification is deferred to v2 — all requests accepted in v1.
-    Emits orchestrator events for outgoing payment events.
     """
     _logger.warning(
         "wise_webhook_signature_verification_skipped_pending_rsa_implementation"
@@ -53,33 +51,11 @@ async def wise_webhook(request: Request):
         _logger.warning("wise_webhook_no_integration")
         return standard_response(data={"received": True})
 
-    tenant_id = integration.tenant_id
     resource = data.get("resource", {})
     transfer_id = str(resource.get("id", ""))
-    idempotency_key = f"wise:{event_type}:{transfer_id}"
-
-    execution_id = await enqueue_orchestrator_event(
-        tenant_id=tenant_id,
-        event_type="transaction_posted",
-        payload={
-            "source": "wise",
-            "transfer_id": transfer_id,
-            "amount_minor": int(float(data.get("amount", 0)) * 100),
-            "currency": data.get("currency", "GBP").upper(),
-        },
-        idempotency_key=idempotency_key,
-        db=db,
+    _logger.info(
+        "wise_event_accepted",
+        extra={"event_type": event_type, "transfer_id": transfer_id},
     )
-
-    if execution_id:
-        _logger.info(
-            "wise_event_queued",
-            extra={
-                "execution_id": execution_id,
-                "event_type": event_type,
-                "transfer_id": transfer_id,
-                "tenant_id": tenant_id,
-            },
-        )
 
     return standard_response(data={"received": True})

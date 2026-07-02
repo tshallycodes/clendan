@@ -16,7 +16,6 @@ _logger = get_logger(__name__)
 router = APIRouter(prefix="/webhooks", tags=["webhooks"])
 
 _INVOICE_EVENT_TYPES = frozenset({"SalesInvoice.Posted", "PurchaseInvoice.Posted"})
-_PAYMENT_EVENT_TYPES = frozenset({"Payment.Cleared"})
 
 
 @router.post("/sage")
@@ -24,7 +23,7 @@ async def sage_webhook(request: Request):
     """
     Receives Sage Business Cloud event notifications.
     No signature verification in v1 — Sage does not provide standard signing.
-    Emits orchestrator events for invoice and payment events.
+    Emits orchestrator events for invoice events.
     """
     body = await request.body()
 
@@ -38,7 +37,7 @@ async def sage_webhook(request: Request):
     event_type: str = payload.get("$eventType", "")
     entity_id: str = payload.get("$entity", "")
 
-    if event_type not in _INVOICE_EVENT_TYPES and event_type not in _PAYMENT_EVENT_TYPES:
+    if event_type not in _INVOICE_EVENT_TYPES:
         return standard_response(data={"received": True})
 
     db = get_db()
@@ -52,23 +51,15 @@ async def sage_webhook(request: Request):
     tenant_id = integration.tenant_id
     idempotency_key = f"sage:{event_type}:{entity_id}"
 
-    if event_type in _INVOICE_EVENT_TYPES:
-        orchestrator_event = "invoice_received"
-        event_payload = {
-            "source": "sage",
-            "entity_type": event_type.split(".")[0],
-            "entity_id": entity_id,
-        }
-    else:
-        orchestrator_event = "transaction_posted"
-        event_payload = {
-            "source": "sage",
-            "payment_id": entity_id,
-        }
+    event_payload = {
+        "source": "sage",
+        "entity_type": event_type.split(".")[0],
+        "entity_id": entity_id,
+    }
 
     execution_id = await enqueue_orchestrator_event(
         tenant_id=tenant_id,
-        event_type=orchestrator_event,
+        event_type="invoice_received",
         payload=event_payload,
         idempotency_key=idempotency_key,
         db=db,
@@ -80,7 +71,6 @@ async def sage_webhook(request: Request):
             extra={
                 "execution_id": execution_id,
                 "event_type": event_type,
-                "orchestrator_event": orchestrator_event,
                 "tenant_id": tenant_id,
             },
         )

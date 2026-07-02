@@ -29,7 +29,7 @@ async def paypal_webhook(
 ):
     """
     Receives PayPal event notifications.
-    Emits orchestrator events for payment capture and invoice paid events.
+    Emits orchestrator events for invoice paid events.
     """
     settings = get_settings()
     if not settings.paypal_webhook_id:
@@ -78,19 +78,10 @@ async def paypal_webhook(
     resource_id: str = resource.get("id", "")
     idempotency_key = f"paypal:{event_id}"
 
-    if orchestrator_event == "invoice_received":
-        event_payload = {
-            "paypal_event_type": event_type,
-            "paypal_resource_id": resource_id,
-        }
-    else:
-        amount = resource.get("amount") or resource.get("seller_receivable_breakdown", {}).get("gross_amount", {})
-        event_payload = {
-            "paypal_event_type": event_type,
-            "paypal_resource_id": resource_id,
-            "amount_minor": int(float(amount.get("value", "0")) * 100),
-            "currency": (amount.get("currency_code") or "USD").upper(),
-        }
+    event_payload = {
+        "paypal_event_type": event_type,
+        "paypal_resource_id": resource_id,
+    }
 
     execution_id = await enqueue_orchestrator_event(
         tenant_id=tenant_id,

@@ -81,35 +81,6 @@ async def respond_to_approval(
         data={"decision": new_decision},
     )
 
-    # AI Accountant: cascade approval/rejection to staged transaction categorisations
-    if execution:
-        tool = await db.tool.find_unique(where={"id": execution.tool_id})
-        if tool and tool.type == "ai_accountant":
-            audit_log = await db.auditlog.find_first(
-                where={"execution_id": approval.execution_id, "tenant_id": tenant_id},
-                order={"created_at": "desc"},
-            )
-            if audit_log and isinstance(audit_log.reasoning_trace_json, dict):
-                txn_results = audit_log.reasoning_trace_json.get("results", [])
-                for item in txn_results:
-                    txn_id = item.get("transaction_id")
-                    if not txn_id:
-                        continue
-                    if body.action == ApprovalAction.APPROVE:
-                        matched_invoice_id = item.get("matched_invoice_id")
-                        await db.banktransaction.update(
-                            where={"id": txn_id},
-                            data={
-                                "status": "matched" if matched_invoice_id else "categorised",
-                                "matched_invoice_id": matched_invoice_id,
-                            },
-                        )
-                    else:
-                        await db.banktransaction.update(
-                            where={"id": txn_id},
-                            data={"ai_category": None},
-                        )
-
     # Cascade to journal entry if this approval is linked to one
     if execution and execution.input_ref and execution.input_ref.startswith("journal_entry:"):
         parts = execution.input_ref.split(":")

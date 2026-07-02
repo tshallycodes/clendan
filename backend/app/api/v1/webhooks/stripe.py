@@ -77,10 +77,10 @@ async def stripe_webhook(
             "currency": (stripe_object.get("currency") or "usd").upper(),
             "customer": stripe_object.get("customer") or "",
         }
-    elif orchestrator_event in ("transaction_posted", "charge_refunded"):
+    elif orchestrator_event == "charge_refunded":
         event_payload = {
             **base,
-            "amount_minor": stripe_object.get("amount_refunded" if orchestrator_event == "charge_refunded" else "amount", 0),
+            "amount_minor": stripe_object.get("amount_refunded", 0),
             "currency": (stripe_object.get("currency") or "usd").upper(),
         }
     elif orchestrator_event == "dispute_created":

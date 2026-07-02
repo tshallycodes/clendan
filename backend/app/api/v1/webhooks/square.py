@@ -89,14 +89,6 @@ async def square_webhook(
             "currency": (money.get("currency") or "USD").upper(),
             "status": inner.get("status") or "",
         }
-    elif orchestrator_event in ("transaction_posted",):
-        money = inner.get("amount_money") or {}
-        event_payload = {
-            **base,
-            "amount_minor": money.get("amount", 0),
-            "currency": (money.get("currency") or "USD").upper(),
-            "status": inner.get("status") or "",
-        }
     elif orchestrator_event in ("refund_created", "refund_updated"):
         money = inner.get("amount_money") or {}
         event_payload = {

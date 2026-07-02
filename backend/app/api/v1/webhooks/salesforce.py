@@ -22,7 +22,6 @@ async def salesforce_webhook(request: Request):
     """
     Receives Salesforce outbound REST notifications.
     Routes Invoice/Opportunity events → invoice_received.
-    Routes Payment events → transaction_posted.
     Always returns 200 regardless of processing outcome.
     """
     try:
@@ -50,8 +49,6 @@ async def salesforce_webhook(request: Request):
     # Determine orchestrator event type
     if any(kw in event_type_raw for kw in ("Invoice", "Opportunity")):
         orchestrator_event = "invoice_received"
-    elif "Payment" in event_type_raw:
-        orchestrator_event = "transaction_posted"
     else:
         _logger.info("salesforce_webhook_unhandled_type type=%s", event_type_raw)
         return standard_response(data={"received": True})

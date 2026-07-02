@@ -18,7 +18,6 @@ VALID_PERIODS = {"1d", "7d", "30d", "90d"}
 _MANUAL_MINUTES_PER_TASK: dict[str, float] = {
     "invoice_processing": 12.0,      # 12 min to process an invoice manually
     "receipt_processing": 5.0,       # 5 min per receipt
-    "ai_accountant": 30.0,           # 30 min for a manual accounting review
     "reconciliation": 45.0,          # 45 min per reconciliation cycle
     "expense_control": 8.0,          # 8 min per expense review
     "collections": 20.0,             # 20 min per collections outreach

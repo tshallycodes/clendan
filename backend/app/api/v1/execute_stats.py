@@ -15,7 +15,6 @@ router = APIRouter(prefix="/execute", tags=["agents"])
 _TOOL_TYPES = [
     "reconciliation",
     "document_intelligence",
-    "ai_accountant",
     "spend_control",
     "ar_collections",
     "risk_compliance",

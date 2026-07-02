@@ -23,7 +23,6 @@ TOOL_TYPE_TO_EVENT: dict[str, str] = {
     "financial_reporting": "financial_report_run",
     "payment_run":         "payment_run_requested",
     "budgeting":           "budget_check_run",
-    "ai_accountant":       "transaction_posted",
     "spend_control":       "spend_control_run",
     "ar_collections":      "ar_collections_run",
     "risk_compliance":     "risk_compliance_run",
@@ -150,7 +149,7 @@ async def cancel_execution(
     tool_id: str = Path(...),
     execution_id: str = Path(...),
 ):
-    """Mark a queued or running execution as cancelled. The AI Accountant checks this flag between batches."""
+    """Mark a queued or running execution as cancelled."""
     db = get_db()
     tenant_id = current_user.tenant_id
 

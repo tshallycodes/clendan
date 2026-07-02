@@ -33,7 +33,6 @@ TOOL_TYPE_TO_EVENT: dict[str, str] = {
     # Current names
     "reconciliation":        "reconciliation_run",
     "revenue_recognition":   "revenue_recognition_run",
-    "ai_accountant":         "transaction_posted",
     "credit_underwriting":   "credit_assessment_run",
     "document_intelligence": "document_received",
     "spend_control":         "spend_control_run",

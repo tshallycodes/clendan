@@ -13,7 +13,6 @@ from clendan_mcp.auth import MCPError, api_get, api_patch, api_post
 
 VALID_TOOL_TYPES = {
     "invoice_processing",
-    "ai_accountant",
     "receipt_processing",
     "reconciliation",
     "expense_control",
@@ -69,7 +68,7 @@ async def get_tool_status(tool_type: str) -> dict[str, Any]:
     Get detailed status of a specific tool by type.
 
     Args:
-        tool_type: One of: invoice_processing, ai_accountant, receipt_processing,
+        tool_type: One of: invoice_processing, receipt_processing,
             reconciliation, expense_control, collections, fraud_detection,
             treasury, revenue_recognition, credit_underwriting, compliance
 
@@ -97,7 +96,7 @@ async def pause_tool(tool_type: str) -> dict[str, Any]:
     investigate unexpected behaviour, or make configuration changes.
 
     Args:
-        tool_type: One of: invoice_processing, ai_accountant, receipt_processing,
+        tool_type: One of: invoice_processing, receipt_processing,
             reconciliation, expense_control, collections, fraud_detection,
             treasury, revenue_recognition, credit_underwriting, compliance
 
@@ -125,7 +124,7 @@ async def resume_tool(tool_type: str) -> dict[str, Any]:
     Resume a paused tool. It will begin processing events immediately.
 
     Args:
-        tool_type: One of: invoice_processing, ai_accountant, receipt_processing,
+        tool_type: One of: invoice_processing, receipt_processing,
             reconciliation, expense_control, collections, fraud_detection,
             treasury, revenue_recognition, credit_underwriting, compliance
 
@@ -157,7 +156,7 @@ async def get_policy_rules(tool_type: str) -> dict[str, Any]:
     and when the tool should escalate to a human override.
 
     Args:
-        tool_type: One of: invoice_processing, ai_accountant, receipt_processing,
+        tool_type: One of: invoice_processing, receipt_processing,
             reconciliation, expense_control, collections, fraud_detection,
             treasury, revenue_recognition, credit_underwriting, compliance
 

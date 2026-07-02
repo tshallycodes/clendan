@@ -111,7 +111,7 @@ class TestDeployTool:
     def test_accepts_all_valid_types(self):
         from app.api.v1.tools import DeployToolRequest
 
-        for wtype in ("invoice_processing", "ai_accountant", "receipt_processing"):
+        for wtype in ("invoice_processing", "receipt_processing"):
             req = DeployToolRequest(type=wtype)
             assert req.type == wtype
 
@@ -135,7 +135,7 @@ class TestListTools:
 
         tools = [
             _make_tool(tool_id="w1", wtype="invoice_processing"),
-            _make_tool(tool_id="w2", wtype="ai_accountant"),
+            _make_tool(tool_id="w2", wtype="receipt_processing"),
         ]
         db = _make_db(tool_find_many=tools)
 

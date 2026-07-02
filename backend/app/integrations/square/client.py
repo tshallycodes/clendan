@@ -25,10 +25,6 @@ BACKOFF_SECONDS = 1.0
 _circuit = CircuitBreaker("square")
 
 _EVENT_MAP: dict[str, str] = {
-    # Reconciliation
-    "payment.created": "transaction_posted",
-    "payment.updated": "transaction_posted",
-    "payment.completed": "transaction_posted",
     "invoice.payment_made": "invoice_received",
     "invoice.created": "invoice_created",
     "invoice.updated": "invoice_updated",

@@ -83,10 +83,9 @@ def _make_pool_mock():
 # TOOL_TYPE_TO_EVENT coverage
 # ---------------------------------------------------------------------------
 
-ALL_13_TOOLS = [
+ALL_12_TOOLS = [
     "reconciliation",
     "document_intelligence",
-    "ai_accountant",
     "spend_control",
     "ar_collections",
     "risk_compliance",
@@ -101,8 +100,8 @@ ALL_13_TOOLS = [
 
 
 class TestToolCoverage:
-    def test_all_13_tools_in_map(self):
-        missing = [t for t in ALL_13_TOOLS if t not in TOOL_TYPE_TO_EVENT]
+    def test_all_12_tools_in_map(self):
+        missing = [t for t in ALL_12_TOOLS if t not in TOOL_TYPE_TO_EVENT]
         assert missing == [], f"Tools missing from TOOL_TYPE_TO_EVENT: {missing}"
 
     def test_expense_control_maps_to_handled_event(self):
@@ -223,8 +222,8 @@ class TestPostExecute:
             )
         assert response.status_code == 404
 
-    @pytest.mark.parametrize("tool_type", ALL_13_TOOLS)
-    def test_all_13_tools_are_routable(self, tool_type: str):
+    @pytest.mark.parametrize("tool_type", ALL_12_TOOLS)
+    def test_all_12_tools_are_routable(self, tool_type: str):
         fake_tool = MagicMock(id=_TOOL_ID, tenant_id=_TENANT_ID, type=tool_type, status="active")
         db = _make_db_mock()
         db.tool.find_first = AsyncMock(return_value=fake_tool)
