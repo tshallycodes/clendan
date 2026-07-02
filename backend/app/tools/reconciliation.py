@@ -98,11 +98,10 @@ def _parse_policy(config_json: dict, overrides: dict | None = None) -> _ToolPoli
     return _ToolPolicy.model_validate(merged)
 
 
-def _amounts_match(txn_amount: int, outstanding_cents: int, tolerance_pct: float, tolerance_minor: int = 150) -> bool:
+def _amounts_match(txn_amount: int, outstanding_cents: int, tolerance_minor: int = 150) -> bool:
     if outstanding_cents == 0:
         return txn_amount == 0
-    pct_allow = int(outstanding_cents * tolerance_pct) + 1
-    return abs(txn_amount - outstanding_cents) <= max(pct_allow, tolerance_minor)
+    return abs(txn_amount - outstanding_cents) <= tolerance_minor
 
 
 def _dates_match(txn_date: datetime, due_date: datetime | None, window_days: int) -> bool:
@@ -503,7 +502,7 @@ async def _execute_reconciliation(
                 if invoice.id in matched_inv_ids:
                     continue
                 if (
-                    _amounts_match(txn_abs, invoice.outstanding_cents, policy.match_amount_tolerance_pct, policy.match_amount_tolerance_minor)
+                    _amounts_match(txn_abs, invoice.outstanding_cents, policy.match_amount_tolerance_minor)
                     and _dates_match(txn.date, invoice.due_date, policy.match_date_window_days)
                 ):
                     matched_txn_ids.add(txn.id)
@@ -516,7 +515,7 @@ async def _execute_reconciliation(
                 if bill.id in matched_bill_ids:
                     continue
                 if (
-                    _amounts_match(txn_abs, bill.outstanding_cents, policy.match_amount_tolerance_pct, policy.match_amount_tolerance_minor)
+                    _amounts_match(txn_abs, bill.outstanding_cents, policy.match_amount_tolerance_minor)
                     and _dates_match(txn.date, bill.due_date, policy.match_date_window_days)
                 ):
                     matched_txn_ids.add(txn.id)

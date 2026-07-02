@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useAuth } from '@clerk/nextjs'
+import { useCurrency } from '@/components/Providers'
+import { CURRENCY_MAP } from '@/lib/currency'
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
@@ -34,6 +36,8 @@ function ReconciliationTrace({ trace }: { trace: Record<string, unknown> }) {
   const invoiceCount = (trace.invoice_count as number) || 0
   const unmatchedInvoices = (trace.unmatched_invoices as number) || 0
   const unmatchedPct = (trace.unmatched_pct as number) || 0
+  const policy = (trace.policy as Record<string, number>) ?? {}
+  const unmatchedPctThreshold = policy.unmatched_pct_threshold ?? 0.20
   const assessments = (trace.claude_assessments as Assessment[]) || []
   const flagged = assessments.filter(a => a.action === 'flag')
   const reviews = assessments.filter(a => a.action === 'review')
@@ -66,7 +70,7 @@ function ReconciliationTrace({ trace }: { trace: Record<string, unknown> }) {
         </div>
         <div className="bg-brand-bg border border-brand-border rounded-sm p-3">
           <p className="text-[11px] font-body text-brand-muted uppercase tracking-widest">Unmatched rate</p>
-          <p className={`text-xl font-heading font-bold mt-1 ${unmatchedPct > 0.2 ? 'text-[#ff4d6d]' : 'text-[#00C853]'}`}>
+          <p className={`text-xl font-heading font-bold mt-1 ${unmatchedPct > unmatchedPctThreshold ? 'text-[#ff4d6d]' : 'text-[#00C853]'}`}>
             {Math.round(unmatchedPct * 100)}%
           </p>
           <p className="text-[11px] font-body text-brand-muted mt-0.5">
@@ -261,7 +265,7 @@ function CategoriseAndMatchTrace({ trace }: { trace: Record<string, unknown> }) 
   )
 }
 
-function PayrollRecTrace({ trace, executionId, getToken }: { trace: Record<string, unknown>; executionId: string | null; getToken: () => Promise<string | null> }) {
+function PayrollRecTrace({ trace, executionId, getToken, currencySymbol }: { trace: Record<string, unknown>; executionId: string | null; getToken: () => Promise<string | null>; currencySymbol: string }) {
   const status = (trace.status as string) || 'clean'
   const period = trace.period as string
   const rosterSize = (trace.roster_size as number) ?? 0
@@ -354,7 +358,7 @@ function PayrollRecTrace({ trace, executionId, getToken }: { trace: Record<strin
           {missingList.map((m, i) => (
             <div key={i} className="bg-[rgba(255,77,109,0.04)] border border-[rgba(255,77,109,0.15)] rounded-sm px-3 py-2.5 flex items-center justify-between">
               <span className="text-[12px] font-body text-brand-secondary">{m.name}</span>
-              <span className="text-[11px] font-body text-brand-muted">Expected: {(m.expected_minor / 100).toLocaleString('en-GB', { minimumFractionDigits: 2 })}</span>
+              <span className="text-[11px] font-body text-brand-muted">Expected: {currencySymbol}{(m.expected_minor / 100).toLocaleString('en-GB', { minimumFractionDigits: 2 })}</span>
             </div>
           ))}
         </div>
@@ -366,7 +370,7 @@ function PayrollRecTrace({ trace, executionId, getToken }: { trace: Record<strin
           {ghostList.map((g, i) => (
             <div key={i} className="bg-[rgba(245,166,35,0.04)] border border-[rgba(245,166,35,0.2)] rounded-sm px-3 py-2.5 flex items-center justify-between">
               <span className="text-[12px] font-body text-brand-secondary">{g.name}</span>
-              <span className="text-[11px] font-body text-brand-muted">Amount: {(g.amount_minor / 100).toLocaleString('en-GB', { minimumFractionDigits: 2 })}</span>
+              <span className="text-[11px] font-body text-brand-muted">Amount: {currencySymbol}{(g.amount_minor / 100).toLocaleString('en-GB', { minimumFractionDigits: 2 })}</span>
             </div>
           ))}
         </div>
@@ -382,7 +386,7 @@ function PayrollRecTrace({ trace, executionId, getToken }: { trace: Record<strin
                 <span className="text-[12px] font-body font-medium text-[#f5a623]">+{d.diff_pct}% off</span>
               </div>
               <p className="text-[11px] font-body text-brand-muted mt-0.5">
-                Expected: {(d.expected_minor / 100).toLocaleString('en-GB', { minimumFractionDigits: 2 })} · Actual: {(d.actual_minor / 100).toLocaleString('en-GB', { minimumFractionDigits: 2 })}
+                Expected: {currencySymbol}{(d.expected_minor / 100).toLocaleString('en-GB', { minimumFractionDigits: 2 })} · Actual: {currencySymbol}{(d.actual_minor / 100).toLocaleString('en-GB', { minimumFractionDigits: 2 })}
               </p>
             </div>
           ))}
@@ -391,7 +395,7 @@ function PayrollRecTrace({ trace, executionId, getToken }: { trace: Record<strin
 
       <div className="flex items-center gap-6 text-[11px] font-body text-brand-muted">
         {totalPayrollMinor > 0 && (
-          <span>Total payroll: {(totalPayrollMinor / 100).toLocaleString('en-GB', { minimumFractionDigits: 2 })}</span>
+          <span>Total payroll: {currencySymbol}{(totalPayrollMinor / 100).toLocaleString('en-GB', { minimumFractionDigits: 2 })}</span>
         )}
         {durationMs != null && <span>Duration: {durationMs}ms</span>}
       </div>
@@ -505,7 +509,7 @@ function ApprovalTrace({ entry, trace }: { entry: AuditEntry; trace: Record<stri
   )
 }
 
-function fmtCents(cents: number | null | undefined, symbol = '$') {
+function fmtCents(cents: number | null | undefined, symbol: string) {
   if (cents == null) return `${symbol}0.00`
   return `${symbol}${(cents / 100).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 }
@@ -528,7 +532,7 @@ function AuditStatGrid({ stats }: { stats: { label: string; value: string; dange
   )
 }
 
-function InvoiceRecAuditTrace({ trace }: { trace: Record<string, unknown> }) {
+function InvoiceRecAuditTrace({ trace, currencySymbol }: { trace: Record<string, unknown>; currencySymbol: string }) {
   const start = trace.period_start as string
   const end = trace.period_end as string
   const source = trace.source as string
@@ -556,15 +560,15 @@ function InvoiceRecAuditTrace({ trace }: { trace: Record<string, unknown> }) {
         { label: 'Flagged', value: String(flagged), danger: flagged > 0 },
       ]} />
       <AuditStatGrid stats={[
-        { label: 'Total amount', value: fmtCents(amount) },
-        { label: 'Outstanding', value: fmtCents(outstanding), danger: outstanding > 0 },
-        { label: 'Tax collected', value: fmtCents(tax) },
+        { label: 'Total amount', value: fmtCents(amount, currencySymbol) },
+        { label: 'Outstanding', value: fmtCents(outstanding, currencySymbol), danger: outstanding > 0 },
+        { label: 'Tax collected', value: fmtCents(tax, currencySymbol) },
       ]} />
     </div>
   )
 }
 
-function VatRecAuditTrace({ trace }: { trace: Record<string, unknown> }) {
+function VatRecAuditTrace({ trace, currencySymbol }: { trace: Record<string, unknown>; currencySymbol: string }) {
   const start = trace.period_start as string
   const end = trace.period_end as string
   const source = trace.source as string
@@ -586,9 +590,9 @@ function VatRecAuditTrace({ trace }: { trace: Record<string, unknown> }) {
         {rate != null && <span className="text-[11px] font-body text-brand-muted">Expected rate: {rate}%</span>}
       </div>
       <AuditStatGrid stats={[
-        { label: 'Output VAT', value: fmtCents(outputVat) },
-        { label: 'Net sales', value: fmtCents(netSales) },
-        { label: 'VAT position', value: fmtCents(vatPosition) },
+        { label: 'Output VAT', value: fmtCents(outputVat, currencySymbol) },
+        { label: 'Net sales', value: fmtCents(netSales, currencySymbol) },
+        { label: 'VAT position', value: fmtCents(vatPosition, currencySymbol) },
         { label: 'Total invoices', value: String(total) },
       ]} />
       {flagged > 0 && (
@@ -600,7 +604,7 @@ function VatRecAuditTrace({ trace }: { trace: Record<string, unknown> }) {
   )
 }
 
-function TraceView({ entry, getToken }: { entry: AuditEntry; getToken: () => Promise<string | null> }) {
+function TraceView({ entry, getToken, currencySymbol }: { entry: AuditEntry; getToken: () => Promise<string | null>; currencySymbol: string }) {
   const [showRaw, setShowRaw] = useState(false)
   const trace = typeof entry.reasoning_trace_json === 'object' ? entry.reasoning_trace_json : null
   const isApproval = entry.action === 'approval_approved' || entry.action === 'approval_rejected'
@@ -633,13 +637,13 @@ function TraceView({ entry, getToken }: { entry: AuditEntry; getToken: () => Pro
           : isReconciliation
             ? <ReconciliationTrace trace={trace!} />
             : isInvoiceRec
-              ? <InvoiceRecAuditTrace trace={trace!} />
+              ? <InvoiceRecAuditTrace trace={trace!} currencySymbol={currencySymbol} />
               : isVatRec
-                ? <VatRecAuditTrace trace={trace!} />
+                ? <VatRecAuditTrace trace={trace!} currencySymbol={currencySymbol} />
                 : isDocumentIntelligence
                   ? <DocumentIntelligenceTrace trace={trace!} />
                   : isPayrollRec
-                    ? <PayrollRecTrace trace={trace!} executionId={entry.execution_id} getToken={getToken} />
+                    ? <PayrollRecTrace trace={trace!} executionId={entry.execution_id} getToken={getToken} currencySymbol={currencySymbol} />
                     : isCategoriseAndMatch
                       ? <CategoriseAndMatchTrace trace={trace!} />
                       : <OrchestratorTrace trace={trace!} />
@@ -658,6 +662,8 @@ function TraceView({ entry, getToken }: { entry: AuditEntry; getToken: () => Pro
 
 export function ToolAuditTab({ toolId, initialAction }: { toolId: string | null; initialAction?: string }) {
   const { getToken } = useAuth()
+  const { currency } = useCurrency()
+  const currencySymbol = CURRENCY_MAP[currency]?.symbol ?? currency
   const [entries, setEntries] = useState<AuditEntry[]>([])
   const [loading, setLoading] = useState(false)
   const [expanded, setExpanded] = useState<string | null>(null)
@@ -746,7 +752,7 @@ export function ToolAuditTab({ toolId, initialAction }: { toolId: string | null;
                   {e.model_version && (
                     <p className="text-[11px] font-body text-brand-muted">model: {e.model_version}</p>
                   )}
-                  <TraceView entry={e} getToken={getToken} />
+                  <TraceView entry={e} getToken={getToken} currencySymbol={currencySymbol} />
                 </div>
               )}
             </div>
