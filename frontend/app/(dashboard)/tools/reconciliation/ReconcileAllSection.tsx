@@ -664,30 +664,17 @@ export function ReconcileAllSection({ toolId, onViewAudit }: Props) {
         </div>
       )}
       {closedAt && (
-        <div className="bg-[rgba(0,200,83,0.06)] border border-[rgba(0,200,83,0.2)] rounded-sm px-4 py-3 flex items-center gap-3">
-          <span className="text-[#00C853] text-sm">✓</span>
-          <div className="flex-1 min-w-0">
-            <p className="text-xs font-body text-[#00C853]">{monthLabel} closed</p>
-            <p className="text-[11px] font-body text-brand-muted">
-              by {closedBy?.split('@')[0]} · {new Date(closedAt).toLocaleString('en-GB')}
-            </p>
+        <div className="bg-[rgba(0,200,83,0.06)] border border-[rgba(0,200,83,0.2)] rounded-sm px-4 py-3">
+          <div className="flex items-center gap-3">
+            <span className="text-[#00C853] text-sm shrink-0">✓</span>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-body text-[#00C853]">{monthLabel} closed</p>
+              <p className="text-[11px] font-body text-brand-muted">
+                by {closedBy?.split('@')[0]} · {new Date(closedAt).toLocaleString('en-GB')}
+              </p>
+            </div>
           </div>
-          <button
-            type="button"
-            onClick={reopenPeriod}
-            disabled={reopening}
-            className="text-[11px] font-body px-3 py-1.5 rounded-sm border border-[rgba(255,77,109,0.3)] text-[#ff4d6d] hover:bg-[rgba(255,77,109,0.06)] transition-colors disabled:opacity-40 shrink-0"
-          >
-            {reopening ? 'Reopening…' : 'Reopen'}
-          </button>
-        </div>
-      )}
-
-      {/* Quick Actions — shown when all reconciliations are done */}
-      {allDone && (
-        <div className="bg-brand-surface border border-brand-border rounded-sm p-4">
-          <p className="text-[11px] font-body text-brand-muted uppercase tracking-widest mb-2">Quick actions</p>
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2 mt-3 pt-3 border-t border-[rgba(0,200,83,0.15)]">
             <button
               type="button"
               onClick={downloadPDF}
@@ -711,6 +698,14 @@ export function ReconcileAllSection({ toolId, onViewAudit }: Props) {
                 </button>
               )
             })}
+            <button
+              type="button"
+              onClick={reopenPeriod}
+              disabled={reopening}
+              className="ml-auto text-[11px] font-body px-3 py-1.5 rounded-sm border border-[rgba(255,77,109,0.3)] text-[#ff4d6d] hover:bg-[rgba(255,77,109,0.06)] transition-colors disabled:opacity-40 shrink-0"
+            >
+              {reopening ? 'Reopening…' : 'Reopen'}
+            </button>
           </div>
         </div>
       )}
