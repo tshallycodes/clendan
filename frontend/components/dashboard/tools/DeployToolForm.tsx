@@ -8,21 +8,18 @@ import { useToast } from '@/components/Providers'
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
 const TOOL_TYPES = [
-  { value: 'invoice_processing',  label: 'Invoice Processing'  },
-  { value: 'receipt_processing',  label: 'Receipt Processing'  },
-  { value: 'reconciliation',      label: 'Reconciliation'      },
-  { value: 'expense_control',     label: 'Expense Control'     },
-  { value: 'collections',         label: 'Collections'         },
-  { value: 'fraud_detection',     label: 'Fraud Detection'     },
-  { value: 'treasury_cash',        label: 'Treasury & Cash'     },
-  { value: 'revenue_recognition',  label: 'Revenue Recognition' },
-  { value: 'credit_underwriting',  label: 'Credit Underwriting' },
-  { value: 'tax_compliance',       label: 'Tax Compliance'      },
+  { value: 'reconciliation',       label: 'Reconciliation'       },
+  { value: 'document_intelligence', label: 'Document Intelligence' },
+  { value: 'spend_control',        label: 'Spend Control'        },
+  { value: 'ar_collections',       label: 'AR & Collections'     },
+  { value: 'risk_compliance',      label: 'Risk & Compliance'    },
+  { value: 'treasury_cash',        label: 'Treasury & Cash'      },
+  { value: 'revenue_recognition',  label: 'Revenue Recognition'  },
+  { value: 'credit_underwriting',  label: 'Credit Underwriting'  },
+  { value: 'tax_compliance',       label: 'Tax Compliance'       },
   { value: 'financial_reporting',  label: 'Financial Reporting' },
-  { value: 'payment_run',          label: 'Payment Runs'        },
-  { value: 'budgeting',            label: 'Budgeting'           },
-  { value: 'compliance',           label: 'Risk & Compliance'   },
-  { value: 'ar_collections',       label: 'AR & Collections'    },
+  { value: 'payment_run',          label: 'Payment Runs'         },
+  { value: 'budgeting',            label: 'Budgeting'            },
 ] as const
 
 const AUTONOMY_LEVELS = [

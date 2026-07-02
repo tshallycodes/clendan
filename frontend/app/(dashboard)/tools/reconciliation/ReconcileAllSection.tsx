@@ -294,10 +294,10 @@ export function ReconcileAllSection({ toolId, onViewAudit }: Props) {
     const token = await getToken()
     const headers: Record<string, string> = { Authorization: `Bearer ${token}` }
 
-    // Invoice + VAT are synchronous — fire together
+    // Invoice + VAT are synchronous — fire together, pass tool_id so config (grace days, VAT rate) is applied
     const [invRes, vatRes] = await Promise.allSettled([
-      fetch(`${API}/reconciliation/invoice-summary?period_start=${start}&period_end=${end}`, { headers }),
-      fetch(`${API}/reconciliation/vat-summary?period_start=${start}&period_end=${end}`, { headers }),
+      fetch(`${API}/reconciliation/invoice-summary?period_start=${start}&period_end=${end}&tool_id=${toolId}`, { headers }),
+      fetch(`${API}/reconciliation/vat-summary?period_start=${start}&period_end=${end}&tool_id=${toolId}`, { headers }),
     ])
 
     if (invRes.status === 'fulfilled' && invRes.value.ok) {

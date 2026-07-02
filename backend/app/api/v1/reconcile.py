@@ -415,6 +415,11 @@ async def trigger_reconciliation_run(
     if tool is None:
         raise HTTPException(status_code=404, detail="Tool not found")
 
+    # Fall back to account_ids / integration_sources from tool config when not provided in request
+    cfg = tool.config_json if isinstance(tool.config_json, dict) else {}
+    account_ids = body.account_ids if body.account_ids is not None else (cfg.get("account_ids") or None)
+    integration_sources = body.integration_sources if body.integration_sources is not None else (cfg.get("integration_sources") or None)
+
     execution = await db.execution.create(data={
         "tenant_id": tenant_id,
         "tool_id": body.tool_id,
@@ -434,8 +439,8 @@ async def trigger_reconciliation_run(
         tool_id=body.tool_id,
         period_start=period_start,
         period_end=period_end,
-        account_ids=body.account_ids,
-        integration_sources=body.integration_sources,
+        account_ids=account_ids,
+        integration_sources=integration_sources,
         triggered_by_email=current_user.email,
     )
 
