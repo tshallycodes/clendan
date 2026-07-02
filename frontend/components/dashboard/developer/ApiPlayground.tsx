@@ -7,19 +7,19 @@ import { motion } from 'framer-motion'
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
 const TOOLS = [
-  'invoice_processing',
-  'receipt_processing',
-  'expense_control',
-  'collections',
-  'fraud_detection',
-  'treasury',
-  'compliance',
   'reconciliation',
-  'revenue_recognition',
-  'ai_accountant',
-  'credit_underwriting',
   'document_intelligence',
+  'ai_accountant',
   'spend_control',
+  'ar_collections',
+  'risk_compliance',
+  'treasury_cash',
+  'revenue_recognition',
+  'credit_underwriting',
+  'tax_compliance',
+  'financial_reporting',
+  'payment_run',
+  'budgeting',
 ] as const
 
 type ToolName = typeof TOOLS[number]
@@ -45,19 +45,19 @@ const MAX_POLL_ATTEMPTS = 20
 const POLL_INTERVAL_MS = 4000
 
 const DEFAULT_PAYLOADS: Record<ToolName, object> = {
-  invoice_processing:    { invoice_id: 'inv_001', amount_minor: 125000, currency: 'GBP', vendor: 'Acme Ltd' },
-  receipt_processing:    { receipt_id: 'rec_001', amount_minor: 4250, currency: 'GBP', merchant: 'Pret A Manger' },
-  expense_control:       { employee_id: 'emp_001', amount_minor: 8500, currency: 'GBP', category: 'travel', description: 'Train to London' },
-  collections:           { invoice_id: 'inv_001', outstanding_cents: 250000, due_date: '2026-05-01', contact_email: 'finance@client.com' },
-  fraud_detection:       { transaction_id: 'txn_001', amount_minor: 99900, currency: 'GBP', merchant: 'Unknown Vendor', country: 'NG' },
-  treasury:              { account_id: 'acc_001', balance_minor: 5000000, currency: 'GBP', forecast_days: 30 },
-  compliance:            { entity_id: 'ent_001', entity_type: 'vendor', jurisdiction: 'GB' },
-  reconciliation:        { period_start: '2026-05-01', period_end: '2026-05-31', policy: { unmatched_pct_threshold: 0.2, match_date_window_days: 30, match_amount_tolerance_pct: 0.01, include_reconciled: false } },
-  revenue_recognition:   { contract_id: 'con_001', amount_minor: 1200000, currency: 'GBP', start_date: '2026-01-01', end_date: '2026-12-31' },
-  ai_accountant:         { transaction_ids: ['txn_abc123', 'txn_def456'] },
-  credit_underwriting:   { applicant_id: 'app_001', requested_amount_minor: 5000000, currency: 'GBP', term_months: 12 },
+  reconciliation:        { period_start: '2026-05-01', period_end: '2026-05-31', policy: { unmatched_pct_threshold: 0.2, match_amount_tolerance_minor: 150, match_date_window_days: 5, include_reconciled: false } },
   document_intelligence: { source: 'gmail', integration_id: '<your_integration_id>', document_type: 'invoice', message_id: '<gmail_message_id>', attachment_id: '<gmail_attachment_id>', filename: 'invoice.pdf' },
-  spend_control:         { employee_id: 'emp_001', amount_minor: 35000, currency: 'GBP', category: 'software', vendor: 'Figma' },
+  ai_accountant:         { transaction_ids: ['txn_abc123', 'txn_def456'] },
+  spend_control:         { transaction_ids: ['txn_001', 'txn_002'], policy_config: {} },
+  ar_collections:        { policy_config: {} },
+  risk_compliance:       { transaction_ids: ['txn_001', 'txn_002'], frameworks: ['AML', 'KYC'] },
+  treasury_cash:         { policy_config: {} },
+  revenue_recognition:   { contract_id: 'con_001', contract_text: '12-month SaaS subscription agreement...', total_value_minor: 1200000, currency: 'GBP', start_date: '2026-01-01', end_date: '2026-12-31', accounting_standard: 'ASC606', recognition_method: 'straight_line' },
+  credit_underwriting:   { application_id: 'app_001', applicant_name: 'Jane Doe', requested_amount_minor: 5000000, currency: 'GBP', credit_score: 700, declared_income_minor: 400000, monthly_debt_payments_minor: 50000, employment_status: 'employed', employment_months: 24, bank_transactions_summary: 'Stable income, no NSF in 12 months' },
+  tax_compliance:        { lookback_days: 90 },
+  financial_reporting:   { policy_config: {} },
+  payment_run:           { policy_config: {} },
+  budgeting:             { policy_config: {} },
 }
 
 const TRANSACTIONS_ENDPOINT: EndpointDef = {
@@ -72,9 +72,9 @@ const TRANSACTIONS_ENDPOINT: EndpointDef = {
 
 // Endpoints relevant to a given tool — only shown when the selected tool has any.
 const RELATED_ENDPOINTS: Partial<Record<ToolName, EndpointDef[]>> = {
-  collections: [TRANSACTIONS_ENDPOINT],
+  ar_collections: [TRANSACTIONS_ENDPOINT],
   reconciliation: [TRANSACTIONS_ENDPOINT],
-  treasury: [TRANSACTIONS_ENDPOINT],
+  treasury_cash: [TRANSACTIONS_ENDPOINT],
 }
 
 
@@ -234,8 +234,8 @@ function EndpointRow({ endpoint, apiKey, idempotencyKey }: EndpointRowProps) {
 // ApiPlayground - main export
 // ---------------------------------------------------------------------------
 export function ApiPlayground() {
-  const [selectedTool, setSelectedTool] = useState<ToolName>('invoice_processing')
-  const [payloadText, setPayloadText] = useState(() => JSON.stringify(DEFAULT_PAYLOADS['invoice_processing'], null, 2))
+  const [selectedTool, setSelectedTool] = useState<ToolName>('reconciliation')
+  const [payloadText, setPayloadText] = useState(() => JSON.stringify(DEFAULT_PAYLOADS['reconciliation'], null, 2))
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [idempotencyKey, setIdempotencyKey] = useState('')
   const [apiKey, setApiKey] = useState('')
@@ -390,7 +390,7 @@ export function ApiPlayground() {
                 setPayloadText(JSON.stringify(DEFAULT_PAYLOADS[tool], null, 2))
                 setSelectedFile(null)
               }}
-              className="w-full bg-brand-bg border border-brand-border focus:border-[#00C853] text-brand-text rounded-sm px-3 py-2 text-xs font-body outline-none appearance-none cursor-pointer"
+              className="w-full bg-brand-bg border border-brand-border focus:border-[#00C853] text-brand-text rounded-sm px-3 py-2 text-xs font-body outline-none cursor-pointer"
             >
               {TOOLS.map((t) => (
                 <option key={t} value={t}>{t}</option>
