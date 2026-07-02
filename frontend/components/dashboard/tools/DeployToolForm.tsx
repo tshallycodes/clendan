@@ -38,7 +38,7 @@ interface DeployToolFormProps {
 export function DeployToolForm({ fixedType, onDeployed }: DeployToolFormProps) {
   const { getToken } = useAuth()
   const { toast } = useToast()
-  const defaultType: ToolType = (fixedType as ToolType | undefined) ?? 'invoice_processing'
+  const defaultType: ToolType = (fixedType as ToolType | undefined) ?? 'reconciliation'
   const [toolType, setToolType] = useState<ToolType>(defaultType)
   const [autonomyLevel, setAutonomyLevel] = useState<AutonomyLevel>('approve')
   const [config, setConfig] = useState<Record<string, unknown>>(getDefaultConfig(defaultType))

@@ -19,6 +19,7 @@ VALID_TYPES = {
     "credit_underwriting", "compliance",
     "document_intelligence", "spend_control", "ar_collections",
     "risk_compliance", "treasury_cash", "tax_compliance",
+    "financial_reporting", "payment_run", "budgeting",
 }
 VALID_AUTONOMY_LEVELS = {"auto", "approve"}
 VALID_STATUSES = {"active", "inactive"}

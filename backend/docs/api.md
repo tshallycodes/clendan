@@ -53,7 +53,7 @@ curl -X POST https://api-production-0d35.up.railway.app/v1/execute \
   -H "Authorization: ck_live_..." \
   -H "Idempotency-Key: $(uuidgen)" \
   -H "Content-Type: application/json" \
-  -d '{"tool": "invoice_processing", "payload": {}}'
+  -d '{"tool": "reconciliation", "payload": {}}'
 ```
 
 Response:
@@ -62,7 +62,7 @@ Response:
 { "execution_id": "...", "status": "queued", "decision": "pending", "idempotent": false }
 ```
 
-Available tool types: `invoice_processing`, `receipt_processing`, `expense_control`, `collections`, `fraud_detection`, `treasury`, `compliance`, `reconciliation`, `revenue_recognition`, `ai_accountant`, `credit_underwriting`, `document_intelligence`, `spend_control`
+Available tool types: `reconciliation`, `document_intelligence`, `spend_control`, `ar_collections`, `risk_compliance`, `treasury_cash`, `revenue_recognition`, `credit_underwriting`, `tax_compliance`, `financial_reporting`, `payment_run`, `budgeting`
 
 ### GET /v1/execute/{execution_id}
 
@@ -181,7 +181,7 @@ resp = requests.post(
         "Idempotency-Key": str(uuid.uuid4()),
         "Content-Type": "application/json",
     },
-    json={"tool": "invoice_processing", "payload": {}},
+    json={"tool": "reconciliation", "payload": {}},
 )
 data = resp.json()["data"]
 print(data["execution_id"], data["status"])  # "queued"
@@ -200,7 +200,7 @@ const res = await fetch(`${BASE}/execute`, {
     "Idempotency-Key": crypto.randomUUID(),
     "Content-Type": "application/json",
   },
-  body: JSON.stringify({ tool: "invoice_processing", payload: {} }),
+  body: JSON.stringify({ tool: "reconciliation", payload: {} }),
 })
 
 const { data } = await res.json()
