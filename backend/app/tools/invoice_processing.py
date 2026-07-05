@@ -11,6 +11,7 @@ from pydantic import BaseModel
 from app.audit.logger import write_audit_log
 from app.core.config import get_settings
 from app.core.db import get_db
+from app.core.execution import complete_execution
 from app.core.logging import get_logger
 from app.models.invoice_parse import ParsedInvoice
 from app.policy.engine import Decision, PolicyResult, evaluate_invoice_policy
@@ -19,7 +20,7 @@ from app.queue.pool import push_to_dlq
 _logger = get_logger(__name__)
 
 TOOL_TYPE = "invoice_processing"
-WORKER_VERSION = 1
+TOOL_VERSION = 1
 
 
 class _ToolPolicy(BaseModel):
@@ -179,16 +180,16 @@ async def execute_invoice_tool(
         "policy_reason": policy_result.reason,
         "policy_rule_triggered": policy_result.rule_triggered,
         "accounting_write_performed": False,
-        "tool_version": WORKER_VERSION,
+        "tool_version": TOOL_VERSION,
     }
 
     # 4. Audit FIRST — operation fails if audit cannot be recorded (CLAUDE.md hard requirement)
     await write_audit_log(
         tenant_id=tenant_id,
-        actor=f"tool:{TOOL_TYPE}:v{WORKER_VERSION}",
+        actor=f"tool:{TOOL_TYPE}:v{TOOL_VERSION}",
         action="invoice_processed",
         reasoning_trace=reasoning_trace,
-        model_version=f"{TOOL_TYPE}-v{WORKER_VERSION}",
+        model_version=f"{TOOL_TYPE}-v{TOOL_VERSION}",
         execution_id=execution_id,
     )
 
@@ -245,25 +246,11 @@ async def run_invoice_job(
             policy_config=policy_config,
         )
 
-        await db.execution.update(
-            where={"id": execution_id},
-            data={
-                "status": "completed",
-                "decision": result["decision"],
-                "confidence": result["confidence"],
-            },
+        await complete_execution(
+            db=db, execution_id=execution_id, tool_id=tool_id,
+            tenant_id=tenant_id, decision=result["decision"],
+            confidence=result["confidence"], duration_ms=0,
         )
-
-        if result["decision"] == Decision.APPROVAL_REQUIRED:
-            settings = get_settings()
-            await db.approval.create(
-                data={
-                    "tenant_id": tenant_id,
-                    "execution_id": execution_id,
-                    "expires_at": datetime.now(UTC) + timedelta(seconds=settings.approval_ttl_seconds),
-                }
-            )
-
         return result
 
     except Exception as exc:

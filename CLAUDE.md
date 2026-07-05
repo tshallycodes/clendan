@@ -77,13 +77,11 @@ receive → classify → select tool → execute → policy check → output →
 
 **Tool invocation:**
 ```python
-# Orchestrator calls tools as tools — never direct execution
-result = await orchestrator.invoke_tool(
-    tool_type="invoice_processing",
-    input=event_payload,
-    tenant_id=tenant_id,
-    policy_context=policy_rules
-)
+# API/dashboard trigger routes directly to the tool's arq job via enqueue_for_tool_type
+await enqueue_for_tool_type(pool=pool, tool_type=tool.type, execution_id=execution.id, ...)
+
+# Integration/webhook trigger routes via enqueue_orchestrator_event (thin wrapper)
+await enqueue_orchestrator_event(tenant_id=..., event_type=..., payload=..., ...)
 ```
 
 **Retry pattern for external API calls:**
@@ -566,51 +564,20 @@ def _apply_autonomy_override(decision: str, autonomy_level: str) -> str:
     return decision
 ```
 
-#### Two execution paths — each requires different handling
+#### All tool job runners use `complete_execution()`
 
-**Path A — inline decisions through `run_orchestrator_job`:**
-Tools whose policy decision resolves synchronously inside `run_orchestrator_job` (e.g. `_orchestrate_invoice_received`) get the override applied automatically at the end of `run_orchestrator_job`, before the audit write. No extra work needed.
-
-**Path B — tools with their own arq job runners:**
-When `run_orchestrator_job` routes to a separate arq job (`run_document_intelligence_job`, `run_reconciliation_job`, `run_payroll_rec_job`, etc.), `decision` is set to `"routed"` and the override guard in `run_orchestrator_job` skips it. The override **must be applied inside the job runner itself**, after the policy decision is set and before writing `Execution.decision`.
-
-Required pattern inside every tool-specific arq job runner:
+Every arq job runner calls `complete_execution()` from `backend/app/core/execution.py` to finish an execution. It applies the autonomy override, writes the decision, and creates the Approval record when required. No inline override logic is needed in individual tools.
 
 ```python
-# After policy decision is resolved:
-tool_record = await db.tool.find_first(where={"id": tool_id, "tenant_id": tenant_id})
-autonomy_level = tool_record.autonomy_level if tool_record else "approve"
-if final_decision != "blocked":
-    if autonomy_level == "approve" and final_decision == "auto_approved":
-        final_decision = "approval_required"
-    elif autonomy_level == "auto" and final_decision == "approval_required":
-        final_decision = "auto_approved"
-
-# Write overridden decision to Execution:
-await db.execution.update(where={"id": execution_id}, data={"decision": final_decision, ...})
-
-# Create Approval record when required:
-if final_decision == "approval_required":
-    existing = await db.approval.find_first(where={"execution_id": execution_id})
-    if not existing:
-        await db.approval.create(data={
-            "tenant_id": tenant_id,
-            "execution_id": execution_id,
-            "expires_at": datetime.now(UTC) + timedelta(seconds=settings.approval_ttl_seconds),
-        })
+# At the end of every tool job runner:
+final_decision = await complete_execution(
+    db=db, execution_id=execution_id, tool_id=tool_id,
+    tenant_id=tenant_id, decision=result["decision"],
+    confidence=result["confidence"], duration_ms=duration_ms,
+)
 ```
 
-Note: `_apply_autonomy_override` cannot be called directly from tools that live in `backend/app/tools/` because `tool.py` imports from those files — circular import. Inline the 4-line logic instead.
-
-#### Tool status
-
-| Job runner | Override applied? |
-| --- | --- |
-| `run_reconciliation_job` | Yes — fixed |
-| `run_payroll_rec_job` | **No — needs fix** |
-| `run_document_intelligence_job` | **No — needs fix** (file-upload path only; inline path through `run_orchestrator_job` works) |
-| `run_expense_control_job` | Needs audit |
-| `run_treasury_job` | Needs audit |
+`_apply_autonomy_override` lives in `core/execution.py` — not in `tool.py` — to avoid the circular import that would occur if `tools/*.py` imported from `tool.py`.
 
 ### Scheduled Tool Pattern (`backend/app/tool.py`)
 

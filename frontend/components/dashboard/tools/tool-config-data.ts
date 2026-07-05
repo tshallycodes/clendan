@@ -14,7 +14,7 @@ export interface FieldDef {
   showWhen?: (config: Record<string, unknown>) => boolean
 }
 
-export const WORKER_FIELDS: Record<string, FieldDef[]> = {
+export const TOOL_FIELDS: Record<string, FieldDef[]> = {
   document_intelligence: [
     { key: 'accounting_integrations', type: 'multiselect', label: 'Accounting sources', options: [], default: [],
       description: 'Connected accounting integrations available for analysis context. Uncheck to exclude a source.' },
@@ -264,5 +264,5 @@ export const WORKER_FIELDS: Record<string, FieldDef[]> = {
 }
 
 export function getDefaultConfig(toolType: string): Record<string, unknown> {
-  return Object.fromEntries((WORKER_FIELDS[toolType] ?? []).map(f => [f.key, f.default]))
+  return Object.fromEntries((TOOL_FIELDS[toolType] ?? []).map(f => [f.key, f.default]))
 }

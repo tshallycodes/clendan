@@ -6,7 +6,7 @@ import { Select } from '@/components/ui/Select'
 import { NumberInput } from '@/components/ui/NumberInput'
 import { useCurrency } from '@/components/Providers'
 import { CURRENCY_MAP } from '@/lib/currency'
-import { WORKER_FIELDS, getDefaultConfig } from './tool-config-data'
+import { TOOL_FIELDS, getDefaultConfig } from './tool-config-data'
 
 export { getDefaultConfig }
 
@@ -40,7 +40,7 @@ function InfoIcon({ fieldKey, open, onToggle }: {
 }
 
 export function ToolConfigFields({ toolType, config, onChange, dynamicOptions }: ToolConfigFieldsProps) {
-  const fields = WORKER_FIELDS[toolType] ?? []
+  const fields = TOOL_FIELDS[toolType] ?? []
   const [openHint, setOpenHint] = useState<string | null>(null)
   const { currency } = useCurrency()
   const currencySymbol = CURRENCY_MAP[currency]?.symbol ?? currency

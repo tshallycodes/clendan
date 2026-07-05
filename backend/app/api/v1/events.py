@@ -1,7 +1,7 @@
 ﻿"""
-POST /v1/events — single orchestrator entry point.
+POST /v1/events — direct event dispatch.
 External triggers and partner systems submit financial events here.
-The orchestrator classifies, routes to the right tool, applies policy, and audits.
+Routed directly to the correct arq job via core.dispatch.
 """
 from typing import Annotated
 
@@ -10,16 +10,16 @@ from prisma import Prisma
 from pydantic import BaseModel, field_validator
 
 from app.core.db import get_db_dep
+from app.core.dispatch import EVENT_TYPE_TO_TOOL_TYPE
 from app.core.logging import get_logger
 from app.core.responses import standard_response
 from app.core.security import RequireOrgAuth
 from app.orchestrator.events import enqueue_orchestrator_event
-from app.orchestrator.orchestrator import EVENT_TO_WORKER
 
 logger = get_logger(__name__)
 router = APIRouter(prefix="/events", tags=["events"])
 
-_VALID_TYPES = frozenset(EVENT_TO_WORKER.keys())
+_VALID_TYPES = frozenset(EVENT_TYPE_TO_TOOL_TYPE.keys())
 
 
 class EventRequest(BaseModel):
@@ -66,11 +66,11 @@ async def submit_event(
     )
 
     if execution_id is None:
-        tool_type = EVENT_TO_WORKER[body.event_type]
+        tool_type = EVENT_TYPE_TO_TOOL_TYPE[body.event_type]
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail=(
-                f"No active '{tool_type.value}' tool deployed for your tenant. "
+                f"No active '{tool_type}' tool deployed for your tenant. "
                 "Deploy one via POST /v1/tools."
             ),
         )

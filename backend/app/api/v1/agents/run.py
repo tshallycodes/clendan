@@ -5,32 +5,11 @@ from fastapi import APIRouter, Header, HTTPException, Path
 from pydantic import BaseModel
 
 from app.core.db import get_db
+from app.core.dispatch import enqueue_for_tool_type
 from app.core.logging import get_logger
 from app.core.responses import standard_response
 from app.core.security import RequireOrgAuth
 from app.queue.pool import get_queue_pool
-
-TOOL_TYPE_TO_EVENT: dict[str, str] = {
-    "invoice_processing":  "invoice_received",
-    "fraud_detection":     "fraud_check_requested",
-    "collections":         "collection_triggered",
-    "expense_control":     "expense_submitted",
-    "reconciliation":      "reconciliation_requested",
-    "revenue_recognition": "revenue_recognition_run",
-    "compliance_check":    "compliance_check_requested",
-    "receipt_processing":  "receipt_received",
-    "treasury":            "treasury_run",
-    "financial_reporting": "financial_report_run",
-    "payment_run":         "payment_run_requested",
-    "budgeting":           "budget_check_run",
-    "spend_control":       "spend_control_run",
-    "ar_collections":      "ar_collections_run",
-    "risk_compliance":     "risk_compliance_run",
-    "treasury_cash":       "treasury_cash_run",
-    "tax_compliance":      "tax_compliance_run",
-    "credit_underwriting": "credit_assessment_run",
-    "document_intelligence": "document_received",
-}
 
 _logger = get_logger(__name__)
 
@@ -182,7 +161,7 @@ async def trigger_agent(
 ):
     """
     Dashboard execution path. Clerk-authenticated, generic JSON payload.
-    Enqueues the named tool via run_orchestrator_job.
+    Enqueues the named tool directly via arq.
     Same Idempotency-Key + tenant + tool returns the existing execution record.
     """
     db = get_db()
@@ -221,13 +200,11 @@ async def trigger_agent(
         tool.config_json if tool.config_json and isinstance(tool.config_json, dict) else {}
     )
 
-    event_type = TOOL_TYPE_TO_EVENT.get(tool.type, "invoice_received")
     _logger.info(
         "trigger_received",
         extra={
             "tool_id": tool_id,
             "tool_type": tool.type,
-            "event_type": event_type,
             "tenant_id": tenant_id,
             "payload_keys": list(body.payload.keys()),
             "transaction_count": len(body.payload.get("transaction_ids", [])),
@@ -247,14 +224,14 @@ async def trigger_agent(
         }
     )
 
-    # --- Enqueue job ---
+    # --- Enqueue job directly ---
     pool = await get_queue_pool()
-    await pool.enqueue_job(
-        "run_orchestrator_job",
+    await enqueue_for_tool_type(
+        pool=pool,
+        tool_type=tool.type,
         execution_id=execution.id,
         tenant_id=tenant_id,
         tool_id=tool_id,
-        event_type=event_type,
         payload={**body.payload, **policy_config},
     )
 
@@ -264,7 +241,6 @@ async def trigger_agent(
             "execution_id": execution.id,
             "tool_id": tool_id,
             "tool_type": tool.type,
-            "event_type": event_type,
             "tenant_id": tenant_id,
             "source": "dashboard",
         },

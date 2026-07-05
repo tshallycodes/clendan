@@ -6,7 +6,6 @@ import asyncio
 import base64
 import json
 import time
-from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import anthropic
@@ -17,13 +16,14 @@ from pydantic import BaseModel
 from app.audit.logger import write_audit_log
 from app.core.config import get_settings
 from app.core.db import get_db
+from app.core.execution import complete_execution
 from app.core.logging import get_logger
 from app.queue.pool import push_to_dlq
 
 _logger = get_logger(__name__)
 
 TOOL_TYPE = "document_intelligence"
-WORKER_VERSION = 2
+TOOL_VERSION = 2
 
 _ALLOWED_CONTENT_TYPES = {
     "application/pdf",
@@ -262,7 +262,6 @@ async def run_document_intelligence_job(
 ) -> dict:
     """arq job entry point. Classifies then routes to receipt or document processing."""
     db = get_db()
-    settings = get_settings()
     _start = time.monotonic()
     _logger.debug("doc_intel_job_start", extra={
         "execution_id": execution_id, "tenant_id": tenant_id, "tool_id": tool_id,
@@ -310,7 +309,7 @@ async def run_document_intelligence_job(
         # Audit FIRST — if this fails, the operation fails (hard requirement)
         await write_audit_log(
             tenant_id=tenant_id,
-            actor=f"tool:{TOOL_TYPE}:v{WORKER_VERSION}",
+            actor=f"tool:{TOOL_TYPE}:v{TOOL_VERSION}",
             action=f"document_processed:{result['document_type']}",
             reasoning_trace={
                 "tool_id": tool_id,
@@ -319,32 +318,18 @@ async def run_document_intelligence_job(
                 "confidence": result["confidence"],
                 "reason": result["reason"],
                 "rule_triggered": rule_triggered,
-                "tool_version": WORKER_VERSION,
+                "tool_version": TOOL_VERSION,
             },
-            model_version=f"{TOOL_TYPE}-v{WORKER_VERSION}",
+            model_version=f"{TOOL_TYPE}-v{TOOL_VERSION}",
             execution_id=execution_id,
         )
 
         duration_ms = int((time.monotonic() - _start) * 1000)
-        await db.execution.update(
-            where={"id": execution_id},
-            data={
-                "status": "completed",
-                "decision": result["decision"],
-                "confidence": result["confidence"],
-                "duration_ms": duration_ms,
-            },
+        await complete_execution(
+            db=db, execution_id=execution_id, tool_id=tool_id,
+            tenant_id=tenant_id, decision=result["decision"],
+            confidence=result["confidence"], duration_ms=duration_ms,
         )
-
-        if result["decision"] == "approval_required":
-            try:
-                await db.approval.create(data={
-                    "tenant_id": tenant_id,
-                    "execution_id": execution_id,
-                    "expires_at": datetime.now(UTC) + timedelta(seconds=settings.approval_ttl_seconds),
-                })
-            except Exception as exc:
-                _logger.warning("doc_intel_approval_create_failed", extra={"execution_id": execution_id, "error": str(exc)})
 
         if document_id:
             try:

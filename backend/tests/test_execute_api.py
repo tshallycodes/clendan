@@ -15,7 +15,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from fastapi.testclient import TestClient
 
-from app.api.v1.execute import TOOL_TYPE_TO_EVENT
+from app.core.dispatch import TOOL_TYPE_TO_JOB
 from app.main import app
 
 # ---------------------------------------------------------------------------
@@ -80,7 +80,7 @@ def _make_pool_mock():
 
 
 # ---------------------------------------------------------------------------
-# TOOL_TYPE_TO_EVENT coverage
+# TOOL_TYPE_TO_JOB coverage
 # ---------------------------------------------------------------------------
 
 ALL_12_TOOLS = [
@@ -101,20 +101,20 @@ ALL_12_TOOLS = [
 
 class TestToolCoverage:
     def test_all_12_tools_in_map(self):
-        missing = [t for t in ALL_12_TOOLS if t not in TOOL_TYPE_TO_EVENT]
-        assert missing == [], f"Tools missing from TOOL_TYPE_TO_EVENT: {missing}"
+        missing = [t for t in ALL_12_TOOLS if t not in TOOL_TYPE_TO_JOB]
+        assert missing == [], f"Tools missing from TOOL_TYPE_TO_JOB: {missing}"
 
-    def test_expense_control_maps_to_handled_event(self):
-        assert TOOL_TYPE_TO_EVENT["expense_control"] == "expense_control_run"
+    def test_expense_control_maps_to_job(self):
+        assert TOOL_TYPE_TO_JOB["expense_control"] == "run_expense_control_job"
 
-    def test_financial_reporting_maps_to_correct_event(self):
-        assert TOOL_TYPE_TO_EVENT["financial_reporting"] == "financial_report_run"
+    def test_financial_reporting_maps_to_job(self):
+        assert TOOL_TYPE_TO_JOB["financial_reporting"] == "run_financial_reporting_job"
 
-    def test_payment_run_maps_to_correct_event(self):
-        assert TOOL_TYPE_TO_EVENT["payment_run"] == "payment_run_requested"
+    def test_payment_run_maps_to_job(self):
+        assert TOOL_TYPE_TO_JOB["payment_run"] == "run_payment_run_job"
 
-    def test_budgeting_maps_to_correct_event(self):
-        assert TOOL_TYPE_TO_EVENT["budgeting"] == "budget_check_run"
+    def test_budgeting_maps_to_job(self):
+        assert TOOL_TYPE_TO_JOB["budgeting"] == "run_budgeting_job"
 
 
 # ---------------------------------------------------------------------------
@@ -241,10 +241,9 @@ class TestPostExecute:
         assert response.status_code == 200, f"Tool '{tool_type}' returned {response.status_code}: {response.text}"
         data = response.json()["data"]
         assert data["status"] == "queued"
-        # Verify the correct event type was enqueued
+        # Verify the correct job was enqueued directly
         call_kwargs = pool.enqueue_job.call_args
-        assert call_kwargs.args[0] == "run_orchestrator_job"
-        assert call_kwargs.kwargs["event_type"] == TOOL_TYPE_TO_EVENT[tool_type]
+        assert call_kwargs.args[0] == TOOL_TYPE_TO_JOB[tool_type]
 
 
 # ---------------------------------------------------------------------------

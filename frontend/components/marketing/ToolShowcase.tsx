@@ -11,7 +11,7 @@ interface Tool {
   desc: string
 }
 
-const WORKERS: Tool[] = [
+const TOOLS: Tool[] = [
   { name: 'Invoice Processing', phase: 'MVP', desc: 'Receive, extract, validate, and route invoices automatically.' },
   { name: 'Reconciliation', phase: 'V2', desc: 'Match transactions across bank, ERP, and payment processors.' },
   { name: 'Expense Control', phase: 'V2', desc: 'Enforce spend policy and flag out-of-policy submissions.' },
@@ -52,7 +52,7 @@ export function ToolShowcase() {
           </h2>
         </FadeInUp>
         <StaggerContainer className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          {WORKERS.map((w) => (
+          {TOOLS.map((w) => (
             <StaggerItem key={w.name}>
               <motion.div
                 className="bg-brand-bg rounded-sm p-4 flex flex-col gap-3 h-full cursor-default border border-brand-border"

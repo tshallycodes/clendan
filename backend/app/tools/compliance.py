@@ -17,6 +17,7 @@ from pydantic import BaseModel
 from app.audit.logger import write_audit_log
 from app.core.config import get_settings
 from app.core.db import get_db
+from app.core.execution import complete_execution
 from app.core.logging import get_logger
 from app.queue.pool import push_to_dlq
 from app.tools.base import BaseTool, ToolOutput, ToolType
@@ -418,24 +419,11 @@ async def run_compliance_job(
             tenant_id, tool_id, execution_id, transaction_ids, frameworks
         )
         duration_ms = int(time.time() * 1000) - start_ms
-        await db.execution.update(
-            where={"id": execution_id},
-            data={
-                "status": "completed",
-                "decision": result["decision"],
-                "confidence": result["confidence"],
-                "duration_ms": duration_ms,
-            },
+        await complete_execution(
+            db=db, execution_id=execution_id, tool_id=tool_id,
+            tenant_id=tenant_id, decision=result["decision"],
+            confidence=result["confidence"], duration_ms=duration_ms,
         )
-        if result["decision"] == "approval_required":
-            await db.approval.create(
-                data={
-                    "tenant_id": tenant_id,
-                    "execution_id": execution_id,
-                    "expires_at": datetime.now(UTC)
-                    + timedelta(seconds=settings_obj.approval_ttl_seconds),
-                }
-            )
         return result
     except Exception as exc:
         try:

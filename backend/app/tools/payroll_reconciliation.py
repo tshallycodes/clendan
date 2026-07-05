@@ -16,6 +16,7 @@ from prisma import Json
 
 from app.core.config import get_settings
 from app.core.db import get_db
+from app.core.execution import complete_execution
 from app.core.logging import get_logger, get_trace_id
 from app.queue.pool import push_to_dlq
 
@@ -305,15 +306,10 @@ class PayrollReconciliationTool:
         confidence = 1.0 if status == "clean" else 0.6 if status == "flagged" else 0.0
 
         if execution_id:
-            await db.execution.update(
-                where={"id": execution_id},
-                data={
-                    "decision": status,
-                    "confidence": confidence,
-                    "status": "completed",
-                    "duration_ms": duration_ms,
-                    "input_ref": f"payroll-run:{run.id}:{trace_id[:8]}",
-                },
+            await complete_execution(
+                db=db, execution_id=execution_id, tool_id=tool_id,
+                tenant_id=tenant_id, decision=status,
+                confidence=confidence, duration_ms=duration_ms,
             )
             resolved_execution_id = execution_id
         else:

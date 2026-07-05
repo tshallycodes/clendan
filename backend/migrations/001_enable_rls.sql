@@ -12,7 +12,7 @@
 ALTER TABLE "Tenant" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "User" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "Integration" ENABLE ROW LEVEL SECURITY;
-ALTER TABLE "Worker" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "Tool" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "Execution" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "Approval" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "AuditLog" ENABLE ROW LEVEL SECURITY;
@@ -21,7 +21,7 @@ ALTER TABLE "Invoice" ENABLE ROW LEVEL SECURITY;
 -- Force RLS even for table owners (important for superuser connections)
 ALTER TABLE "User" FORCE ROW LEVEL SECURITY;
 ALTER TABLE "Integration" FORCE ROW LEVEL SECURITY;
-ALTER TABLE "Worker" FORCE ROW LEVEL SECURITY;
+ALTER TABLE "Tool" FORCE ROW LEVEL SECURITY;
 ALTER TABLE "Execution" FORCE ROW LEVEL SECURITY;
 ALTER TABLE "Approval" FORCE ROW LEVEL SECURITY;
 ALTER TABLE "AuditLog" FORCE ROW LEVEL SECURITY;
@@ -58,16 +58,16 @@ CREATE POLICY integration_update ON "Integration"
     FOR UPDATE
     USING (tenant_id = current_setting('app.current_tenant_id', true));
 
--- Worker table
-CREATE POLICY worker_select ON "Worker"
+-- Tool table
+CREATE POLICY tool_select ON "Tool"
     FOR SELECT
     USING (tenant_id = current_setting('app.current_tenant_id', true));
 
-CREATE POLICY worker_insert ON "Worker"
+CREATE POLICY tool_insert ON "Tool"
     FOR INSERT
     WITH CHECK (tenant_id = current_setting('app.current_tenant_id', true));
 
-CREATE POLICY worker_update ON "Worker"
+CREATE POLICY tool_update ON "Tool"
     FOR UPDATE
     USING (tenant_id = current_setting('app.current_tenant_id', true));
 

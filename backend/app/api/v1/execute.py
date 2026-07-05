@@ -7,6 +7,7 @@ from fastapi import APIRouter, File, Header, HTTPException, Query, UploadFile
 from pydantic import BaseModel
 
 from app.core.db import get_db
+from app.core.dispatch import TOOL_TYPE_TO_JOB, enqueue_for_tool_type
 from app.core.logging import get_logger
 from app.core.responses import standard_response
 from app.queue.pool import get_queue_pool
@@ -20,30 +21,6 @@ _logger = get_logger(__name__)
 
 router = APIRouter(prefix="/execute", tags=["agents"])
 
-TOOL_TYPE_TO_EVENT: dict[str, str] = {
-    # Pre-consolidation names — kept for backwards compatibility
-    "invoice_processing":    "invoice_received",
-    "receipt_processing":    "receipt_received",
-    "expense_control":       "expense_control_run",
-    "collections":           "collection_triggered",
-    "fraud_detection":       "fraud_check_requested",
-    "treasury":              "treasury_run",
-    "compliance":            "compliance_check_requested",
-    "compliance_check":      "compliance_check_requested",
-    # Current names
-    "reconciliation":        "reconciliation_run",
-    "revenue_recognition":   "revenue_recognition_run",
-    "credit_underwriting":   "credit_assessment_run",
-    "document_intelligence": "document_received",
-    "spend_control":         "spend_control_run",
-    "ar_collections":        "ar_collections_run",
-    "risk_compliance":       "risk_compliance_run",
-    "treasury_cash":         "treasury_cash_run",
-    "tax_compliance":        "tax_compliance_run",
-    "financial_reporting":   "financial_report_run",
-    "payment_run":           "payment_run_requested",
-    "budgeting":             "budget_check_run",
-}
 
 
 class ExecuteRequest(BaseModel):
@@ -84,13 +61,11 @@ async def execute(
     db = get_db()
 
     # --- Validate tool type ---
-    if body.tool not in TOOL_TYPE_TO_EVENT:
+    if body.tool not in TOOL_TYPE_TO_JOB:
         raise HTTPException(
             status_code=400,
-            detail=f"Unknown tool type '{body.tool}'. Valid types: {list(TOOL_TYPE_TO_EVENT)}",
+            detail=f"Unknown tool type '{body.tool}'. Valid types: {list(TOOL_TYPE_TO_JOB)}",
         )
-
-    event_type = TOOL_TYPE_TO_EVENT[body.tool]
 
     # --- Find active tool for this tenant ---
     tool = await db.tool.find_first(
@@ -133,14 +108,14 @@ async def execute(
         }
     )
 
-    # --- Enqueue job ---
+    # --- Enqueue job directly ---
     pool = await get_queue_pool()
-    await pool.enqueue_job(
-        "run_orchestrator_job",
+    await enqueue_for_tool_type(
+        pool=pool,
+        tool_type=body.tool,
         execution_id=execution.id,
         tenant_id=tenant_id,
         tool_id=tool.id,
-        event_type=event_type,
         payload=body.payload,
     )
 

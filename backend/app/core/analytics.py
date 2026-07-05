@@ -78,18 +78,3 @@ def track_approval(
         )
     except Exception as exc:
         _logger.error("analytics_capture_failed", extra={"error": str(exc)})
-
-
-def track_tool_status(tenant_id: str, tool_type: str, status: str) -> None:
-    """Track tool status changes."""
-    ph = _get_client()
-    if ph is None:
-        return
-    try:
-        ph.capture(
-            distinct_id=tenant_id,
-            event="tool_status_changed",
-            properties={"tool_type": tool_type, "status": status, "trace_id": get_trace_id()},
-        )
-    except Exception as exc:
-        _logger.error("analytics_capture_failed", extra={"error": str(exc)})

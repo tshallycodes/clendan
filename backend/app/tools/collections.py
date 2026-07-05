@@ -12,6 +12,7 @@ from pydantic import BaseModel
 from app.audit.logger import write_audit_log
 from app.core.config import get_settings
 from app.core.db import get_db
+from app.core.execution import complete_execution
 from app.core.logging import get_logger
 from app.queue.pool import push_to_dlq
 from app.tools.base import BaseTool, ToolOutput, ToolType
@@ -19,7 +20,7 @@ from app.tools.base import BaseTool, ToolOutput, ToolType
 _logger = get_logger(__name__)
 
 TOOL_TYPE = "collections"
-WORKER_VERSION = 1
+TOOL_VERSION = 1
 ACTOR = "tool:collections:v1"
 MODEL_VERSION = "collections-v1"
 CONFIDENCE = 0.95
@@ -384,26 +385,11 @@ async def run_collections_job(
         result = await _execute_collections(tenant_id, tool_id, execution_id)
         duration_ms = int(time.time() * 1000) - start_ms
 
-        await db.execution.update(
-            where={"id": execution_id},
-            data={
-                "status": "completed",
-                "decision": result["decision"],
-                "confidence": result["confidence"],
-                "duration_ms": duration_ms,
-            },
+        await complete_execution(
+            db=db, execution_id=execution_id, tool_id=tool_id,
+            tenant_id=tenant_id, decision=result["decision"],
+            confidence=result["confidence"], duration_ms=duration_ms,
         )
-
-        if result["decision"] == "approval_required":
-            settings = get_settings()
-            await db.approval.create(
-                data={
-                    "tenant_id": tenant_id,
-                    "execution_id": execution_id,
-                    "expires_at": datetime.now(UTC) + timedelta(seconds=settings.approval_ttl_seconds),
-                    "status": "pending",
-                }
-            )
 
         _logger.info(
             "collections_job_completed",

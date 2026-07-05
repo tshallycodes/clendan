@@ -13,6 +13,8 @@ from pydantic import BaseModel
 
 from app.audit.logger import write_audit_log
 from app.core.config import get_settings
+from app.core.db import get_db
+from app.core.execution import complete_execution
 from app.core.logging import get_logger
 from app.models.receipt_parse import ALLOWED_CATEGORIES, ParsedReceipt
 from app.queue.pool import push_to_dlq
@@ -20,7 +22,7 @@ from app.queue.pool import push_to_dlq
 _logger = get_logger(__name__)
 
 TOOL_TYPE = "receipt_processing"
-WORKER_VERSION = 1
+TOOL_VERSION = 1
 MIN_CONFIDENCE = 0.5
 
 
@@ -125,10 +127,10 @@ async def execute_receipt_tool(
     # Audit FIRST — operation fails if this cannot be recorded
     await write_audit_log(
         tenant_id=tenant_id,
-        actor=f"tool:{TOOL_TYPE}:v{WORKER_VERSION}",
+        actor=f"tool:{TOOL_TYPE}:v{TOOL_VERSION}",
         action="receipt_processed",
         reasoning_trace=reasoning_trace,
-        model_version=f"{TOOL_TYPE}-v{WORKER_VERSION}",
+        model_version=f"{TOOL_TYPE}-v{TOOL_VERSION}",
         execution_id=execution_id,
     )
 
@@ -162,13 +164,10 @@ async def run_receipt_job(
             content_type=content_type,
             policy_config=policy_config,
         )
-        await db.execution.update(
-            where={"id": execution_id},
-            data={
-                "status": "completed",
-                "decision": result["decision"],
-                "confidence": result["confidence"],
-            },
+        await complete_execution(
+            db=db, execution_id=execution_id, tool_id=tool_id,
+            tenant_id=tenant_id, decision=result["decision"],
+            confidence=result["confidence"], duration_ms=0,
         )
         return result
     except Exception as exc:
