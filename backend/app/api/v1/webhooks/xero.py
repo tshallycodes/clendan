@@ -16,7 +16,7 @@ from app.core.db import get_db
 from app.core.logging import get_logger
 from app.core.responses import standard_response
 from app.integrations.encryption import decrypt_credentials
-from app.orchestrator.events import enqueue_orchestrator_event
+from app.events import enqueue_event
 
 _logger = get_logger(__name__)
 router = APIRouter(prefix="/webhooks", tags=["webhooks"])
@@ -59,7 +59,7 @@ async def xero_webhook(
     """
     Receives Xero entity-change notifications.
     Verifies HMAC-SHA256 signature before processing.
-    Emits orchestrator invoice_received events for Invoice ResourceUpdate events.
+    Emits invoice_received events for Invoice ResourceUpdate events.
     """
     settings = get_settings()
     if not settings.xero_webhook_key:
@@ -118,7 +118,7 @@ async def xero_webhook(
         clendan_tenant_id = integration.tenant_id
         idempotency_key = f"xero:{tenant_id_xero}:{resource_type}:{resource_id}:{event_type}"
 
-        execution_id = await enqueue_orchestrator_event(
+        execution_id = await enqueue_event(
             tenant_id=clendan_tenant_id,
             event_type="invoice_received",
             payload={

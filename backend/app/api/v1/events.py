@@ -14,7 +14,7 @@ from app.core.dispatch import EVENT_TYPE_TO_TOOL_TYPE
 from app.core.logging import get_logger
 from app.core.responses import standard_response
 from app.core.security import RequireOrgAuth
-from app.orchestrator.events import enqueue_orchestrator_event
+from app.events import enqueue_event
 
 logger = get_logger(__name__)
 router = APIRouter(prefix="/events", tags=["events"])
@@ -42,7 +42,7 @@ async def submit_event(
     idempotency_key: str = Header(..., alias="Idempotency-Key"),
 ):
     """
-    Submit a financial event to the orchestrator.
+    Submit a financial event for direct dispatch to the active tool.
     Idempotent via Idempotency-Key header — same key returns the existing execution.
     """
     # Idempotency check before creating anything
@@ -57,7 +57,7 @@ async def submit_event(
             "idempotent": True,
         })
 
-    execution_id = await enqueue_orchestrator_event(
+    execution_id = await enqueue_event(
         tenant_id=current_user.tenant_id,
         event_type=body.event_type,
         payload=body.payload,

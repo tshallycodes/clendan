@@ -10,7 +10,7 @@ from fastapi import APIRouter, HTTPException, Request
 from app.core.db import get_db
 from app.core.logging import get_logger
 from app.core.responses import standard_response
-from app.orchestrator.events import enqueue_orchestrator_event
+from app.events import enqueue_event
 
 _logger = get_logger(__name__)
 router = APIRouter(prefix="/webhooks", tags=["webhooks"])
@@ -23,7 +23,7 @@ async def sage_webhook(request: Request):
     """
     Receives Sage Business Cloud event notifications.
     No signature verification in v1 — Sage does not provide standard signing.
-    Emits orchestrator events for invoice events.
+    Emits events for invoice events.
     """
     body = await request.body()
 
@@ -57,7 +57,7 @@ async def sage_webhook(request: Request):
         "entity_id": entity_id,
     }
 
-    execution_id = await enqueue_orchestrator_event(
+    execution_id = await enqueue_event(
         tenant_id=tenant_id,
         event_type="invoice_received",
         payload=event_payload,

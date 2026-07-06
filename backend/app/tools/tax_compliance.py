@@ -1,5 +1,5 @@
 """
-Tax Compliance Tool — sub-agent tool. Called by Financial Orchestrator as a tool.
+Tax Compliance Tool — sub-agent tool. Dispatched directly to its arq job.
 Calculates VAT liability, identifies missing-tax transactions, and alerts on threshold breaches.
 """
 from __future__ import annotations

@@ -1,7 +1,7 @@
 """
 Dynamics 365 sync job — runs via arq worker.
 Fetches invoices, accounts, and opportunities from the Dynamics Web API,
-writes sync logs, and emits orchestrator events for downstream processing.
+writes sync logs, and emits events for downstream processing.
 """
 import time
 from datetime import datetime, UTC
@@ -18,7 +18,7 @@ logger = get_logger(__name__)
 async def sync_dynamics_connection(ctx: dict, integration_id: str, tenant_id: str) -> dict:
     """
     arq job: refreshes token if needed, fetches invoices/accounts/opportunities,
-    emits invoice_received orchestrator events, marks integration connected.
+    emits invoice_received events, marks integration connected.
     Returns sync result dict.
     """
     db = get_db()
@@ -104,14 +104,14 @@ async def sync_dynamics_connection(ctx: dict, integration_id: str, tenant_id: st
         })
 
     # ---------------------------------------------------------------------------
-    # Emit orchestrator events for invoices
+    # Emit events for invoices
     # ---------------------------------------------------------------------------
     try:
-        from app.orchestrator.events import enqueue_orchestrator_event
+        from app.events import enqueue_event
         for inv in invoices:
             invoice_id = inv.get("invoiceid")
             if invoice_id:
-                await enqueue_orchestrator_event(
+                await enqueue_event(
                     tenant_id=tenant_id,
                     event_type="invoice_received",
                     payload={

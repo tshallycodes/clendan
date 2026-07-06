@@ -1,7 +1,7 @@
 """
 SAP S/4HANA Cloud sync job — runs via arq worker.
 Fetches supplier invoices and purchase orders, writes sync log entries,
-emits orchestrator events for each invoice received.
+emits events for each invoice received.
 """
 import time
 from datetime import datetime, UTC
@@ -10,7 +10,7 @@ from app.core.db import get_db
 from app.core.logging import get_logger
 from app.integrations.encryption import decrypt_credentials
 from app.integrations.sap import client as sap
-from app.orchestrator.events import enqueue_orchestrator_event
+from app.events import enqueue_event
 from app.queue.pool import get_queue_pool
 
 logger = get_logger(__name__)
@@ -19,7 +19,7 @@ logger = get_logger(__name__)
 async def sync_sap_connection(ctx: dict, integration_id: str, tenant_id: str) -> dict:
     """
     arq job: fetches supplier invoices and purchase orders from SAP S/4HANA Cloud.
-    Emits invoice_received orchestrator events per invoice.
+    Emits invoice_received events per invoice.
     Writes sync log entries per entity type.
     Updates integration status to connected on success, error on failure.
     """
@@ -135,13 +135,13 @@ async def sync_sap_connection(ctx: dict, integration_id: str, tenant_id: str) ->
         })
         results["purchase_orders_error"] = type(exc).__name__
 
-    # --- Emit orchestrator events for each invoice ---
+    # --- Emit events for each invoice ---
     for inv in invoices:
         invoice_id = inv.get("SupplierInvoice")
         if not invoice_id:
             continue
         try:
-            await enqueue_orchestrator_event(
+            await enqueue_event(
                 tenant_id=tenant_id,
                 event_type="invoice_received",
                 payload={

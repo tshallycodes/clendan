@@ -141,7 +141,7 @@ async def sync_onedrive_connection(ctx: dict, integration_id: str, tenant_id: st
         return {"status": "error", "reason": "sync_failed"}
 
     if initial_status == "connected" and files:
-        from app.orchestrator.events import enqueue_orchestrator_event
+        from app.events import enqueue_event
         _MAX_BYTES = 10 * 1024 * 1024
         for f in files:
             file_id = f.get("id", "")
@@ -162,7 +162,7 @@ async def sync_onedrive_connection(ctx: dict, integration_id: str, tenant_id: st
                 logger.warning("onedrive_file_too_large file_id=%s size=%d", file_id, len(file_bytes))
                 continue
             try:
-                await enqueue_orchestrator_event(
+                await enqueue_event(
                     tenant_id=tenant_id,
                     event_type="document_received",
                     payload={

@@ -1,7 +1,7 @@
 """
 Payroll Reconciliation Tool — detects ghost employees, missing payroll entries,
 and salary discrepancies by comparing bank transactions against an employee roster.
-Sub-agent called by the Financial Orchestrator as a tool.
+Sub-agent tool, dispatched directly to its arq job.
 Follows mandatory execution flow: receive → classify → execute → policy check → output → audit.
 """
 import asyncio

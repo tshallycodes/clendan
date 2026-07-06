@@ -104,7 +104,7 @@ async def verify_paypal_webhook(
 
 
 def parse_paypal_event_type(event_type: str) -> str | None:
-    """Map PayPal event type to Clendan orchestrator event type."""
+    """Map PayPal event type to Clendan event type."""
     return _EVENT_MAP.get(event_type)
 
 

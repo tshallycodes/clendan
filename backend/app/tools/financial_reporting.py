@@ -1,5 +1,5 @@
 """
-Financial Reporting Tool — sub-agent tool. Called by Financial Orchestrator as a tool.
+Financial Reporting Tool — sub-agent tool. Dispatched directly to its arq job.
 Aggregates accounting data to produce P&L, balance sheet, and cash flow summaries.
 """
 from __future__ import annotations

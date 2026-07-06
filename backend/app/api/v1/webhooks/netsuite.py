@@ -1,13 +1,13 @@
 """
 NetSuite SuiteCloud webhook receiver.
 No signature verification in v1 — endpoint accepts all POST requests.
-Emits orchestrator invoice_received events for invoice/bill/PO record changes.
+Emits invoice_received events for invoice/bill/PO record changes.
 """
 from fastapi import APIRouter, Request
 
 from app.core.db import get_db
 from app.core.logging import get_logger
-from app.orchestrator.events import enqueue_orchestrator_event
+from app.events import enqueue_event
 
 _logger = get_logger(__name__)
 router = APIRouter(prefix="/webhooks", tags=["webhooks"])
@@ -19,7 +19,7 @@ _INVOICE_RECORD_TYPES = frozenset({"invoice", "vendorbill", "purchaseorder"})
 async def netsuite_webhook(request: Request):
     """
     Receives NetSuite SuiteCloud push notifications.
-    Emits invoice_received orchestrator events for invoice, vendorbill, and purchaseOrder changes.
+    Emits invoice_received events for invoice, vendorbill, and purchaseOrder changes.
     Returns 200 immediately — no signature verification in v1.
     """
     try:
@@ -64,7 +64,7 @@ async def netsuite_webhook(request: Request):
     idempotency_key = f"netsuite:webhook:{record_type}:{record_id}"
 
     try:
-        execution_id = await enqueue_orchestrator_event(
+        execution_id = await enqueue_event(
             tenant_id=integration.tenant_id,
             event_type="invoice_received",
             payload={

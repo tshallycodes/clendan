@@ -9,7 +9,7 @@ from fastapi import APIRouter, Request
 
 from app.core.db import get_db
 from app.core.logging import get_logger
-from app.orchestrator.events import enqueue_orchestrator_event
+from app.events import enqueue_event
 
 logger = get_logger(__name__)
 router = APIRouter(prefix="/webhooks", tags=["webhooks"])
@@ -19,7 +19,7 @@ router = APIRouter(prefix="/webhooks", tags=["webhooks"])
 async def sap_webhook(request: Request):
     """
     Receives SAP S/4HANA Cloud push notifications.
-    Routes SUPPLIER_INVOICE events → invoice_received orchestrator event.
+    Routes SUPPLIER_INVOICE events → invoice_received event.
     All other SAPObjectTypes are logged and silently accepted.
     Always returns 200 regardless of processing outcome.
     """
@@ -48,7 +48,7 @@ async def sap_webhook(request: Request):
             return {"accepted": True}
 
         try:
-            execution_id = await enqueue_orchestrator_event(
+            execution_id = await enqueue_event(
                 tenant_id=integration.tenant_id,
                 event_type="invoice_received",
                 payload={

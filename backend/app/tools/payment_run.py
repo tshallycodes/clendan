@@ -1,5 +1,5 @@
 """
-Payment Run Tool — sub-agent tool. Called by Financial Orchestrator as a tool.
+Payment Run Tool — sub-agent tool. Dispatched directly to its arq job.
 Identifies approved bills due within the policy window, creates a PaymentRun record,
 and routes oversized bills for human approval before any payment is scheduled.
 """

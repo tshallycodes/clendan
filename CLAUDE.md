@@ -13,8 +13,8 @@ Anthropic SDK · arq + Redis · Vercel + Railway · Sentry + PostHog
 
 **Architecture:** Direct-dispatch model. There is no orchestrator layer. An API/dashboard
 trigger routes straight to the tool's arq job via `enqueue_for_tool_type`; an
-integration/webhook trigger routes via `enqueue_orchestrator_event` (a thin backward-compat
-wrapper that also dispatches directly). Each tool runs its own pipeline, is policy-checked,
+integration/webhook trigger routes via `enqueue_event` (from `app.events`, a thin helper
+that also dispatches directly). Each tool runs its own pipeline, is policy-checked,
 and is audited. Tools never call each other directly.
 
 ---
@@ -86,8 +86,8 @@ receive → classify → select tool → execute → policy check → output →
 # API/dashboard trigger routes directly to the tool's arq job via enqueue_for_tool_type
 await enqueue_for_tool_type(pool=pool, tool_type=tool.type, execution_id=execution.id, ...)
 
-# Integration/webhook trigger routes via enqueue_orchestrator_event (thin wrapper)
-await enqueue_orchestrator_event(tenant_id=..., event_type=..., payload=..., ...)
+# Integration/webhook trigger routes via enqueue_event (from app.events)
+await enqueue_event(tenant_id=..., event_type=..., payload=..., ...)
 ```
 
 **Retry pattern for external API calls:**

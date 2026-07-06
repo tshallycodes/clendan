@@ -1,6 +1,6 @@
 """
 NetSuite sync job — runs via arq worker.
-Fetches invoices, vendors, and purchase orders; emits orchestrator events; updates integration status.
+Fetches invoices, vendors, and purchase orders; emits events; updates integration status.
 """
 import time
 from datetime import datetime, UTC
@@ -9,7 +9,7 @@ from app.core.db import get_db
 from app.core.logging import get_logger
 from app.integrations.encryption import decrypt_credentials, encrypt_credentials
 from app.integrations.netsuite import client as netsuite
-from app.orchestrator.events import enqueue_orchestrator_event
+from app.events import enqueue_event
 
 logger = get_logger(__name__)
 
@@ -110,7 +110,7 @@ async def sync_netsuite_connection(ctx: dict, integration_id: str, tenant_id: st
         if not inv_id:
             continue
         try:
-            await enqueue_orchestrator_event(
+            await enqueue_event(
                 tenant_id=tenant_id,
                 event_type="invoice_received",
                 payload={

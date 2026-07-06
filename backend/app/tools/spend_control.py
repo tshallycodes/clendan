@@ -1,5 +1,5 @@
 """
-Spend Control Tool — sub-agent tool combining two AP/expense sub-flows, called by the Financial Orchestrator as one tool:
+Spend Control Tool — sub-agent tool combining two AP/expense sub-flows, dispatched directly to its arq job as one tool:
   1. Expense Control — validates AccountingExpense records against policy limits, using the chart of accounts
      to detect miscategorised spend. Claude summarises spend by category and recommends approve|flag|block.
   2. Accounts Payable — classifies AP bills, detects duplicates, routes approvals, and recommends pay/block actions.

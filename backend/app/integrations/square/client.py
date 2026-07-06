@@ -64,7 +64,7 @@ def verify_square_signature(
 
 
 def parse_square_event_type(event_type: str) -> str | None:
-    """Map Square event type to Clendan orchestrator event type."""
+    """Map Square event type to Clendan event type."""
     return _EVENT_MAP.get(event_type)
 
 

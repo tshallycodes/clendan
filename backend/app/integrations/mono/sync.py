@@ -150,7 +150,7 @@ async def sync_mono_transactions(ctx: dict, integration_id: str, tenant_id: str)
 
         if total_added > 0:
             try:
-                from app.orchestrator.events import enqueue_orchestrator_event
+                from app.events import enqueue_event
 
                 new_txns = await db.banktransaction.find_many(
                     where={"tenant_id": tenant_id, "source": "mono", "status": {"in": ["pending", "unprocessed"]}},
@@ -160,14 +160,14 @@ async def sync_mono_transactions(ctx: dict, integration_id: str, tenant_id: str)
                 if new_txns:
                     txn_ids = [t.id for t in new_txns]
                     sync_key = f"p{page}"
-                    await enqueue_orchestrator_event(
+                    await enqueue_event(
                         tenant_id=tenant_id,
                         event_type="compliance_check_requested",
                         payload={"transaction_ids": txn_ids},
                         idempotency_key=f"mono:compliance:{integration_id}:{sync_key}",
                         db=db,
                     )
-                    await enqueue_orchestrator_event(
+                    await enqueue_event(
                         tenant_id=tenant_id,
                         event_type="treasury_run",
                         payload={},

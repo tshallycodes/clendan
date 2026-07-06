@@ -15,7 +15,7 @@ from app.core.config import get_settings
 from app.core.db import get_db
 from app.core.logging import get_logger
 from app.core.responses import standard_response
-from app.orchestrator.events import enqueue_orchestrator_event
+from app.events import enqueue_event
 
 _logger = get_logger(__name__)
 router = APIRouter(prefix="/webhooks", tags=["webhooks"])
@@ -42,7 +42,7 @@ async def freshbooks_webhook(
 ):
     """
     Receives FreshBooks event notifications.
-    Emits orchestrator events for invoice events.
+    Emits events for invoice events.
     """
     settings = get_settings()
     body = await request.body()
@@ -88,7 +88,7 @@ async def freshbooks_webhook(
         "account_id": str(data.get("accountid", "")),
     }
 
-    execution_id = await enqueue_orchestrator_event(
+    execution_id = await enqueue_event(
         tenant_id=tenant_id,
         event_type="invoice_received",
         payload=event_payload,

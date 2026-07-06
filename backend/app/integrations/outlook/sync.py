@@ -1,7 +1,7 @@
 """
 Outlook sync job — runs via arq tool.
 Creates Graph API mail subscription, scans messages with attachments,
-and emits receipt_received orchestrator events for downstream processing.
+and emits receipt_received events for downstream processing.
 """
 import time
 from datetime import datetime, UTC
@@ -140,7 +140,7 @@ async def sync_outlook_connection(ctx: dict, integration_id: str, tenant_id: str
 
     if sync_status == "success" and initial_status == "connected" and messages:
         try:
-            from app.orchestrator.events import enqueue_orchestrator_event
+            from app.events import enqueue_event
             for message in messages:
                 message_id = message.get("id", "")
                 if not message_id:
@@ -151,7 +151,7 @@ async def sync_outlook_connection(ctx: dict, integration_id: str, tenant_id: str
                     "contract" if "contract" in subject or "agreement" in subject else
                     "invoice"
                 )
-                await enqueue_orchestrator_event(
+                await enqueue_event(
                     tenant_id=tenant_id,
                     event_type="receipt_received",
                     payload={
@@ -162,7 +162,7 @@ async def sync_outlook_connection(ctx: dict, integration_id: str, tenant_id: str
                     idempotency_key=f"outlook:receipt:{message_id}",
                     db=db,
                 )
-                await enqueue_orchestrator_event(
+                await enqueue_event(
                     tenant_id=tenant_id,
                     event_type="document_received",
                     payload={

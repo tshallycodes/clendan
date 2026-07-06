@@ -1,6 +1,6 @@
 ﻿"""
 Receipt Processing Tool — parses a receipt image and writes an audit entry.
-Sub-agent called by the Orchestrator as a tool.
+Sub-agent tool, dispatched directly to its arq job.
 Flow: parse → policy check → audit → return
 """
 import asyncio

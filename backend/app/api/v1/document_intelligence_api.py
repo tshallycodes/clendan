@@ -600,7 +600,7 @@ async def import_from_integration(
         logger.error("import_list_failed source=%s error=%s", source, str(exc))
         raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=f"Failed to list files from {source}")
 
-    from app.orchestrator.events import enqueue_orchestrator_event
+    from app.events import enqueue_event
 
     queued = 0
     skipped = 0
@@ -644,7 +644,7 @@ async def import_from_integration(
             continue
 
         try:
-            await enqueue_orchestrator_event(
+            await enqueue_event(
                 tenant_id=tenant_id,
                 event_type="document_received",
                 payload={

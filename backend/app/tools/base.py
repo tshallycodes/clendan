@@ -1,8 +1,8 @@
 ﻿"""
 Base tool interface for all Clendan financial AI tools.
 All tools subclass BaseTool and implement execute().
-The Financial Orchestrator invokes tools exclusively through this interface.
-Tools never call each other directly — all coordination flows through the Orchestrator.
+Tools are invoked exclusively through this interface via direct dispatch.
+Tools never call each other directly.
 """
 from abc import ABC, abstractmethod
 from enum import Enum
@@ -45,7 +45,7 @@ class ToolOutput(BaseModel):
 class BaseTool(ABC):
     """
     Abstract base for all Clendan financial AI tools.
-    Tools are sub-agents called as tools by the Financial Orchestrator.
+    Each tool is a sub-agent dispatched directly to its arq job.
     """
     TOOL_TYPE: ToolType
     REQUIRED_TOOLS: list[str] = []

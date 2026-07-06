@@ -101,7 +101,7 @@ async def sync_drive_connection(ctx: dict, integration_id: str, tenant_id: str) 
             },
         )
         if initial_status == "connected" and files:
-            from app.orchestrator.events import enqueue_orchestrator_event
+            from app.events import enqueue_event
             _MAX_BYTES = 10 * 1024 * 1024
             for f in files:
                 file_id = f.get("id", "")
@@ -122,7 +122,7 @@ async def sync_drive_connection(ctx: dict, integration_id: str, tenant_id: str) 
                     logger.warning("drive_file_too_large file_id=%s size=%d", file_id, len(file_bytes))
                     continue
                 try:
-                    await enqueue_orchestrator_event(
+                    await enqueue_event(
                         tenant_id=tenant_id,
                         event_type="document_received",
                         payload={

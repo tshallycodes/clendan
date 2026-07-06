@@ -12,7 +12,7 @@ from app.core.db import get_db
 from app.core.logging import get_logger
 from app.core.responses import standard_response
 from app.integrations.paypal.client import parse_paypal_event_type, verify_paypal_webhook
-from app.orchestrator.events import enqueue_orchestrator_event
+from app.events import enqueue_event
 
 _logger = get_logger(__name__)
 router = APIRouter(prefix="/webhooks", tags=["webhooks"])
@@ -29,7 +29,7 @@ async def paypal_webhook(
 ):
     """
     Receives PayPal event notifications.
-    Emits orchestrator events for invoice paid events.
+    Emits events for invoice paid events.
     """
     settings = get_settings()
     if not settings.paypal_webhook_id:
@@ -59,9 +59,9 @@ async def paypal_webhook(
 
     event_type: str = payload.get("event_type", "")
     event_id: str = payload.get("id", "")
-    orchestrator_event = parse_paypal_event_type(event_type)
+    mapped_event = parse_paypal_event_type(event_type)
 
-    if orchestrator_event is None:
+    if mapped_event is None:
         return standard_response(data={"received": True})
 
     db = get_db()
@@ -83,9 +83,9 @@ async def paypal_webhook(
         "paypal_resource_id": resource_id,
     }
 
-    execution_id = await enqueue_orchestrator_event(
+    execution_id = await enqueue_event(
         tenant_id=tenant_id,
-        event_type=orchestrator_event,
+        event_type=mapped_event,
         payload=event_payload,
         idempotency_key=idempotency_key,
         db=db,
@@ -97,7 +97,7 @@ async def paypal_webhook(
             extra={
                 "execution_id": execution_id,
                 "event_type": event_type,
-                "orchestrator_event": orchestrator_event,
+                "mapped_event": mapped_event,
                 "tenant_id": tenant_id,
             },
         )

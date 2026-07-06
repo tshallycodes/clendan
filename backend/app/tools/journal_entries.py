@@ -1,6 +1,6 @@
 """
 Journal Entry Tool — creates and posts payroll journal entries to the general ledger.
-Sub-agent called by the Financial Orchestrator as a tool.
+Sub-agent tool, dispatched directly to its arq job.
 Follows mandatory execution flow: receive → classify → execute → policy check → output → audit.
 """
 from __future__ import annotations
@@ -30,7 +30,7 @@ class EntryResult:
 class JournalEntryTool:
     """
     Creates and posts journal entries.
-    Called by the Orchestrator as a tool — never invoked directly from routes.
+    Dispatched to its arq job — never invoked directly from routes.
     """
 
     async def create_payroll_entry(

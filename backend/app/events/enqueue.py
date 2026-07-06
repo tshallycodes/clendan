@@ -1,6 +1,6 @@
 """
-Thin wrapper kept for backward compatibility with integration syncs and webhooks.
-All calls route directly to the correct arq job via core.dispatch — no orchestrator hop.
+Event enqueue helper for integration syncs and webhooks.
+All calls route directly to the correct arq job via core.dispatch — direct dispatch, no extra hop.
 """
 from prisma import Prisma
 from prisma.errors import UniqueViolationError
@@ -12,7 +12,7 @@ from app.queue.pool import get_queue_pool
 logger = get_logger(__name__)
 
 
-async def enqueue_orchestrator_event(
+async def enqueue_event(
     *,
     tenant_id: str,
     event_type: str,

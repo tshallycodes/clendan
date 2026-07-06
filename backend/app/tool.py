@@ -466,12 +466,12 @@ async def run_document_received_job(
 async def run_financial_reporting_monthly(ctx: dict) -> None:
     """Monthly cron: fires financial_report_run for all tenants with active tools."""
     db = get_db()
-    from app.orchestrator.events import enqueue_orchestrator_event
+    from app.events import enqueue_event
     tools = await db.tool.find_many(where={"type": "financial_reporting", "status": "active"})
     month_key = datetime.now(UTC).strftime("%Y-%m")
     for tool in tools:
         try:
-            await enqueue_orchestrator_event(
+            await enqueue_event(
                 tenant_id=tool.tenant_id,
                 event_type="financial_report_run",
                 payload={},
@@ -485,12 +485,12 @@ async def run_financial_reporting_monthly(ctx: dict) -> None:
 async def run_payment_run_weekly(ctx: dict) -> None:
     """Weekly cron: fires payment_run_requested for all tenants with active tools."""
     db = get_db()
-    from app.orchestrator.events import enqueue_orchestrator_event
+    from app.events import enqueue_event
     tools = await db.tool.find_many(where={"type": "payment_run", "status": "active"})
     week_key = datetime.now(UTC).strftime("%Y-W%W")
     for tool in tools:
         try:
-            await enqueue_orchestrator_event(
+            await enqueue_event(
                 tenant_id=tool.tenant_id,
                 event_type="payment_run_requested",
                 payload={},
@@ -556,7 +556,7 @@ async def run_reconciliation_scheduled_check(_ctx: dict) -> None:
     Real-time frequency is handled separately via sync hooks in plaid/truelayer sync.
     """
     from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
-    from app.orchestrator.events import enqueue_orchestrator_event
+    from app.events import enqueue_event
     db = get_db()
     now_utc = datetime.now(UTC)
 
@@ -596,7 +596,7 @@ async def run_reconciliation_scheduled_check(_ctx: dict) -> None:
                 idem_key = f"reconciliation:scheduled:{tool.id}:{date_key}:{current_hour}"
                 period_days = 30
 
-            await enqueue_orchestrator_event(
+            await enqueue_event(
                 tenant_id=tool.tenant_id,
                 event_type="reconciliation_run",
                 payload={"period_days": period_days},

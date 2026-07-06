@@ -14,7 +14,7 @@ from app.core.db import get_db
 from app.core.logging import get_logger
 from app.core.responses import standard_response
 from app.integrations.encryption import decrypt_credentials
-from app.orchestrator.events import enqueue_orchestrator_event
+from app.events import enqueue_event
 
 _logger = get_logger(__name__)
 router = APIRouter(prefix="/webhooks", tags=["webhooks"])
@@ -40,7 +40,7 @@ async def quickbooks_webhook(
 ):
     """
     Receives QuickBooks entity-change notifications.
-    Emits orchestrator events for Invoice/Bill creates and updates.
+    Emits events for Invoice/Bill creates and updates.
     """
     settings = get_settings()
     if not settings.quickbooks_webhook_verifier_token:
@@ -94,7 +94,7 @@ async def quickbooks_webhook(
 
             idempotency_key = f"qb:{realm_id}:{entity_name}:{entity_id}:{operation}"
 
-            execution_id = await enqueue_orchestrator_event(
+            execution_id = await enqueue_event(
                 tenant_id=tenant_id,
                 event_type="invoice_received",
                 payload={

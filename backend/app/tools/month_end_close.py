@@ -1,6 +1,6 @@
 """
 Month-End Close Tool — evaluates checklist tasks required to close the books for a period.
-Sub-agent called by the Financial Orchestrator as a tool.
+Sub-agent tool, dispatched directly to its arq job.
 Follows mandatory execution flow: receive → validate → execute → policy check → output → audit.
 """
 from __future__ import annotations
@@ -84,7 +84,7 @@ def _merge_tasks(
 class MonthEndCloseTool:
     """
     Evaluates auto-checkable month-end close tasks by querying the DB.
-    Called by the Orchestrator as a tool — never invoked directly from routes.
+    Dispatched to its arq job — never invoked directly from routes.
     """
 
     async def run(

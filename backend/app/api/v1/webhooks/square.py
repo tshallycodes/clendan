@@ -12,7 +12,7 @@ from app.core.db import get_db
 from app.core.logging import get_logger
 from app.core.responses import standard_response
 from app.integrations.square.client import parse_square_event_type, verify_square_signature
-from app.orchestrator.events import enqueue_orchestrator_event
+from app.events import enqueue_event
 
 _logger = get_logger(__name__)
 router = APIRouter(prefix="/webhooks", tags=["webhooks"])
@@ -27,7 +27,7 @@ async def square_webhook(
 ):
     """
     Receives Square event notifications.
-    Emits orchestrator events for payment and invoice events.
+    Emits events for payment and invoice events.
     """
     settings = get_settings()
     if not settings.square_webhook_signature_key:
@@ -52,9 +52,9 @@ async def square_webhook(
 
     event_type: str = payload.get("type", "")
     event_id: str = payload.get("event_id", "")
-    orchestrator_event = parse_square_event_type(event_type)
+    mapped_event = parse_square_event_type(event_type)
 
-    if orchestrator_event is None:
+    if mapped_event is None:
         return standard_response(data={"received": True})
 
     db = get_db()
@@ -80,7 +80,7 @@ async def square_webhook(
 
     base = {"square_event_type": event_type, "square_object_id": square_object_id}
 
-    if orchestrator_event in ("invoice_received", "invoice_created", "invoice_updated", "invoice_canceled"):
+    if mapped_event in ("invoice_received", "invoice_created", "invoice_updated", "invoice_canceled"):
         payment_requests = inner.get("payment_requests") or [{}]
         money = payment_requests[0].get("computed_amount_money") or {}
         event_payload = {
@@ -89,7 +89,7 @@ async def square_webhook(
             "currency": (money.get("currency") or "USD").upper(),
             "status": inner.get("status") or "",
         }
-    elif orchestrator_event in ("refund_created", "refund_updated"):
+    elif mapped_event in ("refund_created", "refund_updated"):
         money = inner.get("amount_money") or {}
         event_payload = {
             **base,
@@ -98,7 +98,7 @@ async def square_webhook(
             "status": inner.get("status") or "",
             "payment_id": inner.get("payment_id") or "",
         }
-    elif orchestrator_event in ("dispute_created", "dispute_state_changed"):
+    elif mapped_event in ("dispute_created", "dispute_state_changed"):
         money = inner.get("amount_money") or {}
         event_payload = {
             **base,
@@ -108,7 +108,7 @@ async def square_webhook(
             "reason": inner.get("reason") or "",
             "due_at": inner.get("evidence_ids") and inner.get("due_at") or None,
         }
-    elif orchestrator_event in ("payout_received", "payout_failed"):
+    elif mapped_event in ("payout_received", "payout_failed"):
         money = inner.get("amount_money") or {}
         event_payload = {
             **base,
@@ -120,9 +120,9 @@ async def square_webhook(
     else:
         event_payload = base
 
-    execution_id = await enqueue_orchestrator_event(
+    execution_id = await enqueue_event(
         tenant_id=tenant_id,
-        event_type=orchestrator_event,
+        event_type=mapped_event,
         payload=event_payload,
         idempotency_key=idempotency_key,
         db=db,
@@ -134,7 +134,7 @@ async def square_webhook(
             extra={
                 "execution_id": execution_id,
                 "event_type": event_type,
-                "orchestrator_event": orchestrator_event,
+                "mapped_event": mapped_event,
                 "tenant_id": tenant_id,
             },
         )

@@ -12,7 +12,7 @@ from app.core.db import get_db
 from app.core.logging import get_logger
 from app.core.responses import standard_response
 from app.integrations.stripe.client import parse_stripe_event_type, verify_stripe_signature
-from app.orchestrator.events import enqueue_orchestrator_event
+from app.events import enqueue_event
 
 _logger = get_logger(__name__)
 router = APIRouter(prefix="/webhooks", tags=["webhooks"])
@@ -25,7 +25,7 @@ async def stripe_webhook(
 ):
     """
     Receives Stripe event notifications.
-    Emits orchestrator events for invoice and transaction events.
+    Emits events for invoice and transaction events.
     """
     settings = get_settings()
     if not settings.stripe_webhook_secret:
@@ -46,9 +46,9 @@ async def stripe_webhook(
 
     event_type: str = payload.get("type", "")
     event_id: str = payload.get("id", "")
-    orchestrator_event = parse_stripe_event_type(event_type)
+    mapped_event = parse_stripe_event_type(event_type)
 
-    if orchestrator_event is None:
+    if mapped_event is None:
         # Silently accept unhandled event types — Stripe sends many we don't use
         return standard_response(data={"received": True})
 
@@ -70,20 +70,20 @@ async def stripe_webhook(
     # Build event payload — extract fields relevant to each workflow
     base = {"stripe_event_type": event_type, "stripe_object_id": stripe_object_id}
 
-    if orchestrator_event in ("invoice_received", "invoice_payment_failed"):
+    if mapped_event in ("invoice_received", "invoice_payment_failed"):
         event_payload = {
             **base,
             "amount_minor": stripe_object.get("amount_due", 0),
             "currency": (stripe_object.get("currency") or "usd").upper(),
             "customer": stripe_object.get("customer") or "",
         }
-    elif orchestrator_event == "charge_refunded":
+    elif mapped_event == "charge_refunded":
         event_payload = {
             **base,
             "amount_minor": stripe_object.get("amount_refunded", 0),
             "currency": (stripe_object.get("currency") or "usd").upper(),
         }
-    elif orchestrator_event == "dispute_created":
+    elif mapped_event == "dispute_created":
         evidence = stripe_object.get("evidence_details") or {}
         event_payload = {
             **base,
@@ -93,14 +93,14 @@ async def stripe_webhook(
             "reason": stripe_object.get("reason") or "",
             "due_by": evidence.get("due_by"),
         }
-    elif orchestrator_event == "dispute_closed":
+    elif mapped_event == "dispute_closed":
         event_payload = {
             **base,
             "status": stripe_object.get("status") or "",
             "amount_minor": stripe_object.get("amount", 0),
             "currency": (stripe_object.get("currency") or "usd").upper(),
         }
-    elif orchestrator_event in ("payout_received", "payout_failed"):
+    elif mapped_event in ("payout_received", "payout_failed"):
         event_payload = {
             **base,
             "amount_minor": stripe_object.get("amount", 0),
@@ -111,9 +111,9 @@ async def stripe_webhook(
     else:
         event_payload = base
 
-    execution_id = await enqueue_orchestrator_event(
+    execution_id = await enqueue_event(
         tenant_id=tenant_id,
-        event_type=orchestrator_event,
+        event_type=mapped_event,
         payload=event_payload,
         idempotency_key=idempotency_key,
         db=db,
@@ -125,7 +125,7 @@ async def stripe_webhook(
             extra={
                 "execution_id": execution_id,
                 "event_type": event_type,
-                "orchestrator_event": orchestrator_event,
+                "mapped_event": mapped_event,
                 "tenant_id": tenant_id,
             },
         )

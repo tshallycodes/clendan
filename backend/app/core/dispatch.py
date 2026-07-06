@@ -1,6 +1,6 @@
 """
 Direct tool dispatch — maps tool type or event type to arq job and enqueues.
-No orchestrator hop. Called by API routes and the events thin-wrapper.
+No intermediate hop. Called by API routes and the app.events enqueue helper.
 """
 from prisma.errors import UniqueViolationError
 

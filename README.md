@@ -129,6 +129,6 @@ https://your-railway-api-url.up.railway.app/v1/integrations/quickbooks/callback
 
 Clendan is focused on one flow: AI-powered invoice processing feeding automated month-end close, integrated deeply with your ERP. Anything outside AP and close is tracked in [docs/future_expansion.md](docs/future_expansion.md) (Roadmap and future expansion), not kept as vestigial code.
 
-Direct-dispatch model — there is no orchestrator layer. An API/dashboard trigger routes straight to the tool's arq job via `enqueue_for_tool_type`; an integration/webhook trigger routes via `enqueue_orchestrator_event`, a thin backward-compat wrapper that also dispatches directly. Each tool runs its own pipeline, is policy-checked, and is audited. Tools never call each other directly.
+Direct-dispatch model — there is no orchestrator layer. An API/dashboard trigger routes straight to the tool's arq job via `enqueue_for_tool_type`; an integration/webhook trigger routes via `enqueue_event` (from `app.events`), a thin helper that also dispatches directly. Each tool runs its own pipeline, is policy-checked, and is audited. Tools never call each other directly.
 
 Every execution follows: receive → classify → dispatch → execute → policy check → output → audit.
