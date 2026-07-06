@@ -4,7 +4,7 @@ WORKDIR /app
 
 RUN apt-get update && apt-get install -y --no-install-recommends libatomic1 && rm -rf /var/lib/apt/lists/*
 
-RUN pip install poetry==1.8.2 && \
+RUN pip install poetry==2.4.1 && \
     poetry config virtualenvs.create false
 
 COPY pyproject.toml poetry.lock* ./
