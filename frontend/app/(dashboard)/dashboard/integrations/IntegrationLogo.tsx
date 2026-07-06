@@ -53,7 +53,6 @@ const SLUG_TO_SI_KEY: Record<string, string> = {
   adyen:          'siAdyen',
   wise:           'siWise',
   sap:            'siSap',
-  hubspot:        'siHubspot',
 }
 
 // Domain for Google favicon API — used for all logo sources
@@ -66,7 +65,6 @@ const SLUG_TO_DOMAIN: Record<string, string> = {
   adyen:          'adyen.com',
   wise:           'wise.com',
   sap:            'sap.com',
-  hubspot:        'hubspot.com',
   plaid:          'plaid.com',
   mono:           'mono.co',
   freshbooks:     'freshbooks.com',
@@ -75,7 +73,6 @@ const SLUG_TO_DOMAIN: Record<string, string> = {
   netsuite:       'netsuite.com',
   'sage-intacct': 'sageintacct.com',
   dynamics365:    'dynamics.microsoft.com',
-  salesforce:     'salesforce.com',
   outlook:        'outlook.com',
   onedrive:       'onedrive.live.com',
 }

@@ -6,7 +6,9 @@ authors = []
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.12"
+# Deploy target is Python 3.12 (see backend/Dockerfile: python:3.12-slim).
+# Upper bound pinned to exclude untested 3.15; local dev on 3.14 is supported.
+python = ">=3.12,<3.15"
 fastapi = "^0.111.0"
 uvicorn = {extras = ["standard"], version = "^0.30.0"}
 pydantic = {extras = ["email"], version = "^2.7.0"}

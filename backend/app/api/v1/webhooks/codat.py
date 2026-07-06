@@ -25,13 +25,13 @@ _HANDLED_EVENTS = frozenset({
 
 def _verify_authorization(authorization: str) -> bool:
     """
-    Codat webhook auth: Authorization header must match the configured API key.
+    Codat webhook auth: the Authorization header must match the configured
+    dedicated webhook secret (preferred) or, failing that, the Codat API key.
     Comparison is constant-time to prevent timing attacks.
-    TODO: update when Codat provisions a dedicated webhook secret for this plan.
     """
     import hmac
     settings = get_settings()
-    expected = settings.codat_api_key
+    expected = settings.codat_webhook_secret or settings.codat_api_key
     if not expected:
         return False
     # Basic scheme: "Basic <token>" or raw token — handle both
@@ -51,7 +51,7 @@ async def codat_webhook(
     """
     settings = get_settings()
 
-    if not settings.codat_api_key:
+    if not (settings.codat_webhook_secret or settings.codat_api_key):
         _logger.error("codat_webhook_not_configured")
         raise HTTPException(status_code=503, detail="Codat webhook not configured")
 

@@ -1,7 +1,7 @@
 """
 OneDrive sync job — runs via arq worker.
 Creates Graph API drive subscription, lists PDF files, emits receipt_received events.
-# TODO: add onedrive source handler in app/tool.py _orchestrate_receipt_received
+The 'onedrive' source is handled in app/tool.py (run_receipt_received_job / run_document_received_job).
 """
 import base64
 import time

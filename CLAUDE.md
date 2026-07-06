@@ -2,14 +2,20 @@
 
 ## Project Overview
 
-Clendan is an AI Financial Agent OS. A platform where companies deploy autonomous AI tools
-that connect to financial systems, execute tasks, enforce policy, and produce full audit trails.
+Clendan is an AI Financial Agent OS, focused on one flow: **AI-powered invoice processing
+feeding automated month-end close, integrated deeply with your ERP.** AP is the wedge;
+close is the lock-in. Every module outside AP and close has been removed — anything not
+core to AP or close is tracked in [docs/future_expansion.md](docs/future_expansion.md)
+(Roadmap and future expansion), not kept as vestigial code.
 
-**Stack:** Next.js 14 (frontend) · FastAPI (backend) · PostgreSQL + Prisma · Clerk (auth) ·
+**Stack:** Next.js 16 (frontend) · FastAPI (backend) · PostgreSQL + Prisma · Clerk (auth) ·
 Anthropic SDK · arq + Redis · Vercel + Railway · Sentry + PostHog
 
-**Architecture:** Master-subagent model. Financial Orchestrator is the master agent.
-All other tools are sub-agents called as tools. Tools never call each other directly.
+**Architecture:** Direct-dispatch model. There is no orchestrator layer. An API/dashboard
+trigger routes straight to the tool's arq job via `enqueue_for_tool_type`; an
+integration/webhook trigger routes via `enqueue_orchestrator_event` (a thin backward-compat
+wrapper that also dispatches directly). Each tool runs its own pipeline, is policy-checked,
+and is audited. Tools never call each other directly.
 
 ---
 
@@ -65,9 +71,9 @@ receive → classify → select tool → execute → policy check → output →
 
 | Step | Rule |
 |------|------|
-| Receive | Event or API call arrives at Orchestrator. Input validated before any processing. |
-| Classify | Orchestrator identifies event type and determines which tool(s) to invoke. |
-| Select Tool | Orchestrator calls the appropriate sub-agent tool as a tool. Never assumed. |
+| Receive | Event or API call arrives at the dispatch layer (`core/dispatch.py`). Input validated before any processing. |
+| Classify | Dispatch maps the tool type / event type to the correct arq job. Never assumed. |
+| Select Tool | The mapped arq job runs the tool directly. Tools are never invoked ad hoc. |
 | Execute | Tool runs its task using connected tools (bank API, ERP, OCR, etc). |
 | Policy Check | Policy engine validates output before any action is taken. Cannot be skipped. |
 | Output | Decision returned with confidence score and full reasoning trace. |
@@ -102,12 +108,12 @@ else:
 ### Hard Fail Anti-Patterns
 
 - Tool executing without policy check
-- Orchestrator calling tools directly without classifying first
+- Dispatching to a tool job without mapping the tool/event type first
 - Single external API call with no retry logic
 - Writing to ERP/accounting system before audit log entry
 - Agent returning success when external API returned empty
 - Skipping the audit step for any reason
-- Two tools calling each other directly (bypassing Orchestrator)
+- Two tools calling each other directly (tools must stay independent)
 
 **If any step in the agent flow is missing: the feature is incomplete and must not be marked done.**
 

@@ -4,12 +4,12 @@ Autonomous AI tools that process invoices, reconcile accounts, and execute finan
 
 ## Stack
 
-- **Frontend**: Next.js 14 (App Router) + TypeScript + Tailwind + shadcn/ui
+- **Frontend**: Next.js 16 (App Router) + TypeScript + Tailwind v4 (custom components — no shadcn/ui)
 - **Backend**: FastAPI (Python 3.12) + Pydantic v2 + Prisma
 - **Database**: PostgreSQL with Row-Level Security
 - **Auth**: Clerk (server-side JWT verification)
-- **AI**: Anthropic SDK (Claude Sonnet — backend only)
-- **Queue**: BullMQ + Redis
+- **AI**: Anthropic SDK (Claude — backend only)
+- **Queue**: arq + Redis
 - **Monitoring**: Sentry + PostHog
 
 ## Local Development
@@ -127,6 +127,8 @@ https://your-railway-api-url.up.railway.app/v1/integrations/quickbooks/callback
 
 ## Architecture
 
-Master-subagent model: the Financial Orchestrator is the master agent. All tools are sub-agents called as tools. Tools never call each other directly. All coordination and policy enforcement flow through the Orchestrator.
+Clendan is focused on one flow: AI-powered invoice processing feeding automated month-end close, integrated deeply with your ERP. Anything outside AP and close is tracked in [docs/future_expansion.md](docs/future_expansion.md) (Roadmap and future expansion), not kept as vestigial code.
 
-Every agent execution follows: receive → classify → select tool → execute → policy check → output → audit.
+Direct-dispatch model — there is no orchestrator layer. An API/dashboard trigger routes straight to the tool's arq job via `enqueue_for_tool_type`; an integration/webhook trigger routes via `enqueue_orchestrator_event`, a thin backward-compat wrapper that also dispatches directly. Each tool runs its own pipeline, is policy-checked, and is audited. Tools never call each other directly.
+
+Every execution follows: receive → classify → dispatch → execute → policy check → output → audit.

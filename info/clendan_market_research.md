@@ -1,6 +1,6 @@
-# Ledris Market Research — Finance Operations Pain Point Analysis
+# Clendan Market Research — Finance Operations Pain Point Analysis
 **Date:** 2026-05-20  
-**Purpose:** Identify which finance workflow causes the most acute, widespread pain for finance teams at SaaS/fintech product companies — to validate and focus Ledris's go-to-market.
+**Purpose:** Identify which finance workflow causes the most acute, widespread pain for finance teams at SaaS/fintech product companies — to validate and focus Clendan's go-to-market.
 
 ---
 
@@ -226,9 +226,9 @@ Analysed ~20+ active postings across Finance Operations Manager, Accounts Payabl
 
 ## Final Recommendation
 
-**Lead workflow for Ledris: Invoice Processing / AP Automation**
+**Lead workflow for Clendan: Invoice Processing / AP Automation**
 
-This is the tightest fit for Ledris's positioning as an AI Financial Agent OS, for four concrete reasons:
+This is the tightest fit for Clendan's positioning as an AI Financial Agent OS, for four concrete reasons:
 
 **1. It's the highest-volume repetitive task in finance.** Every company receives invoices. The workflow is the same every time: receive → extract data → match PO → route for approval → post to ERP → pay. That's exactly the kind of deterministic, high-volume workflow where autonomous AI agents win.
 
@@ -236,9 +236,9 @@ This is the tightest fit for Ledris's positioning as an AI Financial Agent OS, f
 
 **3. The ROI story writes itself.** Cost per invoice drops from $6 to <$1. AP team hours recovered per week = directly quantifiable. Error rate reduction = measurable. This is the kind of proof you can show a VP Finance in the first 60 days. Other workflows (FP&A, budgeting) take quarters to prove ROI.
 
-**4. It's a wedge into the rest of the platform.** A company that trusts Ledris to run AP will naturally expand into reconciliation, month-end close orchestration, and expense management. The AP relationship gives Ledris live data in the ERP, a track record of accuracy, and a trusted position in the finance stack. Reconciliation is the obvious next workflow — and together they cover the entire monthly-close bottleneck that 50% of teams are failing at.
+**4. It's a wedge into the rest of the platform.** A company that trusts Clendan to run AP will naturally expand into reconciliation, month-end close orchestration, and expense management. The AP relationship gives Clendan live data in the ERP, a track record of accuracy, and a trusted position in the finance stack. Reconciliation is the obvious next workflow — and together they cover the entire monthly-close bottleneck that 50% of teams are failing at.
 
-**Month-end close / reconciliation** is a close second and should be positioned as the second workflow in Ledris's roadmap — it's the bigger strategic pain, but it requires more system access (multiple ERPs, bank feeds, PSPs) and is harder to get started with. AP is the faster, higher-conviction first win.
+**Month-end close / reconciliation** is a close second and should be positioned as the second workflow in Clendan's roadmap — it's the bigger strategic pain, but it requires more system access (multiple ERPs, bank feeds, PSPs) and is harder to get started with. AP is the faster, higher-conviction first win.
 
 ---
 

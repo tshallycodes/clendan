@@ -18,9 +18,7 @@ const INTEGRATION_META: Record<string, { name: string; desc: string }> = {
   square:       { name: 'Square',               desc: 'Point of sale and invoicing' },
   netsuite:     { name: 'NetSuite',              desc: 'Full ERP sync' },
   sap:          { name: 'SAP',                   desc: 'Enterprise ERP' },
-  dynamics365:  { name: 'Microsoft Dynamics 365', desc: 'ERP and CRM' },
-  salesforce:   { name: 'Salesforce',            desc: 'Customer and pipeline data' },
-  hubspot:      { name: 'HubSpot',               desc: 'CRM and deal sync' },
+  dynamics365:  { name: 'Microsoft Dynamics 365', desc: 'Enterprise ERP' },
   gmail:        { name: 'Gmail',                 desc: 'Invoice ingestion from email' },
   outlook:      { name: 'Outlook',               desc: 'Invoice ingestion from email' },
   'google-drive': { name: 'Google Drive',        desc: 'Document storage and ingestion' },
@@ -32,9 +30,9 @@ const INTEGRATION_META: Record<string, { name: string; desc: string }> = {
 
 const STATUSABLE_SLUGS = [
   'quickbooks', 'plaid', 'truelayer', 'xero', 'stripe', 'gocardless', 'square',
-  'hubspot', 'gmail', 'outlook', 'google-drive',
+  'gmail', 'outlook', 'google-drive',
   'freshbooks', 'adyen', 'wise',
-  'netsuite', 'sap', 'dynamics365', 'salesforce', 'dropbox', 'onedrive',
+  'netsuite', 'sap', 'dynamics365', 'dropbox', 'onedrive',
 ]
 
 interface IntegrationState {

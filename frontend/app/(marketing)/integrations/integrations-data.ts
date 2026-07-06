@@ -31,10 +31,6 @@ export const INTEGRATIONS: Record<string, Integration[]> = {
     { name: 'SAP', desc: 'Enterprise financials (Enterprise)', status: 'available' },
     { name: 'Microsoft Dynamics 365', desc: 'ERP and CRM (Enterprise)', status: 'available' },
   ],
-  CRM: [
-    { name: 'Salesforce', desc: 'Customer and contract data', status: 'coming_soon' },
-    { name: 'HubSpot', desc: 'Deal and revenue data', status: 'available' },
-  ],
   'Document & Email': [
     { name: 'Gmail', desc: 'Invoice ingestion from email', status: 'available' },
     { name: 'Outlook', desc: 'Invoice ingestion from email', status: 'available' },

@@ -10,15 +10,9 @@ const TOOL_TYPES = [
   'reconciliation',
   'document_intelligence',
   'spend_control',
-  'ar_collections',
-  'risk_compliance',
-  'treasury_cash',
-  'revenue_recognition',
-  'credit_underwriting',
   'tax_compliance',
   'financial_reporting',
   'payment_run',
-  'budgeting',
 ]
 
 export default function ApiDocsPage() {

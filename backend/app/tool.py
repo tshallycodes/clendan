@@ -24,7 +24,6 @@ from app.integrations.truelayer.sync import sync_truelayer_connection
 from app.integrations.mono.sync import sync_mono_transactions, reconcile_mono_transactions
 from app.integrations.codat.sync import sync_codat_connection
 from app.integrations.codat.sync import poll_codat_status
-from app.integrations.hubspot.sync import sync_hubspot_connection
 from app.integrations.google.sync_gmail import sync_gmail_connection
 from app.integrations.google.sync_drive import sync_drive_connection
 from app.integrations.dropbox.sync import sync_dropbox_connection
@@ -34,7 +33,6 @@ from app.integrations.sage.sync import sync_sage_connection
 from app.integrations.adyen.sync import sync_adyen_connection
 from app.integrations.wise.sync import sync_wise_connection
 from app.integrations.sap.sync import sync_sap_connection
-from app.integrations.salesforce.sync import sync_salesforce_connection
 from app.integrations.netsuite.sync import sync_netsuite_connection
 from app.integrations.dynamics.sync import sync_dynamics_connection
 from app.integrations.onedrive.sync import sync_onedrive_connection
@@ -44,20 +42,11 @@ from app.tools.invoice_processing import run_invoice_job
 from app.tools.receipt_processing import run_receipt_job
 from app.api.v1.parse.invoice import run_parse_invoice_job
 from app.api.v1.parse.receipt import run_parse_receipt_job
-from app.tools.fraud_detection import run_fraud_detection_job
-from app.tools.collections import run_collections_job
-from app.tools.revenue_recognition import run_revenue_recognition_job
-from app.tools.credit_underwriting import run_credit_underwriting_job
-from app.tools.compliance import run_compliance_job
 from app.tools.reconciliation import run_reconciliation_job
 from app.tools.spend_control import run_expense_control_job, run_accounts_payable_job
-from app.tools.treasury import run_treasury_job
-from app.tools.accounts_receivable import run_accounts_receivable_job
-from app.tools.cash_flow_forecast import run_cash_flow_forecast_job
 from app.tools.tax_compliance import run_tax_compliance_job
 from app.tools.financial_reporting import run_financial_reporting_job
 from app.tools.payment_run import run_payment_run_job
-from app.tools.budgeting import run_budgeting_job
 from app.tools.document_intelligence import run_document_intelligence_job
 from app.tools.month_end_close import run_month_end_close_job, run_month_end_close_scheduled
 from app.tools.payroll_reconciliation import run_payroll_rec_job
@@ -272,6 +261,15 @@ async def run_receipt_received_job(
                     return {"decision": "blocked", "reason": "No PDF attachment found in Outlook message"}
                 file_bytes, content_type = await outlook_client.get_attachment_bytes(
                     access_token, message_id, pdf_attachment["id"])
+            elif source == "onedrive":
+                from app.integrations.onedrive import client as onedrive_client
+                file_id = payload.get("file_id", "")
+                if not file_id:
+                    await complete_execution(db=db, execution_id=execution_id, tool_id=tool_id,
+                        tenant_id=tenant_id, decision="blocked", confidence=0.0,
+                        duration_ms=int(time.time() * 1000) - start_ms)
+                    return {"decision": "blocked", "reason": "Missing file_id for OneDrive receipt"}
+                file_bytes = await onedrive_client.download_file(access_token, file_id)
             else:
                 await complete_execution(db=db, execution_id=execution_id, tool_id=tool_id,
                     tenant_id=tenant_id, decision="blocked", confidence=0.0,
@@ -408,6 +406,15 @@ async def run_document_received_job(
                     access_token, message_id, pdf_attachment["id"])
                 if not filename:
                     filename = pdf_attachment.get("name")
+            elif source == "onedrive":
+                from app.integrations.onedrive import client as onedrive_client
+                file_id = payload.get("file_id", "")
+                if not file_id:
+                    await complete_execution(db=db, execution_id=execution_id, tool_id=tool_id,
+                        tenant_id=tenant_id, decision="blocked", confidence=0.0,
+                        duration_ms=int(time.time() * 1000) - start_ms)
+                    return {"decision": "blocked", "reason": "Missing file_id for OneDrive document"}
+                file_bytes = await onedrive_client.download_file(access_token, file_id)
             else:
                 await complete_execution(db=db, execution_id=execution_id, tool_id=tool_id,
                     tenant_id=tenant_id, decision="blocked", confidence=0.0,
@@ -456,30 +463,6 @@ async def run_document_received_job(
         raise
 
 
-async def run_revenue_recognition_monthly(ctx: dict) -> None:
-    """Monthly cron: fires revenue_recognition_run for all tenants with active tools."""
-    db = get_db()
-    from app.orchestrator.events import enqueue_orchestrator_event
-    tools = await db.tool.find_many(
-        where={"type": "revenue_recognition", "status": "active"}
-    )
-    month_key = datetime.now(UTC).strftime("%Y-%m")
-    for tool in tools:
-        try:
-            await enqueue_orchestrator_event(
-                tenant_id=tool.tenant_id,
-                event_type="revenue_recognition_run",
-                payload={},
-                idempotency_key=f"revenue_recognition:monthly:{tool.tenant_id}:{month_key}",
-                db=db,
-            )
-        except Exception as exc:
-            logger.error(
-                "revenue_recognition_cron_failed tenant=%s: %s",
-                tool.tenant_id, type(exc).__name__,
-            )
-
-
 async def run_financial_reporting_monthly(ctx: dict) -> None:
     """Monthly cron: fires financial_report_run for all tenants with active tools."""
     db = get_db()
@@ -518,25 +501,6 @@ async def run_payment_run_weekly(ctx: dict) -> None:
             logger.error("payment_run_cron_failed tenant=%s: %s", tool.tenant_id, type(exc).__name__)
 
 
-async def run_budget_check_weekly(ctx: dict) -> None:
-    """Weekly cron: fires budget_check_run for all tenants with active tools."""
-    db = get_db()
-    from app.orchestrator.events import enqueue_orchestrator_event
-    tools = await db.tool.find_many(where={"type": "budgeting", "status": "active"})
-    week_key = datetime.now(UTC).strftime("%Y-W%W")
-    for tool in tools:
-        try:
-            await enqueue_orchestrator_event(
-                tenant_id=tool.tenant_id,
-                event_type="budget_check_run",
-                payload={},
-                idempotency_key=f"budgeting:weekly:{tool.tenant_id}:{week_key}",
-                db=db,
-            )
-        except Exception as exc:
-            logger.error("budget_check_cron_failed tenant=%s: %s", tool.tenant_id, type(exc).__name__)
-
-
 _INTEGRATION_SYNC_JOBS: dict[str, str] = {
     "quickbooks":  "sync_quickbooks_connection",
     "xero":        "sync_xero_connection",
@@ -546,7 +510,6 @@ _INTEGRATION_SYNC_JOBS: dict[str, str] = {
     "square":      "sync_square_connection",
     "paypal":      "sync_paypal_connection",
     "sap":         "sync_sap_connection",
-    "salesforce":  "sync_salesforce_connection",
     "netsuite":    "sync_netsuite_connection",
     "dynamics":    "sync_dynamics_connection",
 }
@@ -666,7 +629,6 @@ class ToolSettings:
         run_invoice_received_job,
         run_receipt_received_job,
         run_document_received_job,
-        run_revenue_recognition_monthly,
         run_reconciliation_scheduled_check,
         sync_quickbooks_connection,
         sync_plaid_transactions,
@@ -675,25 +637,15 @@ class ToolSettings:
         run_receipt_job,
         run_parse_invoice_job,
         run_parse_receipt_job,
-        run_fraud_detection_job,
-        run_collections_job,
-        run_revenue_recognition_job,
-        run_credit_underwriting_job,
-        run_compliance_job,
         run_reconciliation_job,
         run_expense_control_job,
-        run_treasury_job,
-        run_accounts_receivable_job,
         run_accounts_payable_job,
-        run_cash_flow_forecast_job,
         run_tax_compliance_job,
         run_financial_reporting_job,
         run_payment_run_job,
-        run_budgeting_job,
         run_document_intelligence_job,
         run_financial_reporting_monthly,
         run_payment_run_weekly,
-        run_budget_check_weekly,
         sync_xero_connection,
         sync_freshbooks_connection,
         sync_stripe_connection,
@@ -705,7 +657,6 @@ class ToolSettings:
         reconcile_mono_transactions,
         sync_codat_connection,
         poll_codat_status,
-        sync_hubspot_connection,
         sync_gmail_connection,
         sync_drive_connection,
         sync_dropbox_connection,
@@ -715,7 +666,6 @@ class ToolSettings:
         sync_adyen_connection,
         sync_wise_connection,
         sync_sap_connection,
-        sync_salesforce_connection,
         sync_netsuite_connection,
         sync_dynamics_connection,
         sync_onedrive_connection,
@@ -727,10 +677,8 @@ class ToolSettings:
         resync_integrations_daily,
     ]
     cron_jobs = [
-        cron(run_revenue_recognition_monthly, day=1, hour=0, minute=0),
         cron(run_financial_reporting_monthly, day=1, hour=1, minute=0),
         cron(run_payment_run_weekly, weekday=0, hour=7, minute=0),
-        cron(run_budget_check_weekly, weekday=0, hour=7, minute=30),
         cron(fetch_exchange_rates_daily, hour=0, minute=5),
         cron(run_reconciliation_scheduled_check, minute=0),  # hourly
         cron(run_month_end_close_scheduled, hour=0, minute=10),  # daily midnight UTC

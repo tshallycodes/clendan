@@ -83,25 +83,19 @@ def _make_pool_mock():
 # TOOL_TYPE_TO_JOB coverage
 # ---------------------------------------------------------------------------
 
-ALL_12_TOOLS = [
+ACTIVE_TOOLS = [
     "reconciliation",
     "document_intelligence",
     "spend_control",
-    "ar_collections",
-    "risk_compliance",
-    "treasury_cash",
-    "revenue_recognition",
-    "credit_underwriting",
     "tax_compliance",
     "financial_reporting",
     "payment_run",
-    "budgeting",
 ]
 
 
 class TestToolCoverage:
-    def test_all_12_tools_in_map(self):
-        missing = [t for t in ALL_12_TOOLS if t not in TOOL_TYPE_TO_JOB]
+    def test_all_active_tools_in_map(self):
+        missing = [t for t in ACTIVE_TOOLS if t not in TOOL_TYPE_TO_JOB]
         assert missing == [], f"Tools missing from TOOL_TYPE_TO_JOB: {missing}"
 
     def test_expense_control_maps_to_job(self):
@@ -112,9 +106,6 @@ class TestToolCoverage:
 
     def test_payment_run_maps_to_job(self):
         assert TOOL_TYPE_TO_JOB["payment_run"] == "run_payment_run_job"
-
-    def test_budgeting_maps_to_job(self):
-        assert TOOL_TYPE_TO_JOB["budgeting"] == "run_budgeting_job"
 
 
 # ---------------------------------------------------------------------------
@@ -218,12 +209,12 @@ class TestPostExecute:
             response = client.post(
                 "/execute",
                 headers=VALID_HEADERS,
-                json={"tool": "budgeting"},
+                json={"tool": "reconciliation"},
             )
         assert response.status_code == 404
 
-    @pytest.mark.parametrize("tool_type", ALL_12_TOOLS)
-    def test_all_12_tools_are_routable(self, tool_type: str):
+    @pytest.mark.parametrize("tool_type", ACTIVE_TOOLS)
+    def test_all_active_tools_are_routable(self, tool_type: str):
         fake_tool = MagicMock(id=_TOOL_ID, tenant_id=_TENANT_ID, type=tool_type, status="active")
         db = _make_db_mock()
         db.tool.find_first = AsyncMock(return_value=fake_tool)

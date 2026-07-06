@@ -14,12 +14,9 @@ router = APIRouter(prefix="/tools", tags=["tools"])
 
 VALID_TYPES = {
     "invoice_processing", "receipt_processing",
-    "reconciliation", "expense_control", "collections",
-    "fraud_detection", "treasury", "revenue_recognition",
-    "credit_underwriting", "compliance",
-    "document_intelligence", "spend_control", "ar_collections",
-    "risk_compliance", "treasury_cash", "tax_compliance",
-    "financial_reporting", "payment_run", "budgeting",
+    "reconciliation", "expense_control",
+    "document_intelligence", "spend_control",
+    "tax_compliance", "financial_reporting", "payment_run",
 }
 VALID_AUTONOMY_LEVELS = {"auto", "approve"}
 VALID_STATUSES = {"active", "inactive"}

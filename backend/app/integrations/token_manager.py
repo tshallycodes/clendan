@@ -74,10 +74,6 @@ async def _call_refresh(integration_type: str, creds: dict) -> dict:
         from app.integrations.truelayer.client import refresh_truelayer_token
         return await refresh_truelayer_token(refresh_token)
 
-    if integration_type == "hubspot":
-        from app.integrations.hubspot.client import refresh_hubspot_token
-        return await refresh_hubspot_token(refresh_token)
-
     if integration_type in ("gmail", "google_drive"):
         from app.integrations.google.client import refresh_google_token
         return await refresh_google_token(refresh_token)
@@ -85,10 +81,6 @@ async def _call_refresh(integration_type: str, creds: dict) -> dict:
     if integration_type == "outlook":
         from app.integrations.outlook.client import refresh_outlook_token
         return await refresh_outlook_token(refresh_token)
-
-    if integration_type == "salesforce":
-        from app.integrations.salesforce.client import refresh_sf_token
-        return await refresh_sf_token(refresh_token)
 
     if integration_type == "stripe":
         # Stripe Connect tokens don't expire — no refresh needed

@@ -7,7 +7,7 @@ import { FadeInUp, StaggerContainer, StaggerItem } from './AnimationWrappers'
 
 // ─── Social Proof Strip ────────────────────────────────────────────────────
 
-const INTEGRATIONS = ['Xero', 'QuickBooks', 'Plaid', 'Stripe', 'NetSuite', 'Salesforce']
+const INTEGRATIONS = ['Xero', 'QuickBooks', 'Plaid', 'Stripe', 'NetSuite', 'Sage']
 const MARQUEE_ITEMS = [...INTEGRATIONS, ...INTEGRATIONS]
 
 export function SocialProofStrip() {

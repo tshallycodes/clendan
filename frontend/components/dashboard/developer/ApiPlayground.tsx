@@ -10,15 +10,9 @@ const TOOLS = [
   'reconciliation',
   'document_intelligence',
   'spend_control',
-  'ar_collections',
-  'risk_compliance',
-  'treasury_cash',
-  'revenue_recognition',
-  'credit_underwriting',
   'tax_compliance',
   'financial_reporting',
   'payment_run',
-  'budgeting',
 ] as const
 
 type ToolName = typeof TOOLS[number]
@@ -47,15 +41,9 @@ const DEFAULT_PAYLOADS: Record<ToolName, object> = {
   reconciliation:        { period_start: '2026-05-01', period_end: '2026-05-31', policy: { unmatched_pct_threshold: 0.2, match_amount_tolerance_minor: 150, match_date_window_days: 5, include_reconciled: false } },
   document_intelligence: { source: 'gmail', integration_id: '<your_integration_id>', document_type: 'invoice', message_id: '<gmail_message_id>', attachment_id: '<gmail_attachment_id>', filename: 'invoice.pdf' },
   spend_control:         { transaction_ids: ['txn_001', 'txn_002'], policy_config: {} },
-  ar_collections:        { policy_config: {} },
-  risk_compliance:       { transaction_ids: ['txn_001', 'txn_002'], frameworks: ['AML', 'KYC'] },
-  treasury_cash:         { policy_config: {} },
-  revenue_recognition:   { contract_id: 'con_001', contract_text: '12-month SaaS subscription agreement...', total_value_minor: 1200000, currency: 'GBP', start_date: '2026-01-01', end_date: '2026-12-31', accounting_standard: 'ASC606', recognition_method: 'straight_line' },
-  credit_underwriting:   { application_id: 'app_001', applicant_name: 'Jane Doe', requested_amount_minor: 5000000, currency: 'GBP', credit_score: 700, declared_income_minor: 400000, monthly_debt_payments_minor: 50000, employment_status: 'employed', employment_months: 24, bank_transactions_summary: 'Stable income, no NSF in 12 months' },
   tax_compliance:        { lookback_days: 90 },
   financial_reporting:   { policy_config: {} },
   payment_run:           { policy_config: {} },
-  budgeting:             { policy_config: {} },
 }
 
 const TRANSACTIONS_ENDPOINT: EndpointDef = {
@@ -70,9 +58,8 @@ const TRANSACTIONS_ENDPOINT: EndpointDef = {
 
 // Endpoints relevant to a given tool — only shown when the selected tool has any.
 const RELATED_ENDPOINTS: Partial<Record<ToolName, EndpointDef[]>> = {
-  ar_collections: [TRANSACTIONS_ENDPOINT],
   reconciliation: [TRANSACTIONS_ENDPOINT],
-  treasury_cash: [TRANSACTIONS_ENDPOINT],
+  spend_control: [TRANSACTIONS_ENDPOINT],
 }
 
 

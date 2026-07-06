@@ -2,7 +2,7 @@
 Generic integration routes for all non-dedicated integrations.
 
 OAuth (redirect flow):
-    sage, wave, wise, dynamics365, salesforce, dropbox, onedrive
+    sage, wave, wise, dynamics365, dropbox, onedrive
 
 API key (live validation before store):
     nordigen  — Secret ID + Secret Key (GoCardless for Banks)

@@ -136,79 +136,6 @@ function ReconcileSection() {
   )
 }
 
-function FraudSection() {
-  return (
-    <ApiSection
-      endpoint="POST /fraud/score"
-      title="Fraud Signal API"
-      desc="Returns a risk score between 0 and 1 with structured reasoning for any transaction. Integrates into your approval flow or triggers automatic blocks."
-      useCases={['Real-time payment fraud screening', 'Anomaly detection in expense claims', 'Pre-authorisation risk scoring']}
-      curl={
-        <>
-          <K>curl</K> <S>-X POST</S> https://api.clendan.com/fraud/score \{'\n'}
-          {'  '}<K>-H</K> <S>&quot;Authorization: Bearer $TOKEN&quot;</S> \{'\n'}
-          {'  '}<K>-d</K> <S>&apos;&#123;&quot;transaction_id&quot;: &quot;tx_44f1&quot;, &quot;amount_pence&quot;: 95000, &quot;vendor&quot;: &quot;Unknown Ltd&quot;&#125;&apos;</S>
-        </>
-      }
-      response={
-        <>
-          {'{'}{'\n'}
-          {'  '}<K>&quot;data&quot;</K>: {'{'}{'\n'}
-          {'    '}<K>&quot;score&quot;</K>: <N>0.87</N>,{'\n'}
-          {'    '}<K>&quot;verdict&quot;</K>: <S>&quot;high_risk&quot;</S>,{'\n'}
-          {'    '}<K>&quot;signals&quot;</K>: [{'\n'}
-          {'      '}<S>&quot;first_transaction_with_vendor&quot;</S>,{'\n'}
-          {'      '}<S>&quot;amount_3x_above_average&quot;</S>,{'\n'}
-          {'      '}<S>&quot;unusual_hour&quot;</S>{'\n'}
-          {'    '}],{'\n'}
-          {'    '}<C>// Full reasoning trace available at data.reasoning</C>{'\n'}
-          {'    '}<K>&quot;reasoning&quot;</K>: <S>&quot;Transaction deviates from 90-day baseline...&quot;</S>{'\n'}
-          {'  }'},{'\n'}
-          {'  '}<K>&quot;trace_id&quot;</K>: <S>&quot;cln_tr_7d3f1b&quot;</S>,{'\n'}
-          {'  '}<K>&quot;timestamp&quot;</K>: <S>&quot;2026-06-05T09:14:35Z&quot;</S>{'\n'}
-          {'}'}
-        </>
-      }
-    />
-  )
-}
-
-function ContractSection() {
-  return (
-    <ApiSection
-      endpoint="POST /parse/contract"
-      title="Contract Extraction"
-      desc="Extracts counterparty, payment terms, renewal dates, and key obligations from any contract PDF. Structured output ready for your workflow."
-      useCases={['Contract management automation', 'Renewal date alerting', 'Payment terms extraction for AP']}
-      curl={
-        <>
-          <K>curl</K> <S>-X POST</S> https://api.clendan.com/parse/contract \{'\n'}
-          {'  '}<K>-H</K> <S>&quot;Authorization: Bearer $TOKEN&quot;</S> \{'\n'}
-          {'  '}<K>-d</K> <S>&apos;&#123;&quot;file_url&quot;: &quot;https://storage.example.com/contract-2026.pdf&quot;&#125;&apos;</S>
-        </>
-      }
-      response={
-        <>
-          {'{'}{'\n'}
-          {'  '}<K>&quot;data&quot;</K>: {'{'}{'\n'}
-          {'    '}<K>&quot;counterparty&quot;</K>: <S>&quot;Globex Corporation&quot;</S>,{'\n'}
-          {'    '}<K>&quot;payment_terms&quot;</K>: <S>&quot;Net 30&quot;</S>,{'\n'}
-          {'    '}<K>&quot;renewal_date&quot;</K>: <S>&quot;2027-01-15&quot;</S>,{'\n'}
-          {'    '}<K>&quot;auto_renews&quot;</K>: <N>true</N>,{'\n'}
-          {'    '}<K>&quot;obligations&quot;</K>: [{'\n'}
-          {'      '}<S>&quot;Monthly SLA report by 5th of month&quot;</S>,{'\n'}
-          {'      '}<S>&quot;90-day termination notice required&quot;</S>{'\n'}
-          {'    '}]{'\n'}
-          {'  }'},{'\n'}
-          {'  '}<K>&quot;trace_id&quot;</K>: <S>&quot;cln_tr_1a5e9c&quot;</S>,{'\n'}
-          {'  '}<K>&quot;timestamp&quot;</K>: <S>&quot;2026-06-05T09:14:36Z&quot;</S>{'\n'}
-          {'}'}
-        </>
-      }
-    />
-  )
-}
-
 // ─── Shared section layout ─────────────────────────────────────────────────────
 
 interface ApiSectionProps {
@@ -287,8 +214,6 @@ export default function ApiToolsPage() {
         <InvoiceParserSection />
         <ReceiptOcrSection />
         <ReconcileSection />
-        <FraudSection />
-        <ContractSection />
       </div>
 
       {/* Pricing note */}

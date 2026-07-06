@@ -68,7 +68,6 @@ function statusColor(s: string): string {
 const ALL_SUMMARY_SLUGS = new Set([
   'freshbooks', 'xero', 'quickbooks',
   'stripe', 'square', 'gocardless', 'adyen', 'wise',
-  'hubspot', 'salesforce',
   'gmail', 'outlook', 'google-drive', 'dropbox', 'onedrive',
   'netsuite', 'sap', 'dynamics365',
   'sage',

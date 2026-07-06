@@ -42,13 +42,6 @@ OAUTH_REGISTRY: dict[str, OAuthConfig] = {
         client_secret_attr="microsoft_client_secret",
         extra_auth_params={"response_mode": "query"},
     ),
-    "salesforce": OAuthConfig(
-        auth_url="https://login.salesforce.com/services/oauth2/authorize",
-        token_url="https://login.salesforce.com/services/oauth2/token",
-        scope="api refresh_token offline_access",
-        client_id_attr="salesforce_client_id",
-        client_secret_attr="salesforce_client_secret",
-    ),
     "dropbox": OAuthConfig(
         auth_url="https://www.dropbox.com/oauth2/authorize",
         token_url="https://api.dropboxapi.com/oauth2/token",

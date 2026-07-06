@@ -130,12 +130,22 @@ async def list_invoices(company_id: str, connection_id: str) -> list:
 
 def verify_codat_webhook(payload: bytes, signature: str) -> bool:
     """
-    Placeholder — Codat webhook auth varies by plan.
-    Full implementation deferred until Codat plan is confirmed.
+    Verify a Codat webhook HMAC-SHA256 signature against the configured webhook
+    secret. Returns False when no secret is configured or the signature does not
+    match. Constant-time comparison. Accepts an optional 'sha256=' prefix.
     See: https://docs.codat.io/using-the-api/webhooks/overview
     """
-    # TODO: implement when Codat webhook secret is provisioned
-    return True
+    import hashlib
+    import hmac
+
+    secret = get_settings().codat_webhook_secret
+    if not secret:
+        return False
+    expected = hmac.new(secret.encode(), payload, hashlib.sha256).hexdigest()
+    provided = (signature or "").strip().lower()
+    if provided.startswith("sha256="):
+        provided = provided[len("sha256="):]
+    return hmac.compare_digest(expected, provided)
 
 
 async def _retry(fn, *args, **kwargs):

@@ -525,7 +525,6 @@ class _BillRecord(BaseModel):
     due_date: date | None
     status: str
     payment_terms: str | None = None
-    purchase_order_ref: str | None = None
     is_duplicate: bool = False
     requires_approval: bool = False
     early_payment_discount_available: bool = False
@@ -538,7 +537,6 @@ class _ClaudeBillResult(BaseModel):
     classification: Literal["routine", "suspicious", "duplicate", "approval_required"]
     recommendation: Literal["auto_pay", "request_approval", "flag_duplicate", "block", "batch_pay"]
     reasoning: str
-    missing_po: bool = False
 
 
 def _parse_ap_policy(config_json: dict) -> _APToolPolicy:
@@ -616,7 +614,7 @@ def _build_prompt(bills: list[_BillRecord], supplier_groups: list[dict]) -> str:
             "total_cents": b.total_cents, "outstanding_cents": b.outstanding_cents,
             "issue_date": b.issue_date.isoformat() if b.issue_date else None,
             "due_date": b.due_date.isoformat() if b.due_date else None,
-            "status": b.status, "purchase_order_ref": b.purchase_order_ref,
+            "status": b.status,
             "early_payment_discount_available": b.early_payment_discount_available,
             "early_payment_discount_pct": b.early_payment_discount_pct,
             "pre_flagged_duplicate": b.is_duplicate,
@@ -633,13 +631,12 @@ def _build_prompt(bills: list[_BillRecord], supplier_groups: list[dict]) -> str:
         "— one object per bill — with exactly these fields:\n"
         '  "bill_id": string, "classification": "routine"|"suspicious"|"duplicate"|"approval_required",\n'
         '  "recommendation": "auto_pay"|"request_approval"|"flag_duplicate"|"block"|"batch_pay",\n'
-        '  "reasoning": string, "missing_po": boolean\n\n'
+        '  "reasoning": string\n\n'
         "Rules:\n"
         "- pre_flagged_duplicate=true → classification duplicate, recommendation flag_duplicate\n"
         "- pre_flagged_approval_required=true → classification approval_required, recommendation request_approval\n"
         "- early_payment_discount_available=true → prioritise for same-day payment; use auto_pay if within limit\n"
         "- Multiple bills with same vendor_id → recommend batch_pay to reduce transaction costs\n"
-        "- Bill without purchase_order_ref → set missing_po=true\n"
         "- Suspicious signals: round amounts, new/unknown vendors, mismatched dates\n"
         "Return ONLY a valid JSON array. No markdown, no prose."
         + supplier_ctx
@@ -702,7 +699,6 @@ async def _execute_accounts_payable(tenant_id: str, tool_id: str, execution_id: 
             total_cents=b.total_cents, outstanding_cents=b.outstanding_cents,
             issue_date=_to_date(b.issue_date), due_date=_to_date(b.due_date),
             status=b.status, payment_terms=getattr(b, "payment_terms", None),
-            purchase_order_ref=getattr(b, "purchase_order_ref", None),
             requires_approval=b.total_cents > policy.approval_threshold_cents,
         )
         for b in raw
@@ -744,7 +740,6 @@ async def _execute_accounts_payable(tenant_id: str, tool_id: str, execution_id: 
 
     total_discount_available_minor = sum(b.early_payment_discount_cents for b in bills)
     bills_with_discount_count = sum(1 for b in bills if b.early_payment_discount_available)
-    bills_missing_po_count = sum(1 for r in claude_results if r.missing_po)
     recommended_batch_payments = [
         {
             "supplier_id": g["supplier_id"],
@@ -759,7 +754,6 @@ async def _execute_accounts_payable(tenant_id: str, tool_id: str, execution_id: 
         "bill_count": len(bills),
         "total_discount_available_minor": total_discount_available_minor,
         "bills_with_discount_count": bills_with_discount_count,
-        "bills_missing_po_count": bills_missing_po_count,
         "recommended_batch_payments": recommended_batch_payments,
         "policy": policy.model_dump(),
         "policy_overrides": policy_overrides,
@@ -781,8 +775,6 @@ async def _execute_accounts_payable(tenant_id: str, tool_id: str, execution_id: 
         actions_taken.append(f"flagged {duplicate_count} duplicate bill(s)")
     if bills_with_discount_count:
         actions_taken.append(f"identified {bills_with_discount_count} bill(s) with early payment discounts totalling {total_discount_available_minor} minor units")
-    if bills_missing_po_count:
-        actions_taken.append(f"flagged {bills_missing_po_count} bill(s) missing PO reference")
     if recommended_batch_payments:
         actions_taken.append(f"recommended {len(recommended_batch_payments)} batch payment(s)")
 

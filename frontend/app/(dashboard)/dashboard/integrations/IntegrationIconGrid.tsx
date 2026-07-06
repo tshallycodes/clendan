@@ -56,8 +56,6 @@ const DOMAINS: Record<string, string> = {
   sap:            'sap.com',
   dynamics365:    'dynamics.microsoft.com',
   'sage-intacct': 'sageintacct.com',
-  salesforce:     'salesforce.com',
-  hubspot:        'hubspot.com',
   outlook:        'outlook.com',
   onedrive:       'onedrive.live.com',
   plaid:          'plaid.com',

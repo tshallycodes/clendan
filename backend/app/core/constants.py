@@ -27,8 +27,6 @@ class ConnectorType:
     WISE = "wise"
     SQUARE = "square"
     PAYPAL = "paypal"
-    HUBSPOT = "hubspot"
-    SALESFORCE = "salesforce"
     NETSUITE = "netsuite"
     SAP = "sap"
     DYNAMICS365 = "dynamics365"

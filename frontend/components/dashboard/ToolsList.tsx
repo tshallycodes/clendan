@@ -21,15 +21,12 @@ interface DeployedTool {
 }
 
 const TOOL_NAMES: Record<string, string> = {
+  reconciliation: 'Reconciliation',
   document_intelligence: 'Document Intelligence',
   spend_control: 'Spend Control',
-  ar_collections: 'AR & Collections',
-  risk_compliance: 'Risk & Compliance',
-  treasury_cash: 'Treasury & Cash',
-  reconciliation: 'Reconciliation',
-  revenue_recognition: 'Revenue Recognition',
-  credit_underwriting: 'Credit Underwriting',
   tax_compliance: 'Tax Compliance',
+  financial_reporting: 'Financial Reporting',
+  payment_run: 'Payment Runs',
 }
 
 const AUTONOMY_STYLES: Record<string, { bg: string; text: string; border: string; label: string }> = {

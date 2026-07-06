@@ -63,12 +63,9 @@ class Settings(BaseSettings):
     mono_webhook_secret: str = ""
 
     codat_api_key: str = ""
+    codat_webhook_secret: str = ""
 
     gocardless_webhook_secret: str = ""
-
-    hubspot_client_id: str = ""
-    hubspot_client_secret: str = ""
-    hubspot_redirect_uri: str = ""
 
     google_client_id: str = ""
     google_client_secret: str = ""
@@ -112,10 +109,6 @@ class Settings(BaseSettings):
     wise_client_id: str = ""
     wise_client_secret: str = ""
 
-    salesforce_client_id: str = ""
-    salesforce_client_secret: str = ""
-    salesforce_redirect_uri: str = ""
-
     dropbox_client_id: str = ""
     dropbox_client_secret: str = ""
     dropbox_redirect_uri: str = ""
@@ -149,7 +142,6 @@ class Settings(BaseSettings):
             "quickbooks_redirect_uri": f"{base}/integrations/quickbooks/callback",
             "xero_redirect_uri": f"{base}/integrations/xero/callback",
             "truelayer_redirect_uri": f"{base}/integrations/truelayer/callback",
-            "hubspot_redirect_uri": f"{base}/integrations/hubspot/callback",
             "google_redirect_uri_gmail": f"{base}/integrations/gmail/callback",
             "google_redirect_uri_drive": f"{base}/integrations/google-drive/callback",
             "microsoft_redirect_uri": f"{base}/integrations/outlook/callback",
@@ -157,7 +149,6 @@ class Settings(BaseSettings):
             "paypal_redirect_uri": f"{base}/integrations/paypal/callback",
             "freshbooks_redirect_uri": f"{base}/integrations/freshbooks/callback",
             "sage_redirect_uri": f"{base}/integrations/sage/callback",
-            "salesforce_redirect_uri": f"{base}/integrations/salesforce/callback",
             "dropbox_redirect_uri": f"{self.frontend_url.rstrip('/')}/auth/dropbox/callback",
             "onedrive_redirect_uri": f"{base}/integrations/onedrive/callback",
             "netsuite_redirect_uri": f"{base}/integrations/netsuite/callback",
