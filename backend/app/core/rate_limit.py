@@ -2,17 +2,37 @@
 Redis sliding-window rate limiter middleware.
 Applied globally — parse endpoints get a tighter limit than general API.
 """
+import asyncio
 import hashlib
 import time
 from typing import Callable
 
+import redis.asyncio as aioredis
 from fastapi import Request, Response
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 
+from app.core.config import get_settings
 from app.core.logging import get_logger, get_trace_id
 
 _logger = get_logger(__name__)
+
+# Reuse a single Redis client (and its connection pool) across requests rather
+# than constructing one per request — building a client per call churns
+# connections and adds latency on every request.
+_redis_client: aioredis.Redis | None = None
+
+
+def _get_redis_client() -> aioredis.Redis:
+    global _redis_client
+    if _redis_client is None:
+        _redis_client = aioredis.from_url(
+            get_settings().redis_public_url,
+            socket_connect_timeout=2,
+            socket_timeout=2,
+            retry_on_timeout=False,
+        )
+    return _redis_client
 
 # Exact paths exempt from rate limiting
 _EXEMPT = {"/health", "/ready"}
@@ -63,29 +83,18 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         redis_key = f"rate:{identifier}:{bucket}"
 
         try:
-            import asyncio
-            import redis.asyncio as aioredis
-            from app.core.config import get_settings
-
-            redis_url = get_settings().redis_public_url
-            client = aioredis.from_url(
-                redis_url,
-                socket_connect_timeout=2,
-                socket_timeout=2,
-                retry_on_timeout=False,
-            )
+            client = _get_redis_client()
 
             now = int(time.time())
             window_start = now - window
 
             async def _check():
-                async with client:
-                    pipe = client.pipeline()
-                    pipe.zremrangebyscore(redis_key, 0, window_start)
-                    pipe.zadd(redis_key, {str(now): now})
-                    pipe.zcard(redis_key)
-                    pipe.expire(redis_key, window)
-                    return await pipe.execute()
+                pipe = client.pipeline()
+                pipe.zremrangebyscore(redis_key, 0, window_start)
+                pipe.zadd(redis_key, {str(now): now})
+                pipe.zcard(redis_key)
+                pipe.expire(redis_key, window)
+                return await pipe.execute()
 
             results = await asyncio.wait_for(_check(), timeout=3.0)
             count = results[2]

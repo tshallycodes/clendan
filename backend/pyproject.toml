@@ -25,6 +25,7 @@ pymupdf = "^1.24.0"
 python-docx = "^1.1.0"
 python-multipart = "^0.0.9"
 posthog = "^3.0.0"
+prometheus-client = "^0.20.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.2.0"

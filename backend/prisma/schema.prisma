@@ -154,6 +154,7 @@ model Execution {
   @@unique([tenant_id, input_ref])
   @@index([tenant_id])
   @@index([tool_id])
+  @@index([tenant_id, created_at])
 }
 
 model Approval {
@@ -172,6 +173,7 @@ model Approval {
 
   @@index([tenant_id])
   @@index([execution_id])
+  @@index([tenant_id, status])
 }
 
 model AuditLog {
@@ -189,6 +191,7 @@ model AuditLog {
 
   @@index([tenant_id])
   @@index([execution_id])
+  @@index([tenant_id, created_at])
 }
 
 model Invoice {

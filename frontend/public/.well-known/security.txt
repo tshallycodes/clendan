@@ -1,0 +1,10 @@
+# Clendan security disclosure policy (RFC 9116)
+# We welcome reports of security issues. Please report privately and give us
+# reasonable time to remediate before any public disclosure.
+
+Contact: mailto:security@clendan.com
+Expires: 2027-07-06T00:00:00.000Z
+Preferred-Languages: en
+Canonical: https://clendan.com/.well-known/security.txt
+Policy: https://clendan.com/security-policy
+Acknowledgments: https://clendan.com/security

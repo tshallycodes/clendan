@@ -96,7 +96,8 @@ def test_quickbooks_callback_success():
     with (
         patch("app.api.v1.integrations.qb.exchange_code", new=AsyncMock(return_value=fake_tokens)),
         patch("app.api.v1.integrations.qb.get_company_info", new=AsyncMock(return_value=company_info)),
-        patch("app.integrations.quickbooks.sync.sync_quickbooks_connection", new=AsyncMock()),
+        # Initial sync is now enqueued onto the arq worker, not run in-process.
+        patch("app.api.v1.integrations.get_queue_pool", new=AsyncMock(return_value=AsyncMock())),
     ):
         client = _get_client_with_overrides({get_db_dep: lambda: db_mock})
         response = client.get(

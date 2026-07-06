@@ -615,6 +615,16 @@ async def run_reconciliation_scheduled_check(_ctx: dict) -> None:
 
 
 async def startup(ctx: dict) -> None:
+    settings = get_settings()
+    if settings.sentry_dsn:
+        import sentry_sdk
+
+        sentry_sdk.init(
+            dsn=settings.sentry_dsn,
+            environment=settings.environment,
+            traces_sample_rate=0.1,
+        )
+        logger.info("sentry initialised for arq worker env=%s", settings.environment)
     await connect_db()
     logger.info("arq tool started")
 

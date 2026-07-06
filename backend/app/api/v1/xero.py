@@ -6,7 +6,7 @@ import secrets
 from datetime import datetime, UTC
 from typing import Annotated
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import RedirectResponse
 
 from pydantic import BaseModel
@@ -19,7 +19,7 @@ from app.core.responses import standard_response
 from app.core.security import RequireOrgAuth
 from app.integrations.encryption import encrypt_credentials, decrypt_credentials
 from app.integrations.xero import client as xero
-from app.integrations.xero.sync import sync_xero_connection
+from app.queue.pool import get_queue_pool
 
 logger = get_logger(__name__)
 router = APIRouter(tags=["xero"])
@@ -47,7 +47,6 @@ async def xero_connect(
 
 @router.get("/integrations/xero/callback")
 async def xero_callback(
-    background_tasks: BackgroundTasks,
     code: str = Query(...),
     state: str = Query(...),
     db: Prisma = Depends(get_db_dep),
@@ -125,7 +124,8 @@ async def xero_callback(
                 }
             )
 
-        background_tasks.add_task(sync_xero_connection, {}, integration.id, tenant_id)
+        pool = await get_queue_pool()
+        await pool.enqueue_job("sync_xero_connection", integration_id=integration.id, tenant_id=tenant_id)
         return RedirectResponse(url=f"{frontend_integrations}?connected=xero")
 
     else:
@@ -196,7 +196,6 @@ async def xero_pending_orgs(
 @router.post("/integrations/xero/select-tenant")
 async def xero_select_tenant(
     body: SelectTenantRequest,
-    background_tasks: BackgroundTasks,
     current_user: RequireOrgAuth,
     db: Annotated[Prisma, Depends(get_db_dep)],
 ):
@@ -250,7 +249,8 @@ async def xero_select_tenant(
         },
     )
 
-    background_tasks.add_task(sync_xero_connection, {}, integration.id, tenant_id)
+    pool = await get_queue_pool()
+    await pool.enqueue_job("sync_xero_connection", integration_id=integration.id, tenant_id=tenant_id)
 
     return standard_response(
         data={
@@ -289,7 +289,6 @@ async def xero_status(
 
 @router.post("/integrations/xero/sync")
 async def xero_sync(
-    background_tasks: BackgroundTasks,
     current_user: RequireOrgAuth,
     db: Annotated[Prisma, Depends(get_db_dep)],
 ):
@@ -306,7 +305,8 @@ async def xero_sync(
         )
 
     await db.integration.update(where={"id": integration.id}, data={"status": "syncing"})
-    background_tasks.add_task(sync_xero_connection, {}, integration.id, tenant_id)
+    pool = await get_queue_pool()
+    await pool.enqueue_job("sync_xero_connection", integration_id=integration.id, tenant_id=tenant_id)
     return standard_response(data={"status": "sync_queued", "integration_id": integration.id})
 
 

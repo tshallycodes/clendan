@@ -1,16 +1,18 @@
 ﻿from contextlib import asynccontextmanager
 from datetime import datetime, UTC
 import os
+import time
 import uuid
 
 import sentry_sdk
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, Response
 
 from app.core.config import get_settings
 from app.core.db import connect_db, disconnect_db
 from app.core.logging import get_logger, set_trace_id
+from app.core.metrics import metrics_payload, observe_request
 from app.core.rate_limit import RateLimitMiddleware
 from app.core.responses import standard_response
 
@@ -81,8 +83,11 @@ def create_app() -> FastAPI:
             "http_request",
             extra={"method": request.method, "path": request.url.path, "trace_id": trace_id},
         )
+        start = time.perf_counter()
+        status_code = 500
         try:
             response = await call_next(request)
+            status_code = response.status_code
         except Exception as exc:
             logger.error(
                 "http_unhandled_exception",
@@ -90,6 +95,11 @@ def create_app() -> FastAPI:
                 exc_info=True,
             )
             raise
+        finally:
+            # Label by matched route template (low cardinality), not the raw URL.
+            route = request.scope.get("route")
+            path_template = getattr(route, "path", None) or request.url.path
+            observe_request(request.method, path_template, status_code, time.perf_counter() - start)
         response.headers["X-Trace-ID"] = trace_id
         logger.info(
             "http_response",
@@ -168,6 +178,24 @@ def create_app() -> FastAPI:
   </div>
 </body>
 </html>""")
+
+    @app.get("/metrics", include_in_schema=False)
+    async def metrics():
+        payload, content_type = metrics_payload()
+        return Response(content=payload, media_type=content_type)
+
+    @app.get("/.well-known/security.txt", include_in_schema=False)
+    async def security_txt():
+        # RFC 9116 — the canonical copy lives on the primary domain; this makes
+        # the API host advertise the same disclosure contact.
+        body = (
+            "Contact: mailto:security@clendan.com\n"
+            "Expires: 2027-07-06T00:00:00.000Z\n"
+            "Preferred-Languages: en\n"
+            "Canonical: https://clendan.com/.well-known/security.txt\n"
+            "Policy: https://clendan.com/security-policy\n"
+        )
+        return Response(content=body, media_type="text/plain; charset=utf-8")
 
     @app.get("/health", tags=["health"])
     async def health():

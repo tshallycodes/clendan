@@ -7,7 +7,7 @@ import urllib.parse
 from datetime import datetime, UTC
 from typing import Annotated
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import RedirectResponse
 from prisma import Prisma
 
@@ -18,7 +18,7 @@ from app.core.responses import standard_response
 from app.core.security import RequireOrgAuth
 from app.integrations.encryption import decrypt_credentials, encrypt_credentials
 from app.integrations.freshbooks import client as fb
-from app.integrations.freshbooks.sync import sync_freshbooks_connection
+from app.queue.pool import get_queue_pool
 
 logger = get_logger(__name__)
 router = APIRouter(tags=["freshbooks"])
@@ -55,7 +55,6 @@ async def freshbooks_connect(current_user: RequireOrgAuth):
 
 @router.get("/integrations/freshbooks/callback")
 async def freshbooks_callback(
-    background_tasks: BackgroundTasks,
     code: str = Query(...),
     state: str = Query(...),
     db: Prisma = Depends(get_db_dep),
@@ -126,7 +125,8 @@ async def freshbooks_callback(
             }
         )
 
-    background_tasks.add_task(sync_freshbooks_connection, {}, integration.id, tenant_id)
+    pool = await get_queue_pool()
+    await pool.enqueue_job("sync_freshbooks_connection", integration_id=integration.id, tenant_id=tenant_id)
 
     frontend_url = get_settings().frontend_url.rstrip("/")
     return RedirectResponse(url=f"{frontend_url}/dashboard/integrations?connected=freshbooks")
@@ -155,7 +155,6 @@ async def freshbooks_status(
 
 @router.post("/integrations/freshbooks/sync")
 async def freshbooks_sync(
-    background_tasks: BackgroundTasks,
     current_user: RequireOrgAuth,
     db: Annotated[Prisma, Depends(get_db_dep)],
 ):
@@ -168,7 +167,8 @@ async def freshbooks_sync(
     if not integration:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No active FreshBooks connection found")
 
-    background_tasks.add_task(sync_freshbooks_connection, {}, integration.id, tenant_id)
+    pool = await get_queue_pool()
+    await pool.enqueue_job("sync_freshbooks_connection", integration_id=integration.id, tenant_id=tenant_id)
     return standard_response(data={"status": "sync_queued", "integration_id": integration.id})
 
 

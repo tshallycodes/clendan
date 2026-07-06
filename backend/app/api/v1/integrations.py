@@ -2,7 +2,7 @@ import secrets
 from datetime import datetime, UTC
 from typing import Annotated
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import RedirectResponse
 
 from prisma import Prisma
@@ -12,6 +12,7 @@ from app.core.db import get_db_dep
 from app.core.logging import get_logger
 from app.core.responses import standard_response
 from app.core.security import RequireOrgAuth, CurrentUser
+from app.queue.pool import get_queue_pool
 from app.integrations.quickbooks import client as qb
 from app.integrations.xero import client as xero
 from app.integrations.encryption import decrypt_credentials, encrypt_credentials
@@ -46,7 +47,6 @@ async def quickbooks_connect(
 
 @router.get("/integrations/quickbooks/callback")
 async def quickbooks_callback(
-    background_tasks: BackgroundTasks,
     code: str = Query(...),
     state: str = Query(...),
     realm_id: str = Query(..., alias="realmId"),
@@ -123,8 +123,8 @@ async def quickbooks_callback(
             "QB company info fetch failed after connect: %s", type(exc).__name__
         )
 
-    from app.integrations.quickbooks.sync import sync_quickbooks_connection
-    background_tasks.add_task(sync_quickbooks_connection, {}, integration.id, tenant_id)
+    pool = await get_queue_pool()
+    await pool.enqueue_job("sync_quickbooks_connection", integration_id=integration.id, tenant_id=tenant_id)
 
     return RedirectResponse(url=f"{_frontend_url}/dashboard/integrations?connected=quickbooks")
 
@@ -154,7 +154,6 @@ async def quickbooks_status(
 
 @router.post("/integrations/quickbooks/sync")
 async def quickbooks_sync(
-    background_tasks: BackgroundTasks,
     current_user: RequireOrgAuth,
     db: Annotated[Prisma, Depends(get_db_dep)],
 ):
@@ -168,8 +167,8 @@ async def quickbooks_sync(
             detail="No active QuickBooks integration found",
         )
 
-    from app.integrations.quickbooks.sync import sync_quickbooks_connection
-    background_tasks.add_task(sync_quickbooks_connection, {}, integration.id, current_user.tenant_id)
+    pool = await get_queue_pool()
+    await pool.enqueue_job("sync_quickbooks_connection", integration_id=integration.id, tenant_id=current_user.tenant_id)
     return standard_response(data={"status": "sync_queued", "integration_id": integration.id})
 
 
@@ -198,7 +197,6 @@ async def xero_connect(
 
 @router.get("/integrations/xero/callback")
 async def xero_callback(
-    background_tasks: BackgroundTasks,
     db: Prisma = Depends(get_db_dep),
     code: str | None = Query(default=None),
     state: str | None = Query(default=None),
@@ -289,8 +287,8 @@ async def xero_callback(
 
     logger.info("xero_connected tenant=%s org=%s", tenant_id, creds.get("org_name"))
 
-    from app.integrations.xero.sync import sync_xero_connection
-    background_tasks.add_task(sync_xero_connection, {}, integration.id, tenant_id)
+    pool = await get_queue_pool()
+    await pool.enqueue_job("sync_xero_connection", integration_id=integration.id, tenant_id=tenant_id)
 
     return RedirectResponse(url=f"{_frontend_url}/dashboard/integrations?connected=xero")
 
@@ -320,7 +318,6 @@ async def xero_status(
 
 @router.post("/integrations/xero/sync")
 async def xero_sync(
-    background_tasks: BackgroundTasks,
     current_user: RequireOrgAuth,
     db: Annotated[Prisma, Depends(get_db_dep)],
 ):
@@ -334,8 +331,8 @@ async def xero_sync(
             detail="No active Xero integration found",
         )
 
-    from app.integrations.xero.sync import sync_xero_connection
-    background_tasks.add_task(sync_xero_connection, {}, integration.id, current_user.tenant_id)
+    pool = await get_queue_pool()
+    await pool.enqueue_job("sync_xero_connection", integration_id=integration.id, tenant_id=current_user.tenant_id)
     return standard_response(data={"status": "sync_queued", "integration_id": integration.id})
 
 
