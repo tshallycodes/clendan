@@ -1,41 +1,49 @@
 'use client'
 
+import { Fragment, useState } from 'react'
 import Link from 'next/link'
 import { ArrowRight } from '@phosphor-icons/react'
 import { motion } from 'framer-motion'
+import { useAuth } from '@clerk/nextjs'
+import { useToast } from '@/components/Providers'
 import { WORKFLOWS, toolsForWorkflow, TOOLS, type ToolDef } from './tools-data'
 import type { Tool } from '@/components/dashboard/tools/ToolCard'
 
-interface Props {
-  deployedTools: Tool[]
+const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+
+export interface WorkflowConnection {
+  from_type: string
+  to_type: string
+  enabled: boolean
 }
 
-const pageVariants = {
-  hidden: {},
-  show: { transition: { staggerChildren: 0.07 } },
+interface Props {
+  deployedTools: Tool[]
+  connections: WorkflowConnection[]
 }
+
+const pageVariants = { hidden: {}, show: { transition: { staggerChildren: 0.07 } } }
 const sectionVariants = {
   hidden: { opacity: 0, y: 14 },
   show: { opacity: 1, y: 0, transition: { duration: 0.38, ease: [0.25, 0.46, 0.45, 0.94] as const } },
 }
-const gridVariants = {
-  hidden: {},
-  show: { transition: { staggerChildren: 0.07 } },
-}
+const gridVariants = { hidden: {}, show: { transition: { staggerChildren: 0.07 } } }
 const cardVariants = {
   hidden: { opacity: 0, y: 16, scale: 0.98 },
   show: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.35, ease: [0.25, 0.46, 0.45, 0.94] as const } },
 }
+
+const edgeKey = (from: string, to: string) => `${from}->${to}`
 
 function ToolCard({ tool, deployed, step }: { tool: ToolDef; deployed: Tool | undefined; step: number }) {
   const isActive = deployed?.status === 'active'
   const isInactive = deployed && !isActive
 
   return (
-    <motion.div variants={cardVariants} className="h-full">
+    <motion.div variants={cardVariants} className="flex-1 min-w-0 flex">
       <Link
         href={`/tools/${tool.slug}`}
-        className={`group bg-brand-surface border border-brand-border rounded-sm p-4 flex flex-col gap-3 hover:bg-brand-elevated transition-colors h-full ${
+        className={`group bg-brand-surface border border-brand-border rounded-sm p-4 flex flex-col gap-3 hover:bg-brand-elevated transition-colors w-full ${
           isActive ? 'border-l-[3px] border-l-[#00C853]' : isInactive ? 'border-l-[3px] border-l-brand-border' : ''
         }`}
       >
@@ -62,9 +70,7 @@ function ToolCard({ tool, deployed, step }: { tool: ToolDef; deployed: Tool | un
         <p className="text-[12px] font-body text-brand-muted leading-relaxed flex-1">{tool.desc}</p>
 
         <div className="flex items-center justify-between">
-          <span className="text-[11px] font-body text-brand-muted">
-            {tool.capabilities.length} capabilities
-          </span>
+          <span className="text-[11px] font-body text-brand-muted">{tool.capabilities.length} capabilities</span>
           <span className="flex items-center gap-1 text-[11px] font-body text-brand-muted group-hover:text-brand-secondary transition-colors">
             {deployed ? 'Configure' : 'Deploy'} <ArrowRight className="w-3 h-3" />
           </span>
@@ -74,7 +80,42 @@ function ToolCard({ tool, deployed, step }: { tool: ToolDef; deployed: Tool | un
   )
 }
 
-export function ToolsClient({ deployedTools }: Props) {
+function Connector({ enabled, pending, onToggle }: { enabled: boolean; pending: boolean; onToggle: () => void }) {
+  return (
+    <div className="flex flex-row lg:flex-col items-center justify-center gap-2 lg:gap-1.5 py-3 lg:py-0 lg:px-2 shrink-0">
+      <ArrowRight
+        weight="bold"
+        className={`w-4 h-4 rotate-90 lg:rotate-0 transition-all ${enabled ? 'text-brand-secondary' : 'text-brand-muted opacity-40'}`}
+      />
+      <button
+        type="button"
+        role="switch"
+        aria-checked={enabled}
+        aria-label={enabled ? 'Auto-handoff on — click to disable' : 'Auto-handoff off — click to enable'}
+        title={enabled ? 'Connected — upstream auto-runs the next tool' : 'Disconnected — tools run independently'}
+        onClick={onToggle}
+        disabled={pending}
+        className={`relative w-9 h-5 rounded-full transition-colors shrink-0 disabled:opacity-50 ${
+          enabled ? 'bg-[#00C853]' : 'bg-brand-border'
+        }`}
+      >
+        <span
+          className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform ${
+            enabled ? 'translate-x-4' : 'translate-x-0'
+          }`}
+        />
+      </button>
+      <span className="text-[9px] font-body uppercase tracking-widest text-brand-muted">
+        {enabled ? 'auto' : 'manual'}
+      </span>
+    </div>
+  )
+}
+
+export function ToolsClient({ deployedTools, connections }: Props) {
+  const { getToken } = useAuth()
+  const { toast } = useToast()
+
   // One record per tool type — prefer an active deployment if the backend returns several.
   const deployedByType = new Map<string, Tool>()
   for (const d of deployedTools) {
@@ -85,12 +126,43 @@ export function ToolsClient({ deployedTools }: Props) {
   }
   const totalDeployed = TOOLS.filter((t) => deployedByType.get(t.type)?.status === 'active').length
 
+  const [connMap, setConnMap] = useState<Record<string, boolean>>(() => {
+    const m: Record<string, boolean> = {}
+    for (const c of connections) m[edgeKey(c.from_type, c.to_type)] = c.enabled
+    return m
+  })
+  const [pendingEdge, setPendingEdge] = useState<string | null>(null)
+
+  const isEnabled = (from: string, to: string) => connMap[edgeKey(from, to)] ?? true
+
+  async function toggleConnection(from: string, to: string) {
+    const key = edgeKey(from, to)
+    const current = isEnabled(from, to)
+    const next = !current
+    setConnMap((m) => ({ ...m, [key]: next }))
+    setPendingEdge(key)
+    try {
+      const token = await getToken()
+      const res = await fetch(`${API}/workflows/connections`, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ from_type: from, to_type: to, enabled: next }),
+      })
+      if (!res.ok) throw new Error(`${res.status}`)
+    } catch {
+      setConnMap((m) => ({ ...m, [key]: current })) // revert
+      toast('Could not update connection', 'error')
+    } finally {
+      setPendingEdge(null)
+    }
+  }
+
   return (
     <motion.div variants={pageVariants} initial="hidden" animate="show" className="p-6 space-y-10">
       <motion.div variants={sectionVariants}>
         <h1 className="font-heading font-bold text-2xl text-brand-text">Tools</h1>
         <p className="text-xs font-body text-brand-muted mt-1 leading-relaxed max-w-xl">
-          Autonomous AI agents grouped by the two workflows they run end-to-end: accounts payable feeds month-end close. Each tool runs independently, routes decisions through the policy engine, and writes a full audit trail before taking any action.
+          Autonomous AI agents grouped by the two workflows they run end-to-end: accounts payable feeds month-end close. Toggle the connection between two tools to control whether a successful run automatically hands off to the next.
         </p>
         <p className="text-[11px] font-body text-brand-muted mt-2">
           {totalDeployed} of {TOOLS.length} deployed across {WORKFLOWS.length} workflows
@@ -116,15 +188,22 @@ export function ToolsClient({ deployedTools }: Props) {
               </span>
             </div>
 
-            <motion.div variants={gridVariants} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              {tools.map((tool, i) => (
-                <ToolCard
-                  key={tool.slug}
-                  tool={tool}
-                  step={i + 1}
-                  deployed={deployedByType.get(tool.type)}
-                />
-              ))}
+            <motion.div variants={gridVariants} className="flex flex-col lg:flex-row lg:items-stretch">
+              {tools.map((tool, i) => {
+                const next = tools[i + 1]
+                return (
+                  <Fragment key={tool.slug}>
+                    <ToolCard tool={tool} step={i + 1} deployed={deployedByType.get(tool.type)} />
+                    {next && (
+                      <Connector
+                        enabled={isEnabled(tool.type, next.type)}
+                        pending={pendingEdge === edgeKey(tool.type, next.type)}
+                        onToggle={() => toggleConnection(tool.type, next.type)}
+                      />
+                    )}
+                  </Fragment>
+                )
+              })}
             </motion.div>
           </motion.section>
         )

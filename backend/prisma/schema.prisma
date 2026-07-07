@@ -61,6 +61,25 @@ model Tenant {
   payroll_runs            PayrollRun[]
   journal_entries         JournalEntry[]
   category_corrections    CategoryCorrection[]
+  workflow_connections    WorkflowConnection[]
+}
+
+// A toggleable auto-handoff between two consecutive tools in a workflow.
+// When enabled, the upstream tool auto-advances to the downstream tool on
+// a successful (auto_approved) run — via the event bus, never a direct call.
+// Absence of a row means the connection is enabled (default on).
+model WorkflowConnection {
+  id         String   @id @default(cuid())
+  tenant_id  String
+  from_type  String
+  to_type    String
+  enabled    Boolean  @default(true)
+  updated_at DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenant_id], references: [id])
+
+  @@unique([tenant_id, from_type, to_type])
+  @@index([tenant_id])
 }
 
 model User {

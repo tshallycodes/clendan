@@ -72,4 +72,15 @@ async def complete_execution(
                 "expires_at": datetime.now(UTC) + timedelta(seconds=settings.approval_ttl_seconds),
             })
 
+    # Auto-advance to the next tool in the workflow if the connection is enabled.
+    # Event-based (never a direct tool call) and never raises — see core/workflow.py.
+    from app.core.workflow import advance_workflow
+    await advance_workflow(
+        db=db,
+        tenant_id=tenant_id,
+        tool_id=tool_id,
+        from_execution_id=execution_id,
+        final_decision=final,
+    )
+
     return final

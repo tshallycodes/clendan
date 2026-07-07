@@ -440,7 +440,10 @@ async def run_expense_control_job(
     execution_id: str,
     tenant_id: str,
     tool_id: str,
+    transaction_ids: list[str] | None = None,
 ) -> dict:
+    # transaction_ids is accepted for dispatch compatibility (the tool_type and
+    # event paths both pass it); this job scans all pending expenses regardless.
     db = get_db()
     settings_obj = get_settings()
     start_ms = int(time.time() * 1000)
@@ -466,6 +469,16 @@ async def run_expense_control_job(
                     + timedelta(seconds=settings_obj.approval_ttl_seconds),
                 }
             )
+        # This job finalizes inline (not via complete_execution), so advance the
+        # workflow explicitly. Event-based, never raises — see core/workflow.py.
+        from app.core.workflow import advance_workflow
+        await advance_workflow(
+            db=db,
+            tenant_id=tenant_id,
+            tool_id=tool_id,
+            from_execution_id=execution_id,
+            final_decision=result["decision"],
+        )
         return result
     except Exception as exc:
         try:

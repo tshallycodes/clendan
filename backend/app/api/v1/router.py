@@ -66,6 +66,7 @@ from app.api.v1.payroll_reconciliation import router as payroll_rec_router
 from app.api.v1.journal_entries import router as journal_entries_router
 from app.api.v1.billing import router as billing_router
 from app.api.v1.webhooks.stripe_billing import router as stripe_billing_webhook_router
+from app.api.v1.workflows import router as workflows_router
 
 v1_router = APIRouter()
 v1_router.include_router(onboarding.router)
@@ -138,4 +139,5 @@ v1_router.include_router(payroll_rec_router)
 v1_router.include_router(journal_entries_router)
 v1_router.include_router(billing_router)
 v1_router.include_router(stripe_billing_webhook_router)
+v1_router.include_router(workflows_router)
 v1_router.include_router(generic_router)  # must be last — uses {slug} path params
