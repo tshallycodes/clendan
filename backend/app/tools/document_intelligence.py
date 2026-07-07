@@ -259,8 +259,14 @@ async def run_document_intelligence_job(
     file_bytes: bytes,
     content_type: str,
     document_id: str | None = None,
+    policy_config: dict | None = None,
 ) -> dict:
-    """arq job entry point. Classifies then routes to receipt or document processing."""
+    """arq job entry point. Classifies then routes to receipt or document processing.
+
+    policy_config is supplied by the document_received auto-ingest path
+    (run_document_received_job); the direct-upload path omits it and the policy is
+    read from the tool's tenant-scoped DB config instead.
+    """
     db = get_db()
     _start = time.monotonic()
     _logger.debug("doc_intel_job_start", extra={
@@ -269,8 +275,11 @@ async def run_document_intelligence_job(
     })
 
     try:
-        tool = await db.tool.find_first(where={"id": tool_id, "tenant_id": tenant_id})
-        policy = _parse_policy(tool.config_json if tool and isinstance(tool.config_json, dict) else {})
+        if policy_config is not None:
+            policy = _parse_policy(policy_config)
+        else:
+            tool = await db.tool.find_first(where={"id": tool_id, "tenant_id": tenant_id})
+            policy = _parse_policy(tool.config_json if tool and isinstance(tool.config_json, dict) else {})
 
         classification = await _classify_document(file_bytes, content_type)
         doc_type = classification.get("type", "error")

@@ -1,12 +1,26 @@
 """
 Payment Run Tool — sub-agent tool. Dispatched directly to its arq job.
-Identifies approved bills due within the policy window, creates a PaymentRun record,
-and routes oversized bills for human approval before any payment is scheduled.
+Identifies approved bills due within the policy window, creates an immutable
+PaymentRun record per batch, and routes oversized bills for human approval.
+
+LIVE-PAYOUT BOUNDARY (intentionally gated):
+    This tool SCHEDULES and RECORDS payment intent only. It never moves money —
+    no payment-rail / disbursement API is called anywhere in this module. A
+    PaymentRun row with status="scheduled" is the terminal state produced here.
+    Actual disbursement is a separate, deliberately unimplemented step. Do NOT
+    add a payment-rail "send" call to this file.
+
+ROLLBACK:
+    Because no money moves, a scheduled PaymentRun is fully reversible before any
+    (future) disbursement: set its status to "cancelled" to void the batch. The
+    append-only AuditLog and Execution records are always retained, never mutated.
 """
 from __future__ import annotations
 
 import asyncio
 import json
+import os
+import random
 import time
 from datetime import UTC, date, datetime, timedelta
 from typing import Literal
@@ -142,7 +156,13 @@ def _build_prompt(summaries: list[_BillSummary], policy: _ToolPolicy) -> str:
 
 
 async def _call_claude(summaries: list[_BillSummary], policy: _ToolPolicy, settings_obj) -> _ClaudeBatchResult:
-    client = AsyncAnthropic(api_key=settings_obj.anthropic_api_key)
+    api_key = settings_obj.anthropic_api_key or os.environ.get("ANTHROPIC_API_KEY")
+    if not api_key:
+        raise RuntimeError(
+            "ANTHROPIC_API_KEY is not configured. "
+            "Set it as an environment variable on the worker service."
+        )
+    client = AsyncAnthropic(api_key=api_key)
     prompt = _build_prompt(summaries, policy)
     last_exc: Exception | None = None
 
@@ -153,13 +173,23 @@ async def _call_claude(summaries: list[_BillSummary], policy: _ToolPolicy, setti
                 max_tokens=512,
                 messages=[{"role": "user", "content": prompt}],
             )
-            raw = json.loads(message.content[0].text.strip())
-            return _ClaudeBatchResult(**raw)
+            raw_text = message.content[0].text.strip() if message.content else ""
+            # Defensive: strip markdown code fences if the model wraps its JSON.
+            if raw_text.startswith("```"):
+                raw_text = raw_text.split("```")[1]
+                if raw_text.startswith("json"):
+                    raw_text = raw_text[4:]
+                raw_text = raw_text.strip()
+            if not raw_text:
+                raise ValueError("Claude returned an empty response")
+            return _ClaudeBatchResult(**json.loads(raw_text))
         except (APIStatusError, APIConnectionError) as exc:
             last_exc = exc
             logger.error("claude_api_error", extra={"attempt": attempt + 1, "error": str(exc)})
             if attempt < settings_obj.max_agent_attempts - 1:
-                await asyncio.sleep(settings_obj.backoff_seconds * (attempt + 1))
+                # Exponential backoff with jitter — avoids synchronized retry storms.
+                backoff = settings_obj.backoff_seconds * (2 ** attempt)
+                await asyncio.sleep(backoff + random.uniform(0, settings_obj.backoff_seconds))
         except (json.JSONDecodeError, ValueError, KeyError) as exc:
             raise RuntimeError(f"Claude returned unparseable response: {exc}") from exc
 
@@ -232,19 +262,6 @@ async def _execute(tenant_id: str, tool_id: str, execution_id: str, payload: dic
     total_approval_cents = sum(s.outstanding_cents for s in needs_approval)
     scheduled_bill_ids = [s.id for s in scheduled]
 
-    if scheduled_bill_ids:
-        await db.paymentrun.create(
-            data={
-                "tenant_id": tenant_id,
-                "execution_id": execution_id,
-                "status": "scheduled",
-                "scheduled_for": datetime.now(UTC) + timedelta(days=1),
-                "bill_count": len(scheduled_bill_ids),
-                "total_amount_cents": total_auto_cents,
-                "bill_ids": scheduled_bill_ids,
-            }
-        )
-
     has_risk = bool(claude_result.risk_flags) or not claude_result.batch_valid
     has_approval_bills = bool(needs_approval)
 
@@ -268,6 +285,7 @@ async def _execute(tenant_id: str, tool_id: str, execution_id: str, payload: dic
         "per_bill": [s.model_dump() for s in active_summaries],
     }
 
+    # Audit BEFORE any financial-record write — if audit fails, nothing is scheduled.
     await write_audit_log(
         tenant_id=tenant_id,
         actor=_ACTOR,
@@ -276,6 +294,27 @@ async def _execute(tenant_id: str, tool_id: str, execution_id: str, payload: dic
         model_version=_MODEL_VERSION,
         execution_id=execution_id,
     )
+
+    # Record the scheduled batch. This SCHEDULES/RECORDS payment intent only —
+    # no money is moved here (see LIVE-PAYOUT BOUNDARY in the module docstring).
+    # Idempotent per execution: a job retry re-runs _execute fully, so guard on
+    # execution_id to avoid double-creating the batch record.
+    if scheduled_bill_ids:
+        existing_run = await db.paymentrun.find_first(
+            where={"tenant_id": tenant_id, "execution_id": execution_id}
+        )
+        if existing_run is None:
+            await db.paymentrun.create(
+                data={
+                    "tenant_id": tenant_id,
+                    "execution_id": execution_id,
+                    "status": "scheduled",
+                    "scheduled_for": datetime.now(UTC) + timedelta(days=1),
+                    "bill_count": len(scheduled_bill_ids),
+                    "total_amount_cents": total_auto_cents,
+                    "bill_ids": scheduled_bill_ids,
+                }
+            )
 
     actions_taken = [f"scanned {len(bills)} bills, {len(scheduled)} scheduled, {len(needs_approval)} need approval"]
     if scheduled_bill_ids:
@@ -302,7 +341,6 @@ async def run_payment_run_job(
     policy_config: dict,
 ) -> dict:
     db = get_db()
-    settings_obj = get_settings()
     start_ms = int(time.time() * 1000)
 
     try:
@@ -315,13 +353,17 @@ async def run_payment_run_job(
         )
         return result
     except Exception as exc:
+        logger.error(
+            "payment_run_job_failed",
+            extra={"execution_id": execution_id, "tenant_id": tenant_id, "error": str(exc)},
+        )
         try:
             await db.execution.update(
                 where={"id": execution_id},
-                data={"status": "failed", "decision": "failed"},
+                data={"status": "failed", "decision": "failed", "error_message": str(exc)[:2000]},
             )
-        except Exception:
-            pass
+        except Exception as db_exc:
+            logger.error("payment_run_db_update_failed", extra={"error": str(db_exc)})
         if ctx.get("job_try", 1) >= 3:
             await push_to_dlq(
                 job_id=str(ctx.get("job_id", "unknown")),

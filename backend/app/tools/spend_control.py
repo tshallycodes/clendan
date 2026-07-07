@@ -19,6 +19,7 @@ from pydantic import BaseModel
 from app.audit.logger import write_audit_log
 from app.core.config import get_settings
 from app.core.db import get_db
+from app.core.execution import complete_execution
 from app.core.logging import get_logger
 from app.queue.pool import push_to_dlq
 from app.tools.base import BaseTool, ToolOutput, ToolType
@@ -445,41 +446,20 @@ async def run_expense_control_job(
     # transaction_ids is accepted for dispatch compatibility (the tool_type and
     # event paths both pass it); this job scans all pending expenses regardless.
     db = get_db()
-    settings_obj = get_settings()
     start_ms = int(time.time() * 1000)
 
     try:
         result = await _execute_expense_control(tenant_id, tool_id, execution_id)
         duration_ms = int(time.time() * 1000) - start_ms
-        await db.execution.update(
-            where={"id": execution_id},
-            data={
-                "status": "completed",
-                "decision": result["decision"],
-                "confidence": result["confidence"],
-                "duration_ms": duration_ms,
-            },
+        # complete_execution applies the autonomy override, writes the final decision,
+        # creates the Approval when required, and advances the workflow (advance_workflow
+        # is called inside it) — the single canonical finalization path for every tool.
+        final_decision = await complete_execution(
+            db=db, execution_id=execution_id, tool_id=tool_id,
+            tenant_id=tenant_id, decision=result["decision"],
+            confidence=result["confidence"], duration_ms=duration_ms,
         )
-        if result["decision"] == "approval_required":
-            await db.approval.create(
-                data={
-                    "tenant_id": tenant_id,
-                    "execution_id": execution_id,
-                    "expires_at": datetime.now(UTC)
-                    + timedelta(seconds=settings_obj.approval_ttl_seconds),
-                }
-            )
-        # This job finalizes inline (not via complete_execution), so advance the
-        # workflow explicitly. Event-based, never raises — see core/workflow.py.
-        from app.core.workflow import advance_workflow
-        await advance_workflow(
-            db=db,
-            tenant_id=tenant_id,
-            tool_id=tool_id,
-            from_execution_id=execution_id,
-            final_decision=result["decision"],
-        )
-        return result
+        return {**result, "decision": final_decision}
     except Exception as exc:
         try:
             await db.execution.update(
@@ -802,21 +782,18 @@ async def _execute_accounts_payable(tenant_id: str, tool_id: str, execution_id: 
 
 async def run_accounts_payable_job(ctx: dict, *, execution_id: str, tenant_id: str, tool_id: str, payload: dict, policy_config: dict) -> dict:
     db = get_db()
-    settings_obj = get_settings()
     start_ms = int(time.time() * 1000)
     try:
         result = await _execute_accounts_payable(tenant_id, tool_id, execution_id, payload)
         duration_ms = int(time.time() * 1000) - start_ms
-        await db.execution.update(
-            where={"id": execution_id},
-            data={"status": "completed", "decision": result["decision"], "confidence": result["confidence"], "duration_ms": duration_ms},
+        # Canonical finalization: complete_execution applies the autonomy override,
+        # writes the final decision, and creates the Approval when required.
+        final_decision = await complete_execution(
+            db=db, execution_id=execution_id, tool_id=tool_id,
+            tenant_id=tenant_id, decision=result["decision"],
+            confidence=result["confidence"], duration_ms=duration_ms,
         )
-        if result["decision"] == "approval_required":
-            await db.approval.create(data={
-                "tenant_id": tenant_id, "execution_id": execution_id,
-                "expires_at": datetime.now(UTC) + timedelta(seconds=settings_obj.approval_ttl_seconds),
-            })
-        return result
+        return {**result, "decision": final_decision}
     except Exception as exc:
         try:
             await db.execution.update(where={"id": execution_id}, data={"status": "failed", "decision": "failed"})

@@ -26,6 +26,12 @@ _ACTOR = "tool:financial_reporting:v1"
 _MODEL_VERSION = "financial_reporting-v1"
 TOOL_TYPE = ToolType.FINANCIAL_REPORTING
 
+# Canonical payment_type values written by the accounting sync layer
+# (Xero / QuickBooks / FreshBooks — see app/integrations/*/persist.py).
+# Inflows = money received from customers; outflows = money paid to suppliers.
+_INFLOW_PAYMENT_TYPES = frozenset({"received"})
+_OUTFLOW_PAYMENT_TYPES = frozenset({"made"})
+
 
 class _ToolPolicy(BaseModel):
     lookback_days: int = 30
@@ -80,8 +86,8 @@ def _build_snapshot(invoices, bills, expenses, payments, bank_accounts, p_start:
     total_bank_balance_cents = sum(acc.current_balance_minor for acc in bank_accounts)
     total_assets_cents = total_bank_balance_cents + outstanding_ar_cents
     total_liabilities_cents = outstanding_ap_cents
-    cash_inflows_cents = sum(p.amount_cents for p in payments if p.payment_type == "receipt" and in_period(p.paid_at))
-    cash_outflows_cents = sum(p.amount_cents for p in payments if p.payment_type == "payment" and in_period(p.paid_at))
+    cash_inflows_cents = sum(p.amount_cents for p in payments if p.payment_type in _INFLOW_PAYMENT_TYPES and in_period(p.paid_at))
+    cash_outflows_cents = sum(p.amount_cents for p in payments if p.payment_type in _OUTFLOW_PAYMENT_TYPES and in_period(p.paid_at))
     return _FinancialSnapshot(
         period_start=p_start.date().isoformat(), period_end=p_end.date().isoformat(),
         revenue_cents=revenue_cents, outstanding_ar_cents=outstanding_ar_cents,

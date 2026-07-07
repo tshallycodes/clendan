@@ -73,6 +73,12 @@ async def ask_clen(
     """Answer a follow-up question about a completed document using its extracted analysis."""
     tenant_id = current_user.tenant_id
 
+    if not body.question or not body.question.strip():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Question must not be empty",
+        )
+
     doc = await db.document.find_unique(where={"id": document_id})
     if not doc or doc.tenant_id != tenant_id:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
@@ -99,21 +105,37 @@ async def ask_clen(
     document_context = "\n".join(context_parts)
 
     settings = get_settings()
-    client = anthropic.AsyncAnthropic(api_key=settings.anthropic_api_key)
-    message = await client.messages.create(
-        model=settings.claude_model,
-        max_tokens=1500,
-        system=(
-            "You are Clen, an AI assistant for Clendan. "
-            "You are answering a follow-up question about a document based on its extracted analysis. "
-            "Use the document context to give a specific, accurate, and concise answer. "
-            "If you cannot answer based on the available information, say so clearly."
-        ),
-        messages=[{
-            "role": "user",
-            "content": f"Document context:\n{document_context}\n\nQuestion: {body.question}",
-        }],
-    )
+    client = anthropic.AsyncAnthropic(api_key=settings.anthropic_api_key, timeout=60.0)
+    try:
+        message = await client.messages.create(
+            model=settings.claude_model,
+            max_tokens=1500,
+            system=(
+                "You are Clen, an AI assistant for Clendan. "
+                "You are answering a follow-up question about a document based on its extracted analysis. "
+                "Use the document context to give a specific, accurate, and concise answer. "
+                "If you cannot answer based on the available information, say so clearly."
+            ),
+            messages=[{
+                "role": "user",
+                "content": f"Document context:\n{document_context}\n\nQuestion: {body.question}",
+            }],
+        )
+    except (anthropic.APIStatusError, anthropic.APIConnectionError) as exc:
+        _logger.error(
+            "doc_intel_ask_clen_failed",
+            extra={"tenant_id": tenant_id, "document_id": document_id, "error": type(exc).__name__},
+        )
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="The AI service is temporarily unavailable. Please try again.",
+        ) from exc
+
+    if not message.content:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="The AI service returned an empty response. Please try again.",
+        )
     answer: str = message.content[0].text
 
     _logger.info("doc_intel_ask_clen", extra={"tenant_id": tenant_id, "document_id": document_id})

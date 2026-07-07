@@ -27,6 +27,7 @@ _MODEL_VERSION = "tax_compliance-v1"
 TOOL_TYPE = ToolType.TAX_COMPLIANCE
 
 _LOOKBACK_DAYS = 90
+_MAX_LOOKBACK_DAYS = 3660  # ~10 years — generous upper bound guarding against absurd windows
 _CLASSIFICATION_MISSING_VAT = "missing_vat"
 _CLASSIFICATION_EXEMPT = "exempt"
 
@@ -41,6 +42,22 @@ def _parse_policy(config_json: dict) -> _ToolPolicy:
     return _ToolPolicy(**{k: v for k, v in raw.items() if k in _ToolPolicy.model_fields})
 
 
+def _coerce_lookback_days(raw) -> int:
+    """Validate the lookback window from an untrusted payload (system boundary).
+
+    Falls back to the default on any non-integer, non-positive, or out-of-range value.
+    A negative window would silently compute against a future date range and return no
+    data while reporting success, so it is rejected rather than passed through.
+    """
+    try:
+        days = int(raw)
+    except (TypeError, ValueError):
+        return _LOOKBACK_DAYS
+    if days < 1:
+        return _LOOKBACK_DAYS
+    return min(days, _MAX_LOOKBACK_DAYS)
+
+
 def _detect_filing_period(lookback_days: int, reference_date: datetime) -> tuple[str, str]:
     """Determine filing period and human-readable label from lookback window."""
     if lookback_days <= 31:
@@ -52,14 +69,37 @@ def _detect_filing_period(lookback_days: int, reference_date: datetime) -> tuple
 
 
 def _flag_missing_tax(rows, threshold_cents: int, id_field: str = "id") -> list[dict]:
-    """Return records where tax_cents == 0 and total > threshold."""
+    """Flag records that track tax but have tax_cents == 0 and total >= threshold.
+
+    Records whose model does not persist a tax figure (e.g. AccountingBill has no
+    tax_cents column) are skipped: an absent tax field is not evidence of a missing
+    tax code, and flagging every such record would produce systematic false positives.
+    Invoices and expenses persist tax_cents (Int, non-nullable), so a genuine 0 there
+    is a real missing-tax signal.
+    """
     flagged = []
     for r in rows:
-        tax = getattr(r, "tax_cents", None) or 0
+        tax = getattr(r, "tax_cents", None)
+        if tax is None:
+            continue  # model does not track tax — cannot assess a missing tax code
         total = getattr(r, "total_cents", None) or getattr(r, "amount_cents", None) or 0
         if tax == 0 and total >= threshold_cents:
             flagged.append({"id": getattr(r, id_field), "total_cents": total})
     return flagged
+
+
+def _compute_vat_position(invoices, bills, expenses) -> tuple[int, int, int]:
+    """Deterministic VAT position in integer minor units — never float.
+
+    Output VAT (collected) = sum of invoice tax; input VAT (reclaimable) = sum of
+    bill + expense tax. AccountingBill does not persist tax_cents, so bills contribute
+    0 until the schema/sync supply it. Returns (output_vat, input_vat, net_liability).
+    """
+    output_vat = sum(getattr(inv, "tax_cents", None) or 0 for inv in invoices)
+    input_vat = sum((getattr(b, "tax_cents", None) or 0) for b in bills) + sum(
+        (getattr(e, "tax_cents", None) or 0) for e in expenses
+    )
+    return output_vat, input_vat, output_vat - input_vat
 
 
 def _build_prompt(
@@ -150,7 +190,7 @@ async def _execute(tenant_id: str, tool_id: str, execution_id: str, payload: dic
         raise ValueError(f"Tool {tool_id} not found for tenant {tenant_id}")
 
     policy = _parse_policy(tool.config_json if isinstance(tool.config_json, dict) else {})
-    lookback_days: int = payload.get("lookback_days", _LOOKBACK_DAYS)
+    lookback_days = _coerce_lookback_days(payload.get("lookback_days", _LOOKBACK_DAYS))
     now = datetime.now(UTC)
     lookback = now - timedelta(days=lookback_days)
     filing_period, period_label = _detect_filing_period(lookback_days, now)
@@ -160,7 +200,7 @@ async def _execute(tenant_id: str, tool_id: str, execution_id: str, payload: dic
             where={"tenant_id": tenant_id, "issue_date": {"gte": lookback}, "status": {"not": "draft"}}
         ),
         db.accountingbill.find_many(where={"tenant_id": tenant_id, "issue_date": {"gte": lookback}}),
-        db.accountingexpense.find_many(where={"tenant_id": tenant_id, "issue_date": {"gte": lookback}}),
+        db.accountingexpense.find_many(where={"tenant_id": tenant_id, "expense_date": {"gte": lookback}}),
         db.accountingtaxrate.find_many(where={"tenant_id": tenant_id}),
     )
 
@@ -176,11 +216,7 @@ async def _execute(tenant_id: str, tool_id: str, execution_id: str, payload: dic
             "actions_taken": [], "output_data": {},
         }
 
-    vat_collected = sum(getattr(inv, "tax_cents", None) or 0 for inv in invoices)
-    input_vat = sum((getattr(b, "tax_cents", None) or 0) for b in bills) + sum(
-        (getattr(e, "tax_cents", None) or 0) for e in expenses
-    )
-    net_vat_liability_minor = vat_collected - input_vat
+    vat_collected, input_vat, net_vat_liability_minor = _compute_vat_position(invoices, bills, expenses)
 
     missing_invoice = _flag_missing_tax(invoices, policy.missing_tax_flag_threshold_cents)
     missing_bill = _flag_missing_tax(bills, policy.missing_tax_flag_threshold_cents)
@@ -192,7 +228,7 @@ async def _execute(tenant_id: str, tool_id: str, execution_id: str, payload: dic
     missing_over_threshold = total_missing_cents > policy.missing_tax_flag_threshold_cents
 
     tax_rate_list = [
-        {"id": tr.id, "name": getattr(tr, "name", None), "rate": getattr(tr, "rate", None)}
+        {"id": tr.id, "name": getattr(tr, "name", None), "rate_pct": getattr(tr, "rate_pct", None)}
         for tr in tax_rates
     ]
 
