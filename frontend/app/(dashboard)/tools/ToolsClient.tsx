@@ -40,7 +40,7 @@ function ToolCard({ tool, deployed, step }: { tool: ToolDef; deployed: Tool | un
   const isInactive = deployed && !isActive
 
   return (
-    <motion.div variants={cardVariants} className="flex-1 min-w-0 flex">
+    <motion.div variants={cardVariants} className="w-full lg:flex-1 min-w-0 flex">
       <Link
         href={`/tools/${tool.slug}`}
         className={`group bg-brand-surface border border-brand-border rounded-sm p-4 flex flex-col gap-3 hover:bg-brand-elevated transition-colors w-full ${
@@ -81,34 +81,28 @@ function ToolCard({ tool, deployed, step }: { tool: ToolDef; deployed: Tool | un
 }
 
 function Connector({ enabled, pending, onToggle }: { enabled: boolean; pending: boolean; onToggle: () => void }) {
+  // The arrow IS the control: click to toggle. On = points along the flow (→ desktop,
+  // ↓ mobile). Off = rotated 90° off-axis and dimmed, to read as "disconnected".
   return (
-    <div className="flex flex-row lg:flex-col items-center justify-center gap-2 lg:gap-1.5 py-3 lg:py-0 lg:px-2 shrink-0">
+    <button
+      type="button"
+      role="switch"
+      aria-checked={enabled}
+      aria-label={enabled ? 'Connected — click to disconnect auto-handoff' : 'Disconnected — click to connect auto-handoff'}
+      title={enabled ? 'Connected — a successful run auto-triggers the next tool' : 'Disconnected — tools run independently'}
+      onClick={onToggle}
+      disabled={pending}
+      className="group shrink-0 self-center flex items-center justify-center px-1 lg:px-2.5 py-3 lg:py-0 disabled:opacity-50 active:scale-90 transition-transform"
+    >
       <ArrowRight
         weight="bold"
-        className={`w-4 h-4 rotate-90 lg:rotate-0 transition-all ${enabled ? 'text-brand-secondary' : 'text-brand-muted opacity-40'}`}
-      />
-      <button
-        type="button"
-        role="switch"
-        aria-checked={enabled}
-        aria-label={enabled ? 'Auto-handoff on — click to disable' : 'Auto-handoff off — click to enable'}
-        title={enabled ? 'Connected — upstream auto-runs the next tool' : 'Disconnected — tools run independently'}
-        onClick={onToggle}
-        disabled={pending}
-        className={`relative w-9 h-5 rounded-full transition-colors shrink-0 disabled:opacity-50 ${
-          enabled ? 'bg-[#00C853]' : 'bg-brand-border'
+        className={`w-5 h-5 transition-all duration-200 group-hover:text-brand-text ${
+          enabled
+            ? 'rotate-90 lg:rotate-0 text-brand-secondary'
+            : 'rotate-0 lg:rotate-90 text-brand-muted opacity-40'
         }`}
-      >
-        <span
-          className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform ${
-            enabled ? 'translate-x-4' : 'translate-x-0'
-          }`}
-        />
-      </button>
-      <span className="text-[9px] font-body uppercase tracking-widest text-brand-muted">
-        {enabled ? 'auto' : 'manual'}
-      </span>
-    </div>
+      />
+    </button>
   )
 }
 

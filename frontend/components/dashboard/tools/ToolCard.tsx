@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import { useState } from 'react'
 import Link from 'next/link'
@@ -90,10 +90,7 @@ export function ToolCard({ tool, onConfigure, onStatusChange }: Props) {
 
   return (
     <>
-    <div className={[
-      'bg-brand-surface border border-brand-border rounded-sm p-4',
-      isActive ? 'border-l-[3px] border-l-brand-green' : 'border-l-[3px] border-l-brand-muted',
-    ].join(' ')}>
+    <div className="bg-brand-surface border border-brand-border rounded-sm p-4">
       <div className="flex items-center gap-4">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
