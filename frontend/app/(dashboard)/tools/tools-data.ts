@@ -111,3 +111,40 @@ export const TOOLS: ToolDef[] = [
 export function slugToTool(slug: string): ToolDef | undefined {
   return TOOLS.find((t) => t.slug === slug)
 }
+
+// ─── Workflow grouping ────────────────────────────────────────────────────────
+// The Tools page is organised by the two workflows the product runs end-to-end:
+// AP (invoice processing) feeds Close (month-end). Each workflow lists its tools
+// in pipeline order — the sequence a document travels through.
+
+export interface WorkflowDef {
+  id: 'accounts-payable' | 'month-end-close'
+  name: string
+  headline: string
+  tagline: string
+  toolTypes: string[] // tool `type` values, in pipeline order
+}
+
+export const WORKFLOWS: WorkflowDef[] = [
+  {
+    id: 'accounts-payable',
+    name: 'Accounts Payable',
+    headline: 'From inbox to approved bill.',
+    tagline: 'Invoices are ingested, read, coded, checked against your spend policy, and scheduled for payment — automatically.',
+    toolTypes: ['document_intelligence', 'spend_control', 'payment_run'],
+  },
+  {
+    id: 'month-end-close',
+    name: 'Month-End Close',
+    headline: 'From reconciled to reported.',
+    tagline: 'Every transaction matched, the tax position computed, and the books closed with full financial statements.',
+    toolTypes: ['reconciliation', 'tax_compliance', 'financial_reporting'],
+  },
+]
+
+/** Returns a workflow's tools in pipeline order, skipping any unknown types. */
+export function toolsForWorkflow(workflow: WorkflowDef): ToolDef[] {
+  return workflow.toolTypes
+    .map((type) => TOOLS.find((t) => t.type === type))
+    .filter((t): t is ToolDef => t !== undefined)
+}
