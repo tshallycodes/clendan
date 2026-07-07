@@ -75,8 +75,15 @@ function ToolCard({ tool, deployed, step }: { tool: ToolDef; deployed: Tool | un
 }
 
 export function ToolsClient({ deployedTools }: Props) {
-  const deployedByType = new Map(deployedTools.map((d) => [d.type, d] as const))
-  const totalDeployed = deployedTools.filter((t) => t.status === 'active').length
+  // One record per tool type — prefer an active deployment if the backend returns several.
+  const deployedByType = new Map<string, Tool>()
+  for (const d of deployedTools) {
+    const existing = deployedByType.get(d.type)
+    if (!existing || (d.status === 'active' && existing.status !== 'active')) {
+      deployedByType.set(d.type, d)
+    }
+  }
+  const totalDeployed = TOOLS.filter((t) => deployedByType.get(t.type)?.status === 'active').length
 
   return (
     <motion.div variants={pageVariants} initial="hidden" animate="show" className="p-6 space-y-10">
