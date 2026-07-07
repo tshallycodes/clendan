@@ -6,7 +6,7 @@ import { ArrowRight } from '@phosphor-icons/react'
 import { motion } from 'framer-motion'
 import { useAuth } from '@clerk/nextjs'
 import { useToast } from '@/components/Providers'
-import { WORKFLOWS, toolsForWorkflow, TOOLS, type ToolDef } from './tools-data'
+import { WORKFLOWS, toolsForWorkflow, TOOLS, INTEGRATION_CATEGORY_LABELS, type ToolDef } from './tools-data'
 import type { Tool } from '@/components/dashboard/tools/ToolCard'
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
@@ -66,6 +66,15 @@ function ToolCard({ tool, deployed, step }: { tool: ToolDef; deployed: Tool | un
         </div>
 
         <p className="text-[12px] font-body text-brand-muted leading-relaxed flex-1">{tool.desc}</p>
+
+        <div className="flex items-baseline gap-1.5">
+          <span className="text-[11px] font-body text-brand-muted shrink-0">Requires:</span>
+          <span className="text-[11px] font-body text-brand-secondary">
+            {tool.requires.length
+              ? tool.requires.map((c) => INTEGRATION_CATEGORY_LABELS[c]).join(' · ')
+              : 'Upload only — no integration'}
+          </span>
+        </div>
 
         <div className="flex items-center justify-between">
           <span className="text-[11px] font-body text-brand-muted">{tool.capabilities.length} capabilities</span>

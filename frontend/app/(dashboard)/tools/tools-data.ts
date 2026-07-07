@@ -1,9 +1,21 @@
+export type IntegrationCategory = 'accounting' | 'banking' | 'documents' | 'payments'
+
+export const INTEGRATION_CATEGORY_LABELS: Record<IntegrationCategory, string> = {
+  accounting: 'Accounting',
+  banking: 'Banking',
+  documents: 'Documents',
+  payments: 'Payments',
+}
+
 export interface ToolDef {
   slug: string
   type: string
   name: string
   desc: string
   capabilities: string[]
+  // Integration categories this tool must have connected to produce output.
+  // Empty means it runs with no connected integration (e.g. direct upload).
+  requires: IntegrationCategory[]
   howItWorks?: { step: string; label: string; desc: string }[]
 }
 
@@ -11,6 +23,7 @@ export const TOOLS: ToolDef[] = [
   {
     slug: 'reconciliation',
     type: 'reconciliation',
+    requires: ['banking', 'accounting'],
     name: 'Reconciliation',
     desc: 'One click reconciles your bank, invoices, VAT, and payroll for any period. Flags every discrepancy before you close the books.',
     capabilities: [
@@ -27,6 +40,7 @@ export const TOOLS: ToolDef[] = [
   {
     slug: 'document-intelligence',
     type: 'document_intelligence',
+    requires: [],
     name: 'Document Intelligence',
     desc: 'Upload any business document. Clen reads it and produces a structured analysis — summary, risks, loopholes, key dates, and improvement suggestions.',
     capabilities: [
@@ -49,6 +63,7 @@ export const TOOLS: ToolDef[] = [
   {
     slug: 'spend-control',
     type: 'spend_control',
+    requires: ['accounting'],
     name: 'Spend Control',
     desc: 'Process bills, enforce spend policies, detect duplicates, and route payments for approval.',
     capabilities: [
@@ -65,6 +80,7 @@ export const TOOLS: ToolDef[] = [
   {
     slug: 'tax-compliance',
     type: 'tax_compliance',
+    requires: ['accounting'],
     name: 'Tax Compliance',
     desc: 'Compute VAT position, detect missing tax codes, and flag filing risks.',
     capabilities: [
@@ -79,6 +95,7 @@ export const TOOLS: ToolDef[] = [
   {
     slug: 'financial-reporting',
     type: 'financial_reporting',
+    requires: ['accounting', 'banking'],
     name: 'Financial Reporting',
     desc: 'Auto-generate P&L, balance sheet, and cash flow statements from live accounting data.',
     capabilities: [
@@ -94,6 +111,7 @@ export const TOOLS: ToolDef[] = [
   {
     slug: 'payment-runs',
     type: 'payment_run',
+    requires: ['accounting'],
     name: 'Payment Runs',
     desc: 'Automatically schedule approved supplier payments on a weekly cadence.',
     capabilities: [
