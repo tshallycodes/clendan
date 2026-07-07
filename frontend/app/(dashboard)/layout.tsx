@@ -28,7 +28,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
     <div className="flex min-h-screen bg-brand-bg">
       <Sidebar />
       <MobileNav />
-      <div className="flex-1 min-w-0 overflow-x-hidden overflow-y-auto flex flex-col pt-[57px] lg:pt-0">
+      <div className="flex-1 min-w-0 overflow-auto flex flex-col pt-[57px] lg:pt-0">
         <main className="flex-1 pb-24">{children}</main>
       </div>
       <div className="fixed bottom-6 right-6 z-30">
