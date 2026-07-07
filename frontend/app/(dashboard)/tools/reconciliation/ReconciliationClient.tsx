@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { useAuth } from '@clerk/nextjs'
 import { useCanConfigure } from '@/lib/auth-client'
 import { useCurrency, useToast } from '@/components/Providers'
@@ -15,9 +16,6 @@ import { ReconcileAllSection } from './ReconcileAllSection'
 import { PayrollRecSection } from './PayrollRecSection'
 import { InvoiceRecSection } from './InvoiceRecSection'
 import { VatRecSection } from './VatRecSection'
-import { ToolExecutionsTab } from '@/components/dashboard/tools/ToolExecutionsTab'
-import { ToolApprovalsTab } from '@/components/dashboard/tools/ToolApprovalsTab'
-import { ToolAuditTab } from '@/components/dashboard/tools/ToolAuditTab'
 import { TOOLS } from '../tools-data'
 import { motion, AnimatePresence } from 'framer-motion'
 import { CreateJournalEntryModal, type JournalEntrySuggestion } from '@/components/dashboard/tools/CreateJournalEntryModal'
@@ -54,15 +52,6 @@ const sectionVariants = {
   hidden: { opacity: 0, y: 14 },
   show: { opacity: 1, y: 0, transition: { duration: 0.38, ease: EASE } },
 }
-const capabilityVariants = {
-  hidden: {},
-  show: { transition: { staggerChildren: 0.05 } },
-}
-const capItemVariants = {
-  hidden: { opacity: 0, x: -8 },
-  show: { opacity: 1, x: 0, transition: { duration: 0.25, ease: EASE } },
-}
-
 const AUTONOMY_BADGE: Record<string, { label: string; className: string }> = {
   auto:    { label: 'Auto',    className: 'bg-[rgba(0,200,83,0.08)] text-[#00C853] border border-[rgba(0,200,83,0.2)]' },
   approve: { label: 'Approve', className: 'bg-[rgba(0,168,204,0.08)] text-[#00a8cc] border border-[rgba(0,168,204,0.2)]' },
@@ -112,9 +101,9 @@ export function ReconciliationClient() {
   const canConfigure = useCanConfigure()
   const { currency } = useCurrency()
   const { toast } = useToast()
+  const router = useRouter()
   const [showOverview, setShowOverview] = useState(false)
   const [recType, setRecType] = useState<'all' | 'bank' | 'payroll' | 'invoice' | 'vat'>('all')
-  const [auditTarget, setAuditTarget] = useState<string | undefined>(undefined)
   const recTypeSelectorRef = useRef<HTMLDivElement>(null)
   const [runs, setRuns] = useState<ReconciliationRun[]>([])
   const [runsLoading, setRunsLoading] = useState(true)
@@ -402,10 +391,7 @@ export function ReconciliationClient() {
         {recType === 'all' && (
           <ReconcileAllSection
             toolId={deployed?.id ?? null}
-            onViewAudit={prefix => {
-              setAuditTarget(prefix)
-              // Handle opening audit some other way or just ignore if it was a tab
-            }}
+            onViewAudit={() => router.push('/audit')}
           />
         )}
 
