@@ -32,6 +32,15 @@ model Tenant {
   domain_matching     Boolean  @default(false)
   onboarding_complete Boolean  @default(false)
   timezone            String   @default("UTC")
+
+  // SaaS billing (Stripe) — Clendan's own subscription, distinct from Stripe Connect data sync
+  stripe_customer_id     String?   @unique
+  stripe_subscription_id String?
+  plan                   String    @default("free") // free | starter | growth | enterprise
+  subscription_status    String?   // Stripe status: trialing | active | past_due | canceled | incomplete
+  current_period_end     DateTime?
+  cancel_at_period_end   Boolean   @default(false)
+
   members             Member[]
   invitations         Invitation[]
   invite_links        InviteLink[]

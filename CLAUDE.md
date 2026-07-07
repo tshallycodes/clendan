@@ -20,7 +20,7 @@ and is audited. Tools never call each other directly.
 ---
 
 ## Rules
-- Use the playwright mcp to help you navigate and understand the codebase
+- Use the playwright mcp to help you navigate and understand the codebase, and the actual website (clendan.com) which you can sign in with with a one time token 
 - Do what has been asked; nothing more, nothing less
 - NEVER create files unless absolutely necessary — prefer editing existing files
 - NEVER create documentation files unless explicitly requested
