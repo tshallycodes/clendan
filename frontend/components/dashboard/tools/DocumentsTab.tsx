@@ -495,6 +495,14 @@ function DocumentRow({ doc, toolId, onAbort }: DocumentRowProps) {
   )
 }
 
+const DOC_FILTERS = [
+  { key: 'all', label: 'All' },
+  { key: 'analysed', label: 'Analysed' },
+  { key: 'approval_required', label: 'Needs review' },
+  { key: 'classification_failed', label: 'Unreadable' },
+] as const
+type DocFilter = (typeof DOC_FILTERS)[number]['key']
+
 const CLOUD_SOURCES: { id: string; label: string; logoSlug: string }[] = [
   { id: 'google_drive', label: 'Google Drive', logoSlug: 'google-drive' },
   { id: 'dropbox',      label: 'Dropbox',      logoSlug: 'dropbox' },
@@ -741,6 +749,8 @@ export function DocumentsTab({ toolId }: { toolId: string | null }) {
   const [uploading, setUploading] = useState(false)
   const [total, setTotal] = useState(0)
   const [offset, setOffset] = useState(0)
+  const [search, setSearch] = useState('')
+  const [decisionFilter, setDecisionFilter] = useState<DocFilter>('all')
   const limit = 20
 
   async function load(off = 0) {
@@ -876,6 +886,16 @@ export function DocumentsTab({ toolId }: { toolId: string | null }) {
     setTotal(t => t - 1)
   }
 
+  const query = search.trim().toLowerCase()
+  const isFiltered = query !== '' || decisionFilter !== 'all'
+  const visibleDocs = documents.filter(d => {
+    if (query && !(d.filename ?? '').toLowerCase().includes(query)) return false
+    if (decisionFilter === 'analysed') return d.decision === 'analysed' || d.decision === 'auto_approved'
+    if (decisionFilter === 'approval_required') return d.decision === 'approval_required'
+    if (decisionFilter === 'classification_failed') return d.decision === 'classification_failed'
+    return true
+  })
+
   if (!toolId) {
     return (
       <div className="bg-brand-surface border border-brand-border rounded-sm p-8 text-center">
@@ -893,9 +913,9 @@ export function DocumentsTab({ toolId }: { toolId: string | null }) {
       <CloudImport toolId={toolId} onImported={() => load(0)} />
 
       <div>
-        <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center justify-between mb-2 gap-3 flex-wrap">
           <p className="text-[11px] font-body text-brand-muted uppercase tracking-widest">
-            Documents · {total}
+            Documents · {isFiltered ? `${visibleDocs.length} of ${total}` : total}
           </p>
           <button
             type="button"
@@ -906,6 +926,31 @@ export function DocumentsTab({ toolId }: { toolId: string | null }) {
           </button>
         </div>
 
+        {documents.length > 0 && (
+          <div className="flex items-center gap-2 mb-3 flex-wrap">
+            <input
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Search by filename…"
+              className="bg-brand-bg border border-brand-border focus:border-brand-green text-brand-text placeholder:text-brand-muted rounded-sm px-3 py-1.5 text-xs font-body outline-none w-52"
+            />
+            <div className="flex gap-1">
+              {DOC_FILTERS.map(f => (
+                <button
+                  key={f.key}
+                  type="button"
+                  onClick={() => setDecisionFilter(f.key)}
+                  className={`text-[11px] font-body px-3 py-1.5 rounded-sm border transition-colors ${
+                    decisionFilter === f.key ? 'border-brand-border bg-brand-elevated text-brand-text' : 'border-transparent text-brand-muted hover:text-brand-secondary'
+                  }`}
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         {loading && documents.length === 0 ? (
           <div className="bg-brand-surface border border-brand-border rounded-sm p-8 text-center">
             <p className="text-xs font-body text-brand-muted">Loading…</p>
@@ -914,10 +959,14 @@ export function DocumentsTab({ toolId }: { toolId: string | null }) {
           <div className="bg-brand-surface border border-brand-border rounded-sm p-8 text-center">
             <p className="text-xs font-body text-brand-muted">No documents yet — upload one above.</p>
           </div>
+        ) : visibleDocs.length === 0 ? (
+          <div className="bg-brand-surface border border-brand-border rounded-sm p-8 text-center">
+            <p className="text-xs font-body text-brand-muted">No documents match your filter.</p>
+          </div>
         ) : (
           <>
             <div className="bg-brand-surface border border-brand-border rounded-sm overflow-hidden">
-              {documents.map(doc => (
+              {visibleDocs.map(doc => (
                 <DocumentRow
                   key={doc.id}
                   doc={doc}
@@ -927,7 +976,7 @@ export function DocumentsTab({ toolId }: { toolId: string | null }) {
               ))}
             </div>
 
-            {documents.length < total && (
+            {!isFiltered && documents.length < total && (
               <button
                 type="button"
                 onClick={() => load(offset + limit)}

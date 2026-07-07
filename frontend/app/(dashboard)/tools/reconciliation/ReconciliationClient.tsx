@@ -11,6 +11,7 @@ import type { Tool } from '@/components/dashboard/tools/ToolCard'
 import { ReconciliationRun, ReconciliationItem } from './types'
 import { RunControls } from './RunControls'
 import { RunHistory } from './RunHistory'
+import { ReconciliationVisual } from './ReconciliationVisual'
 import { ReconciliationTable } from './ReconciliationTable'
 import { ReconcileAllSection } from './ReconcileAllSection'
 import { PayrollRecSection } from './PayrollRecSection'
@@ -407,6 +408,11 @@ export function ReconciliationClient() {
               onPeriodEndChange={setPeriodEnd}
               onRun={handleRun}
             />
+            {selectedRun && (
+              <div className="mt-5">
+                <ReconciliationVisual run={selectedRun} />
+              </div>
+            )}
             <div className="space-y-2 mt-5">
               <p className="text-[11px] font-body uppercase tracking-widest text-brand-muted">Run History</p>
               <RunHistory
