@@ -43,9 +43,7 @@ function ToolCard({ tool, deployed, step }: { tool: ToolDef; deployed: Tool | un
     <motion.div variants={cardVariants} className="w-full lg:flex-1 min-w-0 flex">
       <Link
         href={`/tools/${tool.slug}`}
-        className={`group bg-brand-surface border border-brand-border rounded-sm p-4 flex flex-col gap-3 hover:bg-brand-elevated transition-colors w-full ${
-          isActive ? 'border-l-[3px] border-l-[#00C853]' : isInactive ? 'border-l-[3px] border-l-brand-border' : ''
-        }`}
+        className="group bg-brand-surface border border-brand-border rounded-sm p-4 flex flex-col gap-3 hover:bg-brand-elevated transition-colors w-full"
       >
         <div className="flex items-start justify-between gap-2">
           <div className="flex items-start gap-2.5 min-w-0">
