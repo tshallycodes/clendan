@@ -24,16 +24,7 @@ import { CreateJournalEntryModal, type JournalEntrySuggestion } from '@/componen
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
-type Tab = 'overview' | 'reconcile' | 'executions' | 'approvals' | 'audit'
-type RecType = 'all' | 'bank' | 'payroll' | 'invoice' | 'vat'
 
-const TABS: { key: Tab; label: string }[] = [
-  { key: 'overview', label: 'Overview' },
-  { key: 'executions', label: 'Executions' },
-  { key: 'approvals', label: 'Approvals' },
-  { key: 'audit', label: 'Audit' },
-  { key: 'reconcile', label: 'Reconcile' },
-]
 
 const REC_TYPES: { key: string; label: string }[] = [
   { key: 'all',     label: 'All' },
@@ -121,8 +112,8 @@ export function ReconciliationClient() {
   const canConfigure = useCanConfigure()
   const { currency } = useCurrency()
   const { toast } = useToast()
-  const [activeTab, setActiveTab] = useState<Tab>('overview')
-  const [recType, setRecType] = useState<RecType>('all')
+  const [showOverview, setShowOverview] = useState(false)
+  const [recType, setRecType] = useState<'all' | 'bank' | 'payroll' | 'invoice' | 'vat'>('all')
   const [auditTarget, setAuditTarget] = useState<string | undefined>(undefined)
   const recTypeSelectorRef = useRef<HTMLDivElement>(null)
   const [runs, setRuns] = useState<ReconciliationRun[]>([])
@@ -350,6 +341,10 @@ export function ReconciliationClient() {
         </div>
         {canConfigure && (
           <div className="flex items-center gap-2">
+            <button type="button" onClick={() => setShowOverview(true)}
+              className="text-xs font-body border border-brand-border text-brand-text hover:bg-brand-elevated rounded-sm px-3 py-1.5 transition-colors">
+              Overview
+            </button>
             <button type="button" onClick={() => setShowConfig(true)}
               className="text-xs font-body border border-brand-border text-brand-text hover:bg-brand-elevated rounded-sm px-3 py-1.5 transition-colors">
               Configure
@@ -383,178 +378,173 @@ export function ReconciliationClient() {
         )}
       </motion.div>
 
-      <motion.div variants={sectionVariants} className="flex gap-1 border-b border-brand-border">
-        {TABS.map(t => (
-          <button key={t.key} type="button" onClick={() => setActiveTab(t.key)}
-            className={`text-xs font-body px-4 py-2.5 border-b-2 transition-colors -mb-px ${
-              activeTab === t.key
-                ? 'border-[#00C853] text-brand-text'
-                : 'border-transparent text-brand-muted hover:text-brand-secondary'
-            }`}>
-            {t.label}
-          </button>
-        ))}
+      {/* Reconcile Content */}
+      <motion.div variants={sectionVariants} className="space-y-4 mt-6">
+        {/* Rec type selector */}
+        <div ref={recTypeSelectorRef} className="flex items-center gap-1 p-1 bg-brand-elevated border border-brand-border rounded-sm w-fit">
+          {REC_TYPES.map(({ key, label }) => (
+            <button
+              key={key}
+              type="button"
+              onClick={() => setRecType(key as any)}
+              className={`text-[11px] font-body px-3 py-1.5 rounded-[2px] transition-colors ${
+                recType === key
+                  ? 'bg-brand-surface text-brand-text border border-brand-border'
+                  : 'text-brand-muted hover:text-brand-text'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
+        {/* Run all */}
+        {recType === 'all' && (
+          <ReconcileAllSection
+            toolId={deployed?.id ?? null}
+            onViewAudit={prefix => {
+              setAuditTarget(prefix)
+              // Handle opening audit some other way or just ignore if it was a tab
+            }}
+          />
+        )}
+
+        {/* Bank reconciliation */}
+        {recType === 'bank' && (
+          <>
+            <RunControls
+              periodStart={periodStart}
+              periodEnd={periodEnd}
+              toolReady={!!deployed?.id}
+              running={running}
+              onPeriodStartChange={setPeriodStart}
+              onPeriodEndChange={setPeriodEnd}
+              onRun={handleRun}
+            />
+            <div className="space-y-2 mt-5">
+              <p className="text-[11px] font-body uppercase tracking-widest text-brand-muted">Run History</p>
+              <RunHistory
+                runs={runs}
+                loading={runsLoading}
+                selectedId={selectedRun?.id ?? null}
+                onSelect={(r) => { setSelectedRun(r); fetchItems(r.id); setModalOpen(true) }}
+              />
+            </div>
+          </>
+        )}
+
+        {/* Payroll reconciliation */}
+        {recType === 'payroll' && (
+          <PayrollRecSection toolId={deployed?.id ?? null} />
+        )}
+
+        {/* Invoice reconciliation */}
+        {recType === 'invoice' && (
+          <InvoiceRecSection toolId={deployed?.id ?? null} />
+        )}
+
+        {/* VAT reconciliation */}
+        {recType === 'vat' && (
+          <VatRecSection toolId={deployed?.id ?? null} />
+        )}
       </motion.div>
 
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={activeTab}
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -8 }}
-          transition={{ duration: 0.2, ease: 'easeOut' }}
-        >
-          {activeTab === 'overview' && (
-            <div className="space-y-4">
-              {/* How it works */}
-              <div className="bg-brand-surface border border-brand-border rounded-sm overflow-hidden">
-                <div className="px-4 py-3 border-b border-brand-border">
-                  <p className="text-[11px] font-body uppercase tracking-widest text-brand-muted">How it works</p>
-                  <p className="text-[11px] font-body text-brand-muted mt-0.5">Connect your data, pick a month, review results — that&apos;s it</p>
-                </div>
-                <div className="grid grid-cols-2 sm:grid-cols-4 divide-x divide-brand-border">
-                  {HOW_IT_WORKS.map(({ step, label, desc }) => (
-                    <div key={step} className="px-4 py-4 space-y-1.5">
-                      <p className="text-[11px] font-body text-brand-muted">{step}</p>
-                      <p className="text-xs font-body font-medium text-brand-text">{label}</p>
-                      <p className="text-[11px] font-body text-brand-muted leading-relaxed">{desc}</p>
-                    </div>
-                  ))}
-                </div>
+      {/* Overview Sidebar */}
+      <AnimatePresence>
+        {showOverview && (
+          <div className="fixed inset-0 z-40 flex justify-end">
+            <motion.div 
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}
+              className="absolute inset-0 bg-black/40" onClick={() => setShowOverview(false)} 
+            />
+            <motion.div 
+              initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }} transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              className="relative h-screen w-[400px] bg-brand-surface border-l border-brand-border p-6 overflow-y-auto shadow-2xl z-50 flex flex-col"
+            >
+              <div className="flex items-center justify-between mb-6 shrink-0">
+                <h2 className="font-heading font-semibold text-brand-text text-sm">Overview</h2>
+                <button type="button" onClick={() => setShowOverview(false)} className="text-brand-muted hover:text-brand-text transition-colors text-lg leading-none">✕</button>
               </div>
 
-              {/* What's covered */}
-              <div className="bg-brand-surface border border-brand-border rounded-sm overflow-hidden">
-                <div className="px-4 py-3 border-b border-brand-border">
-                  <p className="text-[11px] font-body uppercase tracking-widest text-brand-muted">What&apos;s covered</p>
-                  <p className="text-[11px] font-body text-brand-muted mt-0.5">Four reconciliation types — run all at once or drill into each individually</p>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 divide-y sm:divide-y-0 sm:divide-x divide-brand-border">
-                  {WHAT_IS_COVERED.map(({ key, label, color, desc }) => (
-                    <div key={key} className="px-4 py-4 space-y-1.5 border-b border-brand-border last:border-b-0 sm:[&:nth-child(n+3)]:border-t sm:[&:nth-child(n+3)]:border-brand-border">
-                      <div className="flex items-center gap-2">
-                        <span className="h-1.5 w-1.5 rounded-full shrink-0" style={{ background: color }} />
-                        <p className="text-xs font-body font-medium text-brand-text">{label}</p>
-                      </div>
-                      <p className="text-[11px] font-body text-brand-muted leading-relaxed">{desc}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Configuration */}
-              {deployed && (
-                <div className="bg-brand-surface border border-brand-border rounded-sm overflow-hidden">
+              <div className="space-y-6 flex-1">
+                {/* How it works */}
+                <div className="bg-brand-bg border border-brand-border rounded-sm overflow-hidden">
                   <div className="px-4 py-3 border-b border-brand-border">
-                    <p className="text-[11px] font-body uppercase tracking-widest text-brand-muted">Configuration</p>
+                    <p className="text-[11px] font-body uppercase tracking-widest text-brand-muted">How it works</p>
+                    <p className="text-[11px] font-body text-brand-muted mt-0.5">Connect your data, pick a month, review results — that&apos;s it</p>
                   </div>
-                  <div className="px-4 py-4 grid grid-cols-2 gap-6">
-                    <div className="space-y-1.5">
-                      <p className="text-[11px] font-body text-brand-muted uppercase tracking-widest">Autonomy</p>
-                      {badge && <span className={`text-[11px] font-body px-2 py-0.5 rounded-sm inline-block ${badge.className}`}>{badge.label}</span>}
-                      <p className="text-[11px] font-body text-brand-muted leading-relaxed">{AUTONOMY_DESC[deployed.autonomy_level] ?? ''}</p>
-                    </div>
-                    <div className="space-y-1.5">
-                      <p className="text-[11px] font-body text-brand-muted uppercase tracking-widest">Status</p>
-                      <p className="text-xs font-body text-brand-text">{deployed.status === 'active' ? 'Running' : 'Paused'}</p>
-                      <p className="text-[11px] font-body text-brand-muted">{deployed.status === 'active' ? 'Agent is live and processing' : 'Agent is paused — no runs will fire'}</p>
-                    </div>
+                  <div className="grid grid-cols-1 divide-y divide-brand-border">
+                    {HOW_IT_WORKS.map(({ step, label, desc }) => (
+                      <div key={step} className="px-4 py-3 space-y-1.5 flex gap-4">
+                        <p className="text-[11px] font-body text-brand-muted font-mono">{step}</p>
+                        <div>
+                          <p className="text-xs font-body font-medium text-brand-text">{label}</p>
+                          <p className="text-[11px] font-body text-brand-muted leading-relaxed mt-0.5">{desc}</p>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
-              )}
 
-              {/* Capabilities */}
-              <div className="bg-brand-surface border border-brand-border rounded-sm overflow-hidden">
-                <div className="px-4 py-3 border-b border-brand-border">
-                  <p className="text-[11px] font-body uppercase tracking-widest text-brand-muted">Capabilities</p>
-                  <p className="text-[11px] font-body text-brand-muted mt-0.5">What this agent does once deployed and connected to your data</p>
-                </div>
-                <motion.ul variants={capabilityVariants} initial="hidden" animate="show" className="divide-y divide-brand-border">
-                  {RECONCILIATION_CAPABILITIES.map(cap => (
-                    <motion.li key={cap} variants={capItemVariants} className="flex items-start gap-3 px-4 py-3">
-                      <span className="text-brand-muted font-body text-[11px] mt-0.5 shrink-0">→</span>
-                      <span className="text-xs font-body text-brand-secondary">{cap}</span>
-                    </motion.li>
-                  ))}
-                </motion.ul>
-              </div>
-            </div>
-          )}
-          {activeTab === 'reconcile' && (
-            <div className="space-y-4">
-              {/* Rec type selector */}
-              <div ref={recTypeSelectorRef} className="flex items-center gap-1 p-1 bg-brand-elevated border border-brand-border rounded-sm w-fit">
-                {REC_TYPES.map(({ key, label }) => (
-                  <button
-                    key={key}
-                    type="button"
-                    onClick={() => setRecType(key as RecType)}
-                    className={`text-[11px] font-body px-3 py-1.5 rounded-[2px] transition-colors ${
-                      recType === key
-                        ? 'bg-brand-surface text-brand-text border border-brand-border'
-                        : 'text-brand-muted hover:text-brand-text'
-                    }`}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
-
-              {/* Run all */}
-              {recType === 'all' && (
-                <ReconcileAllSection
-                  toolId={deployed?.id ?? null}
-                  onViewAudit={prefix => {
-                    setAuditTarget(prefix)
-                    setActiveTab('audit')
-                  }}
-                />
-              )}
-
-              {/* Bank reconciliation */}
-              {recType === 'bank' && (
-                <>
-                  <RunControls
-                    periodStart={periodStart}
-                    periodEnd={periodEnd}
-                    toolReady={!!deployed?.id}
-                    running={running}
-                    onPeriodStartChange={setPeriodStart}
-                    onPeriodEndChange={setPeriodEnd}
-                    onRun={handleRun}
-                  />
-                  <div className="space-y-2 mt-5">
-                    <p className="text-[11px] font-body uppercase tracking-widest text-brand-muted">Run History</p>
-                    <RunHistory
-                      runs={runs}
-                      loading={runsLoading}
-                      selectedId={selectedRun?.id ?? null}
-                      onSelect={(r) => { setSelectedRun(r); fetchItems(r.id); setModalOpen(true) }}
-                    />
+                {/* What's covered */}
+                <div className="bg-brand-bg border border-brand-border rounded-sm overflow-hidden">
+                  <div className="px-4 py-3 border-b border-brand-border">
+                    <p className="text-[11px] font-body uppercase tracking-widest text-brand-muted">What&apos;s covered</p>
+                    <p className="text-[11px] font-body text-brand-muted mt-0.5">Four reconciliation types — run all at once or drill into each individually</p>
                   </div>
-                </>
-              )}
+                  <div className="grid grid-cols-1 divide-y divide-brand-border">
+                    {WHAT_IS_COVERED.map(({ key, label, color, desc }) => (
+                      <div key={key} className="px-4 py-3 space-y-1.5">
+                        <div className="flex items-center gap-2">
+                          <span className="h-1.5 w-1.5 rounded-full shrink-0" style={{ background: color }} />
+                          <p className="text-xs font-body font-medium text-brand-text">{label}</p>
+                        </div>
+                        <p className="text-[11px] font-body text-brand-muted leading-relaxed">{desc}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
 
-              {/* Payroll reconciliation */}
-              {recType === 'payroll' && (
-                <PayrollRecSection toolId={deployed?.id ?? null} />
-              )}
+                {/* Configuration */}
+                {deployed && (
+                  <div className="bg-brand-bg border border-brand-border rounded-sm overflow-hidden">
+                    <div className="px-4 py-3 border-b border-brand-border">
+                      <p className="text-[11px] font-body uppercase tracking-widest text-brand-muted">Configuration</p>
+                    </div>
+                    <div className="px-4 py-4 space-y-4">
+                      <div className="space-y-1.5">
+                        <p className="text-[11px] font-body text-brand-muted uppercase tracking-widest">Autonomy</p>
+                        {badge && <span className={`text-[11px] font-body px-2 py-0.5 rounded-sm inline-block ${badge.className}`}>{badge.label}</span>}
+                        <p className="text-[11px] font-body text-brand-muted leading-relaxed">{AUTONOMY_DESC[deployed.autonomy_level] ?? ''}</p>
+                      </div>
+                      <div className="space-y-1.5">
+                        <p className="text-[11px] font-body text-brand-muted uppercase tracking-widest">Status</p>
+                        <p className="text-xs font-body text-brand-text">{deployed.status === 'active' ? 'Running' : 'Paused'}</p>
+                        <p className="text-[11px] font-body text-brand-muted">{deployed.status === 'active' ? 'Agent is live and processing' : 'Agent is paused — no runs will fire'}</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
-              {/* Invoice reconciliation */}
-              {recType === 'invoice' && (
-                <InvoiceRecSection toolId={deployed?.id ?? null} />
-              )}
-
-              {/* VAT reconciliation */}
-              {recType === 'vat' && (
-                <VatRecSection toolId={deployed?.id ?? null} />
-              )}
-            </div>
-          )}
-          {activeTab === 'executions' && <ToolExecutionsTab toolId={deployed?.id ?? null} />}
-          {activeTab === 'approvals' && <ToolApprovalsTab toolId={deployed?.id ?? null} />}
-          {activeTab === 'audit' && <ToolAuditTab key={auditTarget ?? 'audit'} toolId={deployed?.id ?? null} initialAction={auditTarget} />}
-        </motion.div>
+                {/* Capabilities */}
+                <div className="bg-brand-bg border border-brand-border rounded-sm overflow-hidden">
+                  <div className="px-4 py-3 border-b border-brand-border">
+                    <p className="text-[11px] font-body uppercase tracking-widest text-brand-muted">Capabilities</p>
+                    <p className="text-[11px] font-body text-brand-muted mt-0.5">What this agent does once deployed and connected to your data</p>
+                  </div>
+                  <ul className="divide-y divide-brand-border">
+                    {RECONCILIATION_CAPABILITIES.map(cap => (
+                      <li key={cap} className="flex items-start gap-3 px-4 py-3">
+                        <span className="text-brand-muted font-body text-[11px] mt-0.5 shrink-0">→</span>
+                        <span className="text-xs font-body text-brand-secondary">{cap}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
       </AnimatePresence>
 
       {showConfig && (
