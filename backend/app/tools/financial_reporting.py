@@ -179,10 +179,21 @@ async def _execute(tenant_id: str, tool_id: str, execution_id: str, payload: dic
         raise ValueError(f"Tool {tool_id} not found for tenant {tenant_id}")
 
     policy = _parse_policy(tool.config_json if isinstance(tool.config_json, dict) else {})
+    # An explicit per-run lookback (from the dashboard "Generate report" control) overrides
+    # the configured default. Validated at the boundary — falls back to config on bad input.
+    lookback_days = policy.lookback_days
+    raw_lookback = payload.get("lookback_days")
+    if raw_lookback is not None:
+        try:
+            candidate = int(raw_lookback)
+            if 1 <= candidate <= 3660:
+                lookback_days = candidate
+        except (TypeError, ValueError):
+            pass
     period_end = datetime.now(UTC)
-    period_start = period_end - timedelta(days=policy.lookback_days)
+    period_start = period_end - timedelta(days=lookback_days)
     prior_end = period_start
-    prior_start = prior_end - timedelta(days=policy.lookback_days)
+    prior_start = prior_end - timedelta(days=lookback_days)
 
     invoices, bills, expenses, payments, bank_accounts = await asyncio.gather(
         db.accountinginvoice.find_many(where={"tenant_id": tenant_id}),
