@@ -60,6 +60,7 @@ class _InvoiceRecord(BaseModel):
     due_date: datetime | None
     status: str
     source: str | None
+    currency: str
 
 
 class _BillRecord(BaseModel):
@@ -71,6 +72,7 @@ class _BillRecord(BaseModel):
     due_date: datetime | None
     status: str
     source: str | None
+    currency: str
 
 
 class _ClaudeItemResult(BaseModel):
@@ -109,6 +111,12 @@ def _dates_match(txn_date: datetime, due_date: datetime | None, window_days: int
     if due_date is None:
         return True
     return abs((txn_date.date() - due_date.date()).days) <= window_days
+
+
+def _currency_matches(txn_currency: str | None, item_currency: str | None) -> bool:
+    """Never reconcile across currencies — a GBP transaction must not match a EUR
+    invoice/bill even if the minor-unit amounts coincidentally fall within tolerance."""
+    return (txn_currency or "").upper() == (item_currency or "").upper()
 
 
 
@@ -473,6 +481,7 @@ async def _execute_reconciliation(
             due_date=i.due_date,
             status=i.status,
             source=i.source,
+            currency=i.currency,
         )
         for i in raw_invs
     ]
@@ -486,6 +495,7 @@ async def _execute_reconciliation(
             due_date=b.due_date,
             status=b.status,
             source=b.source,
+            currency=b.currency,
         )
         for b in raw_bills
     ]
@@ -503,7 +513,8 @@ async def _execute_reconciliation(
                 if invoice.id in matched_inv_ids:
                     continue
                 if (
-                    _amounts_match(txn_abs, invoice.outstanding_cents, policy.match_amount_tolerance_minor)
+                    _currency_matches(txn.currency, invoice.currency)
+                    and _amounts_match(txn_abs, invoice.outstanding_cents, policy.match_amount_tolerance_minor)
                     and _dates_match(txn.date, invoice.due_date, policy.match_date_window_days)
                 ):
                     matched_txn_ids.add(txn.id)
@@ -516,7 +527,8 @@ async def _execute_reconciliation(
                 if bill.id in matched_bill_ids:
                     continue
                 if (
-                    _amounts_match(txn_abs, bill.outstanding_cents, policy.match_amount_tolerance_minor)
+                    _currency_matches(txn.currency, bill.currency)
+                    and _amounts_match(txn_abs, bill.outstanding_cents, policy.match_amount_tolerance_minor)
                     and _dates_match(txn.date, bill.due_date, policy.match_date_window_days)
                 ):
                     matched_txn_ids.add(txn.id)
@@ -659,28 +671,34 @@ async def _execute_reconciliation(
     if match_updates:
         await asyncio.gather(*match_updates)
 
-    await db.reconciliationrun.create(data={
-        "tenant_id": tenant_id,
-        "execution_id": execution_id,
-        "period_start": period_start,
-        "period_end": period_end,
-        "status": "completed",
-        "matched_count": len(matched_txn_ids),
-        "unmatched_count": len(unmatched_txns),
-        "flagged_count": sum(1 for r in claude_results if r.action == "flag"),
-        "review_count": sum(1 for r in claude_results if r.action == "review"),
-        "total_txn_count": len(transactions),
-        "total_inv_count": len(invoices),
-        "triggered_by_email": triggered_by_email,
-        "details_json": PrismaJson({
-            "claude_assessments": [r.model_dump() for r in claude_results],
-            "unmatched_transaction_ids": [t.id for t in unmatched_txns],
-            "unmatched_invoice_ids": [i.id for i in unmatched_invs],
-            "unmatched_bill_ids": [b.id for b in unmatched_bills],
-            "policy_breach": policy_breach,
-            "unmatched_pct": round(unmatched_pct, 4),
-        }),
-    })
+    # Idempotent per execution: a job retry re-runs _execute fully (matches are
+    # idempotent), so guard on execution_id to avoid a duplicate ReconciliationRun row.
+    existing_run = await db.reconciliationrun.find_first(
+        where={"tenant_id": tenant_id, "execution_id": execution_id}
+    )
+    if existing_run is None:
+        await db.reconciliationrun.create(data={
+            "tenant_id": tenant_id,
+            "execution_id": execution_id,
+            "period_start": period_start,
+            "period_end": period_end,
+            "status": "completed",
+            "matched_count": len(matched_txn_ids),
+            "unmatched_count": len(unmatched_txns),
+            "flagged_count": sum(1 for r in claude_results if r.action == "flag"),
+            "review_count": sum(1 for r in claude_results if r.action == "review"),
+            "total_txn_count": len(transactions),
+            "total_inv_count": len(invoices),
+            "triggered_by_email": triggered_by_email,
+            "details_json": PrismaJson({
+                "claude_assessments": [r.model_dump() for r in claude_results],
+                "unmatched_transaction_ids": [t.id for t in unmatched_txns],
+                "unmatched_invoice_ids": [i.id for i in unmatched_invs],
+                "unmatched_bill_ids": [b.id for b in unmatched_bills],
+                "policy_breach": policy_breach,
+                "unmatched_pct": round(unmatched_pct, 4),
+            }),
+        })
 
     actions_taken: list[str] = []
     if matched_txn_ids:
