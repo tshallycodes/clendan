@@ -9,10 +9,10 @@ import { ToolApprovalsTab } from '@/components/dashboard/tools/ToolApprovalsTab'
 import { ToolAuditTab } from '@/components/dashboard/tools/ToolAuditTab'
 import { DocumentsTab } from '@/components/dashboard/tools/DocumentsTab'
 import type { Tool } from '@/components/dashboard/tools/ToolCard'
-import type { ToolDef } from '../tools-data'
+import { INTEGRATION_CATEGORY_LABELS, type ToolDef } from '../tools-data'
 import { useAuth } from '@clerk/nextjs'
 import { useCanConfigure } from '@/lib/auth-client'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion } from 'framer-motion'
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
@@ -20,8 +20,6 @@ interface Props {
   tool: ToolDef
   deployed: Tool | null
 }
-
-
 
 const AUTONOMY_BADGE: Record<string, { label: string; className: string }> = {
   auto:    { label: 'Auto',    className: 'bg-[rgba(0,200,83,0.08)] text-[#00C853] border border-[rgba(0,200,83,0.2)]' },
@@ -40,24 +38,110 @@ const DEFAULT_HOW_IT_WORKS = [
   { step: '04', label: 'Audit',         desc: 'Full decision and reasoning trace written to the immutable audit log before returning.' },
 ]
 
-const pageVariants = {
-  hidden: {},
-  show: { transition: { staggerChildren: 0.07 } },
-}
+const pageVariants = { hidden: {}, show: { transition: { staggerChildren: 0.07 } } }
 const EASE = [0.25, 0.46, 0.45, 0.94] as const
 const sectionVariants = {
   hidden: { opacity: 0, y: 14 },
   show: { opacity: 1, y: 0, transition: { duration: 0.38, ease: EASE } },
 }
-const capabilityVariants = {
-  hidden: {},
-  show: { transition: { staggerChildren: 0.05 } },
-}
-const capItemVariants = {
-  hidden: { opacity: 0, x: -8 },
-  show: { opacity: 1, x: 0, transition: { duration: 0.25, ease: EASE } },
+
+type TabKey = 'documents' | 'overview' | 'executions' | 'approvals' | 'audit'
+
+function SectionCard({ title, subtitle, children }: { title: string; subtitle?: string; children: React.ReactNode }) {
+  return (
+    <div className="bg-brand-surface border border-brand-border rounded-sm overflow-hidden">
+      <div className="px-4 py-3 border-b border-brand-border">
+        <p className="text-[11px] font-body uppercase tracking-widest text-brand-muted">{title}</p>
+        {subtitle && <p className="text-[11px] font-body text-brand-muted mt-0.5">{subtitle}</p>}
+      </div>
+      {children}
+    </div>
+  )
 }
 
+function OverviewPanel({ tool, deployed }: { tool: ToolDef; deployed: Tool | null }) {
+  const badge = deployed ? (AUTONOMY_BADGE[deployed.autonomy_level] ?? AUTONOMY_BADGE.approve) : null
+  const isDoc = tool.type === 'document_intelligence'
+
+  return (
+    <div className="space-y-4">
+      <div className="bg-brand-surface border border-brand-border rounded-sm px-4 py-3 flex items-baseline gap-2 flex-wrap">
+        <span className="text-[11px] font-body uppercase tracking-widest text-brand-muted">Requires</span>
+        <span className="text-xs font-body text-brand-secondary">
+          {tool.requires.length
+            ? tool.requires.map((c) => INTEGRATION_CATEGORY_LABELS[c]).join(' · ')
+            : 'No integration — runs on upload or manual trigger'}
+        </span>
+        <Link href="/integrations" className="text-[11px] font-body text-brand-muted hover:text-brand-secondary transition-colors ml-auto">
+          Manage integrations &rarr;
+        </Link>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
+        <SectionCard
+          title="How it works"
+          subtitle={tool.howItWorks ? 'Every upload follows this fixed flow — no step can be skipped' : 'Every run follows this fixed flow — no step can be skipped'}
+        >
+          <div className="divide-y divide-brand-border">
+            {(tool.howItWorks ?? DEFAULT_HOW_IT_WORKS).map(({ step, label, desc }) => (
+              <div key={step} className="px-4 py-3 flex gap-4">
+                <p className="text-[11px] font-body text-brand-muted">{step}</p>
+                <div>
+                  <p className="text-xs font-body font-medium text-brand-text">{label}</p>
+                  <p className="text-[11px] font-body text-brand-muted leading-relaxed mt-0.5">{desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </SectionCard>
+
+        <SectionCard title="Capabilities" subtitle="What this agent does once deployed and connected to your data">
+          {tool.capabilities.length > 0 ? (
+            <ul className="divide-y divide-brand-border">
+              {tool.capabilities.map((cap) => (
+                <li key={cap} className="flex items-start gap-3 px-4 py-3">
+                  <span className="text-brand-muted font-body text-[11px] mt-0.5 shrink-0">&rarr;</span>
+                  <span className="text-xs font-body text-brand-secondary">{cap}</span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="px-4 py-8 text-xs font-body text-brand-muted text-center">No capabilities listed.</p>
+          )}
+        </SectionCard>
+      </div>
+
+      {deployed && (
+        <SectionCard title="Configuration">
+          <div className="px-4 py-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {!isDoc && (
+              <div className="space-y-1.5">
+                <p className="text-[11px] font-body text-brand-muted uppercase tracking-widest">Autonomy</p>
+                {badge && <span className={`text-[11px] font-body px-2 py-0.5 rounded-sm inline-block ${badge.className}`}>{badge.label}</span>}
+                <p className="text-[11px] font-body text-brand-muted leading-relaxed">{AUTONOMY_DESC[deployed.autonomy_level] ?? ''}</p>
+              </div>
+            )}
+            <div className="space-y-1.5">
+              <p className="text-[11px] font-body text-brand-muted uppercase tracking-widest">Status</p>
+              <p className="text-xs font-body text-brand-text">{deployed.status === 'active' ? 'Running' : 'Paused'}</p>
+              <p className="text-[11px] font-body text-brand-muted">
+                {deployed.status === 'active' ? 'Agent is live and processing' : 'Agent is paused — no runs will fire'}
+              </p>
+            </div>
+          </div>
+        </SectionCard>
+      )}
+    </div>
+  )
+}
+
+function DeployPrompt({ label }: { label: string }) {
+  return (
+    <div className="bg-brand-surface border border-brand-border rounded-sm px-4 py-12 text-center">
+      <p className="text-xs font-body text-brand-muted">Deploy this tool to start seeing {label}.</p>
+    </div>
+  )
+}
 
 export function GenericToolClient({ tool, deployed }: Props) {
   const router = useRouter()
@@ -66,10 +150,19 @@ export function GenericToolClient({ tool, deployed }: Props) {
   const [showConfig, setShowConfig] = useState(false)
   const [toggling, setToggling] = useState(false)
   const [deploying, setDeploying] = useState(false)
-  const [showOverview, setShowOverview] = useState(false)
 
   const isActive = deployed?.status === 'active'
+  const isDoc = tool.type === 'document_intelligence'
   const badge = deployed ? (AUTONOMY_BADGE[deployed.autonomy_level] ?? AUTONOMY_BADGE.approve) : null
+
+  const TABS: { key: TabKey; label: string }[] = [
+    ...(isDoc ? [{ key: 'documents' as const, label: 'Documents' }] : []),
+    { key: 'overview', label: 'Overview' },
+    { key: 'executions', label: 'Executions' },
+    { key: 'approvals', label: 'Approvals' },
+    { key: 'audit', label: 'Audit' },
+  ]
+  const [tab, setTab] = useState<TabKey>(isDoc ? 'documents' : 'overview')
 
   async function handleToggle() {
     if (!deployed) return
@@ -123,17 +216,13 @@ export function GenericToolClient({ tool, deployed }: Props) {
         <div className="space-y-1">
           <div className="flex items-center gap-2 flex-wrap">
             <h1 className="font-heading font-bold text-2xl text-brand-text">{tool.name}</h1>
-            {badge && tool.type !== 'document_intelligence' && <span className={`text-[11px] font-body px-2 py-0.5 rounded-sm ${badge.className}`}>{badge.label}</span>}
+            {badge && !isDoc && <span className={`text-[11px] font-body px-2 py-0.5 rounded-sm ${badge.className}`}>{badge.label}</span>}
           </div>
           <p className="text-xs font-body text-brand-muted max-w-xl">{tool.desc}</p>
         </div>
 
         {canConfigure && (
           <div className="flex items-center gap-2">
-            <button type="button" onClick={() => setShowOverview(true)}
-              className="text-xs font-body border border-brand-border text-brand-text hover:bg-brand-elevated rounded-sm px-3 py-1.5 transition-colors">
-              Overview
-            </button>
             <button type="button" onClick={() => setShowConfig(true)}
               className="text-xs font-body border border-brand-border text-brand-text hover:bg-brand-elevated rounded-sm px-3 py-1.5 transition-colors">
               Configure
@@ -167,99 +256,32 @@ export function GenericToolClient({ tool, deployed }: Props) {
         )}
       </motion.div>
 
-      {tool.type === 'document_intelligence' && (
-        <motion.div variants={sectionVariants} className="mt-6">
-          <DocumentsTab toolId={deployed?.id ?? null} />
-        </motion.div>
-      )}
+      {/* Tab nav */}
+      <motion.div variants={sectionVariants} className="flex gap-1 border-b border-brand-border overflow-x-auto">
+        {TABS.map((t) => (
+          <button
+            key={t.key}
+            type="button"
+            onClick={() => setTab(t.key)}
+            className={`px-3 py-2 text-xs font-body -mb-px border-b-2 whitespace-nowrap transition-colors ${
+              tab === t.key
+                ? 'border-[#00C853] text-brand-text'
+                : 'border-transparent text-brand-muted hover:text-brand-secondary'
+            }`}
+          >
+            {t.label}
+          </button>
+        ))}
+      </motion.div>
 
-      {/* Overview Sidebar */}
-      <AnimatePresence>
-        {showOverview && (
-          <div className="fixed inset-0 z-40 flex justify-end">
-            <motion.div 
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}
-              className="absolute inset-0 bg-black/40" onClick={() => setShowOverview(false)} 
-            />
-            <motion.div 
-              initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }} transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="relative h-screen w-[400px] bg-brand-surface border-l border-brand-border p-6 overflow-y-auto shadow-2xl z-50 flex flex-col"
-            >
-              <div className="flex items-center justify-between mb-6 shrink-0">
-                <h2 className="font-heading font-semibold text-brand-text text-sm">Overview</h2>
-                <button type="button" onClick={() => setShowOverview(false)} className="text-brand-muted hover:text-brand-text transition-colors text-lg leading-none">✕</button>
-              </div>
-
-              <div className="space-y-6 flex-1">
-                {/* How it works */}
-                <div className="bg-brand-bg border border-brand-border rounded-sm overflow-hidden">
-                  <div className="px-4 py-3 border-b border-brand-border">
-                    <p className="text-[11px] font-body uppercase tracking-widest text-brand-muted">How it works</p>
-                    <p className="text-[11px] font-body text-brand-muted mt-0.5">
-                      {tool.howItWorks
-                        ? 'Every upload follows this fixed processing flow — no step can be skipped'
-                        : 'Every run follows this fixed execution flow — no step can be skipped'}
-                    </p>
-                  </div>
-                  <div className="grid grid-cols-1 divide-y divide-brand-border">
-                    {(tool.howItWorks ?? DEFAULT_HOW_IT_WORKS).map(({ step, label, desc }) => (
-                      <div key={step} className="px-4 py-3 space-y-1.5 flex gap-4">
-                        <p className="text-[11px] font-body text-brand-muted font-mono">{step}</p>
-                        <div>
-                          <p className="text-xs font-body font-medium text-brand-text">{label}</p>
-                          <p className="text-[11px] font-body text-brand-muted leading-relaxed mt-0.5">{desc}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Configuration */}
-                {deployed && (
-                  <div className="bg-brand-bg border border-brand-border rounded-sm overflow-hidden">
-                    <div className="px-4 py-3 border-b border-brand-border">
-                      <p className="text-[11px] font-body uppercase tracking-widest text-brand-muted">Configuration</p>
-                    </div>
-                    <div className="px-4 py-4 space-y-4">
-                      {tool.type !== 'document_intelligence' && (
-                        <div className="space-y-1.5">
-                          <p className="text-[11px] font-body text-brand-muted uppercase tracking-widest">Autonomy</p>
-                          {badge && <span className={`text-[11px] font-body px-2 py-0.5 rounded-sm inline-block ${badge.className}`}>{badge.label}</span>}
-                          <p className="text-[11px] font-body text-brand-muted leading-relaxed">{AUTONOMY_DESC[deployed.autonomy_level] ?? ''}</p>
-                        </div>
-                      )}
-                      <div className="space-y-1.5">
-                        <p className="text-[11px] font-body text-brand-muted uppercase tracking-widest">Status</p>
-                        <p className="text-xs font-body text-brand-text">{deployed.status === 'active' ? 'Running' : 'Paused'}</p>
-                        <p className="text-[11px] font-body text-brand-muted">{deployed.status === 'active' ? 'Agent is live and processing' : 'Agent is paused — no runs will fire'}</p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Capabilities */}
-                <div className="bg-brand-bg border border-brand-border rounded-sm overflow-hidden">
-                  <div className="px-4 py-3 border-b border-brand-border">
-                    <p className="text-[11px] font-body uppercase tracking-widest text-brand-muted">Capabilities</p>
-                    <p className="text-[11px] font-body text-brand-muted mt-0.5">What this agent does once deployed and connected to your data</p>
-                  </div>
-                  {tool.capabilities.length > 0
-                    ? <ul className="divide-y divide-brand-border">
-                        {tool.capabilities.map(cap => (
-                          <li key={cap} className="flex items-start gap-3 px-4 py-3">
-                            <span className="text-brand-muted font-body text-[11px] mt-0.5 shrink-0">→</span>
-                            <span className="text-xs font-body text-brand-secondary">{cap}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    : <p className="px-4 py-8 text-xs font-body text-brand-muted text-center">No capabilities listed.</p>
-                  }
-                </div>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+      {/* Tab content */}
+      <motion.div variants={sectionVariants}>
+        {tab === 'documents' && <DocumentsTab toolId={deployed?.id ?? null} />}
+        {tab === 'overview' && <OverviewPanel tool={tool} deployed={deployed} />}
+        {tab === 'executions' && (deployed ? <ToolExecutionsTab toolId={deployed.id} /> : <DeployPrompt label="executions" />)}
+        {tab === 'approvals' && (deployed ? <ToolApprovalsTab toolId={deployed.id} /> : <DeployPrompt label="approvals" />)}
+        {tab === 'audit' && (deployed ? <ToolAuditTab toolId={deployed.id} /> : <DeployPrompt label="the audit trail" />)}
+      </motion.div>
 
       {showConfig && (
         <ConfigDrawer
