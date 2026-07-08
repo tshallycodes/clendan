@@ -93,65 +93,6 @@ async def dropbox_callback(
     return RedirectResponse(url=f"{frontend_url}/dashboard/integrations?connected=dropbox")
 
 
-@router.get("/integrations/dropbox/exchange")
-async def dropbox_exchange(
-    code: str = Query(...),
-    state: str = Query(...),
-    db: Prisma = Depends(get_db_dep),
-):
-    """
-    Called from the frontend /auth/dropbox/callback page.
-    Exchanges the OAuth code, stores credentials, enqueues sync.
-    Returns JSON so the frontend can handle the redirect - the browser never visits the backend URL.
-    state format: {tenant_id}:{random}
-    """
-    parts = state.split(":", 1)
-    if len(parts) != 2 or not parts[0]:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid OAuth state")
-
-    tenant_id = parts[0]
-
-    tenant = await db.tenant.find_unique(where={"id": tenant_id})
-    if not tenant:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Tenant not found")
-
-    try:
-        encrypted_creds_str = await dropbox.exchange_code(code=code, tenant_id=tenant_id)
-    except Exception as exc:
-        logger.error("dropbox_exchange_token_failed tenant=%s: %s", tenant_id, type(exc).__name__)
-        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail="Dropbox token exchange failed")
-
-    existing = await db.integration.find_first(
-        where={"tenant_id": tenant_id, "type": INTEGRATION_TYPE}
-    )
-    if existing:
-        integration = await db.integration.update(
-            where={"id": existing.id},
-            data={
-                "encrypted_credentials": encrypted_creds_str,
-                "status": "syncing",
-                "connected_at": datetime.now(UTC),
-            },
-        )
-    else:
-        integration = await db.integration.create(
-            data={
-                "tenant_id": tenant_id,
-                "type": INTEGRATION_TYPE,
-                "encrypted_credentials": encrypted_creds_str,
-                "status": "syncing",
-                "connected_at": datetime.now(UTC),
-            }
-        )
-
-    try:
-        await enqueue_dropbox_sync(integration_id=integration.id, tenant_id=tenant_id)
-    except Exception as exc:
-        logger.warning("dropbox_exchange_sync_enqueue_failed tenant=%s: %s", tenant_id, type(exc).__name__)
-
-    return standard_response(data={"status": "syncing", "integration_id": integration.id})
-
-
 @router.get("/integrations/dropbox/status")
 async def dropbox_status(
     current_user: RequireOrgAuth,

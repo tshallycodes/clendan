@@ -154,7 +154,7 @@ class Settings(BaseSettings):
             "paypal_redirect_uri": f"{base}/integrations/paypal/callback",
             "freshbooks_redirect_uri": f"{base}/integrations/freshbooks/callback",
             "sage_redirect_uri": f"{base}/integrations/sage/callback",
-            "dropbox_redirect_uri": f"{self.frontend_url.rstrip('/')}/auth/dropbox/callback",
+            "dropbox_redirect_uri": f"{base}/integrations/dropbox/callback",
             "onedrive_redirect_uri": f"{base}/integrations/onedrive/callback",
             "netsuite_redirect_uri": f"{base}/integrations/netsuite/callback",
             "dynamics_redirect_uri": f"{base}/integrations/dynamics/callback",
