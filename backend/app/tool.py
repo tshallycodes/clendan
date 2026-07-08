@@ -535,22 +535,44 @@ async def run_payment_run_weekly(_ctx: dict) -> None:
             logger.error("payment_run_cron_failed tenant=%s: %s", tool.tenant_id, type(exc).__name__)
 
 
+# integration type -> arq sync job name. Every job shares the (ctx, integration_id,
+# tenant_id) signature the daily resync enqueues with. Document + email sources are
+# included so Document Intelligence picks up newly-added files on the daily poll (each
+# source sync dedups already-processed files, so re-scanning is safe).
 _INTEGRATION_SYNC_JOBS: dict[str, str] = {
-    "quickbooks":  "sync_quickbooks_connection",
-    "xero":        "sync_xero_connection",
-    "freshbooks":  "sync_freshbooks_connection",
-    "stripe":      "sync_stripe_connection",
-    "gocardless":  "sync_gocardless_connection",
-    "square":      "sync_square_connection",
-    "paypal":      "sync_paypal_connection",
-    "sap":         "sync_sap_connection",
-    "netsuite":    "sync_netsuite_connection",
-    "dynamics":    "sync_dynamics_connection",
+    # Accounting
+    "quickbooks":   "sync_quickbooks_connection",
+    "xero":         "sync_xero_connection",
+    "freshbooks":   "sync_freshbooks_connection",
+    "sage":         "sync_sage_connection",
+    "netsuite":     "sync_netsuite_connection",
+    "dynamics":     "sync_dynamics_connection",
+    "sap":          "sync_sap_connection",
+    "codat":        "sync_codat_connection",
+    # Payment
+    "stripe":       "sync_stripe_connection",
+    "gocardless":   "sync_gocardless_connection",
+    "square":       "sync_square_connection",
+    "paypal":       "sync_paypal_connection",
+    "adyen":        "sync_adyen_connection",
+    "wise":         "sync_wise_connection",
+    # Banking
+    "plaid":        "sync_plaid_transactions",
+    "truelayer":    "sync_truelayer_connection",
+    "mono":         "sync_mono_transactions",
+    # Document sources (feed Document Intelligence)
+    "google_drive": "sync_drive_connection",
+    "dropbox":      "sync_dropbox_connection",
+    "onedrive":     "sync_onedrive_connection",
+    # Email (invoice/receipt attachments feed Document Intelligence)
+    "gmail":        "sync_gmail_connection",
+    "outlook":      "sync_outlook_connection",
 }
 
 
 async def resync_integrations_daily(_ctx: dict) -> None:
-    """Daily cron: re-enqueues sync jobs for all connected accounting and payment integrations."""
+    """Daily cron: re-enqueues sync jobs for every connected integration - accounting,
+    payment, banking, document, and email sources - so new data and files are picked up."""
     db = get_db()
     pool = await get_queue_pool()
     day_key = datetime.now(UTC).strftime("%Y-%m-%d")
@@ -582,6 +604,41 @@ async def resync_integrations_daily(_ctx: dict) -> None:
             logger.error(
                 "daily_resync_enqueue_failed type=%s integration_id=%s: %s",
                 intg.type, intg.id, type(exc).__name__,
+            )
+
+
+async def expire_stale_approvals(_ctx: dict) -> None:
+    """Hourly cron: auto-reject approvals whose TTL has elapsed.
+
+    A pending approval that is never actioned before ``expires_at`` is treated as a
+    rejection: the decision cascades to the execution, source document, and any linked
+    journal entry exactly as a human reject would, and the action is audited. This clears
+    stale entries out of the Pending queue instead of leaving them un-actionable forever.
+    """
+    from app.core.approvals import resolve_approval
+
+    db = get_db()
+    now = datetime.now(UTC)
+    stale = await db.approval.find_many(
+        where={"status": "pending", "expires_at": {"lt": now}},
+        take=500,
+    )
+    for approval in stale:
+        try:
+            await resolve_approval(
+                db=db,
+                approval=approval,
+                action="reject",
+                actor="system:approval_expiry",
+            )
+            logger.info(
+                "approval_auto_rejected_expired approval_id=%s tenant_id=%s",
+                approval.id, approval.tenant_id,
+            )
+        except Exception as exc:
+            logger.error(
+                "approval_expiry_failed approval_id=%s: %s",
+                approval.id, type(exc).__name__,
             )
 
 
@@ -719,12 +776,14 @@ class ToolSettings:
         run_payroll_rec_job,
         run_journal_entry_job,
         resync_integrations_daily,
+        expire_stale_approvals,
     ]
     cron_jobs = [
         cron(run_financial_reporting_monthly, minute=0),  # hourly — gated by per-tool day-of-month/hour config
         cron(run_payment_run_weekly, minute=0),  # hourly — gated by per-tool weekday/hour config
         cron(fetch_exchange_rates_daily, hour=0, minute=5),
         cron(run_reconciliation_scheduled_check, minute=0),  # hourly
+        cron(expire_stale_approvals, minute=5),  # hourly — auto-reject expired approvals
         cron(run_month_end_close_scheduled, hour=0, minute=10),  # daily midnight UTC
         cron(resync_integrations_daily, hour=3, minute=0),   # daily 3am UTC
     ]

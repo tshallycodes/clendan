@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, Path
 from prisma import Prisma
 from pydantic import BaseModel
 
-from app.audit.logger import write_audit_log
+from app.core.approvals import resolve_approval
 from app.core.db import get_db_dep
 from app.core.logging import get_logger
 from app.core.responses import standard_response
@@ -61,70 +61,19 @@ async def respond_to_approval(
         )
 
     new_status = "approved" if body.action == ApprovalAction.APPROVE else "rejected"
-    new_decision = "approved" if body.action == ApprovalAction.APPROVE else "rejected"
 
     responder = await db.user.find_first(
         where={"clerk_user_id": clerk_user_id, "tenant_id": tenant_id}
     )
 
-    approval_update: dict = {"status": new_status, "responded_at": now}
-    if responder:
-        approval_update["responder_id"] = responder.id
-
-    # Update approval record
-    await db.approval.update(where={"id": approval_id}, data=approval_update)  # type: ignore[arg-type]
-
-    # Update execution decision
-    execution = await db.execution.find_unique(where={"id": approval.execution_id})
-    await db.execution.update(
-        where={"id": approval.execution_id},
-        data={"decision": new_decision},
-    )
-
-    # Cascade to journal entry if this approval is linked to one
-    if execution and execution.input_ref and execution.input_ref.startswith("journal_entry:"):
-        parts = execution.input_ref.split(":")
-        if len(parts) >= 2:
-            je_id = parts[1]
-            je_new_status = "approved" if body.action == ApprovalAction.APPROVE else "rejected"
-            await db.journalentry.update_many(
-                where={"id": je_id, "tenant_id": tenant_id, "status": "pending_approval"},
-                data={"status": je_new_status},
-            )
-            _logger.info(
-                "journal_entry_approval_cascaded",
-                extra={
-                    "journal_entry_id": je_id,
-                    "new_status": je_new_status,
-                    "approval_id": approval_id,
-                    "tenant_id": tenant_id,
-                },
-            )
-
-    # Cascade decision to document so the Documents tab reflects the outcome
-    if body.action == ApprovalAction.REJECT:
-        await db.document.update_many(
-            where={"execution_id": approval.execution_id, "tenant_id": tenant_id},
-            data={"decision": "blocked"},
-        )
-    else:
-        await db.document.update_many(
-            where={"execution_id": approval.execution_id, "tenant_id": tenant_id},
-            data={"decision": "auto_approved"},
-        )
-
-    # Audit log - must succeed for operation to complete
-    await write_audit_log(
-        tenant_id=tenant_id,
+    # Shared resolution: updates the approval + execution, cascades to the linked journal
+    # entry and document, and writes the audit log. Same path the expiry cron uses.
+    await resolve_approval(
+        db=db,
+        approval=approval,
+        action=body.action.value,
         actor=f"user:{clerk_user_id}",
-        action=f"approval_{new_status}",
-        reasoning_trace={
-            "approval_id": approval_id,
-            "execution_id": approval.execution_id,
-            "action": body.action,
-        },
-        model_version="human",
-        execution_id=approval.execution_id,
+        responder_id=responder.id if responder else None,
     )
 
     _logger.info(
