@@ -70,17 +70,24 @@ workflow that gets us there.
   build it once the AP loop is fully closed (real payouts + PO matching + ERP write-back).
   (was `accounts_receivable`, `collections`)
 
-### Tier 2 — Adjacent extensions (after AP + AR + close are world-class)
+### Tier 2 — Close-pipeline tools (extend Close, not new workflows)
 
-On-scope but not must-haves; build when the core trio is excellent.
+These are **not** separate pipelines — they are additional tools *inside* the Close
+workflow, run at month-end on the period's locked actuals and feeding Financial Reporting.
+There are really only three workflows (AP, Close, AR & Collections); Close is the pipeline
+that accretes close-time tools over time. Build these once the core trio is excellent.
 
-- **Budgeting** — department budget vs actuals, variance analysis, overspend routing. Cheap to
-  add because the actuals are already synced; a natural extension of Financial Reporting.
-  (was `budgeting`; the `Budget` / `BudgetLine` DB models are retained as infrastructure)
-- **Revenue Recognition** — ASC 606 / IFRS 15 recognition schedules and period lock. Legitimate
-  close-adjacent accounting, but narrow (mostly SaaS/subscription) and edge-case heavy. Build
-  **only if** we deliberately target SaaS companies; otherwise stays parked. (was
-  `revenue_recognition`)
+- **Revenue Recognition** — ASC 606 / IFRS 15 recognition schedules and period lock. A close
+  step: post deferred → recognised revenue journal entries during month-end, then lock.
+  Narrow (mostly SaaS/subscription) and edge-case heavy — build **only if** we target SaaS.
+  (was `revenue_recognition`)
+- **Budget vs actuals (variance)** — overlay the budget on the period's actuals, flag
+  variances, route overspend. A close-time reporting overlay; cheap because actuals are
+  already synced. (the reporting half of the old `budgeting`; `Budget` / `BudgetLine` models
+  retained as infrastructure)
+
+Budget *planning/creation* (setting next period's numbers) is a separate upfront FP&A
+activity on a different cadence — **not** part of close. Deferred, low priority.
 
 ### Tier 3 — Deferred (different buyer)
 
