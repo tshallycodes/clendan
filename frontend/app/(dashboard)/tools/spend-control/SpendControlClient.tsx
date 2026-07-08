@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react'
 import { useCurrency } from '@/components/Providers'
 import { CURRENCY_MAP } from '@/lib/currency'
 import { ToolPageShell, ToolResultState, type ToolRenderCtx } from '@/components/dashboard/tools/ToolPageShell'
+import { BarChart } from '@/components/dashboard/tools/BarChart'
 
 interface PerExpense {
   expense_id: string
@@ -53,6 +54,15 @@ function Result({ ctx }: { ctx: ToolRenderCtx }) {
     return { total, approved, flagged, blocked }
   }, [per])
 
+  const categoryBars = useMemo(() => {
+    const m = new Map<string, number>()
+    for (const e of per) {
+      const c = e.category || 'Uncategorised'
+      m.set(c, (m.get(c) ?? 0) + e.amount_cents)
+    }
+    return Array.from(m.entries()).sort((a, b) => b[1] - a[1]).slice(0, 6)
+  }, [per])
+
   if (!ctx.deployed) return <ToolResultState deployed={null} loading={ctx.loading} notDeployedHint="Connect an accounting integration and deploy to review spend." />
   if (ctx.loading && !trace) return <div className="h-40 bg-brand-elevated rounded-sm animate-pulse" />
 
@@ -100,10 +110,15 @@ function Result({ ctx }: { ctx: ToolRenderCtx }) {
         </div>
       )}
 
-      {categorySummary && (
-        <div className="bg-brand-surface border border-brand-border rounded-sm p-4">
-          <p className="text-[11px] font-body uppercase tracking-widest text-brand-muted mb-1.5">Spend by category</p>
-          <p className="text-xs font-body text-brand-secondary leading-relaxed">{categorySummary}</p>
+      {(categoryBars.length > 0 || categorySummary) && (
+        <div className="bg-brand-surface border border-brand-border rounded-sm p-4 space-y-3">
+          {categoryBars.length > 0 && (
+            <BarChart
+              title="Spend by category"
+              bars={categoryBars.map(([label, cents]) => ({ label, value: cents, display: fmt(cents), tone: 'neutral' as const }))}
+            />
+          )}
+          {categorySummary && <p className="text-xs font-body text-brand-secondary leading-relaxed">{categorySummary}</p>}
         </div>
       )}
 

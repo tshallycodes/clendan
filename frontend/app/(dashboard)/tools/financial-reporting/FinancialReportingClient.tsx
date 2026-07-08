@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useCurrency } from '@/components/Providers'
 import { CURRENCY_MAP } from '@/lib/currency'
 import { ToolPageShell, ToolResultState, type ToolRenderCtx } from '@/components/dashboard/tools/ToolPageShell'
+import { BarChart } from '@/components/dashboard/tools/BarChart'
 
 interface ClaudeResult {
   pl_summary?: string
@@ -100,6 +101,30 @@ function Result({ ctx }: { ctx: ToolRenderCtx }) {
               {s.label}
             </button>
           ))}
+        </div>
+
+        <div className="bg-brand-surface border border-brand-border rounded-sm p-4">
+          {tab === 'pl' && (
+            <BarChart bars={[
+              { label: 'Revenue', value: n('revenue_cents'), display: fmt(n('revenue_cents')), tone: 'neutral' },
+              { label: 'Gross profit', value: n('gross_profit_cents'), display: fmt(n('gross_profit_cents')), tone: n('gross_profit_cents') >= 0 ? 'positive' : 'negative' },
+              { label: 'Net profit', value: n('net_profit_cents'), display: fmt(n('net_profit_cents')), tone: n('net_profit_cents') >= 0 ? 'positive' : 'negative' },
+            ]} />
+          )}
+          {tab === 'balance' && (
+            <BarChart bars={[
+              { label: 'Assets', value: n('total_assets_cents'), display: fmt(n('total_assets_cents')), tone: 'neutral' },
+              { label: 'Liabilities', value: n('total_liabilities_cents'), display: fmt(n('total_liabilities_cents')), tone: 'neutral' },
+              { label: 'Net assets', value: n('net_assets_cents'), display: fmt(n('net_assets_cents')), tone: n('net_assets_cents') >= 0 ? 'positive' : 'negative' },
+            ]} />
+          )}
+          {tab === 'cash' && (
+            <BarChart bars={[
+              { label: 'Inflows', value: n('cash_inflows_cents'), display: fmt(n('cash_inflows_cents')), tone: 'positive' },
+              { label: 'Outflows', value: n('cash_outflows_cents'), display: fmt(n('cash_outflows_cents')), tone: 'neutral' },
+              { label: 'Net cash', value: n('net_cash_cents'), display: fmt(n('net_cash_cents')), tone: n('net_cash_cents') >= 0 ? 'positive' : 'negative' },
+            ]} />
+          )}
         </div>
 
         <div className="bg-brand-surface border border-brand-border rounded-sm divide-y divide-brand-border">
