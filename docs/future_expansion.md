@@ -1,5 +1,10 @@
 # Roadmap and Future Expansion
 
+**Mission:** automate the work of the people who operate a company's money — the finance and
+accounting team — with automation they can trust and defend (confidence, reasoning,
+approvals, immutable audit). Every roadmap decision is checked against one test: **does it
+automate a task the company's own money-operator does?**
+
 Clendan is deliberately scoped to **one flow: AI-powered invoice processing feeding
 automated month-end close, integrated deeply with your ERP.** AP is the wedge; close is the
 lock-in. Everything below is tracked here **in docs only** — it is not kept as vestigial code.

@@ -2,10 +2,18 @@
 
 ## Project Overview
 
-Clendan is an AI Financial Agent OS, focused on one flow: **AI-powered invoice processing
-feeding automated month-end close, integrated deeply with your ERP.** AP is the wedge;
-close is the lock-in. Every module outside AP and close has been removed — anything not
-core to AP or close is tracked in [docs/future_expansion.md](docs/future_expansion.md)
+**Mission:** automate the work of the people who operate a company's money — the finance
+and accounting team (controller, AP/AR clerk, bookkeeper, finance ops, fractional CFO) —
+with automation they can *trust and defend*: every action carries a confidence score and
+reasoning, is checked against policy, routes to a human when unsure, and is written to an
+immutable audit log. The litmus test for any new capability: **does it automate a task the
+company's own money-operator does?** If it needs a different operator (a lender, a bank
+compliance officer), it is out of scope.
+
+Clendan is an AI Financial Agent OS. The current wedge is **one flow: AI-powered invoice
+processing feeding automated month-end close, integrated deeply with your ERP.** AP is the
+wedge; close is the lock-in. Every module outside the in-scope workflows has been removed —
+anything not core is tracked in [docs/future_expansion.md](docs/future_expansion.md)
 (Roadmap and future expansion), not kept as vestigial code.
 
 **Stack:** Next.js 16 (frontend) · FastAPI (backend) · PostgreSQL + Prisma · Clerk (auth) ·
