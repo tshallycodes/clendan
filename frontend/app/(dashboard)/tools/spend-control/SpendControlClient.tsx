@@ -110,9 +110,9 @@ function Result({ ctx }: { ctx: ToolRenderCtx }) {
         </div>
       )}
 
-      {(categoryBars.length > 0 || categorySummary) && (
+      {(categoryBars.length >= 2 || categorySummary) && (
         <div className="bg-brand-surface border border-brand-border rounded-sm p-4 space-y-3">
-          {categoryBars.length > 0 && (
+          {categoryBars.length >= 2 && (
             <BarChart
               title="Spend by category"
               bars={categoryBars.map(([label, cents]) => ({ label, value: cents, display: fmt(cents), tone: 'neutral' as const }))}
