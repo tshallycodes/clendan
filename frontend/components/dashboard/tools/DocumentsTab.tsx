@@ -364,11 +364,12 @@ function DocumentRow({ doc, toolId, onAbort }: DocumentRowProps) {
             <div className="shrink-0 flex items-center gap-2">
               {doc.status === 'processing' && (
                 <>
-                  <span className={`text-[11px] font-body px-2 py-0.5 rounded-sm border ${
+                  <span className={`text-[11px] font-body px-2 py-0.5 rounded-sm border flex items-center gap-1.5 ${
                     timedOut
                       ? 'text-[#ff4d6d] bg-[rgba(255,77,109,0.08)] border-[rgba(255,77,109,0.2)]'
                       : 'text-[#f5a623] bg-[rgba(245,166,35,0.08)] border-[rgba(245,166,35,0.2)]'
                   }`}>
+                    {!timedOut && <span className="w-2.5 h-2.5 border-[1.5px] border-current border-t-transparent rounded-full animate-spin shrink-0" />}
                     {doc.id.startsWith('temp-') ? 'Uploading…' : timedOut ? 'Timed out' : 'Processing…'}
                   </span>
                   {!doc.id.startsWith('temp-') && (
