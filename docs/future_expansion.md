@@ -50,32 +50,69 @@ vestigial/placeholder versions have been removed rather than left pretending to 
 
 ---
 
-## Future expansion — out of scope features (removed from code)
+## Expansion roadmap — prioritised (removed from code)
 
-Tracked for when the core AP + close product is world-class. Each was deleted from the
-codebase (tools, routes, config, tests, UI) as part of the AP-first restructure.
+Each item below was deleted from the codebase (tools, routes, config, tests, UI) in the
+AP-first restructure. They come back **intentionally and in priority order**, not by scope
+creep. The litmus test for staying on the roadmap: **same buyer + same data spine** — the
+buyer is the controller / finance-ops lead who owns the books, and the spine is ERP + bank +
+document ingestion. A module that needs a *different* buyer or a *different* regulatory/data
+world is a different product and is dropped below.
 
-### Financial tools
+### Tier 1 — Core expansion (completes the product's shape)
+
+The full thesis is *"we run your payables, receivables, and close."* This is the one new
+workflow that gets us there.
+
 - **AR & Collections** — outstanding-invoice monitoring, tiered debtor follow-ups, escalation,
-  late fees, write-off controls. (was `accounts_receivable`, `collections`)
-- **Treasury & Cash** — multi-bank cash position, runway/liquidity forecasting, FX exposure,
-  counterparty limits, cash sweep. (was `treasury`, `cash_flow_forecast`)
-- **Budgeting** — department budget vs actuals, variance analysis, overspend routing.
+  late fees, write-off controls. The mirror of AP (money in vs money out), same buyer, same
+  data spine (customer invoices are already synced read-only). Highest-impact next workflow —
+  build it once the AP loop is fully closed (real payouts + PO matching + ERP write-back).
+  (was `accounts_receivable`, `collections`)
+
+### Tier 2 — Adjacent extensions (after AP + AR + close are world-class)
+
+On-scope but not must-haves; build when the core trio is excellent.
+
+- **Budgeting** — department budget vs actuals, variance analysis, overspend routing. Cheap to
+  add because the actuals are already synced; a natural extension of Financial Reporting.
   (was `budgeting`; the `Budget` / `BudgetLine` DB models are retained as infrastructure)
-- **Revenue Recognition** — ASC 606 / IFRS 15 recognition schedules and period lock.
-  (was `revenue_recognition`)
+- **Revenue Recognition** — ASC 606 / IFRS 15 recognition schedules and period lock. Legitimate
+  close-adjacent accounting, but narrow (mostly SaaS/subscription) and edge-case heavy. Build
+  **only if** we deliberately target SaaS companies; otherwise stays parked. (was
+  `revenue_recognition`)
+
+### Tier 3 — Deferred (different buyer)
+
+- **Treasury & Cash** — multi-bank cash position, runway/liquidity forecasting, FX exposure,
+  counterparty limits, cash sweep. Useful, but this is a CFO/treasury-desk tool with its own
+  data model — a step away from the controller buyer. Revisit only when moving upmarket to
+  CFOs. (was `treasury`, `cash_flow_forecast`)
+
+### Not planned — off-thesis (different product)
+
+Fails the litmus test: different buyer, different regulatory regime, different data. Not
+"automate your accounting." Kept here only so the decision is recorded.
+
 - **Credit Underwriting** — automated credit/DTI/LTV decisioning and adverse-action notices.
+  This is a *lending* product (lender buyer, consumer-credit regulation). **Dropped.**
   (was `credit_underwriting`)
 - **Risk & Compliance / Fraud Detection** — transaction risk scoring, velocity/structuring
-  detection, KYC/AML/CTR monitoring, SAR handling. (was `fraud_detection`, `compliance`)
+  detection, KYC/AML/CTR monitoring, SAR handling. This is *bank/fintech-grade compliance*
+  (regulated-institution buyer, heavy liability). **Dropped** — the only fraud surface we keep
+  is the lightweight suspicious-payable flagging that already lives inside `spend_control`.
+  (was `fraud_detection`, `compliance`)
 
 ### Standalone API tools
+
 - **Fraud Signal API** (`POST /fraud/score`) and **Contract Extraction** (`POST /parse/contract`).
 
 ### Connectors
+
 - **CRM** — Salesforce and HubSpot (customer, deal, and pipeline data).
 
 ### Surfaces
+
 - **Excel add-in** — Office.js task-pane add-in.
 - **MCP server** (`backend/mcp/`) — Model Context Protocol server exposing Clendan to MCP
   clients. Left in the repo but out of scope for active development.
