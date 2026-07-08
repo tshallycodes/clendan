@@ -6,6 +6,7 @@ import asyncio
 import base64
 import json
 import time
+from datetime import datetime
 from typing import Any
 
 import anthropic
@@ -50,12 +51,13 @@ def _parse_policy(config_json: dict) -> _ToolPolicy:
 
 _CLASSIFY_PROMPT = """Classify this document. Return ONLY valid JSON:
 {
-  "type": "receipt" or "document" or "error",
+  "type": "receipt" or "invoice" or "document" or "error",
   "error_reason": null or one of: "image_unreadable", "empty_document", "no_text_found", "cannot_identify",
   "error_message": null or a human-readable error message in title case
 }
 receipt = any receipt, proof of purchase, expense claim, transaction record.
-document = any business document: contract, NDA, report, letter, policy, financial statement, proposal, invoice, etc.
+invoice = a supplier/vendor invoice or bill requesting payment - has an invoice number, line items, and a payable total.
+document = any other business document: contract, NDA, report, letter, policy, financial statement, proposal, etc.
 error = cannot classify. Set error_reason and a clear error_message.
 Error reasons: image_unreadable (too blurry/dark), empty_document (blank), no_text_found (no readable text), cannot_identify (unrecognised content).
 Return ONLY the JSON object. No markdown, no explanation."""
@@ -250,6 +252,41 @@ async def _process_document(file_bytes: bytes, content_type: str) -> dict[str, A
     }
 
 
+_INVOICE_STATUS_BY_DECISION = {
+    "auto_approved": "approved",
+    "approval_required": "pending",
+    "blocked": "blocked",
+}
+
+
+async def _create_native_invoice(
+    db, tenant_id: str, document_id: str | None, parsed: dict, decision: str
+) -> None:
+    """Persist a native Invoice row from the parsed invoice so the payable is immediately
+    visible/queryable and duplicate detection works. Best-effort - never fails the job."""
+    due = parsed.get("due_date")
+    due_dt = None
+    if due:
+        try:
+            due_dt = datetime.fromisoformat(str(due))
+        except ValueError:
+            due_dt = None
+    try:
+        await db.invoice.create(data={
+            "tenant_id": tenant_id,
+            "vendor": parsed.get("vendor") or "Unknown",
+            "invoice_number": parsed.get("invoice_number") or "",
+            "amount_minor": int(parsed.get("amount_minor") or 0),
+            "currency": parsed.get("currency") or "GBP",
+            "due_date": due_dt,
+            "status": _INVOICE_STATUS_BY_DECISION.get(decision, "pending"),
+            "raw_document_ref": document_id,
+            "parsed_json": PrismaJson(parsed),
+        })
+    except Exception as exc:
+        _logger.warning("doc_intel_native_invoice_create_failed", extra={"error": str(exc)})
+
+
 async def run_document_intelligence_job(
     ctx: dict,
     *,
@@ -276,16 +313,18 @@ async def run_document_intelligence_job(
 
     try:
         if policy_config is not None:
-            policy = _parse_policy(policy_config)
+            raw_config = policy_config
         else:
             tool = await db.tool.find_first(where={"id": tool_id, "tenant_id": tenant_id})
-            policy = _parse_policy(tool.config_json if tool and isinstance(tool.config_json, dict) else {})
+            raw_config = tool.config_json if tool and isinstance(tool.config_json, dict) else {}
+        policy = _parse_policy(raw_config)
 
         classification = await _classify_document(file_bytes, content_type)
         doc_type = classification.get("type", "error")
         _logger.debug("doc_intel_classified", extra={"execution_id": execution_id, "doc_type": doc_type})
 
         rule_triggered: str | None = None
+        audit_needed = True  # invoices audit themselves via execute_invoice_tool
 
         if doc_type == "error":
             error_msg = classification.get("error_message") or "Could not read this document"
@@ -296,6 +335,31 @@ async def run_document_intelligence_job(
                 "reason": error_msg,
                 "extracted": {},
             }
+        elif doc_type == "invoice":
+            # Real AP processing: extract payable fields, run invoice policy, and (on
+            # auto-approve) write the bill to the connected ERP. Reuses the invoice tool's
+            # flow, which writes its own audit before the ERP write - so we skip the
+            # generic audit below to avoid a duplicate entry.
+            from app.tools.invoice_processing import execute_invoice_tool
+            inv = await execute_invoice_tool(
+                tool_id=tool_id,
+                tenant_id=tenant_id,
+                execution_id=execution_id,
+                file_bytes=file_bytes,
+                content_type=content_type,
+                policy_config=raw_config,
+            )
+            parsed = inv.get("parsed_invoice", {}) or {}
+            result = {
+                "document_type": "invoice",
+                "decision": inv["decision"],
+                "confidence": inv["confidence"],
+                "reason": inv["reason"],
+                "extracted": parsed,
+            }
+            rule_triggered = inv.get("rule_triggered")
+            audit_needed = False
+            await _create_native_invoice(db, tenant_id, document_id, parsed, inv["decision"])
         else:
             r = await _process_document(file_bytes, content_type)
             result = {"document_type": "document", **r}
@@ -341,23 +405,25 @@ async def run_document_intelligence_job(
                     f"{threshold_pct}% threshold."
                 )
 
-        # Audit FIRST - if this fails, the operation fails (hard requirement)
-        await write_audit_log(
-            tenant_id=tenant_id,
-            actor=f"tool:{TOOL_TYPE}:v{TOOL_VERSION}",
-            action=f"document_processed:{result['document_type']}",
-            reasoning_trace={
-                "tool_id": tool_id,
-                "document_type": result["document_type"],
-                "decision": result["decision"],
-                "confidence": result["confidence"],
-                "reason": result["reason"],
-                "rule_triggered": rule_triggered,
-                "tool_version": TOOL_VERSION,
-            },
-            model_version=f"{TOOL_TYPE}-v{TOOL_VERSION}",
-            execution_id=execution_id,
-        )
+        # Audit FIRST - if this fails, the operation fails (hard requirement).
+        # Invoices are already audited inside execute_invoice_tool (audit_needed=False).
+        if audit_needed:
+            await write_audit_log(
+                tenant_id=tenant_id,
+                actor=f"tool:{TOOL_TYPE}:v{TOOL_VERSION}",
+                action=f"document_processed:{result['document_type']}",
+                reasoning_trace={
+                    "tool_id": tool_id,
+                    "document_type": result["document_type"],
+                    "decision": result["decision"],
+                    "confidence": result["confidence"],
+                    "reason": result["reason"],
+                    "rule_triggered": rule_triggered,
+                    "tool_version": TOOL_VERSION,
+                },
+                model_version=f"{TOOL_TYPE}-v{TOOL_VERSION}",
+                execution_id=execution_id,
+            )
 
         duration_ms = int((time.monotonic() - _start) * 1000)
         await complete_execution(

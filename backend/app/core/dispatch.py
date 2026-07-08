@@ -32,7 +32,9 @@ EVENT_TYPE_TO_JOB: dict[str, str] = {
     "reconciliation_requested":  "run_reconciliation_job",
     "expense_control_run":       "run_expense_control_job",
     "expense_submitted":         "run_expense_control_job",
-    "spend_control_run":         "run_expense_control_job",
+    # AP workflow chain (Document Intelligence -> Spend Control): assess the bill, not
+    # employee expenses. Routed to the accounts-payable job.
+    "spend_control_run":         "run_accounts_payable_job",
     "ap_run":                    "run_accounts_payable_job",
     "tax_compliance_run":        "run_tax_compliance_job",
     "financial_report_run":      "run_financial_reporting_job",
@@ -146,7 +148,7 @@ async def enqueue_for_event(
             integration_sources=payload.get("integration_sources"),
             policy_overrides=payload.get("policy") if isinstance(payload.get("policy"), dict) else None,
         )
-    elif event_type in ("expense_control_run", "expense_submitted", "spend_control_run"):
+    elif event_type in ("expense_control_run", "expense_submitted"):
         await pool.enqueue_job(
             job_name, **kwargs,
             transaction_ids=payload.get("transaction_ids", []),

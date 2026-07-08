@@ -180,6 +180,60 @@ async def test_job_accepts_policy_config_kwarg_and_skips_db_read():
 
 
 @pytest.mark.asyncio
+async def test_job_invoice_routes_to_ap_and_creates_native_invoice():
+    """An invoice is processed via the AP flow (execute_invoice_tool), which extracts +
+    writes the bill + audits itself; doc-intel then persists a native Invoice and does not
+    double-audit."""
+    db = _mock_db()
+    db.invoice = MagicMock()
+    db.invoice.create = AsyncMock(return_value=None)
+    audit = AsyncMock(return_value="audit-id")
+    complete = AsyncMock(return_value="auto_approved")
+    inv_result = {
+        "decision": "auto_approved",
+        "reason": "Auto-approved: within AP thresholds.",
+        "rule_triggered": None,
+        "parsed_invoice": {
+            "vendor": "Acme Ltd", "invoice_number": "INV-1", "amount_minor": 12345,
+            "currency": "GBP", "due_date": "2026-06-30", "line_items": [],
+        },
+        "confidence": 0.97,
+    }
+    execute_invoice = AsyncMock(return_value=inv_result)
+    with (
+        patch("app.tools.document_intelligence.get_db", return_value=db),
+        patch("app.tools.document_intelligence.write_audit_log", audit),
+        patch("app.tools.document_intelligence.complete_execution", complete),
+        patch("app.tools.document_intelligence.push_to_dlq", AsyncMock()),
+        patch("app.tools.document_intelligence._classify_document", AsyncMock(return_value={"type": "invoice"})),
+        patch("app.tools.invoice_processing.execute_invoice_tool", execute_invoice),
+    ):
+        from app.tools.document_intelligence import run_document_intelligence_job
+        result = await run_document_intelligence_job(
+            {}, execution_id="e7", tenant_id="t1", tool_id="tool1",
+            file_bytes=b"pdf", content_type="application/pdf", document_id="d7",
+        )
+    assert result["document_type"] == "invoice"
+    assert result["decision"] == "auto_approved"
+    execute_invoice.assert_awaited_once()
+    db.invoice.create.assert_awaited_once()
+    created = db.invoice.create.await_args.kwargs["data"]
+    assert created["vendor"] == "Acme Ltd"
+    assert created["invoice_number"] == "INV-1"
+    assert created["status"] == "approved"
+    audit.assert_not_called()  # invoice audit is written inside execute_invoice_tool
+    complete.assert_awaited_once()
+    assert complete.await_args.kwargs["decision"] == "auto_approved"
+
+
+def test_spend_control_run_routes_to_accounts_payable():
+    """AP workflow chain must assess the bill, not employee expenses."""
+    from app.core.dispatch import EVENT_TYPE_TO_JOB, EVENT_TYPE_TO_TOOL_TYPE
+    assert EVENT_TYPE_TO_JOB["spend_control_run"] == "run_accounts_payable_job"
+    assert EVENT_TYPE_TO_TOOL_TYPE["spend_control_run"] == "spend_control"
+
+
+@pytest.mark.asyncio
 async def test_job_audit_failure_aborts_before_complete_execution():
     """Audit must be written before the execution is finalised — if audit fails the
     operation fails and complete_execution is never reached."""
