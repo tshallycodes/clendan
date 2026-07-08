@@ -150,6 +150,14 @@ export function ToolsClient({ deployedTools, connections }: Props) {
         body: JSON.stringify({ from_type: from, to_type: to, enabled: next }),
       })
       if (!res.ok) throw new Error(`${res.status}`)
+      const fromName = TOOLS.find((t) => t.type === from)?.name ?? 'Upstream'
+      const toName = TOOLS.find((t) => t.type === to)?.name ?? 'the next tool'
+      toast(
+        next
+          ? `Connected — ${fromName} will auto-run ${toName}`
+          : `Disconnected — ${fromName} and ${toName} run independently`,
+        'success',
+      )
     } catch {
       setConnMap((m) => ({ ...m, [key]: current })) // revert
       toast('Could not update connection', 'error')
