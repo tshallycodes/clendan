@@ -53,13 +53,14 @@ function Result({ ctx }: { ctx: ToolRenderCtx }) {
     return { total, approved, flagged, blocked }
   }, [per])
 
-  if (!trace) return <ToolResultState deployed={ctx.deployed} loading={ctx.loading} notDeployedHint="Connect an accounting integration and deploy to review spend." />
+  if (!ctx.deployed) return <ToolResultState deployed={null} loading={ctx.loading} notDeployedHint="Connect an accounting integration and deploy to review spend." />
+  if (ctx.loading && !trace) return <div className="h-40 bg-brand-elevated rounded-sm animate-pulse" />
 
-  const dailyBurn = Number(trace.daily_burn_minor ?? 0)
-  const projected = Number(trace.projected_month_spend_minor ?? 0)
-  const highBurn = Boolean(trace.high_burn_rate)
-  const burnAssessment = trace.burn_rate_assessment as string | null | undefined
-  const categorySummary = trace.spend_category_summary as string | null | undefined
+  const dailyBurn = Number(trace?.daily_burn_minor ?? 0)
+  const projected = Number(trace?.projected_month_spend_minor ?? 0)
+  const highBurn = Boolean(trace?.high_burn_rate)
+  const burnAssessment = trace?.burn_rate_assessment as string | null | undefined
+  const categorySummary = trace?.spend_category_summary as string | null | undefined
   const rows = filter === 'all' ? per : per.filter((e) => e.action === filter)
 
   const FILTERS: { key: ActionFilter; label: string }[] = [
@@ -71,6 +72,13 @@ function Result({ ctx }: { ctx: ToolRenderCtx }) {
 
   return (
     <div className="space-y-5">
+      {!trace && (
+        <div className="bg-brand-surface border border-brand-border rounded-sm px-4 py-3 text-center">
+          <p className="text-xs font-body text-brand-muted">
+            This agent hasn&apos;t run yet — click <span className="text-brand-secondary">Run spend review</span> to populate this with your latest expenses.
+          </p>
+        </div>
+      )}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <StatCard label="Total spend" value={fmt(totals.total)} />
         <StatCard label="Expenses" value={totals.approved + totals.flagged + totals.blocked} />
@@ -133,10 +141,7 @@ function Result({ ctx }: { ctx: ToolRenderCtx }) {
                   <td className="px-4 py-2.5">
                     <span className={`text-[11px] font-body px-2 py-0.5 rounded-sm border ${ACTION_STYLE[e.action]}`}>{ACTION_LABEL[e.action]}</span>
                   </td>
-                  <td className="px-4 py-2.5 text-brand-secondary max-w-[320px]">
-                    <p>{e.reasoning}</p>
-                    {e.flags.length > 0 && <p className="text-[11px] text-[#f5a623] mt-1">{e.flags.join(' · ')}</p>}
-                  </td>
+                  <td className="px-4 py-2.5 text-brand-secondary max-w-[360px]">{e.reasoning}</td>
                 </tr>
               ))}
             </tbody>

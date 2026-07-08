@@ -36,6 +36,11 @@ _EXPENSE_ACTOR = "tool:expense_control:v1"
 _EXPENSE_MODEL_VERSION = "expense_control-v1"
 _ACTION_RANK: dict[str, int] = {"approve": 0, "flag": 1, "block": 2}
 
+
+def _fmt(cents: int) -> str:
+    """Format minor units as a plain decimal amount (matches the amounts shown in the UI)."""
+    return f"{cents / 100:,.2f}"
+
 # Round-number check: multiples of $100 (10 000 cents) above $500 (50 000 cents)
 _ROUND_NUMBER_MODULUS: int = 10_000
 _ROUND_NUMBER_MIN_CENTS: int = 50_000
@@ -110,16 +115,16 @@ def _apply_hard_rules(
             worst = a
 
     if expense.amount_cents > policy.single_expense_limit_cents:
-        flags.append(f"amount {expense.amount_cents} exceeds limit {policy.single_expense_limit_cents}")
+        flags.append(f"Amount {_fmt(expense.amount_cents)} exceeds the single-expense limit of {_fmt(policy.single_expense_limit_cents)}")
         _up("block")
     if not expense.approved and expense.amount_cents > policy.approval_required_cents:
-        flags.append(f"unapproved: {expense.amount_cents} exceeds approval_required_cents {policy.approval_required_cents}")
+        flags.append(f"Unapproved — {_fmt(expense.amount_cents)} is above the {_fmt(policy.approval_required_cents)} approval threshold")
         _up("flag")
     if expense.account_code and valid_account_codes and expense.account_code not in valid_account_codes:
-        flags.append(f"account_code '{expense.account_code}' not in chart of accounts — miscategorized")
+        flags.append(f"Account code '{expense.account_code}' isn't in your chart of accounts — likely miscategorised")
         _up("flag")
     if expense.amount_cents >= _ROUND_NUMBER_MIN_CENTS and expense.amount_cents % _ROUND_NUMBER_MODULUS == 0:
-        flags.append(f"suspicious round number: {expense.amount_cents}")
+        flags.append(f"Suspicious round-number amount: {_fmt(expense.amount_cents)}")
         _up("flag")
 
     return (flags, worst) if flags else (flags, None)
@@ -340,11 +345,10 @@ async def _execute_expense_control(
         if action == "approve" and expense.amount_cents > policy.auto_approve_limit_cents:
             action = "flag"
             flags = [
-                f"auto_approve blocked: amount {expense.amount_cents} exceeds "
-                f"auto_approve_limit_cents {policy.auto_approve_limit_cents}"
+                f"Above the auto-approve limit of {_fmt(policy.auto_approve_limit_cents)} — escalated for review"
             ]
             reasoning = (
-                f"{claude_result.reasoning} — escalated: amount exceeds auto-approve limit."
+                f"{claude_result.reasoning} — escalated: amount is above the auto-approve limit of {_fmt(policy.auto_approve_limit_cents)}."
             )
         else:
             flags = []

@@ -41,14 +41,15 @@ function Result({ ctx }: { ctx: ToolRenderCtx }) {
   const fmt = (c: number) => `${sym}${(Math.abs(c) / 100).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 
   const trace = ctx.trace
-  if (!trace) return <ToolResultState deployed={ctx.deployed} loading={ctx.loading} notDeployedHint="Connect an accounting integration and deploy to compute your VAT position." />
+  if (!ctx.deployed) return <ToolResultState deployed={null} loading={ctx.loading} notDeployedHint="Connect an accounting integration and deploy to compute your VAT position." />
+  if (ctx.loading && !trace) return <div className="h-40 bg-brand-elevated rounded-sm animate-pulse" />
 
-  const output = Number(trace.vat_collected_cents ?? 0)
-  const input = Number(trace.input_vat_cents ?? 0)
-  const net = Number(trace.net_vat_liability_minor ?? 0)
-  const periodLabel = (trace.period_label as string) ?? ''
-  const thresholdBreached = Boolean(trace.threshold_breached)
-  const assessment = (trace.claude_assessment as ClaudeAssessment) ?? {}
+  const output = Number(trace?.vat_collected_cents ?? 0)
+  const input = Number(trace?.input_vat_cents ?? 0)
+  const net = Number(trace?.net_vat_liability_minor ?? 0)
+  const periodLabel = (trace?.period_label as string) ?? ''
+  const thresholdBreached = Boolean(trace?.threshold_breached)
+  const assessment = (trace?.claude_assessment as ClaudeAssessment) ?? {}
   const risk = assessment.missing_tax_risk ?? 'low'
   const items = assessment.classified_missing_items ?? []
   const actions = assessment.recommended_actions ?? []
@@ -57,11 +58,19 @@ function Result({ ctx }: { ctx: ToolRenderCtx }) {
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center gap-2 flex-wrap">
-        {periodLabel && <span className="text-[11px] font-body uppercase tracking-widest text-brand-muted">Filing period · {periodLabel}</span>}
-        <span className={`text-[11px] font-body px-2 py-0.5 rounded-sm border ${RISK_STYLE[risk]}`}>{risk} risk</span>
-        {thresholdBreached && <span className="text-[11px] font-body px-2 py-0.5 rounded-sm border text-[#ff4d6d] bg-[rgba(255,77,109,0.08)] border-[rgba(255,77,109,0.2)]">VAT alert</span>}
-      </div>
+      {!trace ? (
+        <div className="bg-brand-surface border border-brand-border rounded-sm px-4 py-3 text-center">
+          <p className="text-xs font-body text-brand-muted">
+            This agent hasn&apos;t run yet — pick a period and click <span className="text-brand-secondary">Run VAT check</span> to compute your position.
+          </p>
+        </div>
+      ) : (
+        <div className="flex items-center gap-2 flex-wrap">
+          {periodLabel && <span className="text-[11px] font-body uppercase tracking-widest text-brand-muted">Filing period · {periodLabel}</span>}
+          <span className={`text-[11px] font-body px-2 py-0.5 rounded-sm border ${RISK_STYLE[risk]}`}>{risk} risk</span>
+          {thresholdBreached && <span className="text-[11px] font-body px-2 py-0.5 rounded-sm border text-[#ff4d6d] bg-[rgba(255,77,109,0.08)] border-[rgba(255,77,109,0.2)]">VAT alert</span>}
+        </div>
+      )}
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <VatCard label="Output VAT (collected)" value={fmt(output)} sub="on sales invoices" />

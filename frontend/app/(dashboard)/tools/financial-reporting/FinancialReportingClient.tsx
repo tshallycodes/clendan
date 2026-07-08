@@ -50,15 +50,17 @@ function Result({ ctx }: { ctx: ToolRenderCtx }) {
   const [tab, setTab] = useState<Statement>('pl')
 
   const t = ctx.trace
-  if (!t) return <ToolResultState deployed={ctx.deployed} loading={ctx.loading} notDeployedHint="Connect accounting + banking and deploy to generate statements." />
+  if (!ctx.deployed) return <ToolResultState deployed={null} loading={ctx.loading} notDeployedHint="Connect accounting + banking and deploy to generate statements." />
+  if (ctx.loading && !t) return <div className="h-40 bg-brand-elevated rounded-sm animate-pulse" />
 
-  const n = (k: string) => Number(t[k] ?? 0)
-  const claude = (t.claude_result as ClaudeResult) ?? {}
-  const health = (t.health_status as string) ?? 'watch'
-  const anomalies = [...(claude.anomalies ?? []), ...((t.period_anomalies as string[]) ?? [])]
-  const recommendations = claude.recommendations ?? (t.top_recommendation ? [String(t.top_recommendation)] : [])
-  const periodStart = t.period_start ? new Date(String(t.period_start)).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }) : ''
-  const periodEnd = t.period_end ? new Date(String(t.period_end)).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : ''
+  const n = (k: string) => Number(t?.[k] ?? 0)
+  const claude = (t?.claude_result as ClaudeResult) ?? {}
+  const health = (t?.health_status as string) ?? 'watch'
+  const anomalies = [...(claude.anomalies ?? []), ...((t?.period_anomalies as string[]) ?? [])]
+  const topRec = t?.top_recommendation
+  const recommendations = claude.recommendations ?? (topRec ? [String(topRec)] : [])
+  const periodStart = t?.period_start ? new Date(String(t?.period_start)).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }) : ''
+  const periodEnd = t?.period_end ? new Date(String(t?.period_end)).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : ''
 
   const TABS: { key: Statement; label: string }[] = [
     { key: 'pl', label: 'Profit & Loss' },
@@ -68,15 +70,23 @@ function Result({ ctx }: { ctx: ToolRenderCtx }) {
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center gap-2 flex-wrap">
-        {periodStart && <span className="text-[11px] font-body uppercase tracking-widest text-brand-muted">{periodStart} – {periodEnd}</span>}
-        <span className={`text-[11px] font-body px-2 py-0.5 rounded-sm border ${HEALTH_STYLE[health] ?? HEALTH_STYLE.watch}`}>{health.replace(/_/g, ' ')}</span>
-      </div>
+      {!t ? (
+        <div className="bg-brand-surface border border-brand-border rounded-sm px-4 py-3 text-center">
+          <p className="text-xs font-body text-brand-muted">
+            No report generated yet — pick a period and click <span className="text-brand-secondary">Generate report</span> to build your statements.
+          </p>
+        </div>
+      ) : (
+        <div className="flex items-center gap-2 flex-wrap">
+          {periodStart && <span className="text-[11px] font-body uppercase tracking-widest text-brand-muted">{periodStart} – {periodEnd}</span>}
+          <span className={`text-[11px] font-body px-2 py-0.5 rounded-sm border ${HEALTH_STYLE[health] ?? HEALTH_STYLE.watch}`}>{health.replace(/_/g, ' ')}</span>
+        </div>
+      )}
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <Metric label="Revenue" value={fmt(n('revenue_cents'))} />
         <Metric label="Net profit" value={fmt(n('net_profit_cents'))} tone={n('net_profit_cents') >= 0 ? 'text-[#00C853]' : 'text-[#ff4d6d]'} />
-        <Metric label="Gross margin" value={`${Number(t.gross_margin_pct ?? 0)}%`} />
+        <Metric label="Gross margin" value={`${Number(t?.gross_margin_pct ?? 0)}%`} />
         <Metric label="Cash position" value={fmt(n('total_bank_balance_cents'))} />
       </div>
 

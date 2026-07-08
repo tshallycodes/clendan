@@ -145,25 +145,30 @@ function Result({ ctx }: { ctx: ToolRenderCtx }) {
   const fmt = useMoney()
   const t = ctx.trace
 
-  if (!t) {
-    return (
-      <div className="space-y-6">
-        <ToolResultState deployed={ctx.deployed} loading={ctx.loading} notDeployedHint="Connect an accounting integration and deploy to schedule supplier payments." />
-        {ctx.deployed && <Batches />}
-      </div>
-    )
+  if (!ctx.deployed) {
+    return <ToolResultState deployed={null} loading={ctx.loading} notDeployedHint="Connect an accounting integration and deploy to schedule supplier payments." />
+  }
+  if (ctx.loading && !t) {
+    return <div className="h-40 bg-brand-elevated rounded-sm animate-pulse" />
   }
 
-  const perBill = (t.per_bill as BillSummary[] | undefined) ?? []
-  const scheduledCount = Number(t.scheduled_count ?? 0)
-  const approvalCount = Number(t.approval_required_count ?? 0)
-  const totalAuto = Number(t.total_auto_pay_cents ?? 0)
-  const totalApproval = Number(t.total_approval_cents ?? 0)
-  const riskFlags = (t.risk_flags as string[] | undefined) ?? []
-  const summary = t.claude_summary as string | undefined
+  const perBill = (t?.per_bill as BillSummary[] | undefined) ?? []
+  const scheduledCount = Number(t?.scheduled_count ?? 0)
+  const approvalCount = Number(t?.approval_required_count ?? 0)
+  const totalAuto = Number(t?.total_auto_pay_cents ?? 0)
+  const totalApproval = Number(t?.total_approval_cents ?? 0)
+  const riskFlags = (t?.risk_flags as string[] | undefined) ?? []
+  const summary = t?.claude_summary as string | undefined
 
   return (
     <div className="space-y-5">
+      {!t && (
+        <div className="bg-brand-surface border border-brand-border rounded-sm px-4 py-3 text-center">
+          <p className="text-xs font-body text-brand-muted">
+            No payment run created yet — click <span className="text-brand-secondary">Create payment run</span> to scan bills due and schedule them.
+          </p>
+        </div>
+      )}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <StatCard label="To schedule" value={scheduledCount} tone={scheduledCount ? 'text-[#00C853]' : undefined} />
         <StatCard label="Auto-pay total" value={fmt(totalAuto)} />
