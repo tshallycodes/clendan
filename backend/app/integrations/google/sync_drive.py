@@ -117,18 +117,21 @@ async def sync_drive_connection(ctx: dict, integration_id: str, tenant_id: str) 
     # No folder configured (or the folder cannot be resolved) => process nothing. We never
     # sweep the whole drive.
     watch_folder = getattr(integration, "watch_folder", None)
-    folder_id: str | None = None
+    folder_ids: list[str] = []
     if watch_folder:
         try:
-            folder_id = await google.find_folder_id_by_name(access_token, watch_folder)
+            folder_ids = await google.find_folder_ids_by_name(access_token, watch_folder)
         except Exception as exc:
             logger.error("drive_folder_resolve_failed integration_id=%s: %s", integration_id, type(exc).__name__)
-        if not folder_id:
+        if not folder_ids:
             logger.warning("drive_watch_folder_not_found integration_id=%s folder=%s", integration_id, watch_folder)
+        elif len(folder_ids) > 1:
+            logger.info("drive_watch_folder_multiple_matches integration_id=%s folder=%s count=%d",
+                        integration_id, watch_folder, len(folder_ids))
 
-    if watch_folder and folder_id:
+    if watch_folder and folder_ids:
         try:
-            files = await google.list_pdf_files(access_token, folder_id=folder_id)
+            files = await google.list_pdf_files(access_token, folder_ids=folder_ids)
             file_count = len(files)
             logger.info("drive_pdf_files_found integration_id=%s count=%d", integration_id, file_count)
         except Exception as exc:

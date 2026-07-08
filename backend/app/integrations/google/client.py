@@ -386,15 +386,16 @@ async def download_drive_file_bytes(access_token: str, file_id: str) -> bytes:
     return await _circuit.call(_retry, _call)
 
 
-async def find_folder_id_by_name(access_token: str, folder_name: str) -> str | None:
+async def find_folder_ids_by_name(access_token: str, folder_name: str) -> list[str]:
     """
-    Resolves a Drive folder name to its folder ID. Returns the first non-trashed match,
-    or None if there is no folder with that name. Matching is case-sensitive per the
-    Drive API; the name is compared exactly.
+    Resolves a Drive folder name to ALL matching non-trashed folder IDs. Drive allows
+    several folders to share a name, so every match is returned and the caller scopes
+    listing to all of them - we never arbitrarily pick one. Returns [] if none match.
+    Matching is exact per the Drive API.
     """
     name = (folder_name or "").strip().strip("/")
     if not name:
-        return None
+        return []
     escaped = name.replace("\\", "\\\\").replace("'", "\\'")
 
     async def _call():
@@ -416,18 +417,20 @@ async def find_folder_id_by_name(access_token: str, folder_name: str) -> str | N
 
     data = await _circuit.call(_retry, _call)
     folders = data.get("files", []) or []
-    return folders[0].get("id") if folders else None
+    return [f["id"] for f in folders if f.get("id")]
 
 
-async def list_pdf_files(access_token: str, folder_id: str | None = None) -> list:
+async def list_pdf_files(access_token: str, folder_ids: list[str] | None = None) -> list:
     """
-    Lists non-trashed PDF files in the connected Google Drive. When ``folder_id`` is
-    provided, only PDFs directly inside that folder are returned; otherwise every PDF in
-    the drive is returned. Returns list of file metadata dicts: [{id, name, mimeType, ...}].
+    Lists non-trashed PDF files in the connected Google Drive. When ``folder_ids`` is
+    provided, only PDFs directly inside any of those folders are returned (covers folders
+    that share a name); otherwise every PDF in the drive is returned. Returns list of file
+    metadata dicts: [{id, name, mimeType, ...}].
     """
     query = "mimeType='application/pdf' and trashed=false"
-    if folder_id:
-        query += f" and '{folder_id}' in parents"
+    if folder_ids:
+        parents = " or ".join(f"'{fid}' in parents" for fid in folder_ids)
+        query += f" and ({parents})"
 
     async def _call():
         async with httpx.AsyncClient() as client:
