@@ -1,6 +1,7 @@
 ﻿'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 import { useAuth } from '@clerk/nextjs'
 import { motion } from 'framer-motion'
 import { StatusBadge } from '@/components/dashboard/StatusBadge'
@@ -20,7 +21,6 @@ export interface Execution {
   input_ref?: string | null
   trace_id?: string | null
   version?: string | null
-  approval_id?: string | null
 }
 
 type DecisionFilter = 'all' | 'auto_approved' | 'approval_required' | 'blocked'
@@ -104,11 +104,9 @@ function StatsBar({ executions }: { executions: Execution[] }) {
 interface DrawerProps {
   execution: Execution
   onClose: () => void
-  onAction: (id: string, action: 'approve' | 'reject') => Promise<void>
-  loadingState: 'approve' | 'reject' | null
 }
 
-function ExecutionDrawer({ execution, onClose, onAction, loadingState }: DrawerProps) {
+function ExecutionDrawer({ execution, onClose }: DrawerProps) {
   const [copied, setCopied] = useState(false)
 
   function copyTraceId() {
@@ -198,23 +196,15 @@ function ExecutionDrawer({ execution, onClose, onAction, loadingState }: DrawerP
 
           {execution.decision === 'approval_required' && (
             <div className="pt-2 border-t border-brand-border">
-              <div className="text-[11px] font-body text-brand-muted uppercase tracking-widest mb-3">Actions</div>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => onAction(execution.id, 'approve')}
-                  disabled={loadingState !== null}
-                  className="flex-1 text-[11px] font-body py-2 bg-brand-green text-black font-medium hover:bg-[#00a844] active:scale-[0.97] transition-all rounded-sm disabled:opacity-40"
-                >
-                  {loadingState === 'approve' ? '...' : 'Approve'}
-                </button>
-                <button
-                  onClick={() => onAction(execution.id, 'reject')}
-                  disabled={loadingState !== null}
-                  className="flex-1 text-[11px] font-body py-2 border border-[#ff4d6d] text-[#ff4d6d] bg-[rgba(255,77,109,0.08)] hover:bg-[rgba(255,77,109,0.12)] active:scale-[0.97] transition-all rounded-sm disabled:opacity-40"
-                >
-                  {loadingState === 'reject' ? '...' : 'Reject'}
-                </button>
-              </div>
+              <p className="text-[11px] font-body text-brand-muted leading-relaxed">
+                This execution is awaiting a human decision.
+              </p>
+              <Link
+                href="/approvals"
+                className="inline-block mt-2 text-[11px] font-body text-[#00a8cc] hover:underline"
+              >
+                Review in the Approval Queue →
+              </Link>
             </div>
           )}
         </div>
@@ -237,7 +227,6 @@ export function ExecutionsClient({ initialExecutions, total }: Props) {
   const [statusFilter, setStatusFilter] = useState<DecisionFilter>('all')
   const [search, setSearch] = useState('')
   const [selectedId, setSelectedId] = useState<string | null>(null)
-  const [loadingMap, setLoadingMap] = useState<Record<string, 'approve' | 'reject' | null>>({})
   const [loadingMore, setLoadingMore] = useState(false)
   const [offset, setOffset] = useState(initialExecutions.length)
 
@@ -248,36 +237,6 @@ export function ExecutionsClient({ initialExecutions, total }: Props) {
   })
 
   const selected = executions.find((e) => e.id === selectedId) ?? null
-
-  async function handleAction(executionId: string, action: 'approve' | 'reject') {
-    const execution = executions.find((e) => e.id === executionId)
-    if (!execution?.approval_id) return
-    const approvalId = execution.approval_id
-    setLoadingMap((prev) => ({ ...prev, [executionId]: action }))
-    try {
-      const token = await getToken()
-      if (!token) return
-      const res = await fetch(`${API_BASE}/approvals/${approvalId}/respond`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action }),
-      })
-      if (res.ok) {
-        setExecutions((prev) =>
-          prev.map((e) =>
-            e.id === executionId
-              ? { ...e, decision: action === 'approve' ? 'auto_approved' : 'blocked' }
-              : e,
-          ),
-        )
-        toast(action === 'approve' ? 'Execution approved' : 'Execution rejected', action === 'approve' ? 'success' : 'info')
-      } else {
-        toast('Action failed - try again', 'error')
-      }
-    } finally {
-      setLoadingMap((prev) => ({ ...prev, [executionId]: null }))
-    }
-  }
 
   async function loadMore() {
     setLoadingMore(true)
@@ -411,12 +370,7 @@ export function ExecutionsClient({ initialExecutions, total }: Props) {
       )}
 
       {selected && (
-        <ExecutionDrawer
-          execution={selected}
-          onClose={() => setSelectedId(null)}
-          onAction={handleAction}
-          loadingState={loadingMap[selected.id] ?? null}
-        />
+        <ExecutionDrawer execution={selected} onClose={() => setSelectedId(null)} />
       )}
     </motion.div>
   )

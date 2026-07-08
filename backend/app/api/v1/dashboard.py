@@ -14,6 +14,25 @@ logger = get_logger(__name__)
 router = APIRouter(tags=["dashboard"])
 
 
+def _extract_reasoning(trace) -> str | None:
+    """Pull a human-readable reasoning line out of an audit reasoning_trace_json.
+
+    Tool traces vary in shape, so try the common string keys first, then fall back to
+    joining an ``actions_taken`` list. Returns None when nothing readable is present.
+    """
+    if not isinstance(trace, dict):
+        return None
+    for key in ("reasoning", "reason", "summary"):
+        val = trace.get(key)
+        if isinstance(val, str) and val.strip():
+            return val.strip()
+    actions = trace.get("actions_taken")
+    if isinstance(actions, list) and actions:
+        joined = "; ".join(str(a) for a in actions if a)
+        return joined or None
+    return None
+
+
 @router.get("/dashboard/stats")
 async def dashboard_stats(
     current_user: RequireOrgAuth,
@@ -148,12 +167,28 @@ async def list_approvals(
         include={"execution": {"include": {"tool": True}}},
     )
 
-    # Pull documents linked to these executions (document_intelligence only)
+    # Pull documents + audit reasoning linked to these executions
     execution_ids = [a.execution_id for a in approvals]
-    documents = await db.document.find_many(
-        where={"execution_id": {"in": execution_ids}},
-    ) if execution_ids else []
+    if execution_ids:
+        documents, audit_entries = await asyncio.gather(
+            db.document.find_many(where={"execution_id": {"in": execution_ids}}),
+            db.auditlog.find_many(
+                where={"execution_id": {"in": execution_ids}},
+                order={"created_at": "desc"},
+            ),
+        )
+    else:
+        documents, audit_entries = [], []
     doc_by_exec = {d.execution_id: d for d in documents if d.execution_id}
+
+    # Most recent audit entry per execution that yields a human-readable reasoning line.
+    reasoning_by_exec: dict[str, str] = {}
+    for entry in audit_entries:
+        if entry.execution_id in reasoning_by_exec:
+            continue
+        reasoning = _extract_reasoning(entry.reasoning_trace_json)
+        if reasoning:
+            reasoning_by_exec[entry.execution_id] = reasoning
 
     def _row(a) -> dict:
         exec_ = a.execution
@@ -175,6 +210,7 @@ async def list_approvals(
             "document_type": doc.document_type if doc else None,
             "reason": doc.reason if doc else None,
             "rule_triggered": doc.rule_triggered if doc else None,
+            "reasoning": reasoning_by_exec.get(a.execution_id),
         }
 
     return standard_response(data={

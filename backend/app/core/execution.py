@@ -38,7 +38,14 @@ async def complete_execution(
     """
     tool = await db.tool.find_first(where={"id": tool_id, "tenant_id": tenant_id})
     autonomy_level = tool.autonomy_level if tool else "approve"
-    final = _apply_autonomy_override(decision, autonomy_level)
+    # Document Intelligence self-routes by its confidence threshold, so its decision is
+    # already final. Applying the autonomy override would wrongly flip it - sending an
+    # auto-approved (high-confidence) document to the approval queue, or auto-approving a
+    # low-confidence one. Every other tool respects its configured autonomy level.
+    if tool and tool.type == "document_intelligence":
+        final = decision
+    else:
+        final = _apply_autonomy_override(decision, autonomy_level)
 
     if final != decision:
         logger.info(
