@@ -145,6 +145,7 @@ export function ConfigDrawer({ tool, toolType, onClose, onSaved }: Props) {
     const existing = (tool?.config_json as Record<string, unknown> | null)?.payment_sources
     return Array.isArray(existing) ? (existing as string[]) : []
   })
+  const [connected, setConnected] = useState<{ accounting: string[]; bank: string[] }>({ accounting: [], bank: [] })
   const [selectedAccountIds, setSelectedAccountIds] = useState<string[]>(() => {
     const existing = (tool?.config_json as Record<string, unknown> | null)?.account_ids
     return Array.isArray(existing) ? (existing as string[]) : []
@@ -181,6 +182,21 @@ export function ConfigDrawer({ tool, toolType, onClose, onSaved }: Props) {
       }
     }
     fetchReconciliationData()
+  }, [toolType, getToken])
+
+  useEffect(() => {
+    if (toolType === 'reconciliation') return
+    async function fetchConnected() {
+      try {
+        const token = await getToken()
+        const res = await fetch(`${API}/integrations/connected`, { headers: { Authorization: `Bearer ${token}` } })
+        if (res.ok) {
+          const data = (await res.json()).data ?? {}
+          setConnected({ accounting: data.accounting ?? [], bank: data.bank ?? [] })
+        }
+      } catch { /* multiselects show the empty-state hint until resolved */ }
+    }
+    fetchConnected()
   }, [toolType, getToken])
 
   async function handleSave() {
@@ -258,6 +274,10 @@ export function ConfigDrawer({ tool, toolType, onClose, onSaved }: Props) {
             toolType={toolType}
             config={config}
             onChange={(key, value) => setConfig(prev => ({ ...prev, [key]: value }))}
+            dynamicOptions={toolType === 'reconciliation' ? undefined : {
+              accounting_sources: connected.accounting,
+              bank_sources: connected.bank,
+            }}
           />
 
           <WorkflowSection toolType={toolType} />

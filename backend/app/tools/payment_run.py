@@ -33,6 +33,7 @@ from app.core.config import get_settings
 from app.core.db import get_db
 from app.core.execution import complete_execution
 from app.core.logging import get_logger
+from app.core.sources import source_filter
 from app.queue.pool import push_to_dlq
 from app.tools.base import BaseTool, ToolOutput, ToolType
 
@@ -205,10 +206,12 @@ async def _execute(tenant_id: str, tool_id: str, execution_id: str, payload: dic
         raise ValueError(f"Tool {tool_id} not found for tenant {tenant_id}")
 
     policy = _parse_policy(tool.config_json if isinstance(tool.config_json, dict) else {})
+    src = source_filter(tool.config_json if isinstance(tool.config_json, dict) else None, "accounting_sources")
 
     bills = await db.accountingbill.find_many(
         where={
             "tenant_id": tenant_id,
+            **src,
             "status": {"not_in": ["paid", "void"]},
             "outstanding_cents": {"gt": 0},
         },

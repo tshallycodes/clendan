@@ -17,6 +17,7 @@ from app.core.config import get_settings
 from app.core.db import get_db
 from app.core.execution import complete_execution
 from app.core.logging import get_logger
+from app.core.sources import source_filter
 from app.queue.pool import push_to_dlq
 from app.tools.base import BaseTool, ToolOutput, ToolType
 
@@ -195,12 +196,15 @@ async def _execute(tenant_id: str, tool_id: str, execution_id: str, payload: dic
     prior_end = period_start
     prior_start = prior_end - timedelta(days=lookback_days)
 
+    cfg = tool.config_json if isinstance(tool.config_json, dict) else None
+    acct_src = source_filter(cfg, "accounting_sources")
+    bank_src = source_filter(cfg, "bank_sources")
     invoices, bills, expenses, payments, bank_accounts = await asyncio.gather(
-        db.accountinginvoice.find_many(where={"tenant_id": tenant_id}),
-        db.accountingbill.find_many(where={"tenant_id": tenant_id}),
-        db.accountingexpense.find_many(where={"tenant_id": tenant_id}),
-        db.accountingpayment.find_many(where={"tenant_id": tenant_id}),
-        db.bankaccount.find_many(where={"tenant_id": tenant_id}),
+        db.accountinginvoice.find_many(where={"tenant_id": tenant_id, **acct_src}),
+        db.accountingbill.find_many(where={"tenant_id": tenant_id, **acct_src}),
+        db.accountingexpense.find_many(where={"tenant_id": tenant_id, **acct_src}),
+        db.accountingpayment.find_many(where={"tenant_id": tenant_id, **acct_src}),
+        db.bankaccount.find_many(where={"tenant_id": tenant_id, **bank_src}),
     )
 
     if not invoices and not bills and not expenses:

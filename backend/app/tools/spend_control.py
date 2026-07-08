@@ -21,6 +21,7 @@ from app.core.config import get_settings
 from app.core.db import get_db
 from app.core.execution import complete_execution
 from app.core.logging import get_logger
+from app.core.sources import source_filter
 from app.queue.pool import push_to_dlq
 from app.tools.base import BaseTool, ToolOutput, ToolType
 
@@ -220,12 +221,14 @@ async def _execute_expense_control(
 
     config_raw: dict = tool.config_json if isinstance(tool.config_json, dict) else {}
     policy = _parse_expense_policy(config_raw)
+    src = source_filter(config_raw, "accounting_sources")
 
     # 1. Fetch AccountingExpense records for tenant, last 30 days
     cutoff = datetime.now(UTC) - timedelta(days=30)
     raw_expenses = await db.accountingexpense.find_many(
         where={
             "tenant_id": tenant_id,
+            **src,
             "expense_date": {"gte": cutoff},
         }
     )
@@ -275,7 +278,7 @@ async def _execute_expense_control(
 
     # 2. Fetch EXPENSE-type accounts from chart of accounts
     raw_accounts = await db.accountingaccount.find_many(
-        where={"tenant_id": tenant_id, "account_type": "EXPENSE"}
+        where={"tenant_id": tenant_id, **src, "account_type": "EXPENSE"}
     )
     valid_accounts = [
         _AccountRecord(id=a.id, code=a.code, name=a.name, account_type=a.account_type)

@@ -463,40 +463,74 @@ async def run_document_received_job(
         raise
 
 
-async def run_financial_reporting_monthly(ctx: dict) -> None:
-    """Monthly cron: fires financial_report_run for all tenants with active tools."""
-    db = get_db()
+def _tenant_local_now(tenant, now_utc: datetime):
+    """Convert UTC now to the tenant's configured timezone, falling back to UTC."""
+    from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
+    tz_name = (tenant.timezone if tenant and tenant.timezone else None) or "UTC"
+    try:
+        return now_utc.astimezone(ZoneInfo(tz_name)), tz_name
+    except ZoneInfoNotFoundError:
+        return now_utc.astimezone(UTC), "UTC"
+
+
+async def run_financial_reporting_monthly(_ctx: dict) -> None:
+    """Hourly cron: fires financial_report_run on each tool's configured day-of-month + hour
+    (in the tenant's timezone). Month-bucketed idempotency prevents double-firing."""
     from app.events import enqueue_event
+    db = get_db()
+    now_utc = datetime.now(UTC)
     tools = await db.tool.find_many(where={"type": "financial_reporting", "status": "active"})
-    month_key = datetime.now(UTC).strftime("%Y-%m")
     for tool in tools:
         try:
+            cfg = tool.config_json or {}
+            tenant = await db.tenant.find_unique(where={"id": tool.tenant_id})
+            now_local, tz_name = _tenant_local_now(tenant, now_utc)
+            if now_local.hour != int(cfg.get("run_hour", 1)):
+                continue
+            try:
+                run_day = int(cfg.get("run_day_of_month", 1))
+            except (TypeError, ValueError):
+                run_day = 1
+            run_day = max(1, min(run_day, 28))  # clamp to a day every month has
+            if now_local.day != run_day:
+                continue
             await enqueue_event(
                 tenant_id=tool.tenant_id,
                 event_type="financial_report_run",
                 payload={},
-                idempotency_key=f"financial_reporting:monthly:{tool.tenant_id}:{month_key}",
+                idempotency_key=f"financial_reporting:monthly:{tool.id}:{now_local.strftime('%Y-%m')}",
                 db=db,
             )
+            logger.info("financial_reporting_scheduled_fired tenant=%s tool=%s tz=%s", tool.tenant_id, tool.id, tz_name)
         except Exception as exc:
             logger.error("financial_reporting_cron_failed tenant=%s: %s", tool.tenant_id, type(exc).__name__)
 
 
-async def run_payment_run_weekly(ctx: dict) -> None:
-    """Weekly cron: fires payment_run_requested for all tenants with active tools."""
-    db = get_db()
+async def run_payment_run_weekly(_ctx: dict) -> None:
+    """Hourly cron: fires payment_run_requested on each tool's configured weekday + hour
+    (in the tenant's timezone). Date-bucketed idempotency prevents double-firing."""
     from app.events import enqueue_event
+    db = get_db()
+    now_utc = datetime.now(UTC)
     tools = await db.tool.find_many(where={"type": "payment_run", "status": "active"})
-    week_key = datetime.now(UTC).strftime("%Y-W%W")
     for tool in tools:
         try:
+            cfg = tool.config_json or {}
+            tenant = await db.tenant.find_unique(where={"id": tool.tenant_id})
+            now_local, tz_name = _tenant_local_now(tenant, now_utc)
+            if now_local.hour != int(cfg.get("run_hour", 7)):
+                continue
+            run_day = _DAY_MAP.get(str(cfg.get("run_day_of_week", "monday")).lower(), 0)
+            if now_local.weekday() != run_day:
+                continue
             await enqueue_event(
                 tenant_id=tool.tenant_id,
                 event_type="payment_run_requested",
                 payload={},
-                idempotency_key=f"payment_run:weekly:{tool.tenant_id}:{week_key}",
+                idempotency_key=f"payment_run:weekly:{tool.id}:{now_local.strftime('%Y-%m-%d')}",
                 db=db,
             )
+            logger.info("payment_run_scheduled_fired tenant=%s tool=%s tz=%s", tool.tenant_id, tool.id, tz_name)
         except Exception as exc:
             logger.error("payment_run_cron_failed tenant=%s: %s", tool.tenant_id, type(exc).__name__)
 
@@ -687,8 +721,8 @@ class ToolSettings:
         resync_integrations_daily,
     ]
     cron_jobs = [
-        cron(run_financial_reporting_monthly, day=1, hour=1, minute=0),
-        cron(run_payment_run_weekly, weekday=0, hour=7, minute=0),
+        cron(run_financial_reporting_monthly, minute=0),  # hourly — gated by per-tool day-of-month/hour config
+        cron(run_payment_run_weekly, minute=0),  # hourly — gated by per-tool weekday/hour config
         cron(fetch_exchange_rates_daily, hour=0, minute=5),
         cron(run_reconciliation_scheduled_check, minute=0),  # hourly
         cron(run_month_end_close_scheduled, hour=0, minute=10),  # daily midnight UTC
