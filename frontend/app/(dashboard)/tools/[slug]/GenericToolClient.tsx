@@ -25,7 +25,7 @@ const AUTONOMY_BADGE: Record<string, { label: string; className: string }> = {
 }
 
 const AUTONOMY_DESC: Record<string, string> = {
-  auto:    'Executes automatically — no approval required before acting.',
+  auto:    'Executes automatically - no approval required before acting.',
   approve: 'Every decision is routed to you for review before the agent acts.',
 }
 
@@ -170,7 +170,7 @@ export function GenericToolClient({ tool, deployed }: Props) {
         )}
       </motion.div>
 
-      {/* Main body — the tool's working surface (documents for doc-intel, run activity otherwise). */}
+      {/* Main body - the tool's working surface (documents for doc-intel, run activity otherwise). */}
       <motion.div variants={sectionVariants}>
         {isDoc ? (
           <DocumentsTab toolId={deployed?.id ?? null} />
@@ -205,7 +205,7 @@ export function GenericToolClient({ tool, deployed }: Props) {
                   <p className="text-xs font-body text-brand-secondary mt-1">
                     {tool.requires.length
                       ? tool.requires.map((c) => c.charAt(0).toUpperCase() + c.slice(1)).join(' · ')
-                      : 'No integration — runs on upload or manual trigger'}
+                      : 'No integration - runs on upload or manual trigger'}
                   </p>
                 </div>
 
@@ -215,8 +215,8 @@ export function GenericToolClient({ tool, deployed }: Props) {
                     <p className="text-[11px] font-body uppercase tracking-widest text-brand-muted">How it works</p>
                     <p className="text-[11px] font-body text-brand-muted mt-0.5">
                       {tool.howItWorks
-                        ? 'Every upload follows this fixed processing flow — no step can be skipped'
-                        : 'Every run follows this fixed execution flow — no step can be skipped'}
+                        ? 'Every upload follows this fixed processing flow - no step can be skipped'
+                        : 'Every run follows this fixed execution flow - no step can be skipped'}
                     </p>
                   </div>
                   <div className="grid grid-cols-1 divide-y divide-brand-border">
@@ -249,7 +249,7 @@ export function GenericToolClient({ tool, deployed }: Props) {
                       <div className="space-y-1.5">
                         <p className="text-[11px] font-body text-brand-muted uppercase tracking-widest">Status</p>
                         <p className="text-xs font-body text-brand-text">{deployed.status === 'active' ? 'Running' : 'Paused'}</p>
-                        <p className="text-[11px] font-body text-brand-muted">{deployed.status === 'active' ? 'Agent is live and processing' : 'Agent is paused — no runs will fire'}</p>
+                        <p className="text-[11px] font-body text-brand-muted">{deployed.status === 'active' ? 'Agent is live and processing' : 'Agent is paused - no runs will fire'}</p>
                       </div>
                     </div>
                   </div>

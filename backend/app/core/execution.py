@@ -1,5 +1,5 @@
 """
-Shared execution completion — called by every tool job runner.
+Shared execution completion - called by every tool job runner.
 Applies autonomy override, writes Execution, creates Approval if needed.
 """
 from datetime import UTC, datetime, timedelta
@@ -73,7 +73,7 @@ async def complete_execution(
             })
 
     # Auto-advance to the next tool in the workflow if the connection is enabled.
-    # Event-based (never a direct tool call) and never raises — see core/workflow.py.
+    # Event-based (never a direct tool call) and never raises - see core/workflow.py.
     from app.core.workflow import advance_workflow
     await advance_workflow(
         db=db,

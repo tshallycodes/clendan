@@ -102,7 +102,7 @@ export function IntegrationsSection() {
       await fetchStatuses()
       toast('Bank and accounting integrations resynced', 'success')
     } catch {
-      toast('Resync failed — check individual integrations', 'error')
+      toast('Resync failed - check individual integrations', 'error')
     } finally {
       setResyncing(false)
     }
@@ -117,7 +117,7 @@ export function IntegrationsSection() {
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
       })
       await fetchStatuses()
-      toast('Sync status reset — integrations marked connected', 'success')
+      toast('Sync status reset - integrations marked connected', 'success')
     } catch {
       toast('Reset failed', 'error')
     } finally {

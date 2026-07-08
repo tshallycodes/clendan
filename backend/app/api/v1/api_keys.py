@@ -2,7 +2,7 @@
 API key management endpoints.
 
 Keys are generated as `ck_live_` + 32 hex chars.
-Only the SHA-256 hash is stored — the full key is returned once on creation.
+Only the SHA-256 hash is stored - the full key is returned once on creation.
 """
 
 import hashlib
@@ -44,7 +44,7 @@ class ApiKeyCreatedResponse(BaseModel):
     id: str
     name: str
     key_prefix: str
-    key: str  # full key — returned once only
+    key: str  # full key - returned once only
     created_at: datetime
     expires_at: Optional[datetime]
 
@@ -173,7 +173,7 @@ async def revoke_api_key(
     current_user: RequireOrgAuth,
     db: Annotated[Prisma, Depends(get_db_dep)],
 ):
-    """Revoke an API key. Sets status=revoked — does not delete the row."""
+    """Revoke an API key. Sets status=revoked - does not delete the row."""
     tenant_id = current_user.tenant_id
 
     api_key = await db.apikey.find_first(

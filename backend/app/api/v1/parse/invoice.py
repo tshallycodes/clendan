@@ -20,8 +20,8 @@ _logger = get_logger(__name__)
 router = APIRouter(prefix="/parse", tags=["parse"])
 
 ALLOWED_CONTENT_TYPES = {"application/pdf", "image/png", "image/jpeg"}
-IDEMPOTENCY_TTL = 86400       # 24 hours — parse_id kept for dedup
-PARSE_RESULT_TTL = 3600       # 1 hour — result available for polling
+IDEMPOTENCY_TTL = 86400       # 24 hours - parse_id kept for dedup
+PARSE_RESULT_TTL = 3600       # 1 hour - result available for polling
 IDEMPOTENCY_PREFIX = "parse:invoice:idem:"
 RESULT_PREFIX = "parse:invoice:result:"
 
@@ -32,7 +32,7 @@ _INVOICE_PROMPT = """You are an invoice data extraction system. Extract fields f
 Fields:
 - vendor (string): Vendor/supplier company name
 - invoice_number (string): Invoice reference number
-- line_items (array): [{description, quantity, unit_price_minor, total_minor}] — all amounts in minor units (pence/cents, multiply decimal by 100)
+- line_items (array): [{description, quantity, unit_price_minor, total_minor}] - all amounts in minor units (pence/cents, multiply decimal by 100)
 - amount_minor (integer): Total invoice amount in minor units
 - currency (string): ISO 4217 code (GBP, USD, EUR, etc.)
 - due_date (string|null): ISO 8601 date YYYY-MM-DD or null
@@ -120,7 +120,7 @@ async def parse_invoice(
     """
     Enqueues an invoice parse job and returns a parse_id immediately.
     Poll GET /v1/parse/invoice/{parse_id} for the result.
-    Claude is called in the background — the request thread is never blocked.
+    Claude is called in the background - the request thread is never blocked.
     """
     if file.content_type not in ALLOWED_CONTENT_TYPES:
         raise HTTPException(

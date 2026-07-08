@@ -1,4 +1,4 @@
-"""NetSuite integration routes — OAuth connect, status, sync, disconnect."""
+"""NetSuite integration routes - OAuth connect, status, sync, disconnect."""
 import secrets
 from datetime import datetime, UTC
 from typing import Annotated
@@ -35,7 +35,7 @@ async def netsuite_callback(
     state: str = Query(...),
     db: Prisma = Depends(get_db_dep),
 ):
-    """OAuth callback — exchanges code, stores credentials, enqueues sync."""
+    """OAuth callback - exchanges code, stores credentials, enqueues sync."""
     parts = state.split(":", 1)
     if len(parts) != 2:
         raise HTTPException(

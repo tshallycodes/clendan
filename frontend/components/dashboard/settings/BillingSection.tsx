@@ -22,7 +22,7 @@ interface PlanDef {
   selfServe: boolean
 }
 
-// Display metadata only — Stripe Price IDs are the source of truth on the backend.
+// Display metadata only - Stripe Price IDs are the source of truth on the backend.
 // Mirrors the marketing pricing tiers.
 const PLANS: PlanDef[] = [
   { id: 'starter', name: 'Starter', price: '£299/mo', blurb: '2 tools · 500 executions/mo', selfServe: true },
@@ -80,7 +80,7 @@ export function BillingSection() {
     window.history.replaceState(null, '', window.location.pathname)
     if (billing === 'success') {
       toast('Subscription updated', 'success')
-      // Webhook may lag a moment behind the redirect — refetch shortly after.
+      // Webhook may lag a moment behind the redirect - refetch shortly after.
       setTimeout(() => { load() }, 2500)
     } else if (billing === 'canceled') {
       toast('Checkout canceled', 'error')
@@ -115,7 +115,7 @@ export function BillingSection() {
   }
 
   if (error || !sub) {
-    return <p className="text-xs font-body text-brand-muted">Billing unavailable — backend not reachable.</p>
+    return <p className="text-xs font-body text-brand-muted">Billing unavailable - backend not reachable.</p>
   }
 
   const currentRank = PLAN_RANK[sub.plan] ?? 0

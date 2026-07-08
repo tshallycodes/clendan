@@ -1,7 +1,7 @@
 """
 Clen AI assistant routes.
-POST /v1/clen/chat   — streaming SSE chat (docs mode: no auth, account mode: Bearer JWT required)
-DELETE /v1/clen/conversation — stateless clear (frontend holds conversation state)
+POST /v1/clen/chat   - streaming SSE chat (docs mode: no auth, account mode: Bearer JWT required)
+DELETE /v1/clen/conversation - stateless clear (frontend holds conversation state)
 """
 import json
 import time
@@ -26,7 +26,7 @@ logger = get_logger(__name__)
 router = APIRouter(tags=["clen"])
 
 # ---------------------------------------------------------------------------
-# Rate limiting — in-memory, per user_id (auth) or IP (unauth)
+# Rate limiting - in-memory, per user_id (auth) or IP (unauth)
 # ---------------------------------------------------------------------------
 
 _rate_limits: dict[str, dict] = {}
@@ -50,14 +50,14 @@ def _check_rate_limit(key: str, limit: int) -> bool:
 
 
 # ---------------------------------------------------------------------------
-# Optional auth — decode JWT if present, return (tenant_id, user_id) or (None, None)
+# Optional auth - decode JWT if present, return (tenant_id, user_id) or (None, None)
 # ---------------------------------------------------------------------------
 
 async def _try_decode_jwt(token: str, db: Prisma) -> tuple[Optional[str], Optional[str]]:
     """
     Attempts to verify the Bearer token and resolve tenant_id.
     Returns (tenant_id, user_id) on success, (None, None) on any failure.
-    Never raises — failures silently fall back to docs mode.
+    Never raises - failures silently fall back to docs mode.
     """
     try:
         jwks = await _fetch_jwks()
@@ -92,7 +92,7 @@ async def _try_decode_jwt(token: str, db: Prisma) -> tuple[Optional[str], Option
 
 class ClenChatRequest(BaseModel):
     messages: list[dict]  # [{role: "user"|"assistant", content: str}]
-    mode: str = "docs"    # "docs" | "account" — overridden to "docs" if no valid auth
+    mode: str = "docs"    # "docs" | "account" - overridden to "docs" if no valid auth
 
 
 # ---------------------------------------------------------------------------
@@ -116,7 +116,7 @@ async def _generate(
         system_text = await build_system_prompt(mode, tenant_id, db)
     except Exception as exc:
         logger.error("clen_system_prompt_failed error=%s", type(exc).__name__)
-        yield f"data: {json.dumps({'type': 'error', 'content': 'Clen failed to initialise — please try again'})}\n\n"
+        yield f"data: {json.dumps({'type': 'error', 'content': 'Clen failed to initialise - please try again'})}\n\n"
         yield "data: [DONE]\n\n"
         return
 
@@ -145,7 +145,7 @@ async def _generate(
                     yield f"data: {json.dumps({'type': 'text', 'content': text})}\n\n"
                 final = await stream.get_final_message()
 
-            # No tool calls — Claude is done
+            # No tool calls - Claude is done
             if final.stop_reason != "tool_use":
                 break
 
@@ -182,11 +182,11 @@ async def _generate(
 
     except anthropic.APIError as exc:
         logger.error("clen_stream_api_error type=%s msg=%s", type(exc).__name__, str(exc))
-        yield f"data: {json.dumps({'type': 'error', 'content': 'Clen encountered an error — please try again'})}\n\n"
+        yield f"data: {json.dumps({'type': 'error', 'content': 'Clen encountered an error - please try again'})}\n\n"
     except Exception as exc:
         import traceback
         logger.error("clen_stream_error type=%s msg=%s trace=%s", type(exc).__name__, str(exc), traceback.format_exc())
-        yield f"data: {json.dumps({'type': 'error', 'content': 'Clen encountered an unexpected error — please try again'})}\n\n"
+        yield f"data: {json.dumps({'type': 'error', 'content': 'Clen encountered an unexpected error - please try again'})}\n\n"
 
     yield "data: [DONE]\n\n"
 
@@ -231,7 +231,7 @@ async def clen_chat(
     if not allowed:
 
         async def _rate_limit_stream() -> AsyncGenerator[str, None]:
-            yield f"data: {json.dumps({'type': 'error', 'content': 'Rate limit exceeded — please wait before sending more messages'})}\n\n"
+            yield f"data: {json.dumps({'type': 'error', 'content': 'Rate limit exceeded - please wait before sending more messages'})}\n\n"
             yield "data: [DONE]\n\n"
 
         return StreamingResponse(
@@ -251,7 +251,7 @@ async def clen_chat(
 async def clen_clear_conversation():
     """
     Stateless conversation clear.
-    The frontend holds all conversation state — this endpoint exists for
+    The frontend holds all conversation state - this endpoint exists for
     clients that want a documented clear action. Returns confirmation only.
     """
     return {"cleared": True}

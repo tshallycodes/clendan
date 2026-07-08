@@ -145,7 +145,7 @@ export function AuditTable({ entries, searchQuery, dateFrom, dateTo }: Props) {
                     {e.execution_id ? (
                       <span className="text-brand-muted/70">{e.execution_id.slice(0, 8)}…</span>
                     ) : (
-                      <span className="text-brand-muted/40">—</span>
+                      <span className="text-brand-muted/40">-</span>
                     )}
                   </td>
                   <td className="px-5 py-3">
@@ -178,7 +178,7 @@ export function AuditTable({ entries, searchQuery, dateFrom, dateTo }: Props) {
                           <pre className="bg-brand-bg border border-brand-border rounded-sm p-4 text-xs font-body text-brand-secondary overflow-x-auto whitespace-pre-wrap break-all">
                             {e.reasoning_trace_json
                               ? JSON.stringify(e.reasoning_trace_json, null, 2)
-                              : '— no reasoning trace recorded —'}
+                              : '- no reasoning trace recorded -'}
                           </pre>
                         </motion.div>
                       </td>

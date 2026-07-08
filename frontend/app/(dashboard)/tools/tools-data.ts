@@ -27,11 +27,11 @@ export const TOOLS: ToolDef[] = [
     name: 'Reconciliation',
     desc: 'One click reconciles your bank, invoices, VAT, and payroll for any period. Flags every discrepancy before you close the books.',
     capabilities: [
-      'Bank rec — matches every bank transaction against accounting invoices and bills, flags payments with no matching record',
-      'Invoice rec — reviews all sales invoices for missing tax, overdue balances, and outstanding amounts',
-      'VAT rec — totals output VAT from invoices, flags invoices with missing tax before you file your VAT return',
-      'Payroll rec — cross-references payroll payments against your employee roster, detects ghost employees and salary discrepancies',
-      'Run all four types in parallel with a single button — results in seconds for invoice and VAT, minutes for bank and payroll',
+      'Bank rec - matches every bank transaction against accounting invoices and bills, flags payments with no matching record',
+      'Invoice rec - reviews all sales invoices for missing tax, overdue balances, and outstanding amounts',
+      'VAT rec - totals output VAT from invoices, flags invoices with missing tax before you file your VAT return',
+      'Payroll rec - cross-references payroll payments against your employee roster, detects ghost employees and salary discrepancies',
+      'Run all four types in parallel with a single button - results in seconds for invoice and VAT, minutes for bank and payroll',
       'Drill into any rec type for full transaction-level detail and export to CSV',
       'Create journal entries directly from bank rec results to close unmatched items',
       'Full AI reasoning trace written to the audit log for every run',
@@ -42,21 +42,21 @@ export const TOOLS: ToolDef[] = [
     type: 'document_intelligence',
     requires: [],
     name: 'Document Intelligence',
-    desc: 'Upload any business document. Clen reads it and produces a structured analysis — summary, risks, loopholes, key dates, and improvement suggestions.',
+    desc: 'Upload any business document. Clen reads it and produces a structured analysis - summary, risks, loopholes, key dates, and improvement suggestions.',
     capabilities: [
       'AI-generated summary of any business document in plain English',
-      'Risk analysis — surfaces hidden obligations, liabilities, and ambiguous clauses',
-      'Loophole detection — flags gaps that could be exploited or misinterpreted',
-      'Improvement suggestions — missing protections, weak language, recommended additions',
+      'Risk analysis - surfaces hidden obligations, liabilities, and ambiguous clauses',
+      'Loophole detection - flags gaps that could be exploited or misinterpreted',
+      'Improvement suggestions - missing protections, weak language, recommended additions',
       'Extracts parties, key dates, and document subtype automatically',
-      'Supports PDF, Word (.docx), PNG, JPG, and WebP — up to 10 MB',
+      'Supports PDF, Word (.docx), PNG, JPG, and WebP - up to 10 MB',
       'Export full analysis as structured JSON',
       'Every analysis written to the immutable audit log',
     ],
     howItWorks: [
       { step: '01', label: 'Upload',   desc: 'Drop or browse for a PDF, image, or Word document. Multiple files can be uploaded at once.' },
       { step: '02', label: 'Read',     desc: 'Claude reads the full document. Unreadable or blank files are flagged immediately with a reason.' },
-      { step: '03', label: 'Analyse',  desc: 'Claude produces a structured analysis — summary, risks, loopholes, improvements, parties, and key dates.' },
+      { step: '03', label: 'Analyse',  desc: 'Claude produces a structured analysis - summary, risks, loopholes, improvements, parties, and key dates.' },
       { step: '04', label: 'Audit',    desc: 'The full analysis and confidence score are written to the immutable audit log before the response is returned.' },
     ],
   },
@@ -71,7 +71,7 @@ export const TOOLS: ToolDef[] = [
       'Duplicate detection by contact and amount within configurable window',
       'Per-transaction, daily, and monthly spend limit enforcement',
       'Pre-approval routing for high-value bills and expenses',
-      'Category spend limits — meals, hotel per-diem, cash advances',
+      'Category spend limits - meals, hotel per-diem, cash advances',
       'Receipt requirement enforcement above configurable threshold',
       'Real-time policy violation flagging before payment',
       'Multi-source aggregation: FreshBooks, Xero, QuickBooks',
@@ -100,7 +100,7 @@ export const TOOLS: ToolDef[] = [
     desc: 'Auto-generate P&L, balance sheet, and cash flow statements from live accounting data.',
     capabilities: [
       'Profit & loss statement with gross margin and net profit analysis',
-      'Balance sheet summary — assets, liabilities, and net asset position',
+      'Balance sheet summary - assets, liabilities, and net asset position',
       'Cash flow statement from live bank and payment data',
       'AI-generated CFO-level narrative and anomaly detection',
       'Approval routing when anomalies or at-risk health indicators are detected',
@@ -120,8 +120,8 @@ export const TOOLS: ToolDef[] = [
       'Approval routing for bills above the auto-pay threshold',
       'Duplicate and risk detection across the payment batch before scheduling',
       'Immutable PaymentRun record created per batch for full audit trail',
-      'Configurable due-date window — only pays bills due within N days',
-      'Blocked bills excluded automatically — no manual filtering required',
+      'Configurable due-date window - only pays bills due within N days',
+      'Blocked bills excluded automatically - no manual filtering required',
     ],
   },
 ]
@@ -133,7 +133,7 @@ export function slugToTool(slug: string): ToolDef | undefined {
 // ─── Workflow grouping ────────────────────────────────────────────────────────
 // The Tools page is organised by the two workflows the product runs end-to-end:
 // AP (invoice processing) feeds Close (month-end). Each workflow lists its tools
-// in pipeline order — the sequence a document travels through.
+// in pipeline order - the sequence a document travels through.
 
 export interface WorkflowDef {
   id: 'accounts-payable' | 'month-end-close'
@@ -148,7 +148,7 @@ export const WORKFLOWS: WorkflowDef[] = [
     id: 'accounts-payable',
     name: 'Accounts Payable',
     headline: 'From inbox to approved bill.',
-    tagline: 'Invoices are ingested, read, coded, checked against your spend policy, and scheduled for payment — automatically.',
+    tagline: 'Invoices are ingested, read, coded, checked against your spend policy, and scheduled for payment - automatically.',
     toolTypes: ['document_intelligence', 'spend_control', 'payment_run'],
   },
   {

@@ -1,6 +1,6 @@
 """
 SAP S/4HANA Cloud integration routes.
-Uses OAuth 2.0 Client Credentials — no OAuth redirect flow.
+Uses OAuth 2.0 Client Credentials - no OAuth redirect flow.
 Credentials are supplied directly by the tenant at connect time.
 """
 from datetime import datetime, UTC
@@ -59,7 +59,7 @@ async def sap_connect(
         )
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
-            detail="Could not obtain an access token from SAP — verify client_id, client_secret, and token_url",
+            detail="Could not obtain an access token from SAP - verify client_id, client_secret, and token_url",
         )
 
     raw_creds = {
@@ -169,7 +169,7 @@ async def sap_sync(
         )
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Failed to enqueue sync — queue may be temporarily unavailable",
+            detail="Failed to enqueue sync - queue may be temporarily unavailable",
         )
 
     return standard_response(data={"status": "sync_queued", "integration_id": integration.id})

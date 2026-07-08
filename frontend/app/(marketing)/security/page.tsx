@@ -1,7 +1,7 @@
 ﻿import Link from 'next/link'
 
 export const metadata = {
-  title: 'Security — Clendan',
+  title: 'Security - Clendan',
   description: 'Every decision auditable. Every credential encrypted. Every tenant isolated.',
 }
 
@@ -12,7 +12,7 @@ const PRINCIPLES = [
   },
   {
     title: 'Tenant Isolation',
-    body: 'PostgreSQL row-level security enforced on every table. No query executes without tenant scope. Agent instances are fully isolated — one tenant\'s tools cannot access another\'s data or tools.',
+    body: 'PostgreSQL row-level security enforced on every table. No query executes without tenant scope. Agent instances are fully isolated - one tenant\'s tools cannot access another\'s data or tools.',
   },
   {
     title: 'Audit Immutability',
@@ -28,10 +28,10 @@ const DATA_HANDLING = [
   'Email address and company name collected at signup',
   'Financial document data processed on your behalf and not retained beyond 30 days',
   'AI reasoning traces stored for audit purposes per your plan tier',
-  'No financial data written to application logs — trace IDs used for correlation only',
+  'No financial data written to application logs - trace IDs used for correlation only',
   'Data residency: UK and EU only',
   'Account data retained until you delete your account',
-  'Audit logs retained per plan tier — see your plan details',
+  'Audit logs retained per plan tier - see your plan details',
   'Processed documents purged after 30 days',
 ]
 
@@ -95,8 +95,8 @@ export default function SecurityPage() {
               </h2>
               <p className="font-body text-sm text-brand-secondary leading-relaxed">
                 Clendan is working toward SOC 2 Type II certification, targeting Q4 2026. Our
-                security controls — encryption, access control, audit logging, and incident
-                response — are designed to meet SOC 2 Trust Service Criteria from day one.
+                security controls - encryption, access control, audit logging, and incident
+                response - are designed to meet SOC 2 Trust Service Criteria from day one.
               </p>
             </div>
             <div className="bg-brand-bg border border-brand-border rounded-sm p-5 shrink-0 min-w-56">
@@ -143,7 +143,7 @@ export default function SecurityPage() {
             <ul className="flex flex-col gap-3">
               {DATA_HANDLING.map((item) => (
                 <li key={item} className="flex items-start gap-3">
-                  <span className="text-brand-green font-body text-xs mt-0.5 shrink-0">—</span>
+                  <span className="text-brand-green font-body text-xs mt-0.5 shrink-0">-</span>
                   <span className="font-body text-xs text-brand-secondary leading-relaxed">
                     {item}
                   </span>
@@ -176,10 +176,10 @@ export default function SecurityPage() {
               </div>
               <div className="flex flex-col gap-1 pl-1">
                 <p className="font-body text-xs text-brand-secondary">
-                  — Acknowledged within 48 hours
+                  - Acknowledged within 48 hours
                 </p>
                 <p className="font-body text-xs text-brand-secondary">
-                  — Status update within 7 days
+                  - Status update within 7 days
                 </p>
               </div>
             </div>

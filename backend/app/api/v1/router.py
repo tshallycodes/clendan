@@ -142,4 +142,4 @@ v1_router.include_router(billing_router)
 v1_router.include_router(stripe_billing_webhook_router)
 v1_router.include_router(workflows_router)
 v1_router.include_router(payment_runs_router)
-v1_router.include_router(generic_router)  # must be last — uses {slug} path params
+v1_router.include_router(generic_router)  # must be last - uses {slug} path params

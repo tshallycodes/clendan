@@ -34,7 +34,7 @@ export function ToolTestResult({ result, onDismiss }: Props) {
     return (
       <div className="flex items-center justify-between mt-3 px-3 py-2 bg-[rgba(255,77,109,0.06)] border border-[rgba(255,77,109,0.2)] rounded-sm">
         <span className="text-[12px] font-body text-[#ff4d6d]">{result.error}</span>
-        <button type="button" onClick={onDismiss} className="text-[#ff4d6d] text-[11px] font-body ml-3 hover:opacity-70 transition-opacity">Ã—</button>
+        <button type="button" onClick={onDismiss} className="text-[#ff4d6d] text-[11px] font-body ml-3 hover:opacity-70 transition-opacity">Ã-</button>
       </div>
     )
   }
@@ -53,11 +53,11 @@ export function ToolTestResult({ result, onDismiss }: Props) {
         )}
         {isQueued && (
           <span className="text-[12px] font-body text-[#4a6a4a]">
-            Execution queued — check Executions page for results
+            Execution queued - check Executions page for results
           </span>
         )}
       </div>
-      <button type="button" onClick={onDismiss} className="text-[#4a6a4a] text-[11px] font-body ml-3 hover:text-brand-muted transition-colors">Ã—</button>
+      <button type="button" onClick={onDismiss} className="text-[#4a6a4a] text-[11px] font-body ml-3 hover:text-brand-muted transition-colors">Ã-</button>
     </div>
   )
 }

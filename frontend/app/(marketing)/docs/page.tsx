@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation'
 
 export const metadata = {
-  title: 'Documentation — Clendan',
+  title: 'Documentation - Clendan',
 }
 
 export default function DocsPage() {

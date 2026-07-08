@@ -2,7 +2,7 @@ import { Navbar } from '@/components/marketing/Navbar'
 import { Footer } from '@/components/marketing/Footer'
 
 export const metadata = {
-  title: 'Privacy Policy — Clendan',
+  title: 'Privacy Policy - Clendan',
 }
 
 const SECTIONS = [
@@ -12,7 +12,7 @@ const SECTIONS = [
       'Email address and company name, collected at signup.',
       'Financial document data (invoices, receipts, statements) processed on your behalf as part of the Clendan service.',
       'Usage data and agent execution logs, used to provide and improve the service.',
-      'Authentication data managed via Clerk — we do not store raw passwords.',
+      'Authentication data managed via Clerk - we do not store raw passwords.',
     ],
   },
   {
@@ -27,9 +27,9 @@ const SECTIONS = [
   {
     heading: 'Who We Share It With',
     body: [
-      'Anthropic — for AI processing of agent tasks. Subject to Anthropic\'s data processing terms.',
-      'Railway — for infrastructure hosting in the UK/EU region.',
-      'Clerk — for authentication and session management.',
+      'Anthropic - for AI processing of agent tasks. Subject to Anthropic\'s data processing terms.',
+      'Railway - for infrastructure hosting in the UK/EU region.',
+      'Clerk - for authentication and session management.',
       'We do not sell your data to any third party. Ever.',
     ],
   },
@@ -55,7 +55,7 @@ const SECTIONS = [
   {
     heading: 'Cookie Policy',
     body: [
-      'We use essential cookies only — session management and authentication.',
+      'We use essential cookies only - session management and authentication.',
       'We do not use advertising cookies or third-party tracking cookies.',
       'You can disable cookies in your browser, but this will prevent you from logging in.',
     ],
@@ -100,7 +100,7 @@ export default function PrivacyPage() {
                 <ul className="flex flex-col gap-3">
                   {section.body.map((item, i) => (
                     <li key={i} className="flex items-start gap-3">
-                      <span className="text-brand-muted font-body text-xs mt-0.5 shrink-0">—</span>
+                      <span className="text-brand-muted font-body text-xs mt-0.5 shrink-0">-</span>
                       <span className="font-body text-sm text-brand-secondary leading-relaxed">
                         {item}
                       </span>

@@ -7,7 +7,7 @@ Verification (GET):
 
 Notification (POST):
   Dropbox sends POST with optional {list_folder: {accounts: [...]}} body.
-  We ignore the body — enqueue a sync for all connected Dropbox integrations.
+  We ignore the body - enqueue a sync for all connected Dropbox integrations.
   Always return 200.
 """
 from fastapi import APIRouter, Query, Request
@@ -39,11 +39,11 @@ async def dropbox_webhook_challenge(
 async def dropbox_webhook(request: Request):
     """
     Receives Dropbox change notifications.
-    Dropbox does not include what changed — enqueue a full sync for every
+    Dropbox does not include what changed - enqueue a full sync for every
     connected integration to detect new PDFs.
     Always returns 200.
     """
-    # Body may contain account hints but we do not parse it — enqueue sync for all connected integrations.
+    # Body may contain account hints but we do not parse it - enqueue sync for all connected integrations.
     db = get_db()
 
     integrations = await db.integration.find_many(

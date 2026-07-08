@@ -21,7 +21,7 @@ export function HowItWorks() {
       </FadeInUp>
 
       <div className="relative">
-        {/* Animated connector line — desktop only */}
+        {/* Animated connector line - desktop only */}
         <motion.div
           className="hidden md:block absolute top-6 left-0 right-0 h-px border-t border-dashed border-brand-border"
           style={{ transformOrigin: 'left', zIndex: 0 }}

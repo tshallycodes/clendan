@@ -10,7 +10,7 @@ function CheckMark() {
 }
 
 function Dash() {
-  return <span className="text-brand-muted font-body text-[14px]">—</span>
+  return <span className="text-brand-muted font-body text-[14px]">-</span>
 }
 
 function ComparisonCell({ value }: { value: CellValue }) {
@@ -51,7 +51,7 @@ function PlanCard({ plan }: { plan: Plan }) {
         {plan.features.map((f) => (
           <li key={f.label} className="flex items-start gap-2">
             <span className={`mt-0.5 flex-shrink-0 ${f.included ? 'text-brand-green' : 'text-brand-muted'}`}>
-              {f.included ? '✓' : '—'}
+              {f.included ? '✓' : '-'}
             </span>
             <span className={`font-body text-[13px] ${f.included ? 'text-brand-secondary' : 'text-brand-muted'}`}>
               {f.label}

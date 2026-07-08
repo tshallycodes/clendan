@@ -7,7 +7,7 @@ Validation endpoint (GET):
 
 Notification endpoint (POST):
   Receives change notifications when new mail arrives.
-  Must return 202 IMMEDIATELY — Microsoft retries if the response is slow.
+  Must return 202 IMMEDIATELY - Microsoft retries if the response is slow.
   clientState is verified against tenant_id before any processing.
 """
 from fastapi import APIRouter, HTTPException, Query, Request, status
@@ -38,7 +38,7 @@ async def outlook_webhook_validation(
 async def outlook_webhook(request: Request):
     """
     Receives Microsoft Graph change notifications for new mail messages.
-    Returns 202 IMMEDIATELY — Microsoft retries if response exceeds its timeout.
+    Returns 202 IMMEDIATELY - Microsoft retries if response exceeds its timeout.
     clientState is verified against stored tenant_id to prevent spoofed notifications.
     """
     try:
@@ -101,5 +101,5 @@ async def outlook_webhook(request: Request):
                     tenant_id, type(exc).__name__,
                 )
 
-    # 202 returned by status_code on decorator — response body is informational only
+    # 202 returned by status_code on decorator - response body is informational only
     return {"accepted": True}

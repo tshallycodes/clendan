@@ -1,5 +1,5 @@
 """
-Month-End Close API — /v1/close-runs/*
+Month-End Close API - /v1/close-runs/*
 All routes require RequireOrgAuth. All queries scoped to current_user.tenant_id.
 """
 from __future__ import annotations

@@ -1,6 +1,6 @@
 ﻿"""
 Anthropic tool_use schema definitions for Clen account mode.
-Imported by tools.py — kept separate to stay within the 500-line limit.
+Imported by tools.py - kept separate to stay within the 500-line limit.
 """
 
 ACCOUNT_TOOLS: list[dict] = [

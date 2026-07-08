@@ -280,7 +280,7 @@ async def run_tool(
         await db.execution.update(where={"id": execution.id}, data={"status": "failed", "decision": "failed"})
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Could not queue the run — please try again",
+            detail="Could not queue the run - please try again",
         )
 
     logger.info("tool_run_triggered", extra={"tool_id": tool_id, "tenant_id": tenant_id, "execution_id": execution.id})
@@ -295,7 +295,7 @@ async def latest_result(
 ):
     """Return the tool's most recent execution and its structured reasoning trace.
 
-    Powers the result views (VAT position, statements, spend decisions, etc.) — the full
+    Powers the result views (VAT position, statements, spend decisions, etc.) - the full
     output is stored on the run's audit log. Tenant-scoped.
     """
     tenant_id = current_user.tenant_id

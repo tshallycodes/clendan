@@ -2,7 +2,7 @@
 
 Tools that read accounting/bank data can be scoped to a subset of the tenant's
 connected integrations via config (e.g. ``accounting_sources: ["xero"]``). An empty
-or unset list means "all connected sources" — no scoping. Every accounting/bank model
+or unset list means "all connected sources" - no scoping. Every accounting/bank model
 carries a ``source`` column holding the integration type (xero, quickbooks, plaid, …).
 """
 

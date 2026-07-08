@@ -1,6 +1,6 @@
 """
 NetSuite SuiteCloud webhook receiver.
-No signature verification in v1 — endpoint accepts all POST requests.
+No signature verification in v1 - endpoint accepts all POST requests.
 Emits invoice_received events for invoice/bill/PO record changes.
 """
 from fastapi import APIRouter, Request
@@ -20,7 +20,7 @@ async def netsuite_webhook(request: Request):
     """
     Receives NetSuite SuiteCloud push notifications.
     Emits invoice_received events for invoice, vendorbill, and purchaseOrder changes.
-    Returns 200 immediately — no signature verification in v1.
+    Returns 200 immediately - no signature verification in v1.
     """
     try:
         body = await request.json()

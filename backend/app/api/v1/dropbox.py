@@ -102,7 +102,7 @@ async def dropbox_exchange(
     """
     Called from the frontend /auth/dropbox/callback page.
     Exchanges the OAuth code, stores credentials, enqueues sync.
-    Returns JSON so the frontend can handle the redirect — the browser never visits the backend URL.
+    Returns JSON so the frontend can handle the redirect - the browser never visits the backend URL.
     state format: {tenant_id}:{random}
     """
     parts = state.split(":", 1)
@@ -190,7 +190,7 @@ async def dropbox_sync(
     if integration.status not in ("connected", "error"):
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail=f"Cannot trigger sync — current status: {integration.status}",
+            detail=f"Cannot trigger sync - current status: {integration.status}",
         )
 
     await db.integration.update(
@@ -238,7 +238,7 @@ async def dropbox_disconnect(
                     )
         except ValueError:
             logger.warning(
-                "dropbox_disconnect_decrypt_failed tenant=%s — proceeding with disconnect",
+                "dropbox_disconnect_decrypt_failed tenant=%s - proceeding with disconnect",
                 current_user.tenant_id,
             )
 

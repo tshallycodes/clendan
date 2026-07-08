@@ -70,9 +70,9 @@ function PolicyMockup() {
 function TerminalMockup() {
   const lines = [
     { text: '▶ Ingesting invoice INV-4821', color: '#a0b8a0' },
-    { text: '  OCR extraction complete — 99.2% confidence', color: '#4a6a4a' },
+    { text: '  OCR extraction complete - 99.2% confidence', color: '#4a6a4a' },
     { text: '  Matched to contract C-0042', color: '#4a6a4a' },
-    { text: '  Amount: £380.00 — policy: AUTO', color: '#00C853' },
+    { text: '  Amount: £380.00 - policy: AUTO', color: '#00C853' },
     { text: '✔ Payment scheduled for 2026-06-10', color: '#00C853' },
   ]
   return (
@@ -146,7 +146,7 @@ const STEPS = [
   {
     n: '04',
     title: 'Tools Execute',
-    desc: 'Tools run continuously. Every invoice, every transaction, every decision — handled.',
+    desc: 'Tools run continuously. Every invoice, every transaction, every decision - handled.',
     mockup: <TerminalMockup />,
   },
   {

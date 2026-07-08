@@ -1,5 +1,5 @@
 """
-Document Intelligence API — file upload, document list, and PDF export endpoints.
+Document Intelligence API - file upload, document list, and PDF export endpoints.
 POST /v1/document-intelligence/{tool_id}/upload
 GET  /v1/document-intelligence/{tool_id}/documents
 GET  /v1/document-intelligence/{tool_id}/documents/{document_id}/pdf
@@ -64,9 +64,9 @@ def _generate_analysis_pdf(doc) -> bytes:
     subtype = str(extracted.get("document_subtype") or "").replace("_", " ").title()
 
     filename      = esc(doc.filename or "Untitled")
-    analysed_at   = doc.created_at.strftime("%d %b %Y, %H:%M") if doc.created_at else "—"
-    confidence_pct = f"{int((doc.confidence or 0) * 100)}%" if doc.confidence is not None else "—"
-    decision_label = esc(_DECISION_LABELS.get(doc.decision or "", doc.decision or "—"))
+    analysed_at   = doc.created_at.strftime("%d %b %Y, %H:%M") if doc.created_at else "-"
+    confidence_pct = f"{int((doc.confidence or 0) * 100)}%" if doc.confidence is not None else "-"
+    decision_label = esc(_DECISION_LABELS.get(doc.decision or "", doc.decision or "-"))
 
     meta_lines = [
         f"<p class='meta'><b>File:</b> {filename}</p>",
@@ -163,7 +163,7 @@ async def upload_document(
     """
     Accept a document upload, generate a thumbnail, create a Document record,
     and enqueue the document_intelligence job for async processing.
-    Claude analyses the document and produces structured output — summary, risks, loopholes, improvements.
+    Claude analyses the document and produces structured output - summary, risks, loopholes, improvements.
     """
     tenant_id = current_user.tenant_id
     logger.debug("doc_upload_start", extra={"tenant_id": tenant_id, "tool_id": tool_id, "file_name": file.filename, "content_type": file.content_type})

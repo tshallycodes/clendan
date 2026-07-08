@@ -58,7 +58,7 @@ function fmt(cents: number | null, symbol: string): string {
 }
 
 function fmtDate(iso: string | null): string {
-  if (!iso) return '—'
+  if (!iso) return '-'
   return new Date(iso).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' })
 }
 
@@ -195,7 +195,7 @@ export function InvoiceRecSection({ toolId }: Props) {
                   className="w-full flex items-center justify-between px-4 py-3 border-b border-[rgba(255,77,109,0.2)] text-left"
                 >
                   <p className="text-[11px] font-body uppercase tracking-widest text-[#ff4d6d]">
-                    Flagged ({summary.flagged.length}) — missing tax
+                    Flagged ({summary.flagged.length}) - missing tax
                   </p>
                   <span className="text-brand-muted text-xs">{showFlagged ? '↑' : '↓'}</span>
                 </button>
@@ -212,8 +212,8 @@ export function InvoiceRecSection({ toolId }: Props) {
                       <tbody className="divide-y divide-brand-border">
                         {summary.flagged.map(f => (
                           <tr key={f.id} className="hover:bg-brand-elevated transition-colors">
-                            <td className="px-3 py-2 text-[11px] font-body text-brand-text">{f.number ?? '—'}</td>
-                            <td className="px-3 py-2 text-[11px] font-body text-brand-secondary">{f.contact_name ?? '—'}</td>
+                            <td className="px-3 py-2 text-[11px] font-body text-brand-text">{f.number ?? '-'}</td>
+                            <td className="px-3 py-2 text-[11px] font-body text-brand-secondary">{f.contact_name ?? '-'}</td>
                             <td className="px-3 py-2 text-[11px] font-body text-brand-muted">{fmtDate(f.issue_date)}</td>
                             <td className="px-3 py-2 text-[11px] font-body text-brand-text">{fmt(f.subtotal_cents, symbol)}</td>
                             <td className="px-3 py-2 text-[11px] font-body text-[#ff4d6d]">{fmt(f.tax_cents, symbol)}</td>
@@ -258,8 +258,8 @@ export function InvoiceRecSection({ toolId }: Props) {
                       <tbody className="divide-y divide-brand-border">
                         {summary.items.map(inv => (
                           <tr key={inv.id} className="hover:bg-brand-elevated transition-colors">
-                            <td className="px-3 py-2 text-[11px] font-body text-brand-text">{inv.number ?? '—'}</td>
-                            <td className="px-3 py-2 text-[11px] font-body text-brand-secondary">{inv.contact_name ?? '—'}</td>
+                            <td className="px-3 py-2 text-[11px] font-body text-brand-text">{inv.number ?? '-'}</td>
+                            <td className="px-3 py-2 text-[11px] font-body text-brand-secondary">{inv.contact_name ?? '-'}</td>
                             <td className="px-3 py-2 text-[11px] font-body text-brand-muted">{fmtDate(inv.issue_date)}</td>
                             <td className="px-3 py-2 text-[11px] font-body text-brand-muted">{fmtDate(inv.due_date)}</td>
                             <td className="px-3 py-2 text-[11px] font-body text-brand-text">{fmt(inv.subtotal_cents, symbol)}</td>
@@ -273,7 +273,7 @@ export function InvoiceRecSection({ toolId }: Props) {
                                 </span>
                               )}
                             </td>
-                            <td className="px-3 py-2 text-[11px] font-body text-brand-muted capitalize">{inv.source ?? '—'}</td>
+                            <td className="px-3 py-2 text-[11px] font-body text-brand-muted capitalize">{inv.source ?? '-'}</td>
                           </tr>
                         ))}
                       </tbody>

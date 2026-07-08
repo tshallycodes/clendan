@@ -1,12 +1,12 @@
 """
 Codat integration routes.
-Codat is a META-integration platform — one connection gives access to 50+ accounting platforms
+Codat is a META-integration platform - one connection gives access to 50+ accounting platforms
 (QuickBooks, Xero, Sage, FreshBooks, etc.) through a single unified API.
 
 Connect flow (NOT standard OAuth):
-  1. POST /integrations/codat/connect — creates Codat company, returns link_url
+  1. POST /integrations/codat/connect - creates Codat company, returns link_url
   2. User visits link_url in their browser to connect their accounting platform
-  3. GET /integrations/codat/status — poll until connections appear (status → connected)
+  3. GET /integrations/codat/status - poll until connections appear (status → connected)
 """
 import json
 from datetime import datetime, UTC
@@ -34,7 +34,7 @@ async def codat_connect(
 ):
     """
     Creates a Codat company for the tenant and returns the Codat Link URL.
-    The user MUST visit link_url to connect their accounting platform — this is not standard OAuth.
+    The user MUST visit link_url to connect their accounting platform - this is not standard OAuth.
     Status is set to 'connecting' until the user completes the Link flow.
     """
     from app.core.config import get_settings

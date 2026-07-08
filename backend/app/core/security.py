@@ -67,7 +67,7 @@ def extract_clerk_user_id(payload: dict) -> str:
 
 class CurrentUser(BaseModel):
     user_id: str    # Clerk user ID (sub claim)
-    org_id: str     # Clerk org ID — from JWT only, never from request
+    org_id: str     # Clerk org ID - from JWT only, never from request
     tenant_id: str  # Internal DB Tenant.id resolved from clerk_org_id
     email: str
     role: Literal["owner", "admin", "approver", "viewer"]
@@ -99,20 +99,20 @@ async def get_current_user(
         if not tenant:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="Organisation not provisioned — complete onboarding",
+                detail="Organisation not provisioned - complete onboarding",
             )
-        # Clerk JWTs don't include email by default — fall back to Member table
+        # Clerk JWTs don't include email by default - fall back to Member table
         if not email:
             member = await db.member.find_unique(where={"clerk_user_id": user_id})
             if member and member.email:
                 email = member.email
     else:
-        # Clerk Organizations not active — resolve tenant via Member table
+        # Clerk Organizations not active - resolve tenant via Member table
         member = await db.member.find_unique(where={"clerk_user_id": user_id})
         if not member:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="No organisation found — complete onboarding",
+                detail="No organisation found - complete onboarding",
             )
         tenant = await db.tenant.find_unique(where={"id": member.tenant_id})
         if not tenant:

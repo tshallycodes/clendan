@@ -19,7 +19,7 @@ router = APIRouter(prefix="/webhooks", tags=["webhooks"])
 async def wise_webhook(request: Request):
     """
     Receives Wise event notifications.
-    RSA signature verification is deferred to v2 — all requests accepted in v1.
+    RSA signature verification is deferred to v2 - all requests accepted in v1.
     """
     _logger.warning(
         "wise_webhook_signature_verification_skipped_pending_rsa_implementation"

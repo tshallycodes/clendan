@@ -59,13 +59,13 @@ const AUTONOMY_BADGE: Record<string, { label: string; className: string }> = {
 }
 
 const AUTONOMY_DESC: Record<string, string> = {
-  auto:    'Executes automatically — no approval required before acting.',
+  auto:    'Executes automatically - no approval required before acting.',
   approve: 'Every decision is routed to you for review before the agent acts.',
 }
 
 const HOW_IT_WORKS = [
   { step: '01', label: 'Connect',        desc: 'Link your bank accounts (Plaid, TrueLayer) and accounting software (Xero, QuickBooks, FreshBooks). Clendan pulls live data from all of them.' },
-  { step: '02', label: 'Pick a period',  desc: 'Choose a month. One click runs Bank, Invoice, and VAT reconciliations in parallel — no setup needed per run.' },
+  { step: '02', label: 'Pick a period',  desc: 'Choose a month. One click runs Bank, Invoice, and VAT reconciliations in parallel - no setup needed per run.' },
   { step: '03', label: 'Review',         desc: 'Summary cards show matched transactions, outstanding invoices, VAT position, and any flagged items that need your attention.' },
   { step: '04', label: 'Act',            desc: 'Create journal entries for unmatched items, investigate flagged invoices, export results to CSV, or drill into any rec type for the full detail.' },
 ]
@@ -75,7 +75,7 @@ const WHAT_IS_COVERED = [
     key: 'bank',
     label: 'Bank',
     color: '#00a8cc',
-    desc: 'Matches every transaction in your bank accounts against invoices and bills in your accounting system. Flags payments with no matching record — catches fraud, duplicates, and missing invoices.',
+    desc: 'Matches every transaction in your bank accounts against invoices and bills in your accounting system. Flags payments with no matching record - catches fraud, duplicates, and missing invoices.',
   },
   {
     key: 'invoice',
@@ -178,7 +178,7 @@ export function ReconciliationClient() {
       active = false
       setPolling(false)
       setRunning(false)
-      toast('Reconciliation timed out — check back shortly', 'error')
+      toast('Reconciliation timed out - check back shortly', 'error')
     }, 5 * 60 * 1000)
     return () => {
       active = false
@@ -299,7 +299,7 @@ export function ReconciliationClient() {
     const res = await fetch(`${API}/reconciliation/runs/${runId}/export?${params}`, {
       headers: { Authorization: `Bearer ${token}` },
     })
-    if (!res.ok) { toast('Export failed — please try again', 'error'); return }
+    if (!res.ok) { toast('Export failed - please try again', 'error'); return }
     const blob = await res.blob()
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
@@ -463,7 +463,7 @@ export function ReconciliationClient() {
                 <div className="bg-brand-bg border border-brand-border rounded-sm overflow-hidden">
                   <div className="px-4 py-3 border-b border-brand-border">
                     <p className="text-[11px] font-body uppercase tracking-widest text-brand-muted">How it works</p>
-                    <p className="text-[11px] font-body text-brand-muted mt-0.5">Connect your data, pick a month, review results — that&apos;s it</p>
+                    <p className="text-[11px] font-body text-brand-muted mt-0.5">Connect your data, pick a month, review results - that&apos;s it</p>
                   </div>
                   <div className="grid grid-cols-1 divide-y divide-brand-border">
                     {HOW_IT_WORKS.map(({ step, label, desc }) => (
@@ -482,7 +482,7 @@ export function ReconciliationClient() {
                 <div className="bg-brand-bg border border-brand-border rounded-sm overflow-hidden">
                   <div className="px-4 py-3 border-b border-brand-border">
                     <p className="text-[11px] font-body uppercase tracking-widest text-brand-muted">What&apos;s covered</p>
-                    <p className="text-[11px] font-body text-brand-muted mt-0.5">Four reconciliation types — run all at once or drill into each individually</p>
+                    <p className="text-[11px] font-body text-brand-muted mt-0.5">Four reconciliation types - run all at once or drill into each individually</p>
                   </div>
                   <div className="grid grid-cols-1 divide-y divide-brand-border">
                     {WHAT_IS_COVERED.map(({ key, label, color, desc }) => (
@@ -512,7 +512,7 @@ export function ReconciliationClient() {
                       <div className="space-y-1.5">
                         <p className="text-[11px] font-body text-brand-muted uppercase tracking-widest">Status</p>
                         <p className="text-xs font-body text-brand-text">{deployed.status === 'active' ? 'Running' : 'Paused'}</p>
-                        <p className="text-[11px] font-body text-brand-muted">{deployed.status === 'active' ? 'Agent is live and processing' : 'Agent is paused — no runs will fire'}</p>
+                        <p className="text-[11px] font-body text-brand-muted">{deployed.status === 'active' ? 'Agent is live and processing' : 'Agent is paused - no runs will fire'}</p>
                       </div>
                     </div>
                   </div>

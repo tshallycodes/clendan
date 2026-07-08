@@ -62,7 +62,7 @@ export async function RecentExecutionsTable() {
       const data = await apiGet<ExecutionsResponse>('/dashboard/executions?limit=10', token)
       executions = data?.executions ?? []
     }
-  } catch { /* backend not running — show empty state */ }
+  } catch { /* backend not running - show empty state */ }
 
   return (
     <div className="bg-brand-surface border border-brand-border rounded-sm overflow-hidden">
@@ -72,7 +72,7 @@ export async function RecentExecutionsTable() {
 
       {executions.length === 0 ? (
         <p className="px-5 py-8 text-xs font-body text-brand-muted text-center">
-          No executions yet — deploy a tool and submit your first invoice
+          No executions yet - deploy a tool and submit your first invoice
         </p>
       ) : (
         <div className="overflow-x-auto">

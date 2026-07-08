@@ -56,7 +56,7 @@ const TRANSACTIONS_ENDPOINT: EndpointDef = {
   defaultPathParam: null,
 }
 
-// Endpoints relevant to a given tool — only shown when the selected tool has any.
+// Endpoints relevant to a given tool - only shown when the selected tool has any.
 const RELATED_ENDPOINTS: Partial<Record<ToolName, EndpointDef[]>> = {
   reconciliation: [TRANSACTIONS_ENDPOINT],
   spend_control: [TRANSACTIONS_ENDPOINT],
@@ -304,7 +304,7 @@ export function ApiPlayground() {
       try {
         json = await res.json()
       } catch {
-        setResponse({ kind: 'result', data: { error: `HTTP ${res.status} — response was not JSON`, status: res.status } })
+        setResponse({ kind: 'result', data: { error: `HTTP ${res.status} - response was not JSON`, status: res.status } })
         return
       }
 
@@ -383,7 +383,7 @@ export function ApiPlayground() {
             </select>
           </div>
 
-          {/* Payload — file picker for document_intelligence, JSON editor for everything else */}
+          {/* Payload - file picker for document_intelligence, JSON editor for everything else */}
           {selectedTool === 'document_intelligence' ? (
             <div className="space-y-1.5">
               <label className="text-[11px] font-body uppercase tracking-widest text-brand-muted">File</label>
@@ -397,12 +397,12 @@ export function ApiPlayground() {
                 {selectedFile ? (
                   <div className="text-center">
                     <p className="text-xs font-body text-brand-text">{selectedFile.name}</p>
-                    <p className="text-[11px] font-body text-brand-muted mt-0.5">{(selectedFile.size / 1024).toFixed(1)} KB — click to change</p>
+                    <p className="text-[11px] font-body text-brand-muted mt-0.5">{(selectedFile.size / 1024).toFixed(1)} KB - click to change</p>
                   </div>
                 ) : (
                   <div className="text-center">
                     <p className="text-xs font-body text-brand-muted group-hover:text-brand-text transition-colors">Click to select a file</p>
-                    <p className="text-[11px] font-body text-brand-muted mt-0.5">PDF, Word, PNG, JPG, WebP — max 10 MB</p>
+                    <p className="text-[11px] font-body text-brand-muted mt-0.5">PDF, Word, PNG, JPG, WebP - max 10 MB</p>
                   </div>
                 )}
               </label>

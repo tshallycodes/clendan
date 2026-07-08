@@ -61,7 +61,7 @@ function Result({ ctx }: { ctx: ToolRenderCtx }) {
       {!trace ? (
         <div className="bg-brand-surface border border-brand-border rounded-sm px-4 py-3 text-center">
           <p className="text-xs font-body text-brand-muted">
-            This agent hasn&apos;t run yet — pick a period and click <span className="text-brand-secondary">Run VAT check</span> to compute your position.
+            This agent hasn&apos;t run yet - pick a period and click <span className="text-brand-secondary">Run VAT check</span> to compute your position.
           </p>
         </div>
       ) : (

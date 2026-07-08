@@ -34,7 +34,7 @@ async def respond_to_approval(
     body: RespondRequest = ...,
 ):
     """
-    Approve or reject a pending approval. Enforces expiry TTL — stale approvals are rejected.
+    Approve or reject a pending approval. Enforces expiry TTL - stale approvals are rejected.
     Scoped to tenant via JWT: only approvals belonging to the authenticated user's tenant are accessible.
     Cascades status to linked journal entries when applicable.
     """
@@ -113,7 +113,7 @@ async def respond_to_approval(
             data={"decision": "auto_approved"},
         )
 
-    # Audit log — must succeed for operation to complete
+    # Audit log - must succeed for operation to complete
     await write_audit_log(
         tenant_id=tenant_id,
         actor=f"user:{clerk_user_id}",

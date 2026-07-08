@@ -1,7 +1,7 @@
-"""Payment run batch routes — list and cancel scheduled PaymentRun batches.
+"""Payment run batch routes - list and cancel scheduled PaymentRun batches.
 
 Creating a batch is done by triggering the payment_run tool (POST /tools/{id}/run),
-which schedules/records intent only. Actual disbursement is intentionally gated —
+which schedules/records intent only. Actual disbursement is intentionally gated -
 no money-movement happens here. A scheduled batch can be cancelled before processing.
 """
 from typing import Annotated

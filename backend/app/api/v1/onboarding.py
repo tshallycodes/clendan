@@ -63,7 +63,7 @@ class InviteTeamResponse(BaseModel):
 
 
 # ---------------------------------------------------------------------------
-# Existing endpoint — preserved for backward compat
+# Existing endpoint - preserved for backward compat
 # ---------------------------------------------------------------------------
 
 @router.post("/onboarding")
@@ -72,7 +72,7 @@ async def onboard(
     payload: RequireAuth,
     db: Annotated[Prisma, Depends(get_db_dep)],
 ):
-    """Create tenant + user on first sign-in. Idempotent — safe to call multiple times."""
+    """Create tenant + user on first sign-in. Idempotent - safe to call multiple times."""
     clerk_user_id = extract_clerk_user_id(payload)
     email = payload.get("email", "") or payload.get("email_address", "")
 

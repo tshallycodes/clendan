@@ -1,6 +1,6 @@
 """
 GoCardless integration routes.
-API key auth — no OAuth flow required.
+API key auth - no OAuth flow required.
 """
 from datetime import datetime, UTC
 from typing import Annotated
@@ -129,7 +129,7 @@ async def gocardless_status(
     if not integration:
         return standard_response(data={"status": "not_connected"})
 
-    # Decrypt only to expose environment — never expose the token
+    # Decrypt only to expose environment - never expose the token
     environment = None
     if integration.encrypted_credentials and integration.encrypted_credentials != "{}":
         try:

@@ -1,7 +1,7 @@
 """
-Journal Entries API — /v1/journal-entries
+Journal Entries API - /v1/journal-entries
 Endpoints: list, create, get, post, void.
-All queries scoped to current_user.tenant_id — no cross-tenant access.
+All queries scoped to current_user.tenant_id - no cross-tenant access.
 """
 from __future__ import annotations
 
@@ -264,7 +264,7 @@ async def void_journal_entry(
     if entry.status != "draft":
         raise HTTPException(
             status_code=409,
-            detail=f"Cannot void entry with status '{entry.status}' — only draft entries can be voided",
+            detail=f"Cannot void entry with status '{entry.status}' - only draft entries can be voided",
         )
 
     updated = await db.journalentry.update(
@@ -272,7 +272,7 @@ async def void_journal_entry(
         data={"status": "voided"},
     )
 
-    # Audit — must succeed before returning
+    # Audit - must succeed before returning
     await db.auditlog.create(
         data={
             "tenant_id": tenant_id,
@@ -325,7 +325,7 @@ async def suggest_payroll_journal_entry(
         expected_minor: int = employee.get("expected_minor", 0)
         lines.append({
             "account_code": "5000",
-            "account_name": f"Salary Expense — {name}",
+            "account_name": f"Salary Expense - {name}",
             "debit_minor": expected_minor,
             "credit_minor": 0,
         })
@@ -340,7 +340,7 @@ async def suggest_payroll_journal_entry(
     return standard_response(data={
         "suggestion": {
             "period": run.period,
-            "description": f"Payroll — {run.period}",
+            "description": f"Payroll - {run.period}",
             "entry_type": "payroll",
             "lines": lines,
         }
@@ -382,7 +382,7 @@ async def suggest_reconciliation_journal_entry(
         lines: list[dict] = [
             {
                 "account_code": "3000",
-                "account_name": "Reconciliation Adjustment — No Items",
+                "account_name": "Reconciliation Adjustment - No Items",
                 "debit_minor": 0,
                 "credit_minor": 0,
             },
@@ -403,7 +403,7 @@ async def suggest_reconciliation_journal_entry(
         for group_name, group_total in groups.items():
             lines.append({
                 "account_code": "3000",
-                "account_name": f"Reconciliation Adjustment — {group_name}",
+                "account_name": f"Reconciliation Adjustment - {group_name}",
                 "debit_minor": group_total,
                 "credit_minor": 0,
             })
@@ -418,7 +418,7 @@ async def suggest_reconciliation_journal_entry(
     return standard_response(data={
         "suggestion": {
             "period": period_str,
-            "description": f"Reconciliation Adjustment — {period_str}",
+            "description": f"Reconciliation Adjustment - {period_str}",
             "entry_type": "adjustment",
             "lines": lines,
         }
@@ -472,7 +472,7 @@ async def suggest_categorisation_journal_entry(
     return standard_response(data={
         "suggestion": {
             "period": current_period,
-            "description": f"Transaction Accruals — {current_period}",
+            "description": f"Transaction Accruals - {current_period}",
             "entry_type": "accrual",
             "lines": lines,
         }

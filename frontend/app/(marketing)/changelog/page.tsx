@@ -116,7 +116,7 @@ export default function ChangelogPage() {
           What&apos;s New in Clendan
         </h1>
         <p className="font-body text-sm text-brand-secondary max-w-xl">
-          Every update, fix, and new feature — in order.
+          Every update, fix, and new feature - in order.
         </p>
       </section>
 

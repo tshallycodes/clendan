@@ -257,7 +257,7 @@ function AskClenButton({ doc }: { doc: ProcessedDocument }) {
     const lines = [
       'I have further questions about this document.',
       '',
-      `Document: "${name}"${subtype ? ` — ${subtype}` : ''}`,
+      `Document: "${name}"${subtype ? ` - ${subtype}` : ''}`,
     ]
     if (summary) lines.push(`Summary: ${summary}`)
     if (parties.length) lines.push(`Parties: ${parties.join('; ')}`)
@@ -444,7 +444,7 @@ function DocumentRow({ doc, toolId, onAbort }: DocumentRowProps) {
                     Analysis
                     {!!doc.extracted_json?.document_subtype && (
                       <span className="ml-2 normal-case tracking-normal text-brand-secondary">
-                        — {String(doc.extracted_json.document_subtype).replace(/_/g, ' ')}
+                        - {String(doc.extracted_json.document_subtype).replace(/_/g, ' ')}
                       </span>
                     )}
                   </p>
@@ -827,7 +827,7 @@ export function DocumentsTab({ toolId }: { toolId: string | null }) {
           setTotal(t => t - 1)
           continue
         }
-        toast(`${file.name} uploaded — analysing…`, 'success')
+        toast(`${file.name} uploaded - analysing…`, 'success')
         setDocuments(prev => prev.map(d => d.id === tempId ? {
           id: json.data.document_id,
           document_type: 'pending' as DocumentType,
@@ -846,7 +846,7 @@ export function DocumentsTab({ toolId }: { toolId: string | null }) {
           created_at: now,
         } : d))
       } catch {
-        toast('Network error — please try again', 'error')
+        toast('Network error - please try again', 'error')
         setDocuments(prev => prev.filter(d => d.id !== tempId))
         setTotal(t => t - 1)
       } finally {
@@ -931,7 +931,7 @@ export function DocumentsTab({ toolId }: { toolId: string | null }) {
           </div>
         ) : documents.length === 0 ? (
           <div className="bg-brand-surface border border-brand-border rounded-sm p-8 text-center">
-            <p className="text-xs font-body text-brand-muted">No documents yet — upload one above.</p>
+            <p className="text-xs font-body text-brand-muted">No documents yet - upload one above.</p>
           </div>
         ) : visibleDocs.length === 0 ? (
           <div className="bg-brand-surface border border-brand-border rounded-sm p-8 text-center">

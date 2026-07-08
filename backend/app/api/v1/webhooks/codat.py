@@ -34,7 +34,7 @@ def _verify_authorization(authorization: str) -> bool:
     expected = settings.codat_webhook_secret or settings.codat_api_key
     if not expected:
         return False
-    # Basic scheme: "Basic <token>" or raw token — handle both
+    # Basic scheme: "Basic <token>" or raw token - handle both
     token = authorization.removeprefix("Basic ").strip()
     return hmac.compare_digest(expected.encode(), token.encode())
 
@@ -73,7 +73,7 @@ async def codat_webhook(
     )
 
     if event_type not in _HANDLED_EVENTS:
-        # Unknown event — acknowledge without processing
+        # Unknown event - acknowledge without processing
         return standard_response(data={"received": True, "processed": False})
 
     db = get_db()

@@ -7,7 +7,7 @@ Validation endpoint (GET):
 
 Notification endpoint (POST):
   Receives change notifications for Dynamics entity updates.
-  Must return 202 IMMEDIATELY — Microsoft retries if the response is slow.
+  Must return 202 IMMEDIATELY - Microsoft retries if the response is slow.
   clientState is verified against tenant_id before any processing.
 """
 from fastapi import APIRouter, HTTPException, Query, Request, status
@@ -37,7 +37,7 @@ async def dynamics_webhook_validation(
 async def dynamics_webhook(request: Request):
     """
     Receives Microsoft Graph change notifications for Dynamics 365.
-    Returns 202 IMMEDIATELY — Microsoft retries if response exceeds its timeout.
+    Returns 202 IMMEDIATELY - Microsoft retries if response exceeds its timeout.
     clientState is verified against stored tenant_id to prevent spoofed notifications.
     """
     try:

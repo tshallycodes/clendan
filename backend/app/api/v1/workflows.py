@@ -1,4 +1,4 @@
-"""Workflow connection routes — read and toggle the auto-handoff between tools.
+"""Workflow connection routes - read and toggle the auto-handoff between tools.
 
 A connection is the edge between two consecutive tools in a workflow. Enabled means
 the upstream tool auto-advances to the downstream one on a successful run. A missing

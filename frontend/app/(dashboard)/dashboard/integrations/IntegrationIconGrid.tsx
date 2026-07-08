@@ -118,7 +118,7 @@ export function IntegrationIconGrid({ integrations, statuses, onViewDetail }: Pr
               'flex flex-col items-center gap-1.5 group',
               intg.comingSoon ? 'cursor-default opacity-50' : 'cursor-pointer',
             ].join(' ')}
-            title={intg.comingSoon ? `${intg.name} — Coming Soon` : intg.name}
+            title={intg.comingSoon ? `${intg.name} - Coming Soon` : intg.name}
           >
             <div className="relative w-16 h-16">
               <div className={[

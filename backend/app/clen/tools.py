@@ -49,7 +49,7 @@ async def execute_tool(
         return await _dispatch(name, input, tenant_id, user_id, db)
     except Exception as exc:
         logger.error("clen_tool_failed tool=%s tenant=%s error=%s", name, tenant_id, type(exc).__name__)
-        return {"error": f"Tool '{name}' failed — please try again or contact support"}
+        return {"error": f"Tool '{name}' failed - please try again or contact support"}
 
 
 async def _dispatch(
@@ -270,7 +270,7 @@ async def _get_integration_status(integration_type: str, tenant_id: str, db: Pri
 
 
 # ---------------------------------------------------------------------------
-# Action tools — audit log written BEFORE DB mutation
+# Action tools - audit log written BEFORE DB mutation
 # ---------------------------------------------------------------------------
 
 async def _approve_execution(

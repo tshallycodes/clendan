@@ -49,7 +49,7 @@ async def stripe_webhook(
     mapped_event = parse_stripe_event_type(event_type)
 
     if mapped_event is None:
-        # Silently accept unhandled event types — Stripe sends many we don't use
+        # Silently accept unhandled event types - Stripe sends many we don't use
         return standard_response(data={"received": True})
 
     db = get_db()
@@ -67,7 +67,7 @@ async def stripe_webhook(
     stripe_object_id: str = stripe_object.get("id", "")
     idempotency_key = f"stripe:{event_id}"
 
-    # Build event payload — extract fields relevant to each workflow
+    # Build event payload - extract fields relevant to each workflow
     base = {"stripe_event_type": event_type, "stripe_object_id": stripe_object_id}
 
     if mapped_event in ("invoice_received", "invoice_payment_failed"):

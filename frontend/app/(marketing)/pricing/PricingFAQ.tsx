@@ -18,7 +18,7 @@ const FAQ_ITEMS: FAQItem[] = [
   },
   {
     q: 'How does the audit trail work?',
-    a: 'Every action written to an immutable, append-only log. No UPDATE, no DELETE — ever. The audit trail records the tool version, input data, policy evaluation, output, and full reasoning trace. Can be exported as CSV or JSON at any time.',
+    a: 'Every action written to an immutable, append-only log. No UPDATE, no DELETE - ever. The audit trail records the tool version, input data, policy evaluation, output, and full reasoning trace. Can be exported as CSV or JSON at any time.',
   },
   {
     q: 'Is my financial data encrypted?',
@@ -26,7 +26,7 @@ const FAQ_ITEMS: FAQItem[] = [
   },
   {
     q: 'Can I switch plans at any time?',
-    a: 'Yes. Upgrades are immediate — new limits apply instantly. Downgrades take effect at the next billing cycle. You keep access to current plan features until the cycle ends.',
+    a: 'Yes. Upgrades are immediate - new limits apply instantly. Downgrades take effect at the next billing cycle. You keep access to current plan features until the cycle ends.',
   },
 ]
 

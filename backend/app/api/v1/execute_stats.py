@@ -1,4 +1,4 @@
-﻿"""GET /execute/stats — execution aggregate stats per tool, authenticated via API key."""
+﻿"""GET /execute/stats - execution aggregate stats per tool, authenticated via API key."""
 import hashlib
 from datetime import datetime, timezone, timedelta
 

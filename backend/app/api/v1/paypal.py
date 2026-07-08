@@ -1,4 +1,4 @@
-"""PayPal OAuth routes — connect, callback, status, sync, disconnect."""
+"""PayPal OAuth routes - connect, callback, status, sync, disconnect."""
 import secrets
 from datetime import datetime, UTC
 from typing import Annotated

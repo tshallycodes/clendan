@@ -22,7 +22,7 @@ _INVOICE_EVENT_TYPES = frozenset({"SalesInvoice.Posted", "PurchaseInvoice.Posted
 async def sage_webhook(request: Request):
     """
     Receives Sage Business Cloud event notifications.
-    No signature verification in v1 — Sage does not provide standard signing.
+    No signature verification in v1 - Sage does not provide standard signing.
     Emits events for invoice events.
     """
     body = await request.body()

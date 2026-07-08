@@ -85,7 +85,7 @@ function StatsBar({ executions }: { executions: Execution[] }) {
   const stats = [
     { label: 'Total', value: String(total) },
     { label: 'Auto-executed', value: `${autoPct}%` },
-    { label: 'Avg duration', value: avgDuration != null ? `${avgDuration}ms` : '—' },
+    { label: 'Avg duration', value: avgDuration != null ? `${avgDuration}ms` : '-' },
     { label: 'Blocked', value: String(blocked) },
   ]
 
@@ -175,7 +175,7 @@ function ExecutionDrawer({ execution, onClose, onAction, loadingState }: DrawerP
                   : 'text-brand-text',
               )}
             >
-              {execution.duration_ms != null ? `${execution.duration_ms}ms` : '—'}
+              {execution.duration_ms != null ? `${execution.duration_ms}ms` : '-'}
             </div>
           </div>
 
@@ -272,7 +272,7 @@ export function ExecutionsClient({ initialExecutions, total }: Props) {
         )
         toast(action === 'approve' ? 'Execution approved' : 'Execution rejected', action === 'approve' ? 'success' : 'info')
       } else {
-        toast('Action failed — try again', 'error')
+        toast('Action failed - try again', 'error')
       }
     } finally {
       setLoadingMap((prev) => ({ ...prev, [executionId]: null }))
@@ -338,7 +338,7 @@ export function ExecutionsClient({ initialExecutions, total }: Props) {
       <motion.div variants={sectionVariants} className="bg-brand-surface border border-brand-border rounded-sm overflow-hidden">
         {filtered.length === 0 ? (
           <p className="px-5 py-12 text-xs font-body text-brand-muted text-center">
-            No executions yet — deploy a tool to begin
+            No executions yet - deploy a tool to begin
           </p>
         ) : (
           <div className="overflow-x-auto">
@@ -383,7 +383,7 @@ export function ExecutionsClient({ initialExecutions, total }: Props) {
                           : 'text-brand-muted',
                       )}
                     >
-                      {e.duration_ms != null ? `${e.duration_ms}ms` : '—'}
+                      {e.duration_ms != null ? `${e.duration_ms}ms` : '-'}
                     </td>
                     <td className="px-5 py-3">
                       <span className="text-[11px] font-body text-brand-muted hover:text-brand-text transition-colors">

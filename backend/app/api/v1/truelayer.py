@@ -75,7 +75,7 @@ async def truelayer_callback(
         except Exception:
             pass
 
-        # Fallback: get_provider_info returns empty in sandbox — try accounts instead
+        # Fallback: get_provider_info returns empty in sandbox - try accounts instead
         if not institution_name:
             try:
                 accounts = await tl.get_accounts(access_token)
@@ -88,7 +88,7 @@ async def truelayer_callback(
             except Exception:
                 pass
 
-    # Always create a new integration — dedup happens after sync based on account IDs
+    # Always create a new integration - dedup happens after sync based on account IDs
     integration = await db.integration.create(
         data={
             "tenant_id": tenant_id,
@@ -271,7 +271,7 @@ async def force_resync_truelayer_connection(
 ):
     """
     Clears all cached transactions for a TrueLayer connection then triggers a full re-sync.
-    Keeps the integration and accounts intact — no OAuth reconnect needed.
+    Keeps the integration and accounts intact - no OAuth reconnect needed.
     Use after sign convention fixes or data corruption.
     """
     tenant_id = current_user.tenant_id
@@ -281,7 +281,7 @@ async def force_resync_truelayer_connection(
     if not intg:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="TrueLayer connection not found")
     if intg.status == IntegrationStatus.DISCONNECTED:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Connection is disconnected — reconnect first")
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Connection is disconnected - reconnect first")
 
     accounts = await db.bankaccount.find_many(where={"integration_id": integration_id})
     account_ids = [a.id for a in accounts]
@@ -414,7 +414,7 @@ async def sync_truelayer_connection_endpoint(
     if not intg:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="TrueLayer connection not found")
     if intg.status == IntegrationStatus.DISCONNECTED:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Connection is disconnected — reconnect first")
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Connection is disconnected - reconnect first")
 
     await db.integration.update(where={"id": integration_id}, data={"status": IntegrationStatus.SYNCING})
     await enqueue_truelayer_sync(integration_id, tenant_id)

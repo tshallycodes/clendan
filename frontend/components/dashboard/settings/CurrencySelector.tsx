@@ -60,7 +60,7 @@ export function CurrencySelector() {
   }
 
   const staleMessage = isStale && ratesUpdatedAt
-    ? `Rates last updated ${new Date(ratesUpdatedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })} — exchange data may be stale`
+    ? `Rates last updated ${new Date(ratesUpdatedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })} - exchange data may be stale`
     : null
 
   return (
@@ -74,7 +74,7 @@ export function CurrencySelector() {
         >
           <span className="flex items-center gap-2 min-w-0">
             <span className="text-brand-muted shrink-0">{selected.symbol}</span>
-            <span className="truncate">{selected.code} — {selected.name}</span>
+            <span className="truncate">{selected.code} - {selected.name}</span>
           </span>
           <motion.span
             animate={{ rotate: open ? 180 : 0 }}

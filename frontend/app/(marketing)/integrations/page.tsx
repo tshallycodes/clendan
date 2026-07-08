@@ -103,7 +103,7 @@ export default function IntegrationsPage() {
             <HowItWorksStep
               step="01"
               title="Connect"
-              desc="Authenticate via OAuth. Clendan requests only the permissions it needs — read access by default."
+              desc="Authenticate via OAuth. Clendan requests only the permissions it needs - read access by default."
             />
             <div className="hidden md:block w-px bg-brand-border self-stretch" />
             <HowItWorksStep
@@ -129,7 +129,7 @@ export default function IntegrationsPage() {
               Security
             </div>
             <p className="font-body text-[13px] text-brand-secondary">
-              Credentials encrypted at rest. Never stored in plaintext. Full permission scoping —
+              Credentials encrypted at rest. Never stored in plaintext. Full permission scoping -
               Clendan only requests access it actively uses. OAuth tokens are stored with
               tenant-level encryption keys and are never logged or exposed in API responses.
             </p>

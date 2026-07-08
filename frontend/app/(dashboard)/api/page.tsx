@@ -154,7 +154,7 @@ export default function ApiDocsPage() {
 }`} />
 
         <div className="space-y-3">
-          <p className="text-[11px] font-body uppercase tracking-widest text-brand-muted">reasoning_trace shape — reconciliation</p>
+          <p className="text-[11px] font-body uppercase tracking-widest text-brand-muted">reasoning_trace shape - reconciliation</p>
           <CodeBlock lang="json" code={`{
   "overall_decision":      "flagged",
   "period_start":          "2026-05-01T00:00:00+00:00",
@@ -186,7 +186,7 @@ export default function ApiDocsPage() {
   ]
 }`} />
           <p className="text-xs font-body text-brand-muted">
-            <code className="text-brand-text">claude_assessments</code> is a flat array — pipe it directly into a table or CSV.
+            <code className="text-brand-text">claude_assessments</code> is a flat array - pipe it directly into a table or CSV.
             Each row has <code className="text-brand-text">item_id</code>, <code className="text-brand-text">item_type</code>,{' '}
             <code className="text-brand-text">action</code> (<code className="text-[#00C853]">ok</code> /{' '}
             <code className="text-[#f5a623]">review</code> / <code className="text-[#ff4d6d]">flag</code>),{' '}
@@ -246,7 +246,7 @@ with open("assessments.csv", "w", newline="") as f:
           <EndpointCard
             method="POST"
             path="/execute/approvals/{id}/approve"
-            description="Approve a pending action. Enforces expiry TTL — stale approvals are rejected."
+            description="Approve a pending action. Enforces expiry TTL - stale approvals are rejected."
             headers={[
               { name: 'Authorization',   required: true, description: 'ck_live_...' },
               { name: 'Idempotency-Key', required: true, description: 'Unique key per operation' },
@@ -318,7 +318,7 @@ with open("assessments.csv", "w", newline="") as f:
       <section className="space-y-4">
         <h2 className="font-heading font-semibold text-sm text-brand-text uppercase tracking-widest">Payload Reference</h2>
         <p className="text-xs font-body text-brand-muted">
-          Each tool accepts a <code className="text-brand-text">payload</code> object. Fields are optional — omitted fields
+          Each tool accepts a <code className="text-brand-text">payload</code> object. Fields are optional - omitted fields
           fall back to what is configured in the tool&apos;s settings drawer.
         </p>
 
@@ -388,7 +388,7 @@ with open("assessments.csv", "w", newline="") as f:
               <tbody className="divide-y divide-brand-border">
                 {[
                   ['invoice_id / receipt_id', 'string', 'ID of the document to process'],
-                  ['amount_minor',  'integer', 'Amount in minor units (pence/cents) — no decimals'],
+                  ['amount_minor',  'integer', 'Amount in minor units (pence/cents) - no decimals'],
                   ['currency',      'string',  'ISO 4217 currency code (GBP, USD, EUR)'],
                   ['vendor / merchant', 'string', 'Counterparty name'],
                   ['transaction_id', 'string', 'Bank transaction ID (fraud_detection, expense_control)'],

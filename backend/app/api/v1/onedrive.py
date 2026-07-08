@@ -153,7 +153,7 @@ async def onedrive_sync(
         )
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Failed to enqueue sync — queue may be unavailable",
+            detail="Failed to enqueue sync - queue may be unavailable",
         )
 
     return standard_response(data={"status": "syncing", "integration_id": integration.id})

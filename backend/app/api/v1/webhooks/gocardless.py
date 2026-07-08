@@ -82,7 +82,7 @@ async def gocardless_webhook(
         )
 
         if event_key not in _HANDLED_EVENTS:
-            # Log and continue — never reject unhandled events
+            # Log and continue - never reject unhandled events
             _logger.info(
                 "gocardless_event_unhandled",
                 extra={"event_id": event_id, "event_key": event_key},

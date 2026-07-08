@@ -55,7 +55,7 @@ async def quickbooks_callback(
     """
     OAuth callback from QuickBooks. Exchanges code for tokens, stores encrypted,
     triggers initial sync, marks integration as connected.
-    All steps required — partial completion is a failure.
+    All steps required - partial completion is a failure.
     """
     from app.core.config import get_settings as _get_settings
     _frontend_url = _get_settings().frontend_url
@@ -104,7 +104,7 @@ async def quickbooks_callback(
             }
         )
 
-    # Verify connection by fetching company info (zero trust — confirm data present)
+    # Verify connection by fetching company info (zero trust - confirm data present)
     try:
         settings = _get_settings()
         creds = decrypt_credentials(credentials, tenant_id)
@@ -212,7 +212,7 @@ async def xero_callback(
 
     # Xero returns error param when user denies or scopes are wrong
     if error:
-        logger.warning("Xero OAuth error: %s — %s", error, error_description)
+        logger.warning("Xero OAuth error: %s - %s", error, error_description)
         return RedirectResponse(f"{_frontend_url}/dashboard/integrations?error={error}")
 
     if not code or not state:
@@ -234,7 +234,7 @@ async def xero_callback(
         detail = str(exc)
         if isinstance(exc, _httpx.HTTPStatusError):
             detail = exc.response.text[:500]
-        logger.error("Xero token exchange failed: %s — %s", type(exc).__name__, detail)
+        logger.error("Xero token exchange failed: %s - %s", type(exc).__name__, detail)
         return RedirectResponse(f"{_frontend_url}/dashboard/integrations?error=token_exchange_failed")
 
     try:
@@ -243,7 +243,7 @@ async def xero_callback(
         logger.error("Xero credential decrypt failed post-exchange: %s", type(exc).__name__)
         return RedirectResponse(f"{_frontend_url}/dashboard/integrations?error=token_exchange_failed")
 
-    # Fetch connected Xero orgs — zero trust: confirm data present before storing
+    # Fetch connected Xero orgs - zero trust: confirm data present before storing
     try:
         connections = await xero.get_connections(creds["access_token"])
     except Exception as exc:

@@ -20,7 +20,7 @@ export interface ClenPanelProps {
   onSeedConsumed?: () => void
 }
 
-const WELCOME = `Hi, I'm Clen — Clendan's assistant.\n\nAsk me anything about how Clendan works,\nour integrations, API tools, or pricing.`
+const WELCOME = `Hi, I'm Clen - Clendan's assistant.\n\nAsk me anything about how Clendan works,\nour integrations, API tools, or pricing.`
 
 const floatingVariants = {
   hidden: { opacity: 0, y: 20, scale: 0.97 },

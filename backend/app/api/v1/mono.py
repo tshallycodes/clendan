@@ -331,7 +331,7 @@ async def sync_mono_connection(
     if not intg:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Mono connection not found")
     if intg.status == IntegrationStatus.DISCONNECTED:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Connection is disconnected — reconnect first")
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Connection is disconnected - reconnect first")
 
     await db.integration.update(where={"id": integration_id}, data={"status": IntegrationStatus.SYNCING})
     await enqueue_mono_sync(integration_id, tenant_id)

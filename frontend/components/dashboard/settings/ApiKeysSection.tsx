@@ -99,7 +99,7 @@ export function ApiKeysSection() {
     <div className="space-y-4">
       {revealedKey && (
         <div className="border border-brand-green/40 bg-brand-green/05 rounded-sm p-4 space-y-3">
-          <p className="text-[11px] font-body uppercase tracking-widest text-brand-green">New API key — copy it now. It will not be shown again.</p>
+          <p className="text-[11px] font-body uppercase tracking-widest text-brand-green">New API key - copy it now. It will not be shown again.</p>
           <div className="flex items-center gap-3 bg-brand-bg border border-brand-border rounded-sm px-3 py-2">
             <code className="flex-1 text-xs font-body text-brand-text break-all">{revealedKey}</code>
             <button type="button" onClick={copyKey} aria-label="Copy API key" className="shrink-0 text-brand-muted hover:text-brand-text transition-colors">
@@ -107,7 +107,7 @@ export function ApiKeysSection() {
             </button>
           </div>
           <button type="button" onClick={() => setRevealedKey(null)} className="text-xs font-body text-brand-muted hover:text-brand-text transition-colors">
-            I've copied it — dismiss
+            I've copied it - dismiss
           </button>
         </div>
       )}
@@ -133,7 +133,7 @@ export function ApiKeysSection() {
       {loading ? (
         <p className="text-xs font-body text-brand-muted py-4">Loading...</p>
       ) : keys.length === 0 && !showForm ? (
-        <p className="text-xs font-body text-brand-muted py-4">No API keys — generate your first key to connect external systems.</p>
+        <p className="text-xs font-body text-brand-muted py-4">No API keys - generate your first key to connect external systems.</p>
       ) : (
         <div className="divide-y divide-brand-border border border-brand-border rounded-sm overflow-hidden">
           {keys.map((k) => (

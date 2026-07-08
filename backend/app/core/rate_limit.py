@@ -1,6 +1,6 @@
 """
 Redis sliding-window rate limiter middleware.
-Applied globally — parse endpoints get a tighter limit than general API.
+Applied globally - parse endpoints get a tighter limit than general API.
 """
 import asyncio
 import hashlib
@@ -18,7 +18,7 @@ from app.core.logging import get_logger, get_trace_id
 _logger = get_logger(__name__)
 
 # Reuse a single Redis client (and its connection pool) across requests rather
-# than constructing one per request — building a client per call churns
+# than constructing one per request - building a client per call churns
 # connections and adds latency on every request.
 _redis_client: aioredis.Redis | None = None
 
@@ -40,12 +40,12 @@ _EXEMPT = {"/health", "/ready"}
 # Path prefixes also exempt
 _EXEMPT_PREFIXES = ("/integrations", "/webhooks")
 
-# (requests, window_seconds) per path prefix — first match wins
+# (requests, window_seconds) per path prefix - first match wins
 _LIMITS: list[tuple[str, int, int]] = [
-    ("/parse/",   20,  60),   # 20 req/min  — Claude vision is expensive
-    ("/agents/",  30,  60),   # 30 req/min  — queue submissions
-    ("/execute",  60,  60),   # 60 req/min  — agent executions (each triggers a job)
-    ("/",        200,  60),   # 200 req/min — all other endpoints
+    ("/parse/",   20,  60),   # 20 req/min  - Claude vision is expensive
+    ("/agents/",  30,  60),   # 30 req/min  - queue submissions
+    ("/execute",  60,  60),   # 60 req/min  - agent executions (each triggers a job)
+    ("/",        200,  60),   # 200 req/min - all other endpoints
 ]
 
 

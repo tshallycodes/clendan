@@ -80,7 +80,7 @@ export function ToolApprovalsTab({ toolId }: { toolId: string | null }) {
         body: JSON.stringify({ action }),
       })
       if (!res.ok) {
-        toast(`Failed to ${action} — please try again`, 'error')
+        toast(`Failed to ${action} - please try again`, 'error')
         return
       }
       const newStatus = action === 'approve' ? 'approved' : 'rejected'
@@ -88,7 +88,7 @@ export function ToolApprovalsTab({ toolId }: { toolId: string | null }) {
       setFilter('all')
       toast(action === 'approve' ? 'Execution approved' : 'Execution rejected', 'success')
     } catch {
-      toast(`Failed to ${action} — network error`, 'error')
+      toast(`Failed to ${action} - network error`, 'error')
     } finally {
       setActing(null)
     }
@@ -141,7 +141,7 @@ export function ToolApprovalsTab({ toolId }: { toolId: string | null }) {
                 <div className="space-y-1.5 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <p className="text-xs font-body font-medium text-brand-text">
-                      {formatToolType(a.tool_type)}{a.document_type ? ` — ${formatDocType(a.document_type)}` : ''}
+                      {formatToolType(a.tool_type)}{a.document_type ? ` - ${formatDocType(a.document_type)}` : ''}
                     </p>
                     {a.confidence != null && (
                       <span className="text-[11px] font-body text-brand-muted">{Math.round(a.confidence * 100)}% confidence</span>

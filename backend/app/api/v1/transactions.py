@@ -44,7 +44,7 @@ async def list_all_transactions(
 ):
     """
     Lists all bank transactions for the tenant across every connected source
-    (Plaid, TrueLayer, Mono). Scoped to tenant — never leaks cross-tenant data.
+    (Plaid, TrueLayer, Mono). Scoped to tenant - never leaks cross-tenant data.
     """
     tenant_id = current_user.tenant_id
 
@@ -92,7 +92,7 @@ async def list_all_transactions(
         db.banktransaction.count(where={**status_count_where, "status": "categorised"}),
         db.banktransaction.count(where={**status_count_where, "status": "matched"}),
     )
-    # pending_count = everything not yet categorised or matched — catches any status including null
+    # pending_count = everything not yet categorised or matched - catches any status including null
     pending_count = total_all - categorised_count - matched_count
     total_out_minor: int = sum(t.amount_minor for t in all_debits)
     total_in_minor: int = sum(-t.amount_minor for t in all_credits)
@@ -163,7 +163,7 @@ async def update_transaction_category(
         data={"ai_category": body.category, "status": "categorised"},
     )
 
-    # Log correction for AI learning — only when the category actually changed
+    # Log correction for AI learning - only when the category actually changed
     original_category = txn.ai_category
     if original_category and original_category != body.category:
         await db.categorycorrection.create(

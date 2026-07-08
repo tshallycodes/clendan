@@ -182,7 +182,7 @@ export function BankPicker({
       </div>
 
       {isConnected ? (
-        /* Connected state — show only connected banks + add button */
+        /* Connected state - show only connected banks + add button */
         <div className="space-y-3">
           <div className="flex items-start gap-4 flex-wrap">
             {displayCards.map((bank) => (
@@ -204,7 +204,7 @@ export function BankPicker({
 
         </div>
       ) : (
-        /* Not connected — single connect button */
+        /* Not connected - single connect button */
         <div className="flex justify-center py-4">
           <button
             onClick={() => onConnect(region)}

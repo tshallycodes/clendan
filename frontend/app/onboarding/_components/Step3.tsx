@@ -88,7 +88,7 @@ export function Step3({ onNext, onSkip }: Step3Props) {
         onClick={onSkip}
         className="w-full text-xs font-body text-brand-muted hover:text-brand-text transition-colors py-1"
       >
-        Skip for now — I'll connect later
+        Skip for now - I'll connect later
       </button>
     </div>
   )

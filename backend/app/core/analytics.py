@@ -1,7 +1,7 @@
 ﻿"""
-PostHog analytics — fire-and-forget event tracking.
+PostHog analytics - fire-and-forget event tracking.
 All calls are non-blocking: posthog batches and flushes in a background thread.
-Never log financial data — only trace IDs and aggregate metrics.
+Never log financial data - only trace IDs and aggregate metrics.
 """
 from typing import Any, Optional
 
@@ -26,7 +26,7 @@ def _get_client():
         ph.on_error = lambda err, items: _logger.error("posthog_error", extra={"error": str(err)})
         _posthog = ph
     except ImportError:
-        _logger.warning("posthog_not_installed — analytics disabled")
+        _logger.warning("posthog_not_installed - analytics disabled")
     return _posthog
 
 
@@ -37,7 +37,7 @@ def track_execution(
     tool_type: str,
     duration_ms: Optional[int] = None,
 ) -> None:
-    """Track an agent execution outcome. No financial amounts — decision + confidence only."""
+    """Track an agent execution outcome. No financial amounts - decision + confidence only."""
     ph = _get_client()
     if ph is None:
         return

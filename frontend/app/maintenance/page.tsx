@@ -1,7 +1,7 @@
 import { Logo } from '@/components/Logo'
 
 export const metadata = {
-  title: 'Maintenance — Clendan',
+  title: 'Maintenance - Clendan',
 }
 
 export default function MaintenancePage() {

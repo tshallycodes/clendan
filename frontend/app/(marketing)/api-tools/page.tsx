@@ -35,7 +35,7 @@ function InvoiceParserSection() {
     <ApiSection
       endpoint="POST /parse/invoice"
       title="Invoice Parser API"
-      desc="Extracts vendor, amount, line items, due date, and VAT from any invoice format — PDF, image, or structured data."
+      desc="Extracts vendor, amount, line items, due date, and VAT from any invoice format - PDF, image, or structured data."
       useCases={['Automated invoice ingestion', 'AP workflow automation', 'ERP data entry elimination']}
       curl={
         <>
@@ -106,7 +106,7 @@ function ReconcileSection() {
     <ApiSection
       endpoint="POST /reconcile"
       title="Document Reconciliation"
-      desc="Matches two financial datasets — bank transactions vs ledger entries, invoices vs payments — and returns matched, unmatched, and flagged rows."
+      desc="Matches two financial datasets - bank transactions vs ledger entries, invoices vs payments - and returns matched, unmatched, and flagged rows."
       useCases={['Month-end close automation', 'Bank statement reconciliation', 'AP/AR mismatch detection']}
       curl={
         <>

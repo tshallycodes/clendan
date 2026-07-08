@@ -59,7 +59,7 @@ export const TOOL_FIELDS: Record<string, FieldDef[]> = {
     { key: 'accounting_sources', type: 'multiselect', label: 'Accounting sources', options: [], default: [],
       description: 'Restrict spend review to specific connected accounting integrations. Leave all unchecked to include every connected source.' },
     { key: 'auto_approve_limit_cents', type: 'number', label: 'Auto-approve under', penceDisplay: true, default: 10000,
-      description: 'Expenses under this amount can be approved automatically. The agent never auto-approves anything at or above this — it is the hard ceiling for hands-off approval.' },
+      description: 'Expenses under this amount can be approved automatically. The agent never auto-approves anything at or above this - it is the hard ceiling for hands-off approval.' },
     { key: 'approval_required_cents', type: 'number', label: 'Approval required above', penceDisplay: true, default: 50000,
       description: 'Unapproved expenses above this amount are flagged and routed to the Approvals queue before payment.' },
     { key: 'single_expense_limit_cents', type: 'number', label: 'Single-expense hard limit', penceDisplay: true, default: 100000,
@@ -77,7 +77,7 @@ export const TOOL_FIELDS: Record<string, FieldDef[]> = {
     { key: 'vat_alert_threshold_cents', type: 'number', label: 'VAT liability alert threshold', penceDisplay: true, default: 1000000,
       description: 'Alert and route for approval when the net VAT liability for the period exceeds this amount. Default £10,000.' },
     { key: 'missing_tax_flag_threshold_cents', type: 'number', label: 'Missing tax code flag above', penceDisplay: true, default: 10000,
-      description: 'Flag any invoice, bill, or expense above this amount that has no tax code assigned. Default £100 — keeps low-value items out of the review queue.' },
+      description: 'Flag any invoice, bill, or expense above this amount that has no tax code assigned. Default £100 - keeps low-value items out of the review queue.' },
   ],
   financial_reporting: [
     { key: 'accounting_sources', type: 'multiselect', label: 'Accounting sources', options: [], default: [],

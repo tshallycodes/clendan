@@ -23,7 +23,7 @@ function loadFromStorage(): Record<string, boolean> {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (raw) return { ...defaults, ...JSON.parse(raw) }
   } catch {
-    // SSR or malformed JSON — fall through to defaults
+    // SSR or malformed JSON - fall through to defaults
   }
   return defaults
 }
@@ -38,7 +38,7 @@ export function NotificationsSection() {
       try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(next))
       } catch {
-        // storage unavailable — state still updated in memory
+        // storage unavailable - state still updated in memory
       }
       const row = ROWS.find(r => r.id === id)
       if (row) toast(`${row.label} ${next[id] ? 'enabled' : 'disabled'}`, 'success')

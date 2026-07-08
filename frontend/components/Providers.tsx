@@ -188,7 +188,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
           }
         }
       } catch {
-        // Network error — use localStorage fallbacks
+        // Network error - use localStorage fallbacks
         const localCurrency = localStorage.getItem('preferredCurrency')
         if (!cancelled && localCurrency) setCurrencyState(localCurrency)
         const localTz = localStorage.getItem('timezone')

@@ -209,10 +209,10 @@ export function ToolExecutionsTab({ toolId }: { toolId: string | null }) {
                       {new Date(e.created_at).toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
                     </td>
                     <td className="px-4 py-2.5 text-brand-secondary max-w-[120px] truncate" title={e.triggered_by_email ?? ''}>
-                      {e.triggered_by_email ? e.triggered_by_email.split('@')[0] : '—'}
+                      {e.triggered_by_email ? e.triggered_by_email.split('@')[0] : '-'}
                     </td>
-                    <td className="px-4 py-2.5 text-brand-muted max-w-[160px] truncate">{e.input_ref || '—'}</td>
-                    <td className={`px-4 py-2.5 max-w-[160px] truncate ${DECISION_CLASS[e.decision] ?? 'text-brand-secondary'}`}>{e.decision || '—'}</td>
+                    <td className="px-4 py-2.5 text-brand-muted max-w-[160px] truncate">{e.input_ref || '-'}</td>
+                    <td className={`px-4 py-2.5 max-w-[160px] truncate ${DECISION_CLASS[e.decision] ?? 'text-brand-secondary'}`}>{e.decision || '-'}</td>
                     <td className="px-4 py-2.5">
                       <div className="flex items-center gap-2">
                         <span className={STATUS_CLASS[e.status] ?? 'text-brand-secondary'}>{e.status}</span>
@@ -233,7 +233,7 @@ export function ToolExecutionsTab({ toolId }: { toolId: string | null }) {
                         ? `${(e.duration_ms / 1000).toFixed(1)}s`
                         : (e.status === 'running' || e.status === 'queued')
                           ? <ElapsedTimer since={e.created_at} />
-                          : '—'}
+                          : '-'}
                     </td>
                   </tr>
                   {isExpanded && (

@@ -10,7 +10,7 @@ _LOG_LEVEL = getattr(logging, os.getenv("LOG_LEVEL", "INFO").upper(), logging.IN
 
 _trace_id_var: ContextVar[str] = ContextVar("trace_id", default="")
 
-# Attributes that exist on every LogRecord — don't echo them as extra fields
+# Attributes that exist on every LogRecord - don't echo them as extra fields
 _LOGRECORD_BUILTINS = frozenset({
     "name", "msg", "args", "levelname", "levelno", "pathname", "filename",
     "module", "exc_info", "exc_text", "stack_info", "lineno", "funcName",

@@ -48,7 +48,7 @@ class Settings(BaseSettings):
     stripe_secret_key: str = ""
     stripe_redirect_uri: str = ""
 
-    # SaaS billing (Clendan's own subscriptions) — separate webhook endpoint + secret from Connect
+    # SaaS billing (Clendan's own subscriptions) - separate webhook endpoint + secret from Connect
     stripe_billing_webhook_secret: str = ""
     stripe_price_starter: str = ""  # Stripe recurring Price ID for the Starter plan
     stripe_price_growth: str = ""   # Stripe recurring Price ID for the Growth plan
@@ -138,7 +138,7 @@ class Settings(BaseSettings):
     sage_webhook_secret: str = ""
     truelayer_webhook_secret: str = ""
 
-    exchange_rates_api_key: str = ""  # exchangerate-api.com v6 key — free tier (1,500 req/month)
+    exchange_rates_api_key: str = ""  # exchangerate-api.com v6 key - free tier (1,500 req/month)
 
     @model_validator(mode="after")
     def _compute_redirect_uris(self) -> "Settings":

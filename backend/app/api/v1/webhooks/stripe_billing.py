@@ -1,8 +1,8 @@
-"""Stripe SaaS billing webhook — the single source of truth for subscription state.
+"""Stripe SaaS billing webhook - the single source of truth for subscription state.
 
 Distinct from ``webhooks/stripe.py`` (Stripe Connect data ingestion): this endpoint
 has its own signing secret and only mutates the tenant's own subscription fields.
-Handlers are idempotent — re-applying the same event yields the same tenant state.
+Handlers are idempotent - re-applying the same event yields the same tenant state.
 """
 import json
 from datetime import UTC, datetime

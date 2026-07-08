@@ -52,7 +52,7 @@ async def xero_callback(
     db: Prisma = Depends(get_db_dep),
 ):
     """
-    OAuth callback from Xero. Browser redirect — returns RedirectResponse to frontend.
+    OAuth callback from Xero. Browser redirect - returns RedirectResponse to frontend.
     Single org → status=syncing, background sync, redirect ?connected=xero.
     Multi-org → status=connecting, redirect ?xero_select={id} for org picker.
     """
@@ -340,7 +340,7 @@ async def xero_disconnect(
             type(exc).__name__,
         )
 
-    # Mark disconnected regardless of revocation outcome — credentials wiped
+    # Mark disconnected regardless of revocation outcome - credentials wiped
     await db.integration.update(
         where={"id": integration.id},
         data={"status": "disconnected", "encrypted_credentials": "{}"},

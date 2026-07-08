@@ -116,11 +116,11 @@ function Batches() {
             {loading ? (
               <tr><td colSpan={6} className="px-4 py-8 text-center text-brand-muted">Loading…</td></tr>
             ) : batches.length === 0 ? (
-              <tr><td colSpan={6} className="px-4 py-8 text-center text-brand-muted">No payment runs yet — create one above.</td></tr>
+              <tr><td colSpan={6} className="px-4 py-8 text-center text-brand-muted">No payment runs yet - create one above.</td></tr>
             ) : batches.map((b) => (
               <tr key={b.id} className="border-t border-brand-border hover:bg-brand-elevated transition-colors">
                 <td className="px-4 py-2.5 text-brand-muted">{new Date(b.created_at).toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</td>
-                <td className="px-4 py-2.5 text-brand-secondary">{b.scheduled_for ? new Date(b.scheduled_for).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' }) : '—'}</td>
+                <td className="px-4 py-2.5 text-brand-secondary">{b.scheduled_for ? new Date(b.scheduled_for).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' }) : '-'}</td>
                 <td className="px-4 py-2.5 text-right text-brand-text tabular-nums">{b.bill_count}</td>
                 <td className="px-4 py-2.5 text-right text-brand-text tabular-nums">{fmt(b.total_amount_cents)}</td>
                 <td className="px-4 py-2.5"><span className={`text-[11px] font-body px-2 py-0.5 rounded-sm border ${BATCH_STYLE[b.status] ?? 'text-brand-secondary border-brand-border'}`}>{b.status}</span></td>
@@ -165,7 +165,7 @@ function Result({ ctx }: { ctx: ToolRenderCtx }) {
       {!t && (
         <div className="bg-brand-surface border border-brand-border rounded-sm px-4 py-3 text-center">
           <p className="text-xs font-body text-brand-muted">
-            No payment run created yet — click <span className="text-brand-secondary">Create payment run</span> to scan bills due and schedule them.
+            No payment run created yet - click <span className="text-brand-secondary">Create payment run</span> to scan bills due and schedule them.
           </p>
         </div>
       )}
@@ -207,9 +207,9 @@ function Result({ ctx }: { ctx: ToolRenderCtx }) {
                 <tr><td colSpan={5} className="px-4 py-8 text-center text-brand-muted">No bills due within the window.</td></tr>
               ) : perBill.map((b) => (
                 <tr key={b.id} className="border-t border-brand-border hover:bg-brand-elevated transition-colors align-top">
-                  <td className="px-4 py-2.5 text-brand-text">{b.contact_name ?? '—'}</td>
+                  <td className="px-4 py-2.5 text-brand-text">{b.contact_name ?? '-'}</td>
                   <td className="px-4 py-2.5 text-right text-brand-text tabular-nums">{fmt(b.outstanding_cents)}</td>
-                  <td className="px-4 py-2.5 text-brand-muted">{b.due_date ? new Date(b.due_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }) : '—'}</td>
+                  <td className="px-4 py-2.5 text-brand-muted">{b.due_date ? new Date(b.due_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }) : '-'}</td>
                   <td className="px-4 py-2.5"><span className={`text-[11px] font-body px-2 py-0.5 rounded-sm border ${ACTION_STYLE[b.action]}`}>{ACTION_LABEL[b.action]}</span></td>
                   <td className="px-4 py-2.5 text-brand-secondary max-w-[280px]">{b.reason}</td>
                 </tr>

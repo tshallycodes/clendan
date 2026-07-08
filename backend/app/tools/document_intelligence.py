@@ -1,5 +1,5 @@
 """
-Document Intelligence Tool — comprehensive AI analysis of any business document.
+Document Intelligence Tool - comprehensive AI analysis of any business document.
 Classifies uploads and produces structured analysis: summary, risks, loopholes, improvements.
 """
 import asyncio
@@ -106,7 +106,7 @@ def _docx_to_text(file_bytes: bytes) -> str:
         doc = DocxDocument(io.BytesIO(file_bytes))
         return "\n".join(p.text for p in doc.paragraphs if p.text.strip())
     except ImportError as exc:
-        raise ValueError("python-docx not installed — cannot process Word documents") from exc
+        raise ValueError("python-docx not installed - cannot process Word documents") from exc
     except Exception as exc:
         raise ValueError(f"Failed to read Word document: {exc}") from exc
 
@@ -245,7 +245,7 @@ async def _process_document(file_bytes: bytes, content_type: str) -> dict[str, A
     return {
         "decision": "analysed",
         "confidence": confidence,
-        "reason": f"Document analysed — {subtype.replace('_', ' ')}",
+        "reason": f"Document analysed - {subtype.replace('_', ' ')}",
         "extracted": extracted,
     }
 
@@ -300,7 +300,7 @@ async def run_document_intelligence_job(
             r = await _process_document(file_bytes, content_type)
             result = {"document_type": "document", **r}
 
-            # Apply policy — keyword check first, then confidence threshold
+            # Apply policy - keyword check first, then confidence threshold
             if policy.flag_keywords.strip():
                 keywords = [kw.strip().lower() for kw in policy.flag_keywords.split(",") if kw.strip()]
                 analysis_text = json.dumps(result.get("extracted", {})).lower()
@@ -315,7 +315,7 @@ async def run_document_intelligence_job(
                 else:
                     result["decision"] = "approval_required"
 
-        # Audit FIRST — if this fails, the operation fails (hard requirement)
+        # Audit FIRST - if this fails, the operation fails (hard requirement)
         await write_audit_log(
             tenant_id=tenant_id,
             actor=f"tool:{TOOL_TYPE}:v{TOOL_VERSION}",

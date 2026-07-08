@@ -248,7 +248,7 @@ export function ApprovalsClient({ initialApprovals }: Props) {
         )
         toast(action === 'approve' ? 'Approval approved' : 'Approval rejected', action === 'approve' ? 'success' : 'info')
       } else {
-        toast('Action failed — try again', 'error')
+        toast('Action failed - try again', 'error')
       }
     } finally {
       setLoadingMap((prev) => ({ ...prev, [id]: null }))
@@ -297,7 +297,7 @@ export function ApprovalsClient({ initialApprovals }: Props) {
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-brand-green animate-pulse" />
             <p className="text-xs font-body text-brand-muted">
-              No pending approvals — tools are executing autonomously
+              No pending approvals - tools are executing autonomously
             </p>
           </div>
         </motion.div>

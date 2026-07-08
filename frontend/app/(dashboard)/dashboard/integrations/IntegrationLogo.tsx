@@ -43,7 +43,7 @@ const INLINE_SVG: Partial<Record<string, (size: number) => React.ReactElement>> 
   gmail:          (size) => <GmailSVG size={size} />,
 }
 
-// Brands available in simple-icons — rendered as inline SVG
+// Brands available in simple-icons - rendered as inline SVG
 const SLUG_TO_SI_KEY: Record<string, string> = {
   quickbooks:     'siQuickbooks',
   xero:           'siXero',
@@ -55,7 +55,7 @@ const SLUG_TO_SI_KEY: Record<string, string> = {
   sap:            'siSap',
 }
 
-// Domain for Google favicon API — used for all logo sources
+// Domain for Google favicon API - used for all logo sources
 const SLUG_TO_DOMAIN: Record<string, string> = {
   quickbooks:     'quickbooks.intuit.com',
   xero:           'xero.com',

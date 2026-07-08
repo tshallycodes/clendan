@@ -1,10 +1,10 @@
 """
-Payment Run Tool — sub-agent tool. Dispatched directly to its arq job.
+Payment Run Tool - sub-agent tool. Dispatched directly to its arq job.
 Identifies approved bills due within the policy window, creates an immutable
 PaymentRun record per batch, and routes oversized bills for human approval.
 
 LIVE-PAYOUT BOUNDARY (intentionally gated):
-    This tool SCHEDULES and RECORDS payment intent only. It never moves money —
+    This tool SCHEDULES and RECORDS payment intent only. It never moves money -
     no payment-rail / disbursement API is called anywhere in this module. A
     PaymentRun row with status="scheduled" is the terminal state produced here.
     Actual disbursement is a separate, deliberately unimplemented step. Do NOT
@@ -145,7 +145,7 @@ def _build_prompt(summaries: list[_BillSummary], policy: _ToolPolicy) -> str:
         '  "batch_valid": boolean (true if the batch looks safe to proceed),\n'
         '  "total_auto_pay_cents": integer,\n'
         '  "total_approval_cents": integer,\n'
-        '  "risk_flags": array of strings (concerns — empty if none),\n'
+        '  "risk_flags": array of strings (concerns - empty if none),\n'
         '  "summary": string (1-2 sentences describing the payment run)\n\n'
         "Flag risk if: same vendor appears multiple times in large amounts, "
         "unusual round-number concentrations, or any contact_name looks suspicious.\n"
@@ -188,7 +188,7 @@ async def _call_claude(summaries: list[_BillSummary], policy: _ToolPolicy, setti
             last_exc = exc
             logger.error("claude_api_error", extra={"attempt": attempt + 1, "error": str(exc)})
             if attempt < settings_obj.max_agent_attempts - 1:
-                # Exponential backoff with jitter — avoids synchronized retry storms.
+                # Exponential backoff with jitter - avoids synchronized retry storms.
                 backoff = settings_obj.backoff_seconds * (2 ** attempt)
                 await asyncio.sleep(backoff + random.uniform(0, settings_obj.backoff_seconds))
         except (json.JSONDecodeError, ValueError, KeyError) as exc:
@@ -254,7 +254,7 @@ async def _execute(tenant_id: str, tool_id: str, execution_id: str, payload: dic
             "decision": "no_action",
             "confidence": 1.0,
             "reasoning": f"No bills due within {policy.due_within_days} days.",
-            "actions_taken": [f"scanned {len(bills)} bills — none due within window"],
+            "actions_taken": [f"scanned {len(bills)} bills - none due within window"],
             "output_data": {"bill_count": len(bills), "due_within_days": policy.due_within_days},
         }
 
@@ -288,7 +288,7 @@ async def _execute(tenant_id: str, tool_id: str, execution_id: str, payload: dic
         "per_bill": [s.model_dump() for s in active_summaries],
     }
 
-    # Audit BEFORE any financial-record write — if audit fails, nothing is scheduled.
+    # Audit BEFORE any financial-record write - if audit fails, nothing is scheduled.
     await write_audit_log(
         tenant_id=tenant_id,
         actor=_ACTOR,
@@ -298,7 +298,7 @@ async def _execute(tenant_id: str, tool_id: str, execution_id: str, payload: dic
         execution_id=execution_id,
     )
 
-    # Record the scheduled batch. This SCHEDULES/RECORDS payment intent only —
+    # Record the scheduled batch. This SCHEDULES/RECORDS payment intent only -
     # no money is moved here (see LIVE-PAYOUT BOUNDARY in the module docstring).
     # Idempotent per execution: a job retry re-runs _execute fully, so guard on
     # execution_id to avoid double-creating the batch record.

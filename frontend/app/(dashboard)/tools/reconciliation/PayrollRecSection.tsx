@@ -81,7 +81,7 @@ function parseRosterText(text: string): ParsedEmployee[] {
     .filter(line => line.length > 0 && !line.startsWith('#'))
     .map(raw => {
       const comma = raw.lastIndexOf(',')
-      if (comma === -1) return { name: '', expected_minor: 0, raw, error: 'Missing comma — use: Name, Salary' }
+      if (comma === -1) return { name: '', expected_minor: 0, raw, error: 'Missing comma - use: Name, Salary' }
       const name = raw.slice(0, comma).trim()
       const salaryStr = raw.slice(comma + 1).trim().replace(/[,\s]/g, '')
       const salary = parseFloat(salaryStr)
@@ -108,7 +108,7 @@ function GhostTable({ rows, symbol }: { rows: GhostRow[]; symbol: string }) {
           <tbody>
             {rows.map(r => (
               <tr key={r.transaction_id} className="border-b border-brand-border last:border-0 hover:bg-brand-elevated transition-colors">
-                <td className="px-4 py-2.5 text-xs font-body text-[#ff4d6d]">{r.extracted_name || '—'}</td>
+                <td className="px-4 py-2.5 text-xs font-body text-[#ff4d6d]">{r.extracted_name || '-'}</td>
                 <td className="px-4 py-2.5 text-xs font-body text-brand-text max-w-[240px] truncate">{r.description}</td>
                 <td className="px-4 py-2.5 text-xs font-body text-brand-text">{formatMinor(r.amount_minor, symbol)}</td>
                 <td className="px-4 py-2.5 text-xs font-body text-brand-muted">{r.date.slice(0, 10)}</td>
@@ -303,7 +303,7 @@ export function PayrollRecSection({ toolId }: { toolId: string | null }) {
       }
     } catch {
       setSavedRoster(prev)
-      toast('Failed to remove employee — network error', 'error')
+      toast('Failed to remove employee - network error', 'error')
     }
   }
 
@@ -328,7 +328,7 @@ export function PayrollRecSection({ toolId }: { toolId: string | null }) {
       setRosterText('')
       toast(`${validRoster.length} employee${validRoster.length !== 1 ? 's' : ''} saved`, 'success')
     } catch {
-      toast('Failed to save employees — network error', 'error')
+      toast('Failed to save employees - network error', 'error')
     } finally {
       setSaving(false)
     }
@@ -342,7 +342,7 @@ export function PayrollRecSection({ toolId }: { toolId: string | null }) {
       const res = await fetch(`${API}/payroll-runs/${activeRun.id}/export`, {
         headers: { Authorization: `Bearer ${token}` },
       })
-      if (!res.ok) { toast('Export failed — please try again', 'error'); return }
+      if (!res.ok) { toast('Export failed - please try again', 'error'); return }
       const blob = await res.blob()
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
@@ -410,13 +410,13 @@ export function PayrollRecSection({ toolId }: { toolId: string | null }) {
             setHistoryLoaded(false)
             completed = true
             const issues = (run.ghost_count ?? 0) + (run.missing_count ?? 0) + (run.discrepancy_count ?? 0)
-            toast(issues > 0 ? `Rec complete — ${issues} issue${issues !== 1 ? 's' : ''} found` : 'Payroll rec complete — all clear', issues > 0 ? 'info' : 'success')
+            toast(issues > 0 ? `Rec complete - ${issues} issue${issues !== 1 ? 's' : ''} found` : 'Payroll rec complete - all clear', issues > 0 ? 'info' : 'success')
             break
           }
         }
         attempts++
       }
-      if (!completed) toast('Rec timed out — check back shortly', 'error')
+      if (!completed) toast('Rec timed out - check back shortly', 'error')
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Network error'
       setError(msg)
@@ -483,7 +483,7 @@ export function PayrollRecSection({ toolId }: { toolId: string | null }) {
             rows={5}
             value={rosterText}
             onChange={e => setRosterText(e.target.value)}
-            placeholder={`Paste your roster — one employee per line:\n\nJane Smith, 5000\nBob Jones, 4500\nAlice Chen, 6200\n\nFormat: Name, Monthly salary (USD)`}
+            placeholder={`Paste your roster - one employee per line:\n\nJane Smith, 5000\nBob Jones, 4500\nAlice Chen, 6200\n\nFormat: Name, Monthly salary (USD)`}
             className="w-full bg-brand-bg border border-brand-border focus:border-[#00C853] text-brand-text placeholder:text-brand-muted text-xs font-body rounded-sm px-3 py-2.5 outline-none transition-colors resize-y leading-relaxed"
           />
 
@@ -516,7 +516,7 @@ export function PayrollRecSection({ toolId }: { toolId: string | null }) {
             <div className="space-y-1">
               {parseErrors.map((e, i) => (
                 <p key={i} className="text-[11px] font-body text-[#ff4d6d]">
-                  Line {parsed.indexOf(e) + 1}: {e.error} — <span className="text-brand-muted">{e.raw}</span>
+                  Line {parsed.indexOf(e) + 1}: {e.error} - <span className="text-brand-muted">{e.raw}</span>
                 </p>
               ))}
             </div>

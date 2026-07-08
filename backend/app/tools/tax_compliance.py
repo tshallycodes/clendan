@@ -1,5 +1,5 @@
 """
-Tax Compliance Tool — sub-agent tool. Dispatched directly to its arq job.
+Tax Compliance Tool - sub-agent tool. Dispatched directly to its arq job.
 Calculates VAT liability, identifies missing-tax transactions, and alerts on threshold breaches.
 """
 from __future__ import annotations
@@ -28,7 +28,7 @@ _MODEL_VERSION = "tax_compliance-v1"
 TOOL_TYPE = ToolType.TAX_COMPLIANCE
 
 _LOOKBACK_DAYS = 90
-_MAX_LOOKBACK_DAYS = 3660  # ~10 years — generous upper bound guarding against absurd windows
+_MAX_LOOKBACK_DAYS = 3660  # ~10 years - generous upper bound guarding against absurd windows
 _CLASSIFICATION_MISSING_VAT = "missing_vat"
 _CLASSIFICATION_EXEMPT = "exempt"
 
@@ -82,7 +82,7 @@ def _flag_missing_tax(rows, threshold_cents: int, id_field: str = "id") -> list[
     for r in rows:
         tax = getattr(r, "tax_cents", None)
         if tax is None:
-            continue  # model does not track tax — cannot assess a missing tax code
+            continue  # model does not track tax - cannot assess a missing tax code
         total = getattr(r, "total_cents", None) or getattr(r, "amount_cents", None) or 0
         if tax == 0 and total >= threshold_cents:
             flagged.append({"id": getattr(r, id_field), "total_cents": total})
@@ -90,7 +90,7 @@ def _flag_missing_tax(rows, threshold_cents: int, id_field: str = "id") -> list[
 
 
 def _compute_vat_position(invoices, bills, expenses) -> tuple[int, int, int]:
-    """Deterministic VAT position in integer minor units — never float.
+    """Deterministic VAT position in integer minor units - never float.
 
     Output VAT (collected) = sum of invoice tax; input VAT (reclaimable) = sum of
     bill + expense tax. AccountingBill does not persist tax_cents, so bills contribute
@@ -128,15 +128,15 @@ def _build_prompt(
         '  "vat_position_assessment": string (1-2 sentences on the net VAT position),\n'
         '  "missing_tax_risk": "low"|"medium"|"high",\n'
         '  "vat_threshold_breached": boolean (true if net_vat_liability > vat_alert_threshold),\n'
-        '  "likely_taxable_missing": array of strings — IDs of records most likely to require tax,\n'
+        '  "likely_taxable_missing": array of strings - IDs of records most likely to require tax,\n'
         '  "recommended_actions": array of up to 3 action strings,\n'
         '  "classified_missing_items": array of objects, one per missing-tax record, each with:\n'
         '    { "id": string, "classification": "exempt"|"zero_rated"|"missing_vat"|"data_error", "reason": string }\n'
         "Classification rules:\n"
-        '  "exempt" — correctly zero-rated (e.g. financial services, education, healthcare)\n'
-        '  "zero_rated" — zero-rated supply (exports, certain food, children\'s clothing)\n'
-        '  "missing_vat" — VAT should have been charged but was not — compliance risk\n'
-        '  "data_error" — likely data entry error, not a genuine tax issue\n'
+        '  "exempt" - correctly zero-rated (e.g. financial services, education, healthcare)\n'
+        '  "zero_rated" - zero-rated supply (exports, certain food, children\'s clothing)\n'
+        '  "missing_vat" - VAT should have been charged but was not - compliance risk\n'
+        '  "data_error" - likely data entry error, not a genuine tax issue\n'
         "Return ONLY valid JSON. No markdown, no prose.\n\n"
         f"Data:\n{json.dumps(data, indent=2)}"
     )

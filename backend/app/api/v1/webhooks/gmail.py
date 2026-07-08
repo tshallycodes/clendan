@@ -1,8 +1,8 @@
 """
-Gmail webhook receiver — Google Pub/Sub push notifications.
+Gmail webhook receiver - Google Pub/Sub push notifications.
 Google sends base64-encoded JSON payloads. No signature to verify here;
 security is provided by the HTTPS push endpoint URL being secret.
-Always return 200 — Pub/Sub retries on any non-2xx response.
+Always return 200 - Pub/Sub retries on any non-2xx response.
 """
 import base64
 import json
@@ -25,12 +25,12 @@ async def gmail_webhook(request: Request):
     Payload structure: {message: {data: <base64_json>, messageId, publishTime}, subscription}.
     Decoded data contains: {emailAddress, historyId}.
     Enqueues a Gmail sync for all connected Gmail integrations matching the email.
-    Always returns 200 — Pub/Sub retries on non-2xx.
+    Always returns 200 - Pub/Sub retries on non-2xx.
     """
     try:
         body = await request.json()
     except Exception:
-        # Malformed body — still return 200 to prevent infinite Pub/Sub retry
+        # Malformed body - still return 200 to prevent infinite Pub/Sub retry
         _logger.warning("gmail_webhook_invalid_json")
         return standard_response(data={"received": True})
 

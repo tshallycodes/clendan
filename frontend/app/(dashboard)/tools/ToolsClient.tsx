@@ -72,7 +72,7 @@ function ToolCard({ tool, deployed, step }: { tool: ToolDef; deployed: Tool | un
           <span className="text-[11px] font-body text-brand-secondary">
             {tool.requires.length
               ? tool.requires.map((c) => INTEGRATION_CATEGORY_LABELS[c]).join(' · ')
-              : 'Upload only — no integration'}
+              : 'Upload only - no integration'}
           </span>
         </div>
 
@@ -95,8 +95,8 @@ function Connector({ enabled, pending, onToggle }: { enabled: boolean; pending: 
       type="button"
       role="switch"
       aria-checked={enabled}
-      aria-label={enabled ? 'Connected — click to disconnect auto-handoff' : 'Disconnected — click to connect auto-handoff'}
-      title={enabled ? 'Connected — a successful run auto-triggers the next tool' : 'Disconnected — tools run independently'}
+      aria-label={enabled ? 'Connected - click to disconnect auto-handoff' : 'Disconnected - click to connect auto-handoff'}
+      title={enabled ? 'Connected - a successful run auto-triggers the next tool' : 'Disconnected - tools run independently'}
       onClick={onToggle}
       disabled={pending}
       className="group shrink-0 self-center flex items-center justify-center px-1 lg:px-2.5 py-3 lg:py-0 disabled:opacity-50 active:scale-90 transition-transform"
@@ -117,7 +117,7 @@ export function ToolsClient({ deployedTools, connections }: Props) {
   const { getToken } = useAuth()
   const { toast } = useToast()
 
-  // One record per tool type — prefer an active deployment if the backend returns several.
+  // One record per tool type - prefer an active deployment if the backend returns several.
   const deployedByType = new Map<string, Tool>()
   for (const d of deployedTools) {
     const existing = deployedByType.get(d.type)
@@ -154,8 +154,8 @@ export function ToolsClient({ deployedTools, connections }: Props) {
       const toName = TOOLS.find((t) => t.type === to)?.name ?? 'the next tool'
       toast(
         next
-          ? `Connected — ${fromName} will auto-run ${toName}`
-          : `Disconnected — ${fromName} and ${toName} run independently`,
+          ? `Connected - ${fromName} will auto-run ${toName}`
+          : `Disconnected - ${fromName} and ${toName} run independently`,
         'success',
       )
     } catch {

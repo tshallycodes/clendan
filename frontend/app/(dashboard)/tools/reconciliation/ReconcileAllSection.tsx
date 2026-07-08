@@ -110,7 +110,7 @@ function SummaryCard({
           </div>
         )}
         {status === 'error' && (
-          <p className="text-[11px] font-body text-[#ff4d6d]">Could not complete — check integrations.</p>
+          <p className="text-[11px] font-body text-[#ff4d6d]">Could not complete - check integrations.</p>
         )}
         {status === 'done' && (
           <div className="space-y-3">
@@ -216,7 +216,7 @@ export function ReconcileAllSection({ toolId, onViewAudit }: Props) {
 
       if (cancelled) return
 
-      // Bank — restore from most recent completed stored run for this period
+      // Bank - restore from most recent completed stored run for this period
       if (bankRunsRes.status === 'fulfilled' && bankRunsRes.value.ok) {
         const j = await bankRunsRes.value.json()
         type BankRun = { period_start: string; status: string; matched_count: number; unmatched_count: number; flagged_count: number; total_txn_count: number }
@@ -241,7 +241,7 @@ export function ReconcileAllSection({ toolId, onViewAudit }: Props) {
         }
       }
 
-      // Invoice — live query, always reflects current accounting data
+      // Invoice - live query, always reflects current accounting data
       if (invoiceRes.status === 'fulfilled' && invoiceRes.value.ok && !cancelled) {
         const j = await invoiceRes.value.json()
         const d = j.data
@@ -251,7 +251,7 @@ export function ReconcileAllSection({ toolId, onViewAudit }: Props) {
         }
       }
 
-      // VAT — live query
+      // VAT - live query
       if (vatRes.status === 'fulfilled' && vatRes.value.ok && !cancelled) {
         const j = await vatRes.value.json()
         const d = j.data
@@ -261,7 +261,7 @@ export function ReconcileAllSection({ toolId, onViewAudit }: Props) {
         }
       }
 
-      // Payroll — restore from most recent completed run for this month
+      // Payroll - restore from most recent completed run for this month
       if (payrollRunsRes.status === 'fulfilled' && payrollRunsRes.value.ok && !cancelled) {
         const j = await payrollRunsRes.value.json()
         type PayRun = { period: string; status: string; matched_count: number; ghost_count: number; missing_count: number; discrepancy_count: number }
@@ -274,7 +274,7 @@ export function ReconcileAllSection({ toolId, onViewAudit }: Props) {
         }
       }
 
-      // Close period — restore closed state from audit log
+      // Close period - restore closed state from audit log
       if (closeRes.status === 'fulfilled' && closeRes.value.ok && !cancelled) {
         const j = await closeRes.value.json()
         if (j.data?.closed) {
@@ -309,7 +309,7 @@ export function ReconcileAllSection({ toolId, onViewAudit }: Props) {
     const token = await getToken()
     const headers: Record<string, string> = { Authorization: `Bearer ${token}` }
 
-    // Invoice + VAT are synchronous — fire together, pass tool_id so config (grace days, VAT rate) is applied
+    // Invoice + VAT are synchronous - fire together, pass tool_id so config (grace days, VAT rate) is applied
     const [invRes, vatRes] = await Promise.allSettled([
       fetch(`${API}/reconciliation/invoice-summary?period_start=${start}&period_end=${end}&tool_id=${toolId}`, { headers }),
       fetch(`${API}/reconciliation/vat-summary?period_start=${start}&period_end=${end}&tool_id=${toolId}`, { headers }),
@@ -346,7 +346,7 @@ export function ReconcileAllSection({ toolId, onViewAudit }: Props) {
       setVatStatus('error')
     }
 
-    // Bank rec is async — enqueue then poll
+    // Bank rec is async - enqueue then poll
     try {
       const bankRes = await fetch(`${API}/reconciliation/run`, {
         method: 'POST',
@@ -354,7 +354,7 @@ export function ReconcileAllSection({ toolId, onViewAudit }: Props) {
         body: JSON.stringify({ period_start: start, period_end: end, tool_id: toolId }),
       })
 
-      // 409 means a run is already in flight — poll for it rather than erroring
+      // 409 means a run is already in flight - poll for it rather than erroring
       if (!bankRes.ok && bankRes.status !== 409) {
         setBankStatus('error')
         setAnyRunning(false)
@@ -392,7 +392,7 @@ export function ReconcileAllSection({ toolId, onViewAudit }: Props) {
           })
           setBankStatus('done')
           setAnyRunning(false)
-          // Check approval table directly — more reliable than reading execution.decision
+          // Check approval table directly - more reliable than reading execution.decision
           try {
             const at = await getToken()
             const apr = await fetch(`${API}/reconciliation/approval-status?period_start=${start}&period_end=${end}`, { headers: { Authorization: `Bearer ${at}` } })
@@ -411,7 +411,7 @@ export function ReconcileAllSection({ toolId, onViewAudit }: Props) {
       setAnyRunning(false)
     }
 
-    // Payroll — runs in background if roster is loaded
+    // Payroll - runs in background if roster is loaded
     if (roster.length > 0) {
       ;(async () => {
         try {
@@ -477,7 +477,7 @@ export function ReconcileAllSection({ toolId, onViewAudit }: Props) {
         const s = aData.approval_status
         if (s === 'approved') { clearInterval(approvalPollRef.current!); approvalPollRef.current = null; setBankApprovalState('approved') }
         else if (s === 'rejected') { clearInterval(approvalPollRef.current!); approvalPollRef.current = null; setBankApprovalState('rejected') }
-      } catch { /* silent — approval polling is best-effort */ }
+      } catch { /* silent - approval polling is best-effort */ }
     }, 5000)
     return () => { if (approvalPollRef.current) { clearInterval(approvalPollRef.current); approvalPollRef.current = null } }
   }, [bankApprovalState, month, getToken])
@@ -508,7 +508,7 @@ export function ReconcileAllSection({ toolId, onViewAudit }: Props) {
       toast(`${monthLabel} closed`, 'success')
     } catch (err) {
       console.error('[close-period]', err)
-      toast('Network error — check console for details', 'error')
+      toast('Network error - check console for details', 'error')
     } finally {
       setClosing(false)
     }
@@ -635,7 +635,7 @@ export function ReconcileAllSection({ toolId, onViewAudit }: Props) {
         )}
       </div>
 
-      {/* Summary grid — 4 cols when roster loaded, 3 otherwise */}
+      {/* Summary grid - 4 cols when roster loaded, 3 otherwise */}
       <div className={`grid gap-3 ${roster.length > 0 ? 'grid-cols-2 lg:grid-cols-4' : 'grid-cols-1 sm:grid-cols-3'}`}>
         <SummaryCard title="Bank" accent="#00a8cc" status={bankStatus} onDrillIn={() => onViewAudit('bank_reconciliation:')}>
           {bankData && (
@@ -689,7 +689,7 @@ export function ReconcileAllSection({ toolId, onViewAudit }: Props) {
         <div className="bg-brand-surface border border-brand-border rounded-sm px-4 py-3 flex items-center justify-between">
           <div>
             <p className="text-[11px] font-body text-brand-muted uppercase tracking-widest mb-0.5">Payroll</p>
-            <p className="text-[11px] font-body text-brand-muted">No roster saved — add employees in the Payroll tab to include payroll here.</p>
+            <p className="text-[11px] font-body text-brand-muted">No roster saved - add employees in the Payroll tab to include payroll here.</p>
           </div>
           <span className="text-[11px] font-body text-brand-muted shrink-0 ml-4">Use the Payroll tab →</span>
         </div>

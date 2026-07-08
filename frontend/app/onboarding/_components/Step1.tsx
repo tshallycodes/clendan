@@ -42,7 +42,7 @@ export function Step1({ onNext }: Step1Props) {
           body: JSON.stringify({ email }),
         })
       } catch {
-        // idempotent provision — ignore errors on mount
+        // idempotent provision - ignore errors on mount
       }
     }
     provisionOrg()

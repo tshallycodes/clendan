@@ -185,19 +185,19 @@ export function ReconciliationTable({ items, loading, runId, onExport }: Reconci
                         {convert(item.amount_minor, item.currency)}
                       </td>
                       <td className="px-3 py-2">{statusBadge(item)}</td>
-                      <td className="px-3 py-2 text-brand-secondary">{item.matched_invoice_number ?? '—'}</td>
+                      <td className="px-3 py-2 text-brand-secondary">{item.matched_invoice_number ?? '-'}</td>
                       <td className="px-3 py-2 text-brand-secondary max-w-[120px] truncate" title={item.matched_vendor ?? ''}>
-                        {item.matched_vendor ?? '—'}
+                        {item.matched_vendor ?? '-'}
                       </td>
                       <td className="px-3 py-2">
                         {item.matched_source
                           ? <span className="px-2 py-0.5 rounded-sm text-[11px] font-body bg-brand-elevated text-brand-secondary border border-brand-border capitalize">{item.matched_source}</span>
-                          : <span className="text-brand-muted">—</span>}
+                          : <span className="text-brand-muted">-</span>}
                       </td>
                       <td className="px-3 py-2 text-brand-muted max-w-[200px] truncate" title={item.reasoning}>
                         {item.reasoning
                           ? <span className="text-brand-muted">{item.reasoning.slice(0, 55)}{item.reasoning.length > 55 ? '… ↓' : ''}</span>
-                          : '—'}
+                          : '-'}
                       </td>
                     </tr>
                     {isExpanded && item.reasoning && (

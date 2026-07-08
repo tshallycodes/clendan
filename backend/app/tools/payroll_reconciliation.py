@@ -1,5 +1,5 @@
 """
-Payroll Reconciliation Tool — detects ghost employees, missing payroll entries,
+Payroll Reconciliation Tool - detects ghost employees, missing payroll entries,
 and salary discrepancies by comparing bank transactions against an employee roster.
 Sub-agent tool, dispatched directly to its arq job.
 Follows mandatory execution flow: receive → classify → execute → policy check → output → audit.
@@ -141,7 +141,7 @@ class PayrollReconciliationTool:
 
         period_start, period_end = _period_date_range(period)
 
-        # STEP 2: Classify — fetch payroll transactions scoped to tenant
+        # STEP 2: Classify - fetch payroll transactions scoped to tenant
         all_txns = await db.banktransaction.find_many(
             where={
                 "tenant_id": tenant_id,
@@ -160,7 +160,7 @@ class PayrollReconciliationTool:
                 extra={"tenant_id": tenant_id, "period": period},
             )
 
-        # STEP 3: Execute — extract employee names from transaction descriptions via Claude
+        # STEP 3: Execute - extract employee names from transaction descriptions via Claude
         extracted: list[dict[str, Any]] = []
         if payroll_txns:
             extracted = await self._extract_names_from_transactions(payroll_txns)
@@ -218,7 +218,7 @@ class PayrollReconciliationTool:
 
         total_payroll_minor = sum(t.amount_minor for t in payroll_txns)
 
-        # STEP 4b: Policy check — determine status
+        # STEP 4b: Policy check - determine status
         missing_ratio = len(missing) / len(roster_entries) if roster_entries else 0.0
         if missing_ratio > MISSING_BLOCK_THRESHOLD:
             status = "blocked"
@@ -330,7 +330,7 @@ class PayrollReconciliationTool:
                 data={"execution_id": resolved_execution_id},
             )
 
-        # STEP 7: Audit — append-only, must succeed or operation fails
+        # STEP 7: Audit - append-only, must succeed or operation fails
         await db.auditlog.create(
             data={
                 "tenant_id": tenant_id,
@@ -423,7 +423,7 @@ For each transaction, return a JSON array with this exact shape:
 Rules:
 - Extract only actual person names from the description or merchant_name fields.
 - If no employee name is identifiable, return an empty string for name.
-- Return ONLY the JSON array — no markdown, no explanation."""
+- Return ONLY the JSON array - no markdown, no explanation."""
 
         last_exc: Exception = RuntimeError("No attempts made")
         for attempt in range(settings.max_agent_attempts):

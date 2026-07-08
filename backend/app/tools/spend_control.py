@@ -1,8 +1,8 @@
 """
-Spend Control Tool — sub-agent tool combining two AP/expense sub-flows, dispatched directly to its arq job as one tool:
-  1. Expense Control — validates AccountingExpense records against policy limits, using the chart of accounts
+Spend Control Tool - sub-agent tool combining two AP/expense sub-flows, dispatched directly to its arq job as one tool:
+  1. Expense Control - validates AccountingExpense records against policy limits, using the chart of accounts
      to detect miscategorised spend. Claude summarises spend by category and recommends approve|flag|block.
-  2. Accounts Payable — classifies AP bills, detects duplicates, routes approvals, and recommends pay/block actions.
+  2. Accounts Payable - classifies AP bills, detects duplicates, routes approvals, and recommends pay/block actions.
 """
 from __future__ import annotations
 
@@ -119,10 +119,10 @@ def _apply_hard_rules(
         flags.append(f"Amount {_fmt(expense.amount_cents)} exceeds the single-expense limit of {_fmt(policy.single_expense_limit_cents)}")
         _up("block")
     if not expense.approved and expense.amount_cents > policy.approval_required_cents:
-        flags.append(f"Unapproved — {_fmt(expense.amount_cents)} is above the {_fmt(policy.approval_required_cents)} approval threshold")
+        flags.append(f"Unapproved - {_fmt(expense.amount_cents)} is above the {_fmt(policy.approval_required_cents)} approval threshold")
         _up("flag")
     if expense.account_code and valid_account_codes and expense.account_code not in valid_account_codes:
-        flags.append(f"Account code '{expense.account_code}' isn't in your chart of accounts — likely miscategorised")
+        flags.append(f"Account code '{expense.account_code}' isn't in your chart of accounts - likely miscategorised")
         _up("flag")
     if expense.amount_cents >= _ROUND_NUMBER_MIN_CENTS and expense.amount_cents % _ROUND_NUMBER_MODULUS == 0:
         flags.append(f"Suspicious round-number amount: {_fmt(expense.amount_cents)}")
@@ -165,7 +165,7 @@ async def _call_claude_expense(
     }, indent=2)
     prompt = (
         "You are an expense compliance model. Review expenses against the policy and chart of accounts. "
-        "Return a JSON array — one object per expense — with fields: "
+        "Return a JSON array - one object per expense - with fields: "
         '"expense_id" (string), "recommended_action" ("approve"|"flag"|"block"), '
         '"reasoning" (one sentence), "spend_category_summary" (brief spend summary on first item only, null elsewhere), '
         '"burn_rate_assessment" (string on first item only: is the current spending velocity sustainable? '
@@ -233,7 +233,7 @@ async def _execute_expense_control(
         }
     )
     if not raw_expenses:
-        # Nothing to process — write audit and return
+        # Nothing to process - write audit and return
         reasoning_trace: dict = {
             "overall_decision": "auto_approved",
             "expense_count": 0,
@@ -252,7 +252,7 @@ async def _execute_expense_control(
             "decision": "auto_approved",
             "confidence": 1.0,
             "reasoning": json.dumps(reasoning_trace),
-            "actions_taken": ["no expenses found in last 30 days — nothing to process"],
+            "actions_taken": ["no expenses found in last 30 days - nothing to process"],
             "output_data": reasoning_trace,
         }
 
@@ -263,7 +263,7 @@ async def _execute_expense_control(
         for e in raw_expenses
     ]
 
-    # 1b. Period utilization — compute burn rate from fetched expenses
+    # 1b. Period utilization - compute burn rate from fetched expenses
     period_days: int = policy.lookback_days
     if period_days > 0 and expenses:
         total_spend = sum(e.amount_cents for e in expenses)
@@ -337,7 +337,7 @@ async def _execute_expense_control(
                 account_code=expense.account_code,
                 flags=["claude_missing_result"],
                 action="flag",
-                reasoning="Claude did not return a result — flagged for manual review.",
+                reasoning="Claude did not return a result - flagged for manual review.",
                 hard_rule_applied=False,
             ))
             continue
@@ -348,10 +348,10 @@ async def _execute_expense_control(
         if action == "approve" and expense.amount_cents > policy.auto_approve_limit_cents:
             action = "flag"
             flags = [
-                f"Above the auto-approve limit of {_fmt(policy.auto_approve_limit_cents)} — escalated for review"
+                f"Above the auto-approve limit of {_fmt(policy.auto_approve_limit_cents)} - escalated for review"
             ]
             reasoning = (
-                f"{claude_result.reasoning} — escalated: amount is above the auto-approve limit of {_fmt(policy.auto_approve_limit_cents)}."
+                f"{claude_result.reasoning} - escalated: amount is above the auto-approve limit of {_fmt(policy.auto_approve_limit_cents)}."
             )
         else:
             flags = []
@@ -412,7 +412,7 @@ async def _execute_expense_control(
         ],
     }
 
-    # Audit log BEFORE any DB update — operation fails if audit fails
+    # Audit log BEFORE any DB update - operation fails if audit fails
     await write_audit_log(
         tenant_id=tenant_id,
         actor=_EXPENSE_ACTOR,
@@ -431,7 +431,7 @@ async def _execute_expense_control(
     if flag_ids:
         actions_taken.append(f"flagged {len(flag_ids)} expense(s) for review")
     if not block_ids and not flag_ids:
-        actions_taken.append("all expenses approved — no status change")
+        actions_taken.append("all expenses approved - no status change")
 
     return {
         "decision": overall_decision,
@@ -460,7 +460,7 @@ async def run_expense_control_job(
         duration_ms = int(time.time() * 1000) - start_ms
         # complete_execution applies the autonomy override, writes the final decision,
         # creates the Approval when required, and advances the workflow (advance_workflow
-        # is called inside it) — the single canonical finalization path for every tool.
+        # is called inside it) - the single canonical finalization path for every tool.
         final_decision = await complete_execution(
             db=db, execution_id=execution_id, tool_id=tool_id,
             tenant_id=tenant_id, decision=result["decision"],
@@ -628,7 +628,7 @@ def _build_prompt(bills: list[_BillRecord], supplier_groups: list[dict]) -> str:
     )
     return (
         "You are an accounts payable specialist. Analyse the bills below and return a JSON array "
-        "— one object per bill — with exactly these fields:\n"
+        "- one object per bill - with exactly these fields:\n"
         '  "bill_id": string, "classification": "routine"|"suspicious"|"duplicate"|"approval_required",\n'
         '  "recommendation": "auto_pay"|"request_approval"|"flag_duplicate"|"block"|"batch_pay",\n'
         '  "reasoning": string\n\n'

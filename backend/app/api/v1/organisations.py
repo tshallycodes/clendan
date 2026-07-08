@@ -155,7 +155,7 @@ async def provision_org(
                 data={"tenant_id": tenant.id, "clerk_user_id": clerk_user_id, "email": email, "role": "OWNER"}
             )
     else:
-        # Clerk Organizations not configured — provision by user identity
+        # Clerk Organizations not configured - provision by user identity
         existing_member = await db.member.find_unique(where={"clerk_user_id": clerk_user_id})
         if existing_member:
             tenant = await db.tenant.find_unique(where={"id": existing_member.tenant_id})
@@ -528,7 +528,7 @@ async def get_invite_link_info(
     token: str,
     db: Annotated[Prisma, Depends(get_db_dep)],
 ):
-    """Public — returns org name and role for the invite link. No auth required."""
+    """Public - returns org name and role for the invite link. No auth required."""
     link = await db.invitelink.find_first(where={"token": token})
     if not link:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Invite link not found")

@@ -165,7 +165,7 @@ export function ToolCard({ tool, onConfigure, onStatusChange }: Props) {
 
     {lastExecutionId && (
       <div className="mt-2 flex items-center gap-3 bg-[rgba(0,200,83,0.08)] border border-[rgba(0,200,83,0.2)] rounded-sm px-3 py-2">
-        <span className="text-[11px] font-body text-brand-green">Queued — execution {lastExecutionId.slice(0, 8)}…</span>
+        <span className="text-[11px] font-body text-brand-green">Queued - execution {lastExecutionId.slice(0, 8)}…</span>
         <Link href="/executions" className="text-[11px] font-body text-brand-green underline underline-offset-2">View</Link>
         <button type="button" onClick={() => setLastExecutionId(null)} className="ml-auto text-[#4a6a4a] hover:text-brand-muted text-xs leading-none">✕</button>
       </div>

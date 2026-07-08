@@ -5,7 +5,7 @@ const POSTS = [
   {
     title: 'Why 66% of AP teams are still manually processing invoices in 2025',
     excerpt:
-      'Despite decades of automation promises, accounts payable remains stubbornly manual. Here\'s what\'s blocking progress — and how AI is finally changing it.',
+      'Despite decades of automation promises, accounts payable remains stubbornly manual. Here\'s what\'s blocking progress - and how AI is finally changing it.',
     date: '2026-05-15',
     readTime: '8 min read',
     category: 'Research',
@@ -64,8 +64,8 @@ export function generateStaticParams() {
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
   const post = POSTS.find((p) => p.slug === slug)
-  if (!post) return { title: 'Post Not Found — Clendan' }
-  return { title: `${post.title} — Clendan Blog` }
+  if (!post) return { title: 'Post Not Found - Clendan' }
+  return { title: `${post.title} - Clendan Blog` }
 }
 
 export default async function BlogPostPage({ params }: { params: Promise<{ slug: string }> }) {

@@ -84,7 +84,7 @@ async def plaid_webhook(
 ):
     """
     Receives and verifies Plaid webhooks.
-    Signature must be verified before any processing — unverified webhooks are rejected.
+    Signature must be verified before any processing - unverified webhooks are rejected.
     """
     await _verify_plaid_token(plaid_verification_token)
 

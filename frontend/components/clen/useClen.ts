@@ -52,7 +52,7 @@ export function useClen(mode: ClenMode) {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(messages))
     } catch {
-      // localStorage unavailable — silently skip
+      // localStorage unavailable - silently skip
     }
   }, [messages])
 
@@ -127,7 +127,7 @@ export function useClen(mode: ClenMode) {
                 return updated
               })
             } else if (event.type === 'error') {
-              setError(event.content ?? 'Clen encountered an error — please try again')
+              setError(event.content ?? 'Clen encountered an error - please try again')
               setMessages(prev => {
                 const updated = [...prev]
                 updated.pop()
@@ -156,15 +156,15 @@ export function useClen(mode: ClenMode) {
               })
             }
           } catch {
-            /* malformed event — skip */
+            /* malformed event - skip */
           }
         }
       }
-      // Stream ended without [DONE] — remove orphaned empty assistant message
+      // Stream ended without [DONE] - remove orphaned empty assistant message
       setMessages(prev => {
         const last = prev[prev.length - 1]
         if (last?.role === 'assistant' && !last.content && !last.toolCalls?.length) {
-          setError('Connection lost — please try again')
+          setError('Connection lost - please try again')
           return prev.slice(0, -1)
         }
         return prev

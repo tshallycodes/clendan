@@ -260,7 +260,7 @@ export function TransactionsClient({ initialTransactions, total, totalOutMinor, 
           <div className="px-5 py-16 text-center">
             <p className="text-xs font-body text-brand-muted">
               {transactions.length === 0
-                ? 'No transactions yet — connect a bank account via Integrations to import data.'
+                ? 'No transactions yet - connect a bank account via Integrations to import data.'
                 : search.trim()
                 ? `No results for "${search}"`
                 : 'No transactions match the selected filter.'}

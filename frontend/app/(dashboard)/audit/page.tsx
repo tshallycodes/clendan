@@ -25,7 +25,7 @@ export default async function AuditPage() {
           <div>
             <h1 className="font-heading font-bold text-2xl text-brand-text">Audit Trail</h1>
             <p className="text-brand-muted text-xs font-body mt-1">
-              Immutable — append only. {entries.length} {entries.length === 1 ? 'entry' : 'entries'}.
+              Immutable - append only. {entries.length} {entries.length === 1 ? 'entry' : 'entries'}.
             </p>
           </div>
         </div>

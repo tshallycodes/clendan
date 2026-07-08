@@ -6,7 +6,7 @@ to no-ops and ``/metrics`` returns a plain notice, so the app never fails to imp
 or serve because observability tooling is missing. Install adds it in production
 (see ``prometheus-client`` in pyproject).
 
-Labels are kept low-cardinality on purpose — requests are labelled by the matched
+Labels are kept low-cardinality on purpose - requests are labelled by the matched
 route template (e.g. ``/execute/{execution_id}``), never the raw URL, to avoid an
 unbounded time series per id.
 """

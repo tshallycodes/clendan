@@ -81,7 +81,7 @@ async def freshbooks_callback(
         logger.error("freshbooks_token_exchange_failed tenant=%s: %s", tenant_id, type(exc).__name__)
         raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail="FreshBooks token exchange failed")
 
-    # Resolve account_id and user_id eagerly — needed for all subsequent API calls
+    # Resolve account_id and user_id eagerly - needed for all subsequent API calls
     try:
         me = await fb.get_me(tokens["access_token"])
         account_id = fb.extract_account_id(me)
@@ -93,7 +93,7 @@ async def freshbooks_callback(
         )
 
     # Extract staff ID candidates from the me response.
-    # The account-scoped staffid is NOT the global user id — it comes from the business membership.
+    # The account-scoped staffid is NOT the global user id - it comes from the business membership.
     memberships = me.get("business_memberships", [])
     freshbooks_user_id = me.get("id")
     freshbooks_membership_id = memberships[0].get("id") if memberships else None
@@ -186,7 +186,7 @@ async def freshbooks_disconnect(
     if not integration:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No FreshBooks connection found")
 
-    # Best-effort token revocation — FreshBooks doesn't have a dedicated revoke endpoint
+    # Best-effort token revocation - FreshBooks doesn't have a dedicated revoke endpoint
     # so we simply wipe credentials from our side
     try:
         creds = decrypt_credentials(integration.encrypted_credentials, tenant_id)

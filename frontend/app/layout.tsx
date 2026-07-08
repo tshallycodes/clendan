@@ -20,7 +20,7 @@ const notoSansDisplay = Noto_Sans_Display({
 export const metadata: Metadata = {
   title: {
     template: 'Clendan - %s',
-    default: 'Clendan — AI Financial Agent OS',
+    default: 'Clendan - AI Financial Agent OS',
   },
   description: 'Autonomous AI tools for financial operations',
 }

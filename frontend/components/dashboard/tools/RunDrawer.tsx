@@ -38,7 +38,7 @@ export function RunDrawer({ tool, onClose, onQueued }: RunDrawerProps) {
     try {
       parsedPayload = JSON.parse(payloadText)
     } catch {
-      setPayloadError('Invalid JSON — check your payload syntax.')
+      setPayloadError('Invalid JSON - check your payload syntax.')
       return
     }
 

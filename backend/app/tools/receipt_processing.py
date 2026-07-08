@@ -1,5 +1,5 @@
 ﻿"""
-Receipt Processing Tool — parses a receipt image and writes an audit entry.
+Receipt Processing Tool - parses a receipt image and writes an audit entry.
 Sub-agent tool, dispatched directly to its arq job.
 Flow: parse → policy check → audit → return
 """
@@ -52,7 +52,7 @@ _RECEIPT_PROMPT = f"""You are a receipt data extraction system. Extract fields f
 
 Fields:
 - merchant (string): Store or vendor name
-- amount_minor (integer): Total amount paid in minor units (multiply decimal by 100 — e.g. £12.50 → 1250)
+- amount_minor (integer): Total amount paid in minor units (multiply decimal by 100 - e.g. £12.50 → 1250)
 - currency (string): ISO 4217 code (GBP, USD, EUR, etc.)
 - date (string|null): ISO 8601 date YYYY-MM-DD or null
 - category (string): One of: {", ".join(sorted(ALLOWED_CATEGORIES))}
@@ -124,7 +124,7 @@ async def execute_receipt_tool(
         "policy_reason": reason,
     }
 
-    # Audit FIRST — operation fails if this cannot be recorded
+    # Audit FIRST - operation fails if this cannot be recorded
     await write_audit_log(
         tenant_id=tenant_id,
         actor=f"tool:{TOOL_TYPE}:v{TOOL_VERSION}",

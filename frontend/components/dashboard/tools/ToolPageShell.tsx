@@ -47,7 +47,7 @@ const AUTONOMY_BADGE: Record<string, { label: string; className: string }> = {
   approve: { label: 'Approve', className: 'bg-[rgba(0,168,204,0.08)] text-[#00a8cc] border border-[rgba(0,168,204,0.2)]' },
 }
 const AUTONOMY_DESC: Record<string, string> = {
-  auto:    'Executes automatically — no approval required before acting.',
+  auto:    'Executes automatically - no approval required before acting.',
   approve: 'Every decision is routed to you for review before the agent acts.',
 }
 const DEFAULT_HOW_IT_WORKS = [
@@ -146,20 +146,20 @@ export function ToolPageShell({ toolSlug, runLabel = 'Run now', runControls, bui
         return
       }
       const { execution_id } = (await res.json()).data as { execution_id: string }
-      toast('Run started — processing…', 'success')
+      toast('Run started - processing…', 'success')
 
       const startedAt = Date.now()
       stopPolling()
       pollRef.current = setInterval(async () => {
         if (Date.now() - startedAt > POLL_TIMEOUT_MS) {
           stopPolling(); setRunning(false)
-          toast('Run is taking longer than expected — check back shortly', 'error')
+          toast('Run is taking longer than expected - check back shortly', 'error')
           return
         }
         const exec = await fetchResult(deployed.id)
         if (exec && exec.id === execution_id && (exec.status === 'completed' || exec.status === 'failed')) {
           stopPolling(); setRunning(false)
-          if (exec.status === 'failed') toast('Run failed — see the audit trail', 'error')
+          if (exec.status === 'failed') toast('Run failed - see the audit trail', 'error')
           else toast('Run complete', 'success')
         }
       }, POLL_MS)
@@ -314,7 +314,7 @@ export function ToolPageShell({ toolSlug, runLabel = 'Run now', runControls, bui
                   <p className="text-xs font-body text-brand-secondary mt-1">
                     {tool.requires.length
                       ? tool.requires.map((c) => INTEGRATION_CATEGORY_LABELS[c]).join(' · ')
-                      : 'No integration — runs on upload or manual trigger'}
+                      : 'No integration - runs on upload or manual trigger'}
                   </p>
                 </div>
 
@@ -404,7 +404,7 @@ export function ToolResultState({ deployed, loading, notDeployedHint }: {
   }
   return (
     <div className="bg-brand-surface border border-brand-border rounded-sm px-4 py-16 text-center">
-      <p className="text-xs font-body text-brand-muted">No results yet — click Run to process your latest data.</p>
+      <p className="text-xs font-body text-brand-muted">No results yet - click Run to process your latest data.</p>
     </div>
   )
 }

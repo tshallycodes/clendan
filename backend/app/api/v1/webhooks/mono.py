@@ -20,7 +20,7 @@ def _verify_signature(raw_body: bytes, signature: str) -> bool:
     """HMAC-SHA512 signature verification for Mono webhook payloads."""
     secret = get_settings().mono_webhook_secret
     if not secret:
-        logger.warning("mono_webhook_secret not configured — skipping signature check")
+        logger.warning("mono_webhook_secret not configured - skipping signature check")
         return True
     computed = hmac.new(secret.encode(), raw_body, hashlib.sha512).hexdigest()
     return hmac.compare_digest(computed, signature)
@@ -42,7 +42,7 @@ async def mono_webhook(
     raw_body = await request.body()
 
     if not _verify_signature(raw_body, mono_webhook_secret):
-        logger.warning("Mono webhook signature mismatch — rejected")
+        logger.warning("Mono webhook signature mismatch - rejected")
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid signature")
 
     try:

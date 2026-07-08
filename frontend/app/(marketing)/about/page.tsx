@@ -84,7 +84,7 @@ export default function AboutPage() {
         <div className="max-w-3xl space-y-6">
           <p className="font-body text-[14px] text-brand-secondary leading-relaxed">
             Clendan was born from a simple observation: finance teams spend most of their time on
-            execution — processing invoices, reconciling accounts, chasing approvals. These are
+            execution - processing invoices, reconciling accounts, chasing approvals. These are
             deterministic, rule-based tasks that AI can handle reliably. We built Clendan to give
             every finance team the autonomous infrastructure to focus on decisions, not execution.
           </p>
@@ -115,7 +115,7 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* What we're building — roadmap */}
+      {/* What we're building - roadmap */}
       <section className="border-b border-brand-border">
         <div className="max-w-6xl mx-auto px-6 md:px-8 py-14">
           <p className="font-body text-[11px] uppercase tracking-widest text-brand-muted mb-3">

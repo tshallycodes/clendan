@@ -1,4 +1,4 @@
-"""Microsoft Dynamics 365 integration routes — OAuth connect, status, sync, disconnect."""
+"""Microsoft Dynamics 365 integration routes - OAuth connect, status, sync, disconnect."""
 import secrets
 from datetime import datetime, UTC
 from typing import Annotated
@@ -36,7 +36,7 @@ async def dynamics_callback(
     state: str = Query(...),
     db: Prisma = Depends(get_db_dep),
 ):
-    """OAuth callback — exchanges code for tokens, upserts integration, enqueues sync."""
+    """OAuth callback - exchanges code for tokens, upserts integration, enqueues sync."""
     parts = state.split(":", 2)
     if len(parts) != 3:
         raise HTTPException(
@@ -186,7 +186,7 @@ async def dynamics_sync(
         )
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Failed to enqueue sync — queue may be unavailable",
+            detail="Failed to enqueue sync - queue may be unavailable",
         )
 
     return standard_response(data={"status": "sync_queued", "integration_id": integration.id})

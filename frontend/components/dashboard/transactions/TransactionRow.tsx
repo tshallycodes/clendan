@@ -103,7 +103,7 @@ export function TransactionRow({ transaction: t, onCategoryUpdate, categories }:
       {/* Account */}
       <td className="px-5 py-3 max-w-[140px]">
         <span className="text-xs font-body text-brand-secondary block truncate">
-          {t.account_name ?? '—'}
+          {t.account_name ?? '-'}
         </span>
         <span className="text-[9px] font-body text-brand-muted uppercase tracking-wider">
           {t.account_subtype ? `${t.account_subtype} · ` : ''}{t.institution_name ?? SOURCE_LABELS[t.source] ?? t.source.toUpperCase()}
@@ -113,7 +113,7 @@ export function TransactionRow({ transaction: t, onCategoryUpdate, categories }:
       {/* Merchant */}
       <td className="px-5 py-3 max-w-[200px]">
         <span className="text-xs font-body text-brand-text block truncate">
-          {t.merchant_name ?? t.description ?? '—'}
+          {t.merchant_name ?? t.description ?? '-'}
         </span>
         {t.merchant_name && t.description && t.description !== t.merchant_name && (
           <span className="text-[11px] font-body text-brand-muted block truncate">{t.description}</span>
@@ -197,7 +197,7 @@ export function TransactionRow({ transaction: t, onCategoryUpdate, categories }:
       <td className="px-5 py-3 text-xs font-body text-brand-muted">
         {t.matched_invoice_id ? (
           <span className="text-[11px] font-body text-[#00C853]">matched</span>
-        ) : '—'}
+        ) : '-'}
       </td>
 
       {/* Status */}

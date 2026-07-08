@@ -44,7 +44,7 @@ _INVOICE_PROMPT = """You are an invoice data extraction system. Extract fields f
 Fields:
 - vendor (string): Vendor/supplier company name
 - invoice_number (string): Invoice reference number
-- line_items (array): [{description, quantity, unit_price_minor, total_minor}] — all amounts in minor units (pence/cents, multiply decimal by 100)
+- line_items (array): [{description, quantity, unit_price_minor, total_minor}] - all amounts in minor units (pence/cents, multiply decimal by 100)
 - amount_minor (integer): Total invoice amount in minor units
 - currency (string): ISO 4217 code (GBP, USD, EUR, etc.)
 - due_date (string|null): ISO 8601 date YYYY-MM-DD or null
@@ -147,7 +147,7 @@ async def execute_invoice_tool(
     # 1. Parse invoice with Claude vision
     parsed = await _extract_invoice(file_bytes, content_type)
 
-    # 2. Duplicate detection (DB check — cannot be done in pure policy function)
+    # 2. Duplicate detection (DB check - cannot be done in pure policy function)
     is_duplicate = await _check_duplicate(
         tenant_id=tenant_id,
         invoice_number=parsed.invoice_number,
@@ -183,7 +183,7 @@ async def execute_invoice_tool(
         "tool_version": TOOL_VERSION,
     }
 
-    # 4. Audit FIRST — operation fails if audit cannot be recorded (CLAUDE.md hard requirement)
+    # 4. Audit FIRST - operation fails if audit cannot be recorded (CLAUDE.md hard requirement)
     await write_audit_log(
         tenant_id=tenant_id,
         actor=f"tool:{TOOL_TYPE}:v{TOOL_VERSION}",
@@ -193,7 +193,7 @@ async def execute_invoice_tool(
         execution_id=execution_id,
     )
 
-    # 5. Accounting write AFTER audit — only for auto-approved invoices
+    # 5. Accounting write AFTER audit - only for auto-approved invoices
     if policy_result.decision == Decision.AUTO_APPROVED:
         try:
             from app.integrations.quickbooks.write import write_bill_to_quickbooks

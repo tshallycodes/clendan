@@ -21,7 +21,7 @@ async def explain_decision(
     """
     Return full explainability data for an execution: execution details plus
     the ordered reasoning trace from every associated audit log entry.
-    Scoped to tenant — 404 if execution does not belong to the authenticated tenant.
+    Scoped to tenant - 404 if execution does not belong to the authenticated tenant.
     """
     tenant_id = current_user.tenant_id
 

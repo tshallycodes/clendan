@@ -62,7 +62,7 @@ async def exchange_token(
     """
     Exchanges Plaid public_token for access_token. Stores encrypted credentials.
     Enqueues initial transaction sync via arq worker.
-    All steps required — partial completion is a failure.
+    All steps required - partial completion is a failure.
     """
     tenant_id = current_user.tenant_id
     logger.info("plaid_exchange_token_started tenant_id=%s institution_id=%s institution_name=%s", tenant_id, body.institution_id, body.institution_name)
@@ -80,7 +80,7 @@ async def exchange_token(
         "institution_name": body.institution_name,
     })
 
-    # Always create a new integration — dedup happens after sync based on account IDs
+    # Always create a new integration - dedup happens after sync based on account IDs
     integration = await db.integration.create(
         data={
             "tenant_id": tenant_id,
@@ -174,7 +174,7 @@ async def list_transactions(
     limit: int = Query(Pagination.DEFAULT_LIMIT, le=Pagination.MAX_LIMIT),
     offset: int = Query(0, ge=0),
 ):
-    """Lists bank transactions for the tenant. Scoped to tenant — never leaks cross-tenant data."""
+    """Lists bank transactions for the tenant. Scoped to tenant - never leaks cross-tenant data."""
     tenant_id = current_user.tenant_id
 
     where: dict = {"tenant_id": tenant_id}
@@ -370,7 +370,7 @@ async def sync_plaid_connection(
     if not intg:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Plaid connection not found")
     if intg.status == IntegrationStatus.DISCONNECTED:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Connection is disconnected — reconnect first")
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Connection is disconnected - reconnect first")
 
     await db.integration.update(where={"id": integration_id}, data={"status": IntegrationStatus.SYNCING})
     await enqueue_plaid_sync(integration_id, tenant_id)

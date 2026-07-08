@@ -43,7 +43,7 @@ function ReconciliationTrace({ trace }: { trace: Record<string, unknown> }) {
   const reviews = assessments.filter(a => a.action === 'review')
 
   const decisionConfig = {
-    flagged:           { label: 'Flagged — issues found',  color: 'text-[#ff4d6d]', bg: 'bg-[rgba(255,77,109,0.08)]', border: 'border-[rgba(255,77,109,0.2)]' },
+    flagged:           { label: 'Flagged - issues found',  color: 'text-[#ff4d6d]', bg: 'bg-[rgba(255,77,109,0.08)]', border: 'border-[rgba(255,77,109,0.2)]' },
     approval_required: { label: 'Approval required',       color: 'text-[#00a8cc]', bg: 'bg-[rgba(0,168,204,0.08)]', border: 'border-[rgba(0,168,204,0.2)]' },
     auto_approved:     { label: 'Auto-approved',           color: 'text-[#00C853]', bg: 'bg-[rgba(0,200,83,0.08)]',  border: 'border-[rgba(0,200,83,0.2)]' },
   }
@@ -135,12 +135,12 @@ function DocumentIntelligenceTrace({ trace }: { trace: Record<string, unknown> }
         <div className="bg-brand-bg border border-brand-border rounded-sm p-3">
           <p className="text-[11px] font-body text-brand-muted uppercase tracking-widest">Confidence</p>
           <p className={`text-xl font-heading font-bold mt-1 ${(confidence ?? 0) >= 0.9 ? 'text-[#00C853]' : 'text-brand-text'}`}>
-            {confidence != null ? `${Math.round(confidence * 100)}%` : '—'}
+            {confidence != null ? `${Math.round(confidence * 100)}%` : '-'}
           </p>
         </div>
         <div className="bg-brand-bg border border-brand-border rounded-sm p-3">
           <p className="text-[11px] font-body text-brand-muted uppercase tracking-widest">Document type</p>
-          <p className="text-xs font-body text-brand-text mt-1 capitalize">{documentType.replace(/_/g, ' ') || '—'}</p>
+          <p className="text-xs font-body text-brand-text mt-1 capitalize">{documentType.replace(/_/g, ' ') || '-'}</p>
         </div>
         <div className="bg-brand-bg border border-brand-border rounded-sm p-3">
           <p className="text-[11px] font-body text-brand-muted uppercase tracking-widest">Policy flags</p>
@@ -206,7 +206,7 @@ function PayrollRecTrace({ trace, executionId, getToken, currencySymbol }: { tra
           discrepancies: json.data?.discrepancies ?? [],
         })
       }
-    } catch { /* silent — detail is optional */ }
+    } catch { /* silent - detail is optional */ }
   }, [executionId, getToken])
 
   useEffect(() => {
@@ -220,9 +220,9 @@ function PayrollRecTrace({ trace, executionId, getToken, currencySymbol }: { tra
   const missingPct = rosterSize > 0 ? Math.round((missingCount / rosterSize) * 100) : 0
 
   const statusConfig = {
-    clean:   { label: 'Clean — no issues found',   color: 'text-[#00C853]', bg: 'bg-[rgba(0,200,83,0.08)]',   border: 'border-[rgba(0,200,83,0.2)]' },
-    flagged: { label: 'Flagged — review required',  color: 'text-[#f5a623]', bg: 'bg-[rgba(245,166,35,0.08)]', border: 'border-[rgba(245,166,35,0.2)]' },
-    blocked: { label: 'Blocked — too many missing', color: 'text-[#ff4d6d]', bg: 'bg-[rgba(255,77,109,0.08)]', border: 'border-[rgba(255,77,109,0.2)]' },
+    clean:   { label: 'Clean - no issues found',   color: 'text-[#00C853]', bg: 'bg-[rgba(0,200,83,0.08)]',   border: 'border-[rgba(0,200,83,0.2)]' },
+    flagged: { label: 'Flagged - review required',  color: 'text-[#f5a623]', bg: 'bg-[rgba(245,166,35,0.08)]', border: 'border-[rgba(245,166,35,0.2)]' },
+    blocked: { label: 'Blocked - too many missing', color: 'text-[#ff4d6d]', bg: 'bg-[rgba(255,77,109,0.08)]', border: 'border-[rgba(255,77,109,0.2)]' },
   }
   const sc = statusConfig[status as keyof typeof statusConfig] ?? statusConfig.clean
 
@@ -335,18 +335,18 @@ function OrchestratorTrace({ trace }: { trace: Record<string, unknown> }) {
       <div className="grid grid-cols-3 gap-2">
         <div className="bg-brand-bg border border-brand-border rounded-sm p-3">
           <p className="text-[11px] font-body text-brand-muted uppercase tracking-widest">Event type</p>
-          <p className="text-xs font-body text-brand-text mt-1">{eventType ?? '—'}</p>
+          <p className="text-xs font-body text-brand-text mt-1">{eventType ?? '-'}</p>
         </div>
         <div className="bg-brand-bg border border-brand-border rounded-sm p-3">
           <p className="text-[11px] font-body text-brand-muted uppercase tracking-widest">Confidence</p>
           <p className={`text-xl font-heading font-bold mt-1 ${(confidence ?? 0) >= 0.9 ? 'text-[#00C853]' : 'text-brand-text'}`}>
-            {confidence != null ? `${Math.round(confidence * 100)}%` : '—'}
+            {confidence != null ? `${Math.round(confidence * 100)}%` : '-'}
           </p>
         </div>
         <div className="bg-brand-bg border border-brand-border rounded-sm p-3">
           <p className="text-[11px] font-body text-brand-muted uppercase tracking-widest">Duration</p>
           <p className="text-xl font-heading font-bold text-brand-text mt-1">
-            {durationMs != null ? `${durationMs}ms` : '—'}
+            {durationMs != null ? `${durationMs}ms` : '-'}
           </p>
         </div>
       </div>
@@ -503,7 +503,7 @@ function VatRecAuditTrace({ trace, currencySymbol }: { trace: Record<string, unk
       ]} />
       {flagged > 0 && (
         <div className="bg-[rgba(255,77,109,0.04)] border border-[rgba(255,77,109,0.15)] rounded-sm px-3 py-2.5">
-          <p className="text-[12px] font-body text-[#ff4d6d]">{flagged} invoice{flagged !== 1 ? 's' : ''} flagged — missing or unexpected VAT rate</p>
+          <p className="text-[12px] font-body text-[#ff4d6d]">{flagged} invoice{flagged !== 1 ? 's' : ''} flagged - missing or unexpected VAT rate</p>
         </div>
       )}
     </div>

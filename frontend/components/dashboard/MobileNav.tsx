@@ -28,7 +28,7 @@ export function MobileNav() {
 
   return (
     <>
-      {/* Fixed top bar — mobile/tablet only */}
+      {/* Fixed top bar - mobile/tablet only */}
       <div className="lg:hidden fixed top-0 left-0 right-0 z-40 flex items-center justify-between px-4 py-4 bg-brand-surface border-b border-brand-border">
         <Logo size="sm" />
         <button

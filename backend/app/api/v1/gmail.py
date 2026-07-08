@@ -51,7 +51,7 @@ async def gmail_callback(
     """
     Handles Google OAuth callback for Gmail.
     Exchanges code, sets up Gmail watch, stores encrypted credentials, enqueues sync.
-    All steps required — partial completion is a failure.
+    All steps required - partial completion is a failure.
     """
     # Parse and validate state: "{tenant_id}:{random}"
     parts = state.split(":", 1)
@@ -186,7 +186,7 @@ async def gmail_sync(
     if integration.status not in ("connected", "error"):
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail=f"Cannot trigger sync — current status: {integration.status}",
+            detail=f"Cannot trigger sync - current status: {integration.status}",
         )
 
     await db.integration.update(
@@ -235,7 +235,7 @@ async def gmail_disconnect(
                 logger.warning("gmail_revoke_token_failed tenant=%s: %s", tenant_id, type(exc).__name__)
 
     except ValueError:
-        logger.warning("gmail_disconnect_decrypt_failed tenant=%s — proceeding with disconnect", tenant_id)
+        logger.warning("gmail_disconnect_decrypt_failed tenant=%s - proceeding with disconnect", tenant_id)
 
     await db.integration.update(
         where={"id": integration.id},

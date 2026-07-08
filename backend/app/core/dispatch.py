@@ -1,5 +1,5 @@
 """
-Direct tool dispatch — maps tool type or event type to arq job and enqueues.
+Direct tool dispatch - maps tool type or event type to arq job and enqueues.
 No intermediate hop. Called by API routes and the app.events enqueue helper.
 """
 from prisma.errors import UniqueViolationError

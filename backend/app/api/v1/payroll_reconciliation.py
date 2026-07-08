@@ -1,5 +1,5 @@
 """
-Payroll Reconciliation API — /v1/payroll-runs
+Payroll Reconciliation API - /v1/payroll-runs
 Endpoints: list runs, trigger run, get run detail, get ghosts, get missing, export CSV.
 All queries scoped to current_user.tenant_id (no cross-tenant access).
 """

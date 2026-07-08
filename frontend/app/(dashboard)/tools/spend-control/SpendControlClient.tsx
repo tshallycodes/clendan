@@ -85,7 +85,7 @@ function Result({ ctx }: { ctx: ToolRenderCtx }) {
       {!trace && (
         <div className="bg-brand-surface border border-brand-border rounded-sm px-4 py-3 text-center">
           <p className="text-xs font-body text-brand-muted">
-            This agent hasn&apos;t run yet — click <span className="text-brand-secondary">Run spend review</span> to populate this with your latest expenses.
+            This agent hasn&apos;t run yet - click <span className="text-brand-secondary">Run spend review</span> to populate this with your latest expenses.
           </p>
         </div>
       )}
@@ -150,8 +150,8 @@ function Result({ ctx }: { ctx: ToolRenderCtx }) {
                 <tr><td colSpan={5} className="px-4 py-8 text-center text-brand-muted">No expenses in this view.</td></tr>
               ) : rows.map((e) => (
                 <tr key={e.expense_id} className="border-t border-brand-border hover:bg-brand-elevated transition-colors align-top">
-                  <td className="px-4 py-2.5 text-brand-text">{e.category ?? '—'}</td>
-                  <td className="px-4 py-2.5 text-brand-muted">{e.account_code ?? '—'}</td>
+                  <td className="px-4 py-2.5 text-brand-text">{e.category ?? '-'}</td>
+                  <td className="px-4 py-2.5 text-brand-muted">{e.account_code ?? '-'}</td>
                   <td className="px-4 py-2.5 text-right text-brand-text tabular-nums">{fmt(e.amount_cents)}</td>
                   <td className="px-4 py-2.5">
                     <span className={`text-[11px] font-body px-2 py-0.5 rounded-sm border ${ACTION_STYLE[e.action]}`}>{ACTION_LABEL[e.action]}</span>

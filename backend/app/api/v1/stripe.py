@@ -1,4 +1,4 @@
-"""Stripe Connect OAuth routes — connect, callback, status, sync, disconnect."""
+"""Stripe Connect OAuth routes - connect, callback, status, sync, disconnect."""
 import secrets
 from datetime import datetime, UTC
 from typing import Annotated
@@ -41,7 +41,7 @@ async def stripe_callback(
     OAuth callback from Stripe Connect. Exchanges code for access_token,
     encrypts and stores credentials, sets status=syncing, enqueues sync job.
     Redirects to /dashboard/integrations?connected=stripe on success.
-    All steps required — partial completion is a failure.
+    All steps required - partial completion is a failure.
     """
     logger.info("stripe_callback_received state_prefix=%s code_prefix=%s", state[:12], code[:8])
 
@@ -77,10 +77,10 @@ async def stripe_callback(
             detail="Stripe token exchange failed",
         )
 
-    # Encrypt credentials with tenant-specific key — never log token values
+    # Encrypt credentials with tenant-specific key - never log token values
     encrypted = encrypt_credentials(tokens, tenant_id)
 
-    # Upsert integration record — status=syncing until sync job confirms data present
+    # Upsert integration record - status=syncing until sync job confirms data present
     existing = await db.integration.find_first(
         where={"tenant_id": tenant_id, "type": "stripe", "status": {"not": "disconnected"}},
         order={"connected_at": "desc"},
@@ -109,7 +109,7 @@ async def stripe_callback(
         )
         logger.info("stripe_callback_integration_created id=%s", integration.id)
 
-    # Enqueue sync job — confirms connection and fetches initial data
+    # Enqueue sync job - confirms connection and fetches initial data
     try:
         await enqueue_stripe_sync(integration_id=integration.id, tenant_id=tenant_id)
         logger.info("stripe_callback_sync_enqueued integration_id=%s", integration.id)
@@ -201,7 +201,7 @@ async def stripe_disconnect(
             detail="No Stripe integration found",
         )
 
-    # Deauthorize at Stripe — best effort; proceed with local disconnect regardless
+    # Deauthorize at Stripe - best effort; proceed with local disconnect regardless
     try:
         creds = decrypt_credentials(integration.encrypted_credentials, tenant_id)
         stripe_user_id = creds.get("stripe_user_id", "")

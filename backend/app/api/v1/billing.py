@@ -1,8 +1,8 @@
-"""SaaS billing routes — Stripe Checkout, Customer Portal, and subscription status.
+"""SaaS billing routes - Stripe Checkout, Customer Portal, and subscription status.
 
 Reads subscription state from the Tenant row (kept current by the billing webhook).
 Write actions (checkout, portal) require owner/admin and go straight to Stripe;
-subscription state is never trusted from the client — only the webhook mutates it.
+subscription state is never trusted from the client - only the webhook mutates it.
 """
 import uuid
 from datetime import datetime
@@ -133,7 +133,7 @@ async def create_portal(
     if not tenant or not tenant.stripe_customer_id:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="No billing customer yet — subscribe to a plan first",
+            detail="No billing customer yet - subscribe to a plan first",
         )
 
     frontend_url = get_settings().frontend_url.rstrip("/")

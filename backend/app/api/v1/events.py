@@ -1,5 +1,5 @@
 ﻿"""
-POST /v1/events — direct event dispatch.
+POST /v1/events - direct event dispatch.
 External triggers and partner systems submit financial events here.
 Routed directly to the correct arq job via core.dispatch.
 """
@@ -43,7 +43,7 @@ async def submit_event(
 ):
     """
     Submit a financial event for direct dispatch to the active tool.
-    Idempotent via Idempotency-Key header — same key returns the existing execution.
+    Idempotent via Idempotency-Key header - same key returns the existing execution.
     """
     # Idempotency check before creating anything
     existing = await db.execution.find_first(

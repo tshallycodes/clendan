@@ -1,4 +1,4 @@
-"""Square Connect OAuth routes — connect, callback, status, sync, disconnect."""
+"""Square Connect OAuth routes - connect, callback, status, sync, disconnect."""
 import secrets
 from datetime import datetime, UTC
 from typing import Annotated

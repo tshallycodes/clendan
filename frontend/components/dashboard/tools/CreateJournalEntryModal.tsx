@@ -105,7 +105,7 @@ export function CreateJournalEntryModal({ suggestion, onClose, onCreated }: Prop
                 Create {suggestion.entry_type} Entry
               </h3>
               <p className="text-[11px] font-body text-brand-muted mt-0.5">
-                AI-suggested — review before creating
+                AI-suggested - review before creating
               </p>
             </div>
             <button
@@ -160,12 +160,12 @@ export function CreateJournalEntryModal({ suggestion, onClose, onCreated }: Prop
                     <tr key={i} className="border-b border-brand-border last:border-0">
                       <td className="px-3 py-2 text-[12px] font-body text-brand-muted">{ln.account_code}</td>
                       <td className="px-3 py-2 text-[12px] font-body text-brand-text">{ln.account_name}</td>
-                      <td className="px-3 py-2 text-[12px] font-body text-brand-muted">{ln.description ?? '—'}</td>
+                      <td className="px-3 py-2 text-[12px] font-body text-brand-muted">{ln.description ?? '-'}</td>
                       <td className="px-3 py-2 text-[12px] font-body text-brand-text text-right tabular-nums">
-                        {ln.debit_minor > 0 ? fmt(ln.debit_minor, currency) : '—'}
+                        {ln.debit_minor > 0 ? fmt(ln.debit_minor, currency) : '-'}
                       </td>
                       <td className="px-3 py-2 text-[12px] font-body text-brand-text text-right tabular-nums">
-                        {ln.credit_minor > 0 ? fmt(ln.credit_minor, currency) : '—'}
+                        {ln.credit_minor > 0 ? fmt(ln.credit_minor, currency) : '-'}
                       </td>
                     </tr>
                   ))}

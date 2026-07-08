@@ -1,5 +1,5 @@
 """
-Month-End Close Tool — evaluates checklist tasks required to close the books for a period.
+Month-End Close Tool - evaluates checklist tasks required to close the books for a period.
 Sub-agent tool, dispatched directly to its arq job.
 Follows mandatory execution flow: receive → validate → execute → policy check → output → audit.
 """
@@ -84,7 +84,7 @@ def _merge_tasks(
 class MonthEndCloseTool:
     """
     Evaluates auto-checkable month-end close tasks by querying the DB.
-    Dispatched to its arq job — never invoked directly from routes.
+    Dispatched to its arq job - never invoked directly from routes.
     """
 
     async def run(
@@ -123,7 +123,7 @@ class MonthEndCloseTool:
         if not existing_tasks:
             existing_tasks = _build_default_tasks()
 
-        # STEP 3: Execute — evaluate each auto-checkable task
+        # STEP 3: Execute - evaluate each auto-checkable task
         task_updates: dict[str, str] = {}
 
         # Task 1: all_transactions_categorised
@@ -161,9 +161,9 @@ class MonthEndCloseTool:
             "blocked" if pending_approval_count > 0 else "complete"
         )
 
-        # Tasks 4 & 5 (payroll_reconciled, sign_offs_collected) are manual — no auto-check
+        # Tasks 4 & 5 (payroll_reconciled, sign_offs_collected) are manual - no auto-check
 
-        # STEP 4: Policy check — merge updates into task list
+        # STEP 4: Policy check - merge updates into task list
         updated_tasks = _merge_tasks(existing_tasks, task_updates)
 
         # Determine overall close run status
@@ -177,7 +177,7 @@ class MonthEndCloseTool:
 
         duration_ms = int((time.monotonic() - start) * 1000)
 
-        # STEP 5: Output — write updated tasks and status to DB
+        # STEP 5: Output - write updated tasks and status to DB
         updated_run = await db.monthendcloserun.update(
             where={"id": close_run.id},
             data={
@@ -187,7 +187,7 @@ class MonthEndCloseTool:
             },
         )
 
-        # STEP 6: Audit — append-only, must succeed or operation fails
+        # STEP 6: Audit - append-only, must succeed or operation fails
         execution = await db.execution.create(
             data={
                 "tenant_id": tenant_id,
@@ -258,7 +258,7 @@ async def run_month_end_close_scheduled(_ctx: dict) -> None:
             try:
                 tz = ZoneInfo(tz_name)
             except ZoneInfoNotFoundError:
-                logger.warning("month_end_close_cron_unknown_tz tool=%s tz=%s — falling back to UTC", tool.id, tz_name)
+                logger.warning("month_end_close_cron_unknown_tz tool=%s tz=%s - falling back to UTC", tool.id, tz_name)
                 tz = ZoneInfo("UTC")
 
             local_now = now_utc.astimezone(tz)

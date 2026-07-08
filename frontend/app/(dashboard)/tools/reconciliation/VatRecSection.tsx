@@ -53,7 +53,7 @@ function fmt(cents: number | null, symbol: string): string {
 }
 
 function fmtDate(iso: string | null): string {
-  if (!iso) return '—'
+  if (!iso) return '-'
   return new Date(iso).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' })
 }
 
@@ -171,7 +171,7 @@ export function VatRecSection({ toolId }: Props) {
             {summary.flagged_count > 0 && (
               <div className="bg-[rgba(245,166,35,0.04)] border border-[rgba(245,166,35,0.3)] rounded-sm px-4 py-2.5">
                 <p className="text-[11px] font-body text-[#f5a623]">
-                  {summary.flagged_count} invoice{summary.flagged_count !== 1 ? 's' : ''} with no VAT recorded — review before filing.
+                  {summary.flagged_count} invoice{summary.flagged_count !== 1 ? 's' : ''} with no VAT recorded - review before filing.
                 </p>
               </div>
             )}
@@ -202,13 +202,13 @@ export function VatRecSection({ toolId }: Props) {
                       <tbody className="divide-y divide-brand-border">
                         {summary.flagged.map(f => (
                           <tr key={f.id} className="hover:bg-brand-elevated transition-colors">
-                            <td className="px-3 py-2 text-[11px] font-body text-brand-text">{f.number ?? '—'}</td>
-                            <td className="px-3 py-2 text-[11px] font-body text-brand-secondary">{f.contact_name ?? '—'}</td>
+                            <td className="px-3 py-2 text-[11px] font-body text-brand-text">{f.number ?? '-'}</td>
+                            <td className="px-3 py-2 text-[11px] font-body text-brand-secondary">{f.contact_name ?? '-'}</td>
                             <td className="px-3 py-2 text-[11px] font-body text-brand-muted">{fmtDate(f.issue_date)}</td>
                             <td className="px-3 py-2 text-[11px] font-body text-brand-text">{fmt(f.subtotal_cents, symbol)}</td>
                             <td className="px-3 py-2 text-[11px] font-body text-[#ff4d6d]">{fmt(f.tax_cents, symbol)}</td>
                             <td className="px-3 py-2 text-[11px] font-body text-brand-text">{fmt(f.total_cents, symbol)}</td>
-                            <td className="px-3 py-2 text-[11px] font-body text-brand-muted capitalize">{f.source ?? '—'}</td>
+                            <td className="px-3 py-2 text-[11px] font-body text-brand-muted capitalize">{f.source ?? '-'}</td>
                             <td className="px-3 py-2 text-[11px] font-body text-[#ff4d6d]">{f.flag_reason}</td>
                           </tr>
                         ))}
@@ -249,8 +249,8 @@ export function VatRecSection({ toolId }: Props) {
                       <tbody className="divide-y divide-brand-border">
                         {summary.invoice_lines.map(inv => (
                           <tr key={inv.id} className="hover:bg-brand-elevated transition-colors">
-                            <td className="px-3 py-2 text-[11px] font-body text-brand-text">{inv.number ?? '—'}</td>
-                            <td className="px-3 py-2 text-[11px] font-body text-brand-secondary">{inv.contact_name ?? '—'}</td>
+                            <td className="px-3 py-2 text-[11px] font-body text-brand-text">{inv.number ?? '-'}</td>
+                            <td className="px-3 py-2 text-[11px] font-body text-brand-secondary">{inv.contact_name ?? '-'}</td>
                             <td className="px-3 py-2 text-[11px] font-body text-brand-muted">{fmtDate(inv.issue_date)}</td>
                             <td className="px-3 py-2 text-[11px] font-body text-brand-text">{fmt(inv.subtotal_cents, symbol)}</td>
                             <td className={`px-3 py-2 text-[11px] font-body ${(inv.tax_cents ?? 0) === 0 ? 'text-[#ff4d6d]' : 'text-brand-text'}`}>
@@ -264,7 +264,7 @@ export function VatRecSection({ toolId }: Props) {
                                 </span>
                               )}
                             </td>
-                            <td className="px-3 py-2 text-[11px] font-body text-brand-muted capitalize">{inv.source ?? '—'}</td>
+                            <td className="px-3 py-2 text-[11px] font-body text-brand-muted capitalize">{inv.source ?? '-'}</td>
                           </tr>
                         ))}
                       </tbody>

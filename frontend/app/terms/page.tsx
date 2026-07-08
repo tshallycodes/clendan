@@ -2,7 +2,7 @@
 import { Footer } from '@/components/marketing/Footer'
 
 export const metadata = {
-  title: 'Terms of Service — Clendan',
+  title: 'Terms of Service - Clendan',
 }
 
 const SECTIONS = [
@@ -17,7 +17,7 @@ const SECTIONS = [
   {
     heading: 'Description of Service',
     body: [
-      'Clendan is an AI Financial Agent OS — a platform for deploying autonomous AI tools that connect to financial systems, execute tasks, enforce policy, and produce audit trails.',
+      'Clendan is an AI Financial Agent OS - a platform for deploying autonomous AI tools that connect to financial systems, execute tasks, enforce policy, and produce audit trails.',
       'The service is provided as a subscription, billed monthly or annually.',
       'We reserve the right to modify or discontinue any part of the service with reasonable notice.',
     ],
@@ -45,7 +45,7 @@ const SECTIONS = [
     heading: 'Intellectual Property',
     body: [
       'Clendan Ltd owns all intellectual property rights in the Clendan platform, including software, design, and documentation.',
-      'You own all data you bring to the platform — your invoices, financial records, and documents remain yours.',
+      'You own all data you bring to the platform - your invoices, financial records, and documents remain yours.',
       'You grant Clendan a limited licence to process your data solely to provide the service.',
       'You may not copy, modify, or distribute the Clendan platform or its components.',
     ],
@@ -55,7 +55,7 @@ const SECTIONS = [
     body: [
       'The service is provided "as is" without warranty of any kind, express or implied.',
       'Clendan is not liable for financial decisions made by AI tools operating without human oversight.',
-      'Human approval workflows exist for this reason — we strongly recommend enabling approval thresholds for high-value transactions.',
+      'Human approval workflows exist for this reason - we strongly recommend enabling approval thresholds for high-value transactions.',
       'In no event shall Clendan\'s total liability exceed the fees paid by you in the three months preceding the claim.',
       'We are not liable for indirect, incidental, or consequential damages of any kind.',
     ],
@@ -112,7 +112,7 @@ export default function TermsPage() {
                 <ul className="flex flex-col gap-3">
                   {section.body.map((item, i) => (
                     <li key={i} className="flex items-start gap-3">
-                      <span className="text-brand-muted font-body text-xs mt-0.5 shrink-0">—</span>
+                      <span className="text-brand-muted font-body text-xs mt-0.5 shrink-0">-</span>
                       <span className="font-body text-sm text-brand-secondary leading-relaxed">
                         {item}
                       </span>

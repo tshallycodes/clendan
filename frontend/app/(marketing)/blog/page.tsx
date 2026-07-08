@@ -4,7 +4,7 @@ const POSTS = [
   {
     title: 'Why 66% of AP teams are still manually processing invoices in 2025',
     excerpt:
-      'Despite decades of automation promises, accounts payable remains stubbornly manual. Here\'s what\'s blocking progress — and how AI is finally changing it.',
+      'Despite decades of automation promises, accounts payable remains stubbornly manual. Here\'s what\'s blocking progress - and how AI is finally changing it.',
     date: '2026-05-15',
     readTime: '8 min read',
     category: 'Research',
@@ -57,7 +57,7 @@ function formatDate(iso: string) {
 }
 
 export const metadata = {
-  title: 'Blog — Clendan',
+  title: 'Blog - Clendan',
   description: 'Practical guides, product updates, and research for finance teams.',
 }
 

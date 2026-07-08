@@ -1,5 +1,5 @@
 """
-Journal Entry Tool — creates and posts payroll journal entries to the general ledger.
+Journal Entry Tool - creates and posts payroll journal entries to the general ledger.
 Sub-agent tool, dispatched directly to its arq job.
 Follows mandatory execution flow: receive → classify → execute → policy check → output → audit.
 """
@@ -30,7 +30,7 @@ class EntryResult:
 class JournalEntryTool:
     """
     Creates and posts journal entries.
-    Dispatched to its arq job — never invoked directly from routes.
+    Dispatched to its arq job - never invoked directly from routes.
     """
 
     async def create_payroll_entry(
@@ -73,11 +73,11 @@ class JournalEntryTool:
 
         total_minor = total_debits  # debit side == credit side
 
-        # STEP 2: Classify — determine approval requirement
+        # STEP 2: Classify - determine approval requirement
         requires_approval = total_minor > auto_approve_threshold_minor
         initial_status = "pending_approval" if requires_approval else "approved"
 
-        # STEP 3: Execute — create entry and all lines atomically via nested create
+        # STEP 3: Execute - create entry and all lines atomically via nested create
         entry = await db.journalentry.create(
             data={
                 "tenant_id": tenant_id,
@@ -102,10 +102,10 @@ class JournalEntryTool:
             }
         )
 
-        # STEP 4: Policy check — create Approval record if over threshold
+        # STEP 4: Policy check - create Approval record if over threshold
         approval_id: str | None = None
         if requires_approval:
-            # Approval model requires an execution_id — create a stub execution
+            # Approval model requires an execution_id - create a stub execution
             execution = await db.execution.create(
                 data={
                     "tenant_id": tenant_id,
@@ -128,7 +128,7 @@ class JournalEntryTool:
 
         duration_ms = int((time.monotonic() - start) * 1000)
 
-        # STEP 5: Audit — append-only, must succeed or operation fails
+        # STEP 5: Audit - append-only, must succeed or operation fails
         await db.auditlog.create(
             data={
                 "tenant_id": tenant_id,
@@ -181,7 +181,7 @@ class JournalEntryTool:
         trace_id = get_trace_id()
         db = get_db()
 
-        # Fetch and validate — always scope to tenant_id
+        # Fetch and validate - always scope to tenant_id
         entry = await db.journalentry.find_first(
             where={"id": entry_id, "tenant_id": tenant_id}
         )
@@ -190,7 +190,7 @@ class JournalEntryTool:
 
         if entry.status != "approved":
             raise ValueError(
-                f"Cannot post entry with status '{entry.status}' — must be 'approved'"
+                f"Cannot post entry with status '{entry.status}' - must be 'approved'"
             )
 
         # Execute

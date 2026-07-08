@@ -28,7 +28,7 @@ async def get_exchange_rates(
 ):
     """
     Returns all current exchange rates (USD base) and staleness metadata.
-    Rates older than 48 hours are flagged as stale — the cron job may have failed.
+    Rates older than 48 hours are flagged as stale - the cron job may have failed.
     """
     rates = await db.exchangerate.find_many(
         where={"base_currency": "USD"},

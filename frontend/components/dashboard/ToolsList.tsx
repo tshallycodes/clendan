@@ -43,7 +43,7 @@ export function ToolsList({ tools }: { tools: DeployedTool[] }) {
     <div className="bg-brand-surface border border-brand-border rounded-sm overflow-hidden">
       <div className="px-5 py-4 border-b border-brand-border">
         <h2 className="font-heading font-semibold text-brand-text text-sm">Active Tools</h2>
-        <p className="text-[11px] font-body text-brand-muted mt-0.5">AI agents deployed on your financial data — each enforces policy before acting</p>
+        <p className="text-[11px] font-body text-brand-muted mt-0.5">AI agents deployed on your financial data - each enforces policy before acting</p>
       </div>
       {tools.length === 0 ? (
         <motion.p
@@ -52,7 +52,7 @@ export function ToolsList({ tools }: { tools: DeployedTool[] }) {
           transition={{ duration: 0.4, delay: 0.2 }}
           className="px-5 py-8 text-xs font-body text-brand-muted text-center"
         >
-          No tools deployed yet — deploy your first tool to get started
+          No tools deployed yet - deploy your first tool to get started
         </motion.p>
       ) : (
         <motion.div variants={listVariants} initial="hidden" animate="show" className="divide-y divide-brand-border">

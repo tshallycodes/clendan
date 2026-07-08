@@ -99,7 +99,7 @@ export function TeamPageClient() {
           setSettings((json.data ?? json) as OrgSettings)
         }
       } catch {
-        // settings unavailable — hide domain toggle
+        // settings unavailable - hide domain toggle
       }
     }
     fetchSettings()

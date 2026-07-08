@@ -30,11 +30,11 @@ export function IntegrationsHealth({ integrations }: { integrations: Integration
     <div className="bg-brand-surface border border-brand-border rounded-sm overflow-hidden">
       <div className="px-5 py-4 border-b border-brand-border">
         <h2 className="font-heading font-semibold text-brand-text text-sm">Integrations</h2>
-        <p className="text-[11px] font-body text-brand-muted mt-0.5">Connected data sources your agents pull from — sync status and last activity</p>
+        <p className="text-[11px] font-body text-brand-muted mt-0.5">Connected data sources your agents pull from - sync status and last activity</p>
       </div>
       {visible.length === 0 ? (
         <p className="px-5 py-8 text-xs font-body text-brand-muted text-center">
-          No integrations connected — connect your accounting software and bank accounts
+          No integrations connected - connect your accounting software and bank accounts
         </p>
       ) : (
         <div className="divide-y divide-brand-border">
@@ -52,7 +52,7 @@ export function IntegrationsHealth({ integrations }: { integrations: Integration
                   {style.label}
                 </span>
                 <span className="text-[11px] font-body text-brand-muted shrink-0">
-                  {integration.last_synced_at ? relativeTime(integration.last_synced_at) : '—'}
+                  {integration.last_synced_at ? relativeTime(integration.last_synced_at) : '-'}
                 </span>
               </div>
             )

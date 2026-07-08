@@ -1,5 +1,5 @@
 """
-Google Drive webhook receiver — Drive push notification channel.
+Google Drive webhook receiver - Drive push notification channel.
 Google sends notifications via HTTP headers; no body signature to verify.
 Security is provided by the channel ID and HTTPS endpoint URL.
 Always return 200.
@@ -23,9 +23,9 @@ async def google_drive_webhook(request: Request):
     """
     Receives Google Drive push notification channel events.
     Relevant headers:
-      X-Goog-Channel-ID  — the channel ID we supplied on watch setup
-      X-Goog-Resource-State — "sync" (initial handshake) or "change" (new change)
-      X-Goog-Resource-ID — opaque resource identifier
+      X-Goog-Channel-ID  - the channel ID we supplied on watch setup
+      X-Goog-Resource-State - "sync" (initial handshake) or "change" (new change)
+      X-Goog-Resource-ID - opaque resource identifier
     On "change" or "sync" states: enqueues a Drive sync for all connected integrations.
     Always returns 200.
     """

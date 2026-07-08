@@ -95,7 +95,7 @@ export function IntegrationsClient() {
         }
         if (institution_id) setConnectedBankId(institution_id)
         if (institution_name) setConnectedBankName(institution_name)
-        toast(`${institution_name ?? 'Bank'} connected — syncing transactions`, 'success')
+        toast(`${institution_name ?? 'Bank'} connected - syncing transactions`, 'success')
       } catch (err) {
         setStatus('plaid', 'error')
         setConnecting(null)
@@ -151,7 +151,7 @@ export function IntegrationsClient() {
     for (const slug of Object.keys(nextStatuses)) {
       if ((prev[slug] === 'syncing' || prev[slug] === 'connecting') && nextStatuses[slug] === 'error') {
         const name = INTEGRATIONS.find((i) => i.slug === slug)?.name ?? slug
-        toast(`${name} sync failed — check your connection`, 'error')
+        toast(`${name} sync failed - check your connection`, 'error')
       }
     }
     prevStatusesRef.current = nextStatuses
@@ -180,7 +180,7 @@ export function IntegrationsClient() {
         if (connected) {
           setStatus(connected, 'syncing')
           const connectedName = params.get('name') || connected
-          toast(`${connectedName} connected — syncing data`, 'success')
+          toast(`${connectedName} connected - syncing data`, 'success')
         }
         if (oauthError) {
           toast(`Connection failed: ${oauthError.replace(/_/g, ' ')}`, 'error')
@@ -201,7 +201,7 @@ export function IntegrationsClient() {
               }
             }
           } catch {
-            toast('Xero org selection failed — please try connecting again', 'error')
+            toast('Xero org selection failed - please try connecting again', 'error')
           }
         }
 
@@ -410,7 +410,7 @@ export function IntegrationsClient() {
         throw new Error(json.detail ?? json.error ?? 'Disconnect failed')
       }
       // Optimistically clear so the UI reflects disconnected state immediately.
-      // Do NOT call fetchAllStatuses() here — the backend status endpoint may still
+      // Do NOT call fetchAllStatuses() here - the backend status endpoint may still
       // return 'connected' (OAuth token still present), which would override the clear.
       setStatus(provider, 'not_connected')
       if (provider === 'plaid') { setConnectedBankId(null); setConnectedBankName(null) }
@@ -453,7 +453,7 @@ export function IntegrationsClient() {
     setShowCredentialsDrawer(false)
     setActiveCredentialSlug(null)
     setStatus(slug, 'syncing')
-    toast(`${slug} connected — syncing data`, 'success')
+    toast(`${slug} connected - syncing data`, 'success')
   }
 
   async function handleXeroOrgConfirm(xeroTenantId: string) {
@@ -475,7 +475,7 @@ export function IntegrationsClient() {
     setXeroOrgs([])
     setPendingXeroIntegrationId(null)
     setStatus('xero', 'syncing')
-    toast('Xero connected — syncing data', 'success')
+    toast('Xero connected - syncing data', 'success')
   }
 
   async function handleResync(slug: string) {
@@ -524,7 +524,7 @@ export function IntegrationsClient() {
       {/* Integration sections by category */}
       {!loading && (
         <>
-          {/* Banking — always first, uses BankPicker */}
+          {/* Banking - always first, uses BankPicker */}
           <section className="space-y-3">
             <h2 className="text-[11px] font-body uppercase tracking-widest text-brand-muted border-b border-brand-border pb-2">
               Banking

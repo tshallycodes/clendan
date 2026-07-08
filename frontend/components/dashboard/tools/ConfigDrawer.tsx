@@ -246,7 +246,7 @@ export function ConfigDrawer({ tool, toolType, onClose, onSaved }: Props) {
               <p className="text-[11px] font-body text-brand-muted mt-1">
                 Last configured by{' '}
                 <span className="text-brand-secondary">
-                  {tool.last_configured_by_email ? tool.last_configured_by_email.split('@')[0] : '—'}
+                  {tool.last_configured_by_email ? tool.last_configured_by_email.split('@')[0] : '-'}
                 </span>
               </p>
             )}
@@ -261,8 +261,8 @@ export function ConfigDrawer({ tool, toolType, onClose, onSaved }: Props) {
               value={autonomy}
               onChange={setAutonomy}
               options={[
-                { value: 'auto', label: 'Auto — executes without approval' },
-                { value: 'approve', label: 'Approve — requires human approval above threshold' },
+                { value: 'auto', label: 'Auto - executes without approval' },
+                { value: 'approve', label: 'Approve - requires human approval above threshold' },
               ]}
             />
             {toolType === 'document_intelligence' && (

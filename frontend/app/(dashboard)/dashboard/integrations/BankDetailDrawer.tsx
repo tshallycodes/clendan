@@ -200,7 +200,7 @@ export function BankDetailDrawer({ bank, onClose, onConnect, onDisconnect, onRes
     try {
       const token = await getToken()
       // Generic fallback cards (id ends with -generic) represent "any connection for this
-      // provider" — don't filter by name or we'll miss connections with a different institution_name
+      // provider" - don't filter by name or we'll miss connections with a different institution_name
       const isGeneric = bankDef.id.endsWith('-generic')
       const url = isGeneric
         ? `${API}/integrations/${bankDef.provider}/connections`

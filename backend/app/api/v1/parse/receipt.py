@@ -29,7 +29,7 @@ _RECEIPT_PROMPT = f"""You are a receipt data extraction system. Extract fields f
 
 Fields:
 - merchant (string): Store or vendor name
-- amount_minor (integer): Total amount paid in minor units (multiply decimal by 100, round to integer — e.g. £12.50 → 1250)
+- amount_minor (integer): Total amount paid in minor units (multiply decimal by 100, round to integer - e.g. £12.50 → 1250)
 - currency (string): ISO 4217 code (GBP, USD, EUR, etc.)
 - date (string|null): ISO 8601 date YYYY-MM-DD or null if not visible
 - category (string): One of: {", ".join(sorted(ALLOWED_CATEGORIES))}
@@ -100,7 +100,7 @@ async def parse_receipt(
     """
     Enqueues a receipt parse job and returns a parse_id immediately.
     Poll GET /v1/parse/receipt/{parse_id} for the result.
-    Claude is called in the background — the request thread is never blocked.
+    Claude is called in the background - the request thread is never blocked.
     """
     if file.content_type not in ALLOWED_CONTENT_TYPES:
         raise HTTPException(

@@ -19,7 +19,7 @@ router = APIRouter(prefix="/webhooks", tags=["webhooks"])
 async def truelayer_webhook(request: Request):
     """
     Receives TrueLayer event notifications.
-    No signature verification available in basic tier — all requests accepted.
+    No signature verification available in basic tier - all requests accepted.
     """
     body = await request.body()
 

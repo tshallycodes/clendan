@@ -1,8 +1,8 @@
-"""Workflow auto-advance — the toggleable connections between tools in a workflow.
+"""Workflow auto-advance - the toggleable connections between tools in a workflow.
 
 When an upstream tool completes a fully-automatic (``auto_approved``) run and the
 connection to the next tool is enabled and that tool is active, the downstream tool
-is triggered. Crucially this goes through the event bus (``enqueue_event``) — a tool
+is triggered. Crucially this goes through the event bus (``enqueue_event``) - a tool
 never calls another tool directly (a hard anti-pattern). The event/dispatch layer
 finds the downstream tool, creates its own Execution, policy-checks, and audits it
 exactly as any other trigger would.
@@ -22,7 +22,7 @@ WORKFLOW_EDGES: dict[str, tuple[str, str]] = {
     "tax_compliance":        ("financial_reporting", "financial_report_run"),
 }
 
-# Only advance on a fully-automatic success — never off an approval-gated or blocked run.
+# Only advance on a fully-automatic success - never off an approval-gated or blocked run.
 _ADVANCE_ON_DECISION = "auto_approved"
 
 
@@ -36,7 +36,7 @@ async def advance_workflow(
 ) -> str | None:
     """Trigger the downstream tool if this tool's connection is enabled and active.
 
-    Returns the downstream execution_id if one was enqueued, else None. Never raises —
+    Returns the downstream execution_id if one was enqueued, else None. Never raises -
     a chaining failure must not fail the upstream tool's own completion.
     """
     try:
@@ -98,7 +98,7 @@ async def advance_workflow(
         )
         return downstream_execution_id
 
-    except Exception as exc:  # noqa: BLE001 — chaining must never break completion
+    except Exception as exc:  # noqa: BLE001 - chaining must never break completion
         logger.error(
             "workflow_advance_failed",
             extra={"tenant_id": tenant_id, "tool_id": tool_id, "error": type(exc).__name__},

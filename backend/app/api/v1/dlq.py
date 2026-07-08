@@ -1,5 +1,5 @@
 """
-Dead-letter queue management — list and replay failed arq jobs.
+Dead-letter queue management - list and replay failed arq jobs.
 Protected by auth; scoped to admins only in production.
 """
 import json
@@ -37,7 +37,7 @@ async def replay_job(job_id: str, current_user: RequireOrgAuth):
     """
     Replay a specific failed job from the DLQ by job_id.
     Removes the entry from DLQ and re-enqueues the job.
-    Only the job metadata is replayed — re-fetch of original input is required.
+    Only the job metadata is replayed - re-fetch of original input is required.
     """
     pool = await get_queue_pool()
     raw_entries = await pool.lrange(DLQ_KEY, 0, -1)

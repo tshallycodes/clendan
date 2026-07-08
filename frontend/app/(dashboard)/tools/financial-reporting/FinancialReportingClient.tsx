@@ -74,7 +74,7 @@ function Result({ ctx }: { ctx: ToolRenderCtx }) {
       {!t ? (
         <div className="bg-brand-surface border border-brand-border rounded-sm px-4 py-3 text-center">
           <p className="text-xs font-body text-brand-muted">
-            No report generated yet — pick a period and click <span className="text-brand-secondary">Generate report</span> to build your statements.
+            No report generated yet - pick a period and click <span className="text-brand-secondary">Generate report</span> to build your statements.
           </p>
         </div>
       ) : (

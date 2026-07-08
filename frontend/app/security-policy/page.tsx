@@ -2,13 +2,13 @@ import { Navbar } from '@/components/marketing/Navbar'
 import { Footer } from '@/components/marketing/Footer'
 
 export const metadata = {
-  title: 'Security Policy — Clendan',
+  title: 'Security Policy - Clendan',
 }
 
 const SCOPE_DOMAINS = [
-  'api.clendan.com — backend API and agent execution endpoints',
-  'app.clendan.com — the Clendan web application',
-  'clendan.com — the marketing site',
+  'api.clendan.com - backend API and agent execution endpoints',
+  'app.clendan.com - the Clendan web application',
+  'clendan.com - the marketing site',
 ]
 
 const DO_NOT = [
@@ -69,7 +69,7 @@ export default function SecurityPolicyPage() {
             <ul className="flex flex-col gap-3">
               {SCOPE_DOMAINS.map((item) => (
                 <li key={item} className="flex items-start gap-3">
-                  <span className="text-brand-green font-body text-xs mt-0.5 shrink-0">—</span>
+                  <span className="text-brand-green font-body text-xs mt-0.5 shrink-0">-</span>
                   <span className="font-body text-sm text-brand-secondary leading-relaxed">
                     {item}
                   </span>
@@ -105,7 +105,7 @@ export default function SecurityPolicyPage() {
                   'Any relevant screenshots, HTTP logs, or proof-of-concept code',
                 ].map((item) => (
                   <li key={item} className="flex items-start gap-3">
-                    <span className="text-brand-muted font-body text-xs mt-0.5 shrink-0">—</span>
+                    <span className="text-brand-muted font-body text-xs mt-0.5 shrink-0">-</span>
                     <span className="font-body text-sm text-brand-secondary leading-relaxed">
                       {item}
                     </span>
@@ -126,7 +126,7 @@ export default function SecurityPolicyPage() {
             <ul className="flex flex-col gap-3">
               {CLENDAN_COMMITS.map((item) => (
                 <li key={item} className="flex items-start gap-3">
-                  <span className="text-brand-green font-body text-xs mt-0.5 shrink-0">—</span>
+                  <span className="text-brand-green font-body text-xs mt-0.5 shrink-0">-</span>
                   <span className="font-body text-sm text-brand-secondary leading-relaxed">
                     {item}
                   </span>
@@ -150,7 +150,7 @@ export default function SecurityPolicyPage() {
                     className="font-body text-xs mt-0.5 shrink-0"
                     style={{ color: '#ff4d6d' }}
                   >
-                    —
+                    -
                   </span>
                   <span className="font-body text-sm text-brand-secondary leading-relaxed">
                     {item}
@@ -171,7 +171,7 @@ export default function SecurityPolicyPage() {
             <ul className="flex flex-col gap-3">
               {OUT_OF_SCOPE.map((item) => (
                 <li key={item} className="flex items-start gap-3">
-                  <span className="text-brand-muted font-body text-xs mt-0.5 shrink-0">—</span>
+                  <span className="text-brand-muted font-body text-xs mt-0.5 shrink-0">-</span>
                   <span className="font-body text-sm text-brand-secondary leading-relaxed">
                     {item}
                   </span>

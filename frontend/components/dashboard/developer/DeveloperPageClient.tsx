@@ -127,14 +127,14 @@ function ApiKeysSection({ keys, loading, showForm, setShowForm, newName, setNewN
     <div className="space-y-3">
       {revealedKey && (
         <div className="border border-[rgba(0,200,83,0.4)] bg-[rgba(0,200,83,0.05)] rounded-sm p-4 space-y-3">
-          <p className="text-[11px] font-body uppercase tracking-widest text-[#00C853]">New key — copy it now. It will not be shown again.</p>
+          <p className="text-[11px] font-body uppercase tracking-widest text-[#00C853]">New key - copy it now. It will not be shown again.</p>
           <div className="flex items-center gap-3 bg-brand-bg border border-brand-border rounded-sm px-3 py-2">
             <code className="flex-1 text-xs font-body text-brand-text break-all">{revealedKey}</code>
             <button type="button" onClick={copyKey} className="shrink-0 text-brand-muted hover:text-brand-text transition-colors">
               {copiedKey ? <Check className="w-4 h-4 text-[#00C853]" /> : <Copy className="w-4 h-4" />}
             </button>
           </div>
-          <button type="button" onClick={() => setRevealedKey(null)} className="text-xs font-body text-brand-muted hover:text-brand-text transition-colors">I&apos;ve copied it — dismiss</button>
+          <button type="button" onClick={() => setRevealedKey(null)} className="text-xs font-body text-brand-muted hover:text-brand-text transition-colors">I&apos;ve copied it - dismiss</button>
         </div>
       )}
       {showForm && (
@@ -152,7 +152,7 @@ function ApiKeysSection({ keys, loading, showForm, setShowForm, newName, setNewN
       {loading ? (
         <p className="text-xs font-body text-brand-muted py-4">Loading…</p>
       ) : keys.length === 0 && !showForm ? (
-        <p className="text-xs font-body text-brand-muted py-2">No API keys yet — generate one to start.</p>
+        <p className="text-xs font-body text-brand-muted py-2">No API keys yet - generate one to start.</p>
       ) : (
         <div className="divide-y divide-brand-border border border-brand-border rounded-sm overflow-hidden">
           {keys.map((k) => (
@@ -219,7 +219,7 @@ export function DeveloperPageClient() {
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: newName.trim() }),
       })
-      if (res.ok) { const json = await res.json(); setRevealedKey(json.data.key); toast('API key generated — copy it now', 'success'); setNewName(''); setShowForm(false); await fetchKeys() }
+      if (res.ok) { const json = await res.json(); setRevealedKey(json.data.key); toast('API key generated - copy it now', 'success'); setNewName(''); setShowForm(false); await fetchKeys() }
       else toast('Failed to generate API key', 'error')
     } finally { setCreating(false) }
   }
@@ -248,7 +248,7 @@ export function DeveloperPageClient() {
         <div>
           <h1 className="font-heading font-bold text-2xl text-brand-text">Developer</h1>
           <p className="text-xs font-body text-brand-muted mt-1">
-            Connect external systems to Clendan — execute tools, receive webhooks, query audit logs.
+            Connect external systems to Clendan - execute tools, receive webhooks, query audit logs.
           </p>
         </div>
         <a href={DOCS_URL} target="_blank" rel="noopener noreferrer"

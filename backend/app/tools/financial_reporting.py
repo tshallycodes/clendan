@@ -1,5 +1,5 @@
 """
-Financial Reporting Tool — sub-agent tool. Dispatched directly to its arq job.
+Financial Reporting Tool - sub-agent tool. Dispatched directly to its arq job.
 Aggregates accounting data to produce P&L, balance sheet, and cash flow summaries.
 """
 from __future__ import annotations
@@ -28,7 +28,7 @@ _MODEL_VERSION = "financial_reporting-v1"
 TOOL_TYPE = ToolType.FINANCIAL_REPORTING
 
 # Canonical payment_type values written by the accounting sync layer
-# (Xero / QuickBooks / FreshBooks — see app/integrations/*/persist.py).
+# (Xero / QuickBooks / FreshBooks - see app/integrations/*/persist.py).
 # Inflows = money received from customers; outflows = money paid to suppliers.
 _INFLOW_PAYMENT_TYPES = frozenset({"received"})
 _OUTFLOW_PAYMENT_TYPES = frozenset({"made"})
@@ -141,10 +141,10 @@ def _build_prompt(snapshot: _FinancialSnapshot, policy: _ToolPolicy, ratios: dic
         '  "pl_summary": string (3-4 sentences),\n'
         '  "balance_sheet_summary": string (2-3 sentences),\n'
         '  "cash_flow_summary": string (2-3 sentences),\n'
-        '  "anomalies": array of strings (each: line item name, amount in cents, % deviation — top 3 max),\n'
+        '  "anomalies": array of strings (each: line item name, amount in cents, % deviation - top 3 max),\n'
         '  "has_anomaly": boolean,\n'
         '  "health_status": "healthy"|"watch"|"concerning"|"critical",\n'
-        '  "top_recommendation": string (specific, actionable — not generic),\n'
+        '  "top_recommendation": string (specific, actionable - not generic),\n'
         '  "overall_health": "strong"|"stable"|"at_risk",\n'
         '  "recommendations": array of up to 3 action strings\n\n'
         f"Flag anomalies: gross margin < 0, net profit negative, AP > AR by >20%, any figure varies >{av}% vs prior period.\n"
@@ -181,7 +181,7 @@ async def _execute(tenant_id: str, tool_id: str, execution_id: str, payload: dic
 
     policy = _parse_policy(tool.config_json if isinstance(tool.config_json, dict) else {})
     # An explicit per-run lookback (from the dashboard "Generate report" control) overrides
-    # the configured default. Validated at the boundary — falls back to config on bad input.
+    # the configured default. Validated at the boundary - falls back to config on bad input.
     lookback_days = policy.lookback_days
     raw_lookback = payload.get("lookback_days")
     if raw_lookback is not None:

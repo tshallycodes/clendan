@@ -8,7 +8,7 @@ const LOG_LINES: { time: string; text: string; color?: string }[] = [
   { time: '09:14:53', text: 'Policy check: amount threshold → APPROVAL_REQUIRED', color: '#00a8cc' },
   { time: '09:14:53', text: 'Routing to approval queue...', color: '#a0b8a0' },
   { time: '09:14:58', text: 'Approved by Sarah Chen', color: '#00C853' },
-  { time: '09:14:58', text: 'Bill created in QuickBooks — BILL-4421', color: '#00C853' },
+  { time: '09:14:58', text: 'Bill created in QuickBooks - BILL-4421', color: '#00C853' },
 ]
 
 const CYCLE_DURATION = 9000
@@ -22,7 +22,7 @@ export function HeroTerminal() {
   }, [cycle])
 
   return (
-    // Float wrapper — never remounts, float runs continuously
+    // Float wrapper - never remounts, float runs continuously
     <div className="hero-float w-full max-w-2xl mx-auto mt-10">
       {/* key={cycle} remounts only the inner shell to replay log line animations */}
       <div
@@ -37,7 +37,7 @@ export function HeroTerminal() {
           <span className="w-2.5 h-2.5 rounded-full" style={{ background: '#ff4d6d', opacity: 0.7 }} />
           <span className="w-2.5 h-2.5 rounded-full" style={{ background: '#f5a623', opacity: 0.7 }} />
           <span className="w-2.5 h-2.5 rounded-full" style={{ background: '#00C853', opacity: 0.7 }} />
-          <span className="ml-3 text-xs font-body text-brand-muted">invoice-tool — execution log</span>
+          <span className="ml-3 text-xs font-body text-brand-muted">invoice-tool - execution log</span>
         </div>
         <div className="p-5 flex flex-col gap-2" aria-label="Execution log">
           {LOG_LINES.map((line, i) => (

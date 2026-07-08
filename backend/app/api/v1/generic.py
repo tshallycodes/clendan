@@ -5,8 +5,8 @@ OAuth (redirect flow):
     sage, wave, wise, dynamics365, dropbox, onedrive
 
 API key (live validation before store):
-    nordigen  — Secret ID + Secret Key (GoCardless for Banks)
-    adyen     — API Key + environment
+    nordigen  - Secret ID + Secret Key (GoCardless for Banks)
+    adyen     - API Key + environment
 
 Stored credentials (validated on first sync):
     netsuite, sap, sage-intacct
@@ -50,7 +50,7 @@ def _redirect_uri(slug: str) -> str:
 
 
 # ---------------------------------------------------------------------------
-# OAuth — initiate
+# OAuth - initiate
 # ---------------------------------------------------------------------------
 
 @router.get("/integrations/{slug}/connect")
@@ -84,7 +84,7 @@ async def generic_oauth_connect(
 
 
 # ---------------------------------------------------------------------------
-# OAuth — callback
+# OAuth - callback
 # ---------------------------------------------------------------------------
 
 @router.get("/integrations/{slug}/callback")
@@ -155,7 +155,7 @@ async def generic_oauth_callback(
 
 
 # ---------------------------------------------------------------------------
-# API key / credentials — connect
+# API key / credentials - connect
 # ---------------------------------------------------------------------------
 
 @router.post("/integrations/{slug}/connect")
@@ -278,7 +278,7 @@ async def generic_sync(
     if integration.status not in ("connected", "syncing", "error"):
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail=f"Cannot sync — integration status is '{integration.status}'",
+            detail=f"Cannot sync - integration status is '{integration.status}'",
         )
     await db.integration.update(where={"id": integration.id}, data={"status": "syncing"})
     return standard_response(data={"status": "sync_enqueued", "integration_id": integration.id})

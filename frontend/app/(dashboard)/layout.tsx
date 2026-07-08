@@ -21,7 +21,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
       })
       if (res.status === 404 || res.status === 403) needsOnboarding = true
     }
-  } catch { /* backend unreachable — proceed to dashboard */ }
+  } catch { /* backend unreachable - proceed to dashboard */ }
   if (needsOnboarding) redirect('/onboarding')
 
   return (

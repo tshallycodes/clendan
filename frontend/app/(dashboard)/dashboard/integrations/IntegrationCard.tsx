@@ -71,7 +71,7 @@ export function IntegrationCard({
         {status === 'connected' && (
           <motion.div key="connected-actions" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }} className="space-y-2">
             <p className="text-[11px] font-body text-brand-muted">
-              Last sync: {lastSyncedAt ? new Date(lastSyncedAt).toLocaleString() : '—'}
+              Last sync: {lastSyncedAt ? new Date(lastSyncedAt).toLocaleString() : '-'}
             </p>
             {disconnecting ? (
               <p className="text-[11px] font-body text-brand-muted">Disconnecting...</p>
@@ -103,7 +103,7 @@ export function IntegrationCard({
 
         {status === 'error' && (
           <motion.div key="error-actions" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}>
-            <p className="text-[11px] font-body text-[#ff4d6d] mb-2">Connection error — check credentials</p>
+            <p className="text-[11px] font-body text-[#ff4d6d] mb-2">Connection error - check credentials</p>
             <button type="button" onClick={onConnect} disabled={connecting} className="text-xs font-body bg-[#00C853] text-black hover:bg-[#00a844] active:scale-[0.97] rounded-sm px-3 py-1.5 transition-all disabled:opacity-50">
               {connecting ? 'Reconnecting...' : 'Reconnect'}
             </button>

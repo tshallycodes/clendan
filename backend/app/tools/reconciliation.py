@@ -1,4 +1,4 @@
-"""Reconciliation Tool — matches BankTransaction against AccountingInvoice (AR) and AccountingBill (AP).
+"""Reconciliation Tool - matches BankTransaction against AccountingInvoice (AR) and AccountingBill (AP).
 Unmatched items are reviewed by Claude. Policy flags runs where unmatched % exceeds threshold."""
 from __future__ import annotations
 
@@ -114,7 +114,7 @@ def _dates_match(txn_date: datetime, due_date: datetime | None, window_days: int
 
 
 def _currency_matches(txn_currency: str | None, item_currency: str | None) -> bool:
-    """Never reconcile across currencies — a GBP transaction must not match a EUR
+    """Never reconcile across currencies - a GBP transaction must not match a EUR
     invoice/bill even if the minor-unit amounts coincidentally fall within tolerance."""
     return (txn_currency or "").upper() == (item_currency or "").upper()
 
@@ -137,7 +137,7 @@ _BATCH_SIZE = 20
 _AUTO_OK_THRESHOLD_MINOR = 1500   # < £15: always auto-ok
 _MAX_CLAUDE_TXN_ITEMS = 40        # cap: only top-N by amount go to Claude, rest auto-ok
 
-_CACHE_TTL_SECONDS = 172800       # 48 hours — covers daily and weekly run cadences
+_CACHE_TTL_SECONDS = 172800       # 48 hours - covers daily and weekly run cadences
 _CACHE_KEY_PREFIX = "recon:assess:v1"
 
 
@@ -262,7 +262,7 @@ def _pre_classify(
         else:
             above_threshold.append(txn)
 
-    # Sort by amount descending — highest risk first
+    # Sort by amount descending - highest risk first
     above_threshold.sort(key=lambda t: abs(t.amount_minor), reverse=True)
     needs_claude = above_threshold[:_MAX_CLAUDE_TXN_ITEMS]
     low_priority = above_threshold[_MAX_CLAUDE_TXN_ITEMS:]
@@ -508,7 +508,7 @@ async def _execute_reconciliation(
     for txn in transactions:
         txn_abs = abs(txn.amount_minor)
         if txn.amount_minor < 0:
-            # Credit (money in) — match against invoices
+            # Credit (money in) - match against invoices
             for invoice in invoices:
                 if invoice.id in matched_inv_ids:
                     continue
@@ -522,7 +522,7 @@ async def _execute_reconciliation(
                     match_map[txn.id] = {"type": "invoice", "id": invoice.id}
                     break
         elif txn.amount_minor > 0:
-            # Debit (money out) — match against bills
+            # Debit (money out) - match against bills
             for bill in bills:
                 if bill.id in matched_bill_ids:
                     continue
@@ -570,7 +570,7 @@ async def _execute_reconciliation(
     })
 
     # Enforce stale_open_item_days (→ flag) and unmatched_alert_days (→ review).
-    # Claude and pre-classify only set action=ok on unmatched transactions — upgrade
+    # Claude and pre-classify only set action=ok on unmatched transactions - upgrade
     # those that have breached the configured age thresholds.
     txn_by_id = {t.id: t for t in unmatched_txns}
     _tz = UTC
@@ -590,7 +590,7 @@ async def _execute_reconciliation(
                         item_type="transaction",
                         severity="high",
                         action="flag",
-                        reasoning=f"Stale: unmatched for {age_days} day(s) — exceeds stale threshold of {policy.stale_open_item_days} day(s).",
+                        reasoning=f"Stale: unmatched for {age_days} day(s) - exceeds stale threshold of {policy.stale_open_item_days} day(s).",
                     ))
                     continue
                 if txn_date < alert_cutoff:
@@ -599,7 +599,7 @@ async def _execute_reconciliation(
                         item_type="transaction",
                         severity="medium",
                         action="review",
-                        reasoning=f"Unmatched for {age_days} day(s) — exceeds alert threshold of {policy.unmatched_alert_days} day(s).",
+                        reasoning=f"Unmatched for {age_days} day(s) - exceeds alert threshold of {policy.unmatched_alert_days} day(s).",
                     ))
                     continue
         upgraded.append(result)
@@ -638,7 +638,7 @@ async def _execute_reconciliation(
         "claude_assessments": [r.model_dump() for r in claude_results],
     }
 
-    # Audit log BEFORE any DB updates — operation fails if audit fails
+    # Audit log BEFORE any DB updates - operation fails if audit fails
     await write_audit_log(
         tenant_id=tenant_id,
         actor=_ACTOR,
@@ -708,14 +708,14 @@ async def _execute_reconciliation(
     if matched_bill_ids:
         actions_taken.append(f"matched {len(matched_bill_ids)} bill(s)")
     if unmatched_txns:
-        actions_taken.append(f"{len(unmatched_txns)} transaction(s) unmatched — pending review")
+        actions_taken.append(f"{len(unmatched_txns)} transaction(s) unmatched - pending review")
     if policy_breach:
         actions_taken.append(
             f"policy breach: {unmatched_pct:.1%} unmatched exceeds "
             f"{policy.unmatched_pct_threshold:.1%} threshold"
         )
     if not actions_taken:
-        actions_taken.append("no pending items found — nothing to reconcile")
+        actions_taken.append("no pending items found - nothing to reconcile")
 
     logger.info("recon_phase_total", extra={
         "tenant_id": tenant_id,

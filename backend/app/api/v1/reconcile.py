@@ -1,5 +1,5 @@
 ﻿"""
-Reconciliation API — /v1/reconciliation/*.
+Reconciliation API - /v1/reconciliation/*.
 Endpoints: list runs, run items, trigger run, export CSV.
 All queries scoped to current_user.tenant_id (no cross-tenant access).
 """
@@ -64,11 +64,11 @@ def _build_reconciliation_pdf(data: ReconciliationReportData) -> bytes:
     sym = data.currency_symbol
 
     def esc(v: object) -> str:
-        return _html_lib.escape(str(v) if v is not None else "—")
+        return _html_lib.escape(str(v) if v is not None else "-")
 
     def fmt_amt(cents: int | None) -> str:
         if cents is None:
-            return "—"
+            return "-"
         return f"{sym}{cents / 100:,.2f}"
 
     def fmt_date(s: str) -> str:
@@ -147,7 +147,7 @@ def _build_reconciliation_pdf(data: ReconciliationReportData) -> bytes:
             li("Ghost employees", str(ghosts), ghosts > 0),
             li("Discrepancies", str(discrepancies), discrepancies > 0),
         ]
-        warn = "<p class='warn'>Payroll anomalies detected — verify with HR before processing next pay run.</p>" if anomaly else ""
+        warn = "<p class='warn'>Payroll anomalies detected - verify with HR before processing next pay run.</p>" if anomaly else ""
         sections.append(f"<h2>Payroll Reconciliation</h2><ul>{''.join(items)}</ul>{warn}")
 
     body_html = (
@@ -389,7 +389,7 @@ async def trigger_reconciliation_run(
     body: TriggerRunRequest,
     current_user: RequireOrgAuth,
 ) -> dict:
-    """Trigger a reconciliation run. Enqueued asynchronously — poll GET /v1/reconciliation/runs for results."""
+    """Trigger a reconciliation run. Enqueued asynchronously - poll GET /v1/reconciliation/runs for results."""
     db = get_db()
     tenant_id = current_user.tenant_id
 
@@ -409,10 +409,10 @@ async def trigger_reconciliation_run(
     if in_flight:
         if in_flight.created_at.replace(tzinfo=UTC) >= _stale_cutoff:
             raise HTTPException(status_code=409, detail="A reconciliation run is already in progress")
-        # Execution stuck for >30 min — mark failed so the new run can proceed
+        # Execution stuck for >30 min - mark failed so the new run can proceed
         await db.execution.update(
             where={"id": in_flight.id},
-            data={"status": "failed", "decision": "failed", "error_message": "Timed out — marked failed by new run trigger"},
+            data={"status": "failed", "decision": "failed", "error_message": "Timed out - marked failed by new run trigger"},
         )
 
     tool = await db.tool.find_first(
@@ -519,7 +519,7 @@ async def get_invoice_summary(
             "outstanding_cents": i.outstanding_cents,
             "status": i.status,
             "source": i.source,
-            "flag_reason": "Missing tax — subtotal present but tax is zero",
+            "flag_reason": "Missing tax - subtotal present but tax is zero",
         }
         for i in invoices
         if (i.subtotal_cents or 0) > 0 and (i.tax_cents or 0) == 0
@@ -627,11 +627,11 @@ async def get_vat_summary(
         sub = inv.subtotal_cents or 0
         tax = inv.tax_cents or 0
         if sub > 0 and tax == 0:
-            return "Missing VAT — sales invoice with no tax recorded"
+            return "Missing VAT - sales invoice with no tax recorded"
         if sub > 0 and tax > 0:
             effective_rate = (tax / sub) * 100
             if abs(effective_rate - expected_vat_rate) > 1.0:
-                return f"Unexpected VAT rate — effective {effective_rate:.1f}%, expected {expected_vat_rate:.0f}%"
+                return f"Unexpected VAT rate - effective {effective_rate:.1f}%, expected {expected_vat_rate:.0f}%"
         return None
 
     flagged = [

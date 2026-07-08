@@ -7,7 +7,7 @@ Validation endpoint (GET):
 
 Notification endpoint (POST):
   Receives change notifications when drive content changes.
-  Must return 202 IMMEDIATELY — Microsoft retries if the response is slow.
+  Must return 202 IMMEDIATELY - Microsoft retries if the response is slow.
   clientState is verified against tenant_id before any processing.
 """
 from fastapi import APIRouter, HTTPException, Query, Request, status
