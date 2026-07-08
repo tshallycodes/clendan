@@ -1,14 +1,18 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { usePathname } from 'next/navigation'
 import { ChatCircle } from '@phosphor-icons/react'
 import { ClenPanel } from './ClenPanel'
+import { registerClenLauncher } from './clen-launcher'
 import { cn } from '@/lib/utils'
 
 export function ClenDashboard() {
   const [isOpen, setIsOpen] = useState(false)
+  const [seed, setSeed] = useState<string | null>(null)
   const pathname = usePathname()
+
+  useEffect(() => registerClenLauncher((s) => { setSeed(s); setIsOpen(true) }), [])
 
   return (
     <>
@@ -42,6 +46,8 @@ export function ClenDashboard() {
         onClose={() => setIsOpen(false)}
         position="sidebar"
         pathname={pathname}
+        seedMessage={seed}
+        onSeedConsumed={() => setSeed(null)}
       />
     </>
   )

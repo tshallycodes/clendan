@@ -5,6 +5,8 @@ import { useAuth } from '@clerk/nextjs'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useToast } from '@/components/Providers'
 import { IntegrationLogo } from '@/app/(dashboard)/dashboard/integrations/IntegrationLogo'
+import { ChatCircle } from '@phosphor-icons/react'
+import { askClen } from '@/components/clen/clen-launcher'
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
@@ -243,65 +245,37 @@ function QuickActions({ doc, toolId, onAbort }: QuickActionsProps) {
   )
 }
 
-function AskClen({ documentId }: { documentId: string }) {
-  const { getToken } = useAuth()
-  const { toast } = useToast()
-  const [question, setQuestion] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [history, setHistory] = useState<{ q: string; a: string }[]>([])
+function AskClenButton({ doc }: { doc: ProcessedDocument }) {
+  function handleAsk() {
+    const ex = (doc.extracted_json ?? {}) as Record<string, unknown>
+    const summary = ex.summary as string | undefined
+    const parties = (ex.parties as string[] | undefined) ?? []
+    const keyDates = (ex.key_dates as string[] | undefined) ?? []
+    const subtype = ex.document_subtype ? String(ex.document_subtype).replace(/_/g, ' ') : null
+    const name = doc.filename ?? 'this document'
 
-  async function ask() {
-    const q = question.trim()
-    if (!q || loading) return
-    setLoading(true)
-    try {
-      const token = await getToken()
-      const res = await fetch(`${API}/documents/${documentId}/ask`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ question: q }),
-      })
-      const json = await res.json().catch(() => ({}))
-      if (!res.ok) { toast((json as { detail?: string }).detail ?? 'Could not get an answer', 'error'); return }
-      setHistory(prev => [...prev, { q, a: (json as { data: { answer: string } }).data.answer }])
-      setQuestion('')
-    } catch {
-      toast('Network error', 'error')
-    } finally {
-      setLoading(false)
-    }
+    const lines = [
+      'I have further questions about this document.',
+      '',
+      `Document: "${name}"${subtype ? ` — ${subtype}` : ''}`,
+    ]
+    if (summary) lines.push(`Summary: ${summary}`)
+    if (parties.length) lines.push(`Parties: ${parties.join('; ')}`)
+    if (keyDates.length) lines.push(`Key dates: ${keyDates.join('; ')}`)
+
+    askClen(lines.join('\n'))
   }
 
   return (
-    <div className="pt-3 border-t border-brand-border space-y-2">
-      <p className="text-[11px] font-body text-brand-muted uppercase tracking-widest">Ask Clen about this document</p>
-      {history.length > 0 && (
-        <div className="space-y-2.5">
-          {history.map((h, i) => (
-            <div key={i} className="space-y-1">
-              <p className="text-[11px] font-body text-brand-muted">{h.q}</p>
-              <p className="text-xs font-body text-brand-secondary leading-relaxed bg-brand-bg border border-brand-border rounded-sm p-2.5">{h.a}</p>
-            </div>
-          ))}
-        </div>
-      )}
-      <div className="flex gap-2">
-        <input
-          value={question}
-          onChange={e => setQuestion(e.target.value)}
-          onKeyDown={e => { if (e.key === 'Enter') ask() }}
-          placeholder="e.g. What are the payment terms and renewal date?"
-          className="flex-1 bg-brand-bg border border-brand-border focus:border-brand-green text-brand-text placeholder:text-brand-muted rounded-sm px-3 py-2 text-xs font-body outline-none"
-        />
-        <button
-          type="button"
-          onClick={ask}
-          disabled={loading || !question.trim()}
-          className="bg-brand-green text-black hover:bg-[#00a844] active:scale-[0.97] rounded-sm px-4 py-2 text-xs font-body disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-        >
-          {loading ? 'Asking…' : 'Ask'}
-        </button>
-      </div>
+    <div className="pt-3 border-t border-brand-border">
+      <button
+        type="button"
+        onClick={handleAsk}
+        className="flex items-center gap-2 text-xs font-body border border-[#00C853]/30 bg-[rgba(0,200,83,0.06)] text-[#00C853] hover:bg-[rgba(0,200,83,0.12)] active:scale-[0.98] rounded-sm px-3 py-2 transition-all"
+      >
+        <ChatCircle className="w-3.5 h-3.5" weight="fill" />
+        Ask Clen about this document
+      </button>
     </div>
   )
 }
@@ -486,7 +460,7 @@ function DocumentRow({ doc, toolId, onAbort }: DocumentRowProps) {
                 />
               )}
 
-              {doc.status === 'completed' && showAnalysis && <AskClen documentId={doc.id} />}
+              {doc.status === 'completed' && showAnalysis && <AskClenButton doc={doc} />}
             </div>
           </motion.div>
         )}

@@ -15,6 +15,9 @@ export interface ClenPanelProps {
   onClose: () => void
   position: 'floating' | 'sidebar'
   pathname?: string
+  /** When set while open, auto-sent once as the first message (e.g. document context). */
+  seedMessage?: string | null
+  onSeedConsumed?: () => void
 }
 
 const WELCOME = `Hi, I'm Clen — Clendan's assistant.\n\nAsk me anything about how Clendan works,\nour integrations, API tools, or pricing.`
@@ -29,13 +32,22 @@ const sidebarVariants = {
   visible: { opacity: 1, x: 0 },
 }
 
-export function ClenPanel({ mode, isOpen, onClose, position, pathname = '/dashboard' }: ClenPanelProps) {
+export function ClenPanel({ mode, isOpen, onClose, position, pathname = '/dashboard', seedMessage, onSeedConsumed }: ClenPanelProps) {
   const { messages, isLoading, sendMessage, clearConversation, error } = useClen(mode)
   const bottomRef = useRef<HTMLDivElement>(null)
+  const sentSeedRef = useRef<string | null>(null)
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, isLoading])
+
+  useEffect(() => {
+    if (isOpen && seedMessage && sentSeedRef.current !== seedMessage) {
+      sentSeedRef.current = seedMessage
+      sendMessage(seedMessage)
+      onSeedConsumed?.()
+    }
+  }, [isOpen, seedMessage, sendMessage, onSeedConsumed])
 
   const variants = position === 'floating' ? floatingVariants : sidebarVariants
 
