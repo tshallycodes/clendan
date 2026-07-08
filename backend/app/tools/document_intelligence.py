@@ -301,19 +301,45 @@ async def run_document_intelligence_job(
             result = {"document_type": "document", **r}
 
             # Apply policy - keyword check first, then confidence threshold
+            matched_keywords: list[str] = []
             if policy.flag_keywords.strip():
                 keywords = [kw.strip().lower() for kw in policy.flag_keywords.split(",") if kw.strip()]
                 analysis_text = json.dumps(result.get("extracted", {})).lower()
-                matched = [kw for kw in keywords if kw in analysis_text]
-                if matched:
+                matched_keywords = [kw for kw in keywords if kw in analysis_text]
+                if matched_keywords:
                     result["decision"] = "approval_required"
-                    rule_triggered = f"keyword: {', '.join(matched)}"
+                    rule_triggered = f"keyword: {', '.join(matched_keywords)}"
 
             if result["decision"] != "approval_required":
                 if result.get("confidence", 0.0) >= policy.auto_approve_confidence_min:
                     result["decision"] = "auto_approved"
                 else:
                     result["decision"] = "approval_required"
+
+            # Replace the generic "Document analysed - <type>" description with a reason
+            # that explains the decision - this is what the approval UI shows under
+            # "Why this needs review".
+            conf_pct = round(result.get("confidence", 0.0) * 100)
+            threshold_pct = round(policy.auto_approve_confidence_min * 100)
+            if result["decision"] == "approval_required":
+                if matched_keywords:
+                    result["reason"] = (
+                        f"Flagged for manual review: contains keyword(s) "
+                        f"{', '.join(matched_keywords)}."
+                    )
+                elif conf_pct < threshold_pct:
+                    result["reason"] = (
+                        f"Extraction confidence {conf_pct}% is below the {threshold_pct}% "
+                        f"auto-approve threshold - a person should verify the extracted data "
+                        f"before it is used."
+                    )
+                else:
+                    result["reason"] = "Routed for manual review before the data is used."
+            elif result["decision"] == "auto_approved":
+                result["reason"] = (
+                    f"Auto-approved: extraction confidence {conf_pct}% met the "
+                    f"{threshold_pct}% threshold."
+                )
 
         # Audit FIRST - if this fails, the operation fails (hard requirement)
         await write_audit_log(
