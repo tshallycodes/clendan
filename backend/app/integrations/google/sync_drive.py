@@ -4,7 +4,8 @@ Lists PDF files in Drive, writes sync log, updates integration status.
 """
 import base64
 import time
-from datetime import datetime, UTC
+import uuid
+from datetime import datetime, UTC, timedelta
 
 from app.core.config import get_settings
 from app.core.db import get_db
@@ -13,6 +14,49 @@ from app.integrations.encryption import decrypt_credentials, encrypt_credentials
 from app.integrations.google import client as google
 
 logger = get_logger(__name__)
+
+# Renew the Drive push channel this long before it expires, and how long each lasts.
+_WATCH_TTL_SECONDS = 7 * 24 * 3600
+_WATCH_RENEW_MARGIN = timedelta(hours=48)
+
+
+async def _ensure_drive_watch(db, integration, access_token: str) -> None:
+    """Register or renew the Drive push-notification channel so new files in the watch
+    folder are detected in near-real-time. Best-effort - never raises; the daily poll is
+    the fallback."""
+    now = datetime.now(UTC)
+    expires_at = getattr(integration, "webhook_expires_at", None)
+    if expires_at and expires_at.replace(tzinfo=UTC) > now + _WATCH_RENEW_MARGIN:
+        return  # channel still valid
+
+    try:
+        settings = get_settings()
+        page_token = await google.get_changes_start_page_token(access_token)
+        channel_id = str(uuid.uuid4())
+        webhook_url = f"{settings.backend_base_url.rstrip('/')}/webhooks/google-drive"
+        result = await google.watch_drive_changes(
+            access_token,
+            channel_id=channel_id,
+            webhook_url=webhook_url,
+            page_token=page_token,
+            ttl_seconds=_WATCH_TTL_SECONDS,
+        )
+        exp_ms = result.get("expiration")
+        new_expires = (
+            datetime.fromtimestamp(int(exp_ms) / 1000, tz=UTC)
+            if exp_ms else now + timedelta(seconds=_WATCH_TTL_SECONDS)
+        )
+        await db.integration.update(
+            where={"id": integration.id},
+            data={
+                "webhook_channel_id": channel_id,
+                "webhook_resource_id": result.get("resource_id", ""),
+                "webhook_expires_at": new_expires,
+            },
+        )
+        logger.info("drive_watch_registered integration_id=%s expires=%s", integration.id, new_expires.isoformat())
+    except Exception as exc:
+        logger.error("drive_watch_register_failed integration_id=%s: %s", integration.id, type(exc).__name__)
 
 
 async def sync_drive_connection(ctx: dict, integration_id: str, tenant_id: str) -> dict:
@@ -153,6 +197,12 @@ async def sync_drive_connection(ctx: dict, integration_id: str, tenant_id: str) 
                     )
                 except Exception as exc:
                     logger.error("drive_document_event_failed file_id=%s: %s", file_id, type(exc).__name__)
+
+        # Keep a live push channel so new uploads to the watch folder are detected in
+        # near-real-time (renewed here whenever it is within the margin of expiry).
+        if watch_folder:
+            await _ensure_drive_watch(db, integration, access_token)
+
         logger.info("drive_sync_ok tenant=%s files=%d", tenant_id, file_count)
         return {"status": "ok", "files_found": file_count}
 

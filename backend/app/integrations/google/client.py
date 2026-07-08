@@ -483,3 +483,69 @@ async def upload_file_to_drive(access_token: str, pdf_bytes: bytes, filename: st
     if not file_id:
         raise ValueError("Drive upload returned no file ID")
     return file_id
+
+
+# ---------------------------------------------------------------------------
+# Push notifications (changes.watch) - real-time new-file detection
+# ---------------------------------------------------------------------------
+
+async def get_changes_start_page_token(access_token: str) -> str:
+    """Returns the Drive changes start page token, required to open a changes.watch channel."""
+    async def _call():
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                f"{DRIVE_API_BASE}/changes/startPageToken",
+                headers={"Authorization": f"Bearer {access_token}"},
+                timeout=15.0,
+            )
+            response.raise_for_status()
+            return response.json()
+
+    data = await _circuit.call(_retry, _call)
+    return data.get("startPageToken", "")
+
+
+async def watch_drive_changes(
+    access_token: str,
+    *,
+    channel_id: str,
+    webhook_url: str,
+    page_token: str,
+    ttl_seconds: int | None = None,
+) -> dict:
+    """Open a Drive push-notification channel on the changes feed. Google POSTs to
+    ``webhook_url`` whenever anything in the drive changes. Returns
+    {resource_id, expiration} (expiration is epoch-ms as a string)."""
+    channel: dict = {"id": channel_id, "type": "web_hook", "address": webhook_url}
+    if ttl_seconds:
+        channel["expiration"] = str(int((datetime.now(UTC).timestamp() + ttl_seconds) * 1000))
+
+    async def _call():
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                f"{DRIVE_API_BASE}/changes/watch",
+                headers={"Authorization": f"Bearer {access_token}", "Content-Type": "application/json"},
+                params={"pageToken": page_token},
+                json=channel,
+                timeout=15.0,
+            )
+            response.raise_for_status()
+            return response.json()
+
+    data = await _circuit.call(_retry, _call)
+    return {"resource_id": data.get("resourceId", ""), "expiration": data.get("expiration", "")}
+
+
+async def stop_drive_channel(access_token: str, channel_id: str, resource_id: str) -> None:
+    """Stop a Drive push-notification channel. Raises on hard failure (callers treat as best-effort)."""
+    async def _call():
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                f"{DRIVE_API_BASE}/channels/stop",
+                headers={"Authorization": f"Bearer {access_token}", "Content-Type": "application/json"},
+                json={"id": channel_id, "resourceId": resource_id},
+                timeout=15.0,
+            )
+            response.raise_for_status()
+
+    await _circuit.call(_retry, _call)

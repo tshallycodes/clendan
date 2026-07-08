@@ -44,10 +44,19 @@ async def google_drive_webhook(request: Request):
 
     db = get_db()
 
-    # Find all connected Drive integrations and enqueue sync
-    integrations = await db.integration.find_many(
-        where={"type": "google_drive", "status": "connected"}
-    )
+    # Prefer the integration that owns this channel; fall back to all connected Drive
+    # integrations if the channel is not recognised (e.g. legacy channel).
+    integrations = []
+    if channel_id:
+        one = await db.integration.find_first(
+            where={"type": "google_drive", "status": "connected", "webhook_channel_id": channel_id}
+        )
+        if one:
+            integrations = [one]
+    if not integrations:
+        integrations = await db.integration.find_many(
+            where={"type": "google_drive", "status": "connected"}
+        )
 
     if not integrations:
         _logger.info("drive_webhook_no_active_integrations")

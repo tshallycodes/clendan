@@ -228,6 +228,15 @@ async def drive_disconnect(
         refresh_token = creds.get("refresh_token", "")
         access_token = creds.get("access_token", "")
 
+        # Stop the push channel before revoking the token (needs a valid access token).
+        if access_token and integration.webhook_channel_id and integration.webhook_resource_id:
+            try:
+                await google.stop_drive_channel(
+                    access_token, integration.webhook_channel_id, integration.webhook_resource_id,
+                )
+            except Exception as exc:
+                logger.warning("drive_stop_channel_failed tenant=%s: %s", tenant_id, type(exc).__name__)
+
         if refresh_token or access_token:
             try:
                 token_to_revoke = refresh_token or access_token
@@ -240,7 +249,14 @@ async def drive_disconnect(
 
     await db.integration.update(
         where={"id": integration.id},
-        data={"status": "disconnected", "encrypted_credentials": "{}"},
+        data={
+            "status": "disconnected",
+            "encrypted_credentials": "{}",
+            "watch_folder": None,
+            "webhook_channel_id": None,
+            "webhook_resource_id": None,
+            "webhook_expires_at": None,
+        },
     )
 
     return standard_response(data={"status": "disconnected"})
