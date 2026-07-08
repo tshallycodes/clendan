@@ -6,6 +6,7 @@ import { Select } from '@/components/ui/Select'
 import { ToolConfigFields, getDefaultConfig } from './ToolConfigFields'
 import type { Tool } from './ToolCard'
 import { useToast } from '@/components/Providers'
+import { WORKFLOWS, TOOLS } from '@/app/(dashboard)/tools/tools-data'
 
 interface BankAccount {
   id: string
@@ -41,6 +42,90 @@ interface Props {
   onSaved: () => void
 }
 
+/** Auto-handoff toggle to the next tool in the workflow, if this tool has a downstream edge. */
+function WorkflowSection({ toolType }: { toolType: string }) {
+  const { getToken } = useAuth()
+  const { toast } = useToast()
+
+  const workflow = WORKFLOWS.find((w) => w.toolTypes.includes(toolType))
+  const idx = workflow ? workflow.toolTypes.indexOf(toolType) : -1
+  const nextType = workflow && idx >= 0 && idx < workflow.toolTypes.length - 1 ? workflow.toolTypes[idx + 1] : null
+  const nextName = nextType ? (TOOLS.find((t) => t.type === nextType)?.name ?? 'the next tool') : null
+
+  const [enabled, setEnabled] = useState<boolean | null>(null)
+  const [pending, setPending] = useState(false)
+
+  useEffect(() => {
+    if (!nextType) return
+    let active = true
+    ;(async () => {
+      try {
+        const token = await getToken()
+        const res = await fetch(`${API}/workflows/connections`, { headers: { Authorization: `Bearer ${token}` } })
+        if (!active) return
+        if (res.ok) {
+          const conns = ((await res.json()).data?.connections ?? []) as { from_type: string; to_type: string; enabled: boolean }[]
+          const c = conns.find((x) => x.from_type === toolType && x.to_type === nextType)
+          setEnabled(c ? c.enabled : true)
+        } else {
+          setEnabled(true)
+        }
+      } catch {
+        if (active) setEnabled(true)
+      }
+    })()
+    return () => { active = false }
+  }, [toolType, nextType, getToken])
+
+  if (!nextType) return null
+
+  async function toggle() {
+    if (enabled === null || pending) return
+    const next = !enabled
+    setEnabled(next)
+    setPending(true)
+    try {
+      const token = await getToken()
+      const res = await fetch(`${API}/workflows/connections`, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ from_type: toolType, to_type: nextType, enabled: next }),
+      })
+      if (!res.ok) throw new Error(`${res.status}`)
+      toast(next ? `Auto-handoff to ${nextName} on` : `Auto-handoff to ${nextName} off`, 'success')
+    } catch {
+      setEnabled(!next)
+      toast('Could not update connection', 'error')
+    } finally {
+      setPending(false)
+    }
+  }
+
+  return (
+    <div className="space-y-2">
+      <label className="text-[11px] font-body text-brand-muted uppercase tracking-widest">Workflow</label>
+      <div className="bg-brand-bg border border-brand-border rounded-sm px-3 py-3 flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-xs font-body text-brand-text">Auto-handoff to {nextName}</p>
+          <p className="text-[11px] font-body text-brand-muted mt-0.5 leading-relaxed">
+            When on, a successful run automatically triggers {nextName}.
+          </p>
+        </div>
+        <button
+          type="button"
+          role="switch"
+          aria-checked={!!enabled}
+          onClick={toggle}
+          disabled={enabled === null || pending}
+          className={`relative w-9 h-5 rounded-full transition-colors shrink-0 disabled:opacity-50 ${enabled ? 'bg-[#00C853]' : 'bg-brand-border'}`}
+        >
+          <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform ${enabled ? 'translate-x-4' : 'translate-x-0'}`} />
+        </button>
+      </div>
+    </div>
+  )
+}
+
 export function ConfigDrawer({ tool, toolType, onClose, onSaved }: Props) {
   const { getToken } = useAuth()
   const { toast } = useToast()
@@ -60,9 +145,6 @@ export function ConfigDrawer({ tool, toolType, onClose, onSaved }: Props) {
     const existing = (tool?.config_json as Record<string, unknown> | null)?.payment_sources
     return Array.isArray(existing) ? (existing as string[]) : []
   })
-  const [connected, setConnected] = useState<{
-    bank: string[]; accounting: string[]; payment: string[]; erp: string[]; crm: string[]; document: string[]
-  }>({ bank: [], accounting: [], payment: [], erp: [], crm: [], document: [] })
   const [selectedAccountIds, setSelectedAccountIds] = useState<string[]>(() => {
     const existing = (tool?.config_json as Record<string, unknown> | null)?.account_ids
     return Array.isArray(existing) ? (existing as string[]) : []
@@ -99,21 +181,6 @@ export function ConfigDrawer({ tool, toolType, onClose, onSaved }: Props) {
       }
     }
     fetchReconciliationData()
-  }, [toolType, getToken])
-
-  useEffect(() => {
-    if (toolType === 'reconciliation') return
-    async function fetchConnected() {
-      try {
-        const token = await getToken()
-        const res = await fetch(`${API}/integrations/connected`, { headers: { Authorization: `Bearer ${token}` } })
-        if (res.ok) {
-          const json = await res.json()
-          setConnected(json.data ?? { bank: [], accounting: [], payment: [], erp: [], crm: [], document: [] })
-        }
-      } catch { /* multiselects show "no connected integrations" until resolved */ }
-    }
-    fetchConnected()
   }, [toolType, getToken])
 
   async function handleSave() {
@@ -191,16 +258,9 @@ export function ConfigDrawer({ tool, toolType, onClose, onSaved }: Props) {
             toolType={toolType}
             config={config}
             onChange={(key, value) => setConfig(prev => ({ ...prev, [key]: value }))}
-            dynamicOptions={toolType === 'reconciliation' ? undefined : {
-            accounting_integrations: connected.accounting,
-            accounting_sources: connected.accounting,
-            bank_sources: connected.bank,
-            payment_sources: connected.payment,
-            erp_sources: connected.erp,
-            crm_sources: connected.crm,
-            document_sources: connected.document,
-          }}
           />
+
+          <WorkflowSection toolType={toolType} />
 
           {toolType === 'reconciliation' && (
             <div className="space-y-2">
