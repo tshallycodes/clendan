@@ -157,6 +157,7 @@ export function IntegrationDetailDrawer({ slug, intg, status, lastSyncedAt, onCl
         const json = await res.json()
         setWatchFolder(json.data?.watch_folder ?? '')
         setFolderSaved(true)
+        setTimeout(() => setFolderSaved(false), 6000)
       }
     } catch { /* silent */ } finally {
       setSavingFolder(false)
@@ -304,7 +305,9 @@ export function IntegrationDetailDrawer({ slug, intg, status, lastSyncedAt, onCl
                       </div>
                       {folderSaved && (
                         <p className="text-[11px] font-body text-[#00C853] mt-2">
-                          {watchFolder ? 'Saved. Scanning the folder for existing files…' : 'Saved. Processing paused (no folder set).'}
+                          {watchFolder
+                            ? `Saved. Files in ${watchFolder} will appear in Documents as they are processed.`
+                            : 'Saved. Processing paused (no folder set).'}
                         </p>
                       )}
                     </section>
