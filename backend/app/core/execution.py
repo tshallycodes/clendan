@@ -1,6 +1,11 @@
 """
 Shared execution completion - called by every tool job runner.
-Applies autonomy override, writes Execution, creates Approval if needed.
+Writes the Execution and creates an Approval when the decision requires one.
+
+Each tool's decision is final: it comes straight from that tool's policy thresholds
+(spend limits, confidence minimums, VAT rules, etc.). There is no tool-wide autonomy
+override - thresholds are the single source of truth for auto-approve vs. approval vs.
+block.
 """
 from datetime import UTC, datetime, timedelta
 
@@ -8,17 +13,6 @@ from app.core.config import get_settings
 from app.core.logging import get_logger
 
 logger = get_logger(__name__)
-
-
-def _apply_autonomy_override(decision: str, autonomy_level: str) -> str:
-    """Override policy decision based on tool autonomy level. blocked is never changed."""
-    if decision == "blocked":
-        return decision
-    if autonomy_level == "auto" and decision == "approval_required":
-        return "auto_approved"
-    if autonomy_level == "approve" and decision == "auto_approved":
-        return "approval_required"
-    return decision
 
 
 async def complete_execution(
@@ -32,32 +26,11 @@ async def complete_execution(
     duration_ms: int,
 ) -> str:
     """
-    Apply autonomy override, write Execution as completed, create Approval if needed.
-    Returns the final (possibly overridden) decision.
+    Write the Execution as completed and create an Approval if the decision requires one.
+    Returns the final decision (the tool's own policy decision, unchanged).
     Every tool job runner calls this instead of writing Execution directly.
     """
-    tool = await db.tool.find_first(where={"id": tool_id, "tenant_id": tenant_id})
-    autonomy_level = tool.autonomy_level if tool else "approve"
-    # Document Intelligence self-routes by its confidence threshold, so its decision is
-    # already final. Applying the autonomy override would wrongly flip it - sending an
-    # auto-approved (high-confidence) document to the approval queue, or auto-approving a
-    # low-confidence one. Every other tool respects its configured autonomy level.
-    if tool and tool.type == "document_intelligence":
-        final = decision
-    else:
-        final = _apply_autonomy_override(decision, autonomy_level)
-
-    if final != decision:
-        logger.info(
-            "autonomy_override_applied",
-            extra={
-                "execution_id": execution_id,
-                "tool_id": tool_id,
-                "original": decision,
-                "overridden": final,
-                "autonomy_level": autonomy_level,
-            },
-        )
+    final = decision
 
     await db.execution.update(
         where={"id": execution_id},

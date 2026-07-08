@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react'
 import { useAuth } from '@clerk/nextjs'
-import { Select } from '@/components/ui/Select'
 import { ToolConfigFields, getDefaultConfig } from './ToolConfigFields'
 import type { Tool } from './ToolCard'
 import { useToast } from '@/components/Providers'
@@ -129,7 +128,6 @@ function WorkflowSection({ toolType }: { toolType: string }) {
 export function ConfigDrawer({ tool, toolType, onClose, onSaved }: Props) {
   const { getToken } = useAuth()
   const { toast } = useToast()
-  const [autonomy, setAutonomy] = useState<string>(tool?.autonomy_level ?? 'approve')
   const [config, setConfig] = useState<Record<string, unknown>>(() => {
     const defaults = getDefaultConfig(toolType)
     const existing = tool?.config_json as Record<string, unknown> | null
@@ -210,12 +208,12 @@ export function ConfigDrawer({ tool, toolType, onClose, onSaved }: Props) {
         ? await fetch(`${API}/tools/${tool.id}`, {
             method: 'PATCH',
             headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify({ autonomy_level: autonomy, config: fullConfig }),
+            body: JSON.stringify({ config: fullConfig }),
           })
         : await fetch(`${API}/tools`, {
             method: 'POST',
             headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify({ type: toolType, autonomy_level: autonomy, config: fullConfig }),
+            body: JSON.stringify({ type: toolType, config: fullConfig }),
           })
 
       if (!res.ok) {
@@ -255,21 +253,6 @@ export function ConfigDrawer({ tool, toolType, onClose, onSaved }: Props) {
         </div>
 
         <div className="space-y-5">
-          <div className={`space-y-1.5 ${toolType === 'document_intelligence' ? 'opacity-40 pointer-events-none' : ''}`}>
-            <label className={labelClass}>Autonomy Level</label>
-            <Select
-              value={autonomy}
-              onChange={setAutonomy}
-              options={[
-                { value: 'auto', label: 'Auto - executes without approval' },
-                { value: 'approve', label: 'Approve - requires human approval above threshold' },
-              ]}
-            />
-            {toolType === 'document_intelligence' && (
-              <p className="text-[11px] font-body text-brand-muted">Routing is controlled by the confidence threshold below.</p>
-            )}
-          </div>
-
           <ToolConfigFields
             toolType={toolType}
             config={config}

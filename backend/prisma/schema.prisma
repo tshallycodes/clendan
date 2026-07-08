@@ -150,6 +150,9 @@ model Tool {
   tenant_id                 String
   type                      String
   config_json               Json
+  // Deprecated: no longer read anywhere. Tool policy thresholds are the single source
+  // of truth for auto-approve / approval-required / blocked. Retained (not dropped) to
+  // keep migrations additive and zero-downtime; safe to remove in a future destructive migration.
   autonomy_level            String  @default("approve")
   version                   Int     @default(1)
   status                    String  @default("inactive")

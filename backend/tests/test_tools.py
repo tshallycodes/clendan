@@ -42,7 +42,6 @@ def _make_db(
 def _make_tool(
     tool_id: str = "tool_001",
     wtype: str = "invoice_processing",
-    autonomy_level: str = "approve",
     wstatus: str = "active",
     version: int = 1,
     config_json: dict | None = None,
@@ -51,7 +50,6 @@ def _make_tool(
     w.id = tool_id
     w.tenant_id = FAKE_TENANT_ID
     w.type = wtype
-    w.autonomy_level = autonomy_level
     w.status = wstatus
     w.version = version
     w.config_json = config_json or {}
@@ -72,7 +70,7 @@ class TestDeployTool:
         db = _make_db(tool_create=tool)
 
         result = await deploy_tool(
-            body=DeployToolRequest(type="invoice_processing", autonomy_level="approve", config={}),
+            body=DeployToolRequest(type="invoice_processing", config={}),
             current_user=FAKE_USER,
             db=db,
         )
@@ -81,7 +79,6 @@ class TestDeployTool:
         data = result["data"]
         assert data["id"] == "tool_001"
         assert data["type"] == "invoice_processing"
-        assert data["autonomy_level"] == "approve"
         assert data["status"] == "active"
         assert data["version"] == 1
 
@@ -100,27 +97,12 @@ class TestDeployTool:
             DeployToolRequest(type="not_a_real_type")
         assert "type" in str(exc_info.value).lower() or "must be one of" in str(exc_info.value).lower()
 
-    def test_rejects_invalid_autonomy_level(self):
-        from app.api.v1.tools import DeployToolRequest
-        from pydantic import ValidationError
-
-        with pytest.raises(ValidationError) as exc_info:
-            DeployToolRequest(type="invoice_processing", autonomy_level="fully_autonomous")
-        assert "autonomy_level" in str(exc_info.value).lower() or "must be one of" in str(exc_info.value).lower()
-
     def test_accepts_all_valid_types(self):
         from app.api.v1.tools import DeployToolRequest
 
         for wtype in ("invoice_processing", "receipt_processing"):
             req = DeployToolRequest(type=wtype)
             assert req.type == wtype
-
-    def test_accepts_all_valid_autonomy_levels(self):
-        from app.api.v1.tools import DeployToolRequest
-
-        for level in ("auto", "approve"):
-            req = DeployToolRequest(type="invoice_processing", autonomy_level=level)
-            assert req.autonomy_level == level
 
 
 # ---------------------------------------------------------------------------
@@ -219,28 +201,20 @@ class TestPatchTool:
         from app.api.v1.tools import update_tool, PatchToolRequest
 
         existing = _make_tool(version=3)
-        updated = _make_tool(version=4, autonomy_level="auto")
+        updated = _make_tool(version=4, wstatus="inactive")
         db = _make_db(tool_find_first=existing, tool_update=updated)
 
         result = await update_tool(
             tool_id="tool_001",
-            body=PatchToolRequest(autonomy_level="auto"),
+            body=PatchToolRequest(status="inactive"),
             current_user=FAKE_USER,
             db=db,
         )
 
         assert result["data"]["version"] == 4
-        assert result["data"]["autonomy_level"] == "auto"
 
         update_data = db.tool.update.call_args[1]["data"]
         assert update_data["version"] == 4  # existing.version(3) + 1
-
-    def test_rejects_invalid_autonomy_level(self):
-        from app.api.v1.tools import PatchToolRequest
-        from pydantic import ValidationError
-
-        with pytest.raises(ValidationError):
-            PatchToolRequest(autonomy_level="fully_autonomous")
 
     def test_rejects_invalid_status(self):
         from app.api.v1.tools import PatchToolRequest
@@ -258,7 +232,7 @@ class TestPatchTool:
         with pytest.raises(HTTPException) as exc_info:
             await update_tool(
                 tool_id="other_tenant_tool",
-                body=PatchToolRequest(autonomy_level="auto"),
+                body=PatchToolRequest(status="active"),
                 current_user=FAKE_USER,
                 db=db,
             )
@@ -282,7 +256,6 @@ class TestPatchTool:
 
         update_data = db.tool.update.call_args[1]["data"]
         assert "status" in update_data
-        assert "autonomy_level" not in update_data
         assert "config_json" not in update_data
 
 

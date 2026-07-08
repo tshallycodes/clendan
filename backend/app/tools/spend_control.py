@@ -458,9 +458,9 @@ async def run_expense_control_job(
     try:
         result = await _execute_expense_control(tenant_id, tool_id, execution_id)
         duration_ms = int(time.time() * 1000) - start_ms
-        # complete_execution applies the autonomy override, writes the final decision,
-        # creates the Approval when required, and advances the workflow (advance_workflow
-        # is called inside it) - the single canonical finalization path for every tool.
+        # complete_execution writes the final decision, creates the Approval when required,
+        # and advances the workflow (advance_workflow is called inside it) - the single
+        # canonical finalization path for every tool.
         final_decision = await complete_execution(
             db=db, execution_id=execution_id, tool_id=tool_id,
             tenant_id=tenant_id, decision=result["decision"],
@@ -793,8 +793,8 @@ async def run_accounts_payable_job(ctx: dict, *, execution_id: str, tenant_id: s
     try:
         result = await _execute_accounts_payable(tenant_id, tool_id, execution_id, payload)
         duration_ms = int(time.time() * 1000) - start_ms
-        # Canonical finalization: complete_execution applies the autonomy override,
-        # writes the final decision, and creates the Approval when required.
+        # Canonical finalization: complete_execution writes the final decision and
+        # creates the Approval when required.
         final_decision = await complete_execution(
             db=db, execution_id=execution_id, tool_id=tool_id,
             tenant_id=tenant_id, decision=result["decision"],

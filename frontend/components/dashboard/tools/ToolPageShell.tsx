@@ -42,14 +42,6 @@ interface Props {
   children: (ctx: ToolRenderCtx) => React.ReactNode
 }
 
-const AUTONOMY_BADGE: Record<string, { label: string; className: string }> = {
-  auto:    { label: 'Auto',    className: 'bg-[rgba(0,200,83,0.08)] text-[#00C853] border border-[rgba(0,200,83,0.2)]' },
-  approve: { label: 'Approve', className: 'bg-[rgba(0,168,204,0.08)] text-[#00a8cc] border border-[rgba(0,168,204,0.2)]' },
-}
-const AUTONOMY_DESC: Record<string, string> = {
-  auto:    'Executes automatically - no approval required before acting.',
-  approve: 'Every decision is routed to you for review before the agent acts.',
-}
 const DEFAULT_HOW_IT_WORKS = [
   { step: '01', label: 'Trigger',      desc: 'Runs on a schedule, an incoming event, or when you click Run. Data is pulled from your connected integrations.' },
   { step: '02', label: 'Execute',      desc: 'The agent processes the data using your configured rules and AI reasoning.' },
@@ -193,7 +185,7 @@ export function ToolPageShell({ toolSlug, runLabel = 'Run now', runControls, bui
       const res = await fetch(`${API}/tools`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: tool.type, autonomy_level: 'approve', config: getDefaultConfig(tool.type) }),
+        body: JSON.stringify({ type: tool.type, config: getDefaultConfig(tool.type) }),
       })
       if (res.ok) toast('Tool deployed', 'success')
       else toast('Deploy failed', 'error')
@@ -204,7 +196,6 @@ export function ToolPageShell({ toolSlug, runLabel = 'Run now', runControls, bui
   }
 
   const isActive = deployed?.status === 'active'
-  const badge = deployed ? (AUTONOMY_BADGE[deployed.autonomy_level] ?? AUTONOMY_BADGE.approve) : null
   const actionLoading = toggling || deploying
 
   return (
@@ -219,7 +210,6 @@ export function ToolPageShell({ toolSlug, runLabel = 'Run now', runControls, bui
         <div className="space-y-1">
           <div className="flex items-center gap-2 flex-wrap">
             <h1 className="font-heading font-bold text-2xl text-brand-text">{tool.name}</h1>
-            {badge && <span className={`text-[11px] font-body px-2 py-0.5 rounded-sm ${badge.className}`}>{badge.label}</span>}
           </div>
           <p className="text-xs font-body text-brand-muted max-w-xl">{tool.desc}</p>
         </div>
@@ -341,11 +331,6 @@ export function ToolPageShell({ toolSlug, runLabel = 'Run now', runControls, bui
                       <p className="text-[11px] font-body uppercase tracking-widest text-brand-muted">Configuration</p>
                     </div>
                     <div className="px-4 py-4 space-y-4">
-                      <div className="space-y-1.5">
-                        <p className="text-[11px] font-body text-brand-muted uppercase tracking-widest">Autonomy</p>
-                        {badge && <span className={`text-[11px] font-body px-2 py-0.5 rounded-sm inline-block ${badge.className}`}>{badge.label}</span>}
-                        <p className="text-[11px] font-body text-brand-muted leading-relaxed">{AUTONOMY_DESC[deployed.autonomy_level] ?? ''}</p>
-                      </div>
                       <div className="space-y-1.5">
                         <p className="text-[11px] font-body text-brand-muted uppercase tracking-widest">Status</p>
                         <p className="text-xs font-body text-brand-text">{deployed.status === 'active' ? 'Running' : 'Paused'}</p>

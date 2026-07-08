@@ -18,11 +18,6 @@ export interface Execution {
   created_at: string
 }
 
-const AUTONOMY_LABEL: Record<Tool['autonomy_level'], { label: string; className: string }> = {
-  auto:    { label: 'Auto',    className: 'bg-[rgba(0,200,83,0.08)] text-[#00C853] border border-[rgba(0,200,83,0.2)]' },
-  approve: { label: 'Approve', className: 'bg-[rgba(0,168,204,0.08)] text-[#00a8cc] border border-[rgba(0,168,204,0.2)]' },
-}
-
 interface Props {
   tool: Tool
   executions: Execution[]
@@ -32,7 +27,6 @@ export function ToolDetail({ tool, executions }: Props) {
   const { run, running, result, dismiss } = useRunTest(tool.id, tool.type)
 
   const isActive      = tool.status === 'active'
-  const autonomy      = AUTONOMY_LABEL[tool.autonomy_level]
   const configEntries = Object.entries(tool.config_json ?? {})
 
   return (
@@ -44,7 +38,6 @@ export function ToolDetail({ tool, executions }: Props) {
           </Link>
           <div className="flex items-center gap-3 flex-wrap">
             <h1 className="font-heading font-bold text-2xl text-[#e8f0e8]">{formatType(tool.type)}</h1>
-            <span className={`text-[11px] font-body px-2 py-0.5 rounded-sm ${autonomy.className}`}>{autonomy.label}</span>
             <span className="text-[11px] font-body text-brand-muted">v{tool.version}</span>
             <div className="flex items-center gap-1.5">
               {isActive ? (

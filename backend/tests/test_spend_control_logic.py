@@ -3,7 +3,7 @@ Unit tests for spend_control policy / limit logic.
 
 Covers the pure decision helpers (hard rules, duplicate detection, early-payment
 discount parsing, supplier grouping, policy parsing) plus a guard that the job
-runner finalizes through complete_execution so the autonomy override is applied.
+runner finalizes through complete_execution and returns its decision.
 No DB or Claude calls — the pure helpers take plain records; the runner test mocks
 _execute_expense_control and complete_execution.
 """
@@ -71,14 +71,14 @@ class TestApplyHardRules:
             _expense(amount_cents=55_000, approved=False), _VALID_CODES, _POLICY
         )
         assert action == "flag"
-        assert any("unapproved" in f for f in flags)
+        assert any("unapproved" in f.lower() for f in flags)
 
     def test_account_code_not_in_chart_flags(self):
         flags, action = _apply_hard_rules(
             _expense(amount_cents=5_000, account_code="9999"), _VALID_CODES, _POLICY
         )
         assert action == "flag"
-        assert any("miscategorized" in f for f in flags)
+        assert any("miscategoris" in f.lower() for f in flags)
 
     def test_suspicious_round_number_flags(self):
         # 70_000: approved, valid path, but a round multiple of 100 above 500
@@ -86,7 +86,7 @@ class TestApplyHardRules:
             _expense(amount_cents=70_000, account_code=None), _VALID_CODES, _POLICY
         )
         assert action == "flag"
-        assert any("round number" in f for f in flags)
+        assert any("round-number" in f.lower() for f in flags)
 
     def test_clean_expense_no_action(self):
         flags, action = _apply_hard_rules(_expense(), _VALID_CODES, _POLICY)
@@ -181,11 +181,11 @@ class TestSupplierGrouping:
 
 
 class TestJobRunnerFinalization:
-    """The fixed runner must finalize via complete_execution so the autonomy
-    override is applied and the returned decision reflects the final decision."""
+    """The runner must finalize via complete_execution and return the decision it
+    produces (the tool's own policy decision)."""
 
     @pytest.mark.asyncio
-    async def test_expense_job_applies_autonomy_override_via_complete_execution(self):
+    async def test_expense_job_finalizes_via_complete_execution(self):
         tool_result = {
             "decision": "approval_required",
             "confidence": 0.4,
@@ -194,7 +194,7 @@ class TestJobRunnerFinalization:
             "output_data": {},
         }
         db = MagicMock()
-        complete = AsyncMock(return_value="auto_approved")  # simulate autonomy=auto override
+        complete = AsyncMock(return_value="approval_required")  # complete_execution's final decision
 
         with (
             patch("app.tools.spend_control.get_db", return_value=db),
@@ -211,7 +211,7 @@ class TestJobRunnerFinalization:
         kwargs = complete.await_args.kwargs
         assert kwargs["decision"] == "approval_required"
         assert kwargs["tenant_id"] == "t1"
-        assert result["decision"] == "auto_approved"
+        assert result["decision"] == "approval_required"
 
     @pytest.mark.asyncio
     async def test_expense_job_failure_marks_execution_failed(self):

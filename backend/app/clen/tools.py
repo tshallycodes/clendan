@@ -208,7 +208,6 @@ async def _list_tools(tenant_id: str, db: Prisma) -> dict:
                 "id": w.id,
                 "type": w.type,
                 "status": w.status,
-                "autonomy_level": w.autonomy_level,
                 "version": w.version,
             }
             for w in tools
@@ -227,7 +226,6 @@ async def _get_tool_status(tool_type: str, tenant_id: str, db: Prisma) -> dict:
         "id": tool.id,
         "type": tool.type,
         "status": tool.status,
-        "autonomy_level": tool.autonomy_level,
         "version": tool.version,
     }
 

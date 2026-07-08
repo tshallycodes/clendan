@@ -12,7 +12,6 @@ const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 export interface Tool {
   id: string
   type: string
-  autonomy_level: 'auto' | 'approve'
   status: 'active' | 'inactive'
   version: number
   config_json?: Record<string, unknown>
@@ -25,11 +24,6 @@ export function formatType(type: string): string {
 
 function typeToSlug(type: string): string {
   return type.replace(/_/g, '-')
-}
-
-const AUTONOMY_BADGE: Record<Tool['autonomy_level'], { label: string; className: string }> = {
-  auto:    { label: 'Auto',    className: 'bg-[rgba(0,200,83,0.08)] text-brand-green border border-[rgba(0,200,83,0.2)]' },
-  approve: { label: 'Approve', className: 'bg-[rgba(0,168,204,0.08)] text-[#00a8cc] border border-[rgba(0,168,204,0.2)]' },
 }
 
 interface Props {
@@ -49,7 +43,6 @@ export function ToolCard({ tool, onConfigure, onStatusChange }: Props) {
   const [lastExecutionId, setLastExecutionId] = useState<string | null>(null)
 
   const isActive = tool.status === 'active'
-  const badge    = AUTONOMY_BADGE[tool.autonomy_level]
 
   async function handleToggle() {
     setToggling(true)
@@ -97,7 +90,6 @@ export function ToolCard({ tool, onConfigure, onStatusChange }: Props) {
             <Link href={`/tools/${typeToSlug(tool.type)}`} className="text-sm font-body text-brand-text font-medium hover:text-brand-green transition-colors">
               {formatType(tool.type)}
             </Link>
-            <span className={`text-[11px] font-body px-2 py-0.5 rounded-sm ${badge.className}`}>{badge.label}</span>
             <span className="text-[11px] font-body text-brand-muted">v{tool.version}</span>
           </div>
         </div>

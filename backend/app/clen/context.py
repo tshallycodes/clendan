@@ -40,10 +40,12 @@ You have full knowledge of:
 
 ## Tool Encyclopedia
 
-Every tool below is deployed from the Tools page. Each has three autonomy levels:
-- **Auto** - acts without human approval (within policy limits)
-- **Approve** - raises an approval request for a human before acting above the threshold
-- **Suggest** - recommends an action but never acts autonomously
+Every tool below is deployed from the Tools page. Each tool's policy thresholds
+decide the outcome of every run:
+- **Auto-approved** - the run is within the configured thresholds and acts automatically
+- **Approval required** - a threshold (spend limit, confidence minimum, VAT rule, etc.)
+  raises an approval request for a human before acting
+- **Blocked** - the run violates a hard rule and is stopped
 
 Tools never call each other directly. Each tool runs its own pipeline directly and is
 policy-checked before acting. Every tool action is written to the immutable audit log
@@ -333,9 +335,9 @@ async def build_system_prompt(
                 cfg = t.config_json or {}
                 if cfg:
                     cfg_str = ", ".join(f"{k}={v}" for k, v in cfg.items())
-                    config_lines.append(f"  {t.type} (autonomy={t.autonomy_level}): {cfg_str}")
+                    config_lines.append(f"  {t.type}: {cfg_str}")
                 else:
-                    config_lines.append(f"  {t.type} (autonomy={t.autonomy_level}): default config")
+                    config_lines.append(f"  {t.type}: default config")
             tool_configs = "\n".join(config_lines)
     except Exception as exc:
         logger.error("clen_context_tools_fetch_failed tenant=%s error=%s", tenant_id, type(exc).__name__)

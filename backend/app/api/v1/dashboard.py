@@ -292,7 +292,6 @@ async def list_tools(
             {
                 "id": w.id,
                 "type": w.type,
-                "autonomy_level": w.autonomy_level,
                 "version": w.version,
                 "status": w.status,
             }

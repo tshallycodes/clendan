@@ -1,6 +1,6 @@
 """
-Tests covering the optimization pass: policy-engine edge cases, autonomy override,
-dispatch-mapping integrity, Prometheus metrics helpers, and the new /metrics and
+Tests covering the optimization pass: policy-engine edge cases, dispatch-mapping
+integrity, Prometheus metrics helpers, and the new /metrics and
 /.well-known/security.txt endpoints. None of these require a live database.
 """
 from __future__ import annotations
@@ -14,7 +14,6 @@ from app.core.dispatch import (
     EVENT_TYPE_TO_TOOL_TYPE,
     TOOL_TYPE_TO_JOB,
 )
-from app.core.execution import _apply_autonomy_override
 from app.core.metrics import metrics_payload, observe_request
 from app.main import app
 from app.policy.engine import Decision, evaluate_invoice_policy, evaluate_policy
@@ -79,26 +78,6 @@ class TestPolicyEngine:
         )
         assert result.decision is Decision.BLOCKED
         assert result.rule_triggered == "invoice_age"
-
-
-# ---------------------------------------------------------------------------
-# Autonomy override
-# ---------------------------------------------------------------------------
-
-class TestAutonomyOverride:
-    def test_auto_upgrades_approval_to_auto_approved(self):
-        assert _apply_autonomy_override("approval_required", "auto") == "auto_approved"
-
-    def test_approve_downgrades_auto_to_approval_required(self):
-        assert _apply_autonomy_override("auto_approved", "approve") == "approval_required"
-
-    def test_blocked_is_never_overridden(self):
-        assert _apply_autonomy_override("blocked", "auto") == "blocked"
-        assert _apply_autonomy_override("blocked", "approve") == "blocked"
-
-    def test_matching_decision_is_unchanged(self):
-        assert _apply_autonomy_override("auto_approved", "auto") == "auto_approved"
-        assert _apply_autonomy_override("approval_required", "approve") == "approval_required"
 
 
 # ---------------------------------------------------------------------------

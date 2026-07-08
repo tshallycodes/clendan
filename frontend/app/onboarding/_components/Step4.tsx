@@ -6,19 +6,6 @@ import { useAuth } from '@clerk/nextjs'
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
-type AutonomyLevel = 'auto' | 'approve'
-
-interface AutonomyOption {
-  level: AutonomyLevel
-  label: string
-  desc: string
-}
-
-const OPTIONS: AutonomyOption[] = [
-  { level: 'auto', label: 'Auto', desc: 'Execute automatically. No human approval needed.' },
-  { level: 'approve', label: 'Approve', desc: 'Requires human approval before execution.' },
-]
-
 interface Step4Props {
   onBack: () => void
 }
@@ -26,7 +13,6 @@ interface Step4Props {
 export function Step4({ onBack }: Step4Props) {
   const router = useRouter()
   const { getToken } = useAuth()
-  const [autonomy, setAutonomy] = useState<AutonomyLevel>('approve')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -38,7 +24,7 @@ export function Step4({ onBack }: Step4Props) {
       const toolRes = await fetch(`${API}/tools`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: 'invoice_processing', autonomy_level: autonomy }),
+        body: JSON.stringify({ type: 'invoice_processing' }),
       })
       if (!toolRes.ok) {
         const json = await toolRes.json().catch(() => ({}))
@@ -74,26 +60,12 @@ export function Step4({ onBack }: Step4Props) {
           Reads, classifies, and routes incoming invoices.
         </p>
       </div>
-      <div className="space-y-2">
-        {OPTIONS.map((opt) => (
-          <button
-            key={opt.level}
-            type="button"
-            onClick={() => setAutonomy(opt.level)}
-            className={[
-              'w-full text-left bg-brand-surface border rounded-sm p-4 transition-colors',
-              autonomy === opt.level ? 'border-brand-green' : 'border-brand-border hover:border-brand-secondary',
-            ].join(' ')}
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-body text-brand-text font-medium">{opt.label}</p>
-                <p className="text-[11px] font-body text-brand-muted mt-0.5">{opt.desc}</p>
-              </div>
-              {autonomy === opt.level && <span className="text-brand-green text-xs font-body">✓</span>}
-            </div>
-          </button>
-        ))}
+      <div className="bg-brand-surface border border-brand-border rounded-sm p-4">
+        <p className="text-[11px] font-body text-brand-muted leading-relaxed">
+          The tool deploys with sensible default policy thresholds - what auto-approves, what
+          needs your review, and what gets blocked. You can tune every threshold later from the
+          tool&apos;s Configure panel.
+        </p>
       </div>
       {error && <p className="text-xs font-body text-brand-danger">{error}</p>}
       <button

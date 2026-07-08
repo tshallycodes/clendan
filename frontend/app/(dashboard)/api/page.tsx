@@ -221,7 +221,7 @@ with open("assessments.csv", "w", newline="") as f:
         <EndpointCard
           method="GET"
           path="/execute/tools"
-          description="Returns all tools deployed for your tenant, including their type, autonomy level, and status."
+          description="Returns all tools deployed for your tenant, including their type, version, and status."
           headers={[
             { name: 'Authorization', required: true, description: 'ck_live_...' },
           ]}

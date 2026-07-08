@@ -134,7 +134,7 @@ const STEPS = [
   {
     n: '02',
     title: 'Deploy a Tool',
-    desc: 'Select a tool, set its role, define its autonomy level, and connect its tools.',
+    desc: 'Select a tool, set its policy thresholds, and connect its integrations.',
     mockup: <ToolConfigMockup />,
   },
   {

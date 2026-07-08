@@ -51,7 +51,6 @@ async def list_tools() -> list[dict[str, Any]]:
     Returns a list of tools, each with:
         id (str): Tool ID
         type (str): Tool type (e.g. "invoice_processing", "fraud_detection")
-        autonomy_level (str): "auto" (no approval needed) or "approve" (requires approval)
         status (str): "active" (running) or "inactive" (paused)
         version (int): Config version number — increments on every change
         config_json (dict): Current tool configuration and policy thresholds
@@ -75,7 +74,6 @@ async def get_tool_status(tool_type: str) -> dict[str, Any]:
     Returns:
         id (str): Tool ID
         type (str): Tool type
-        autonomy_level (str): "auto" | "approve"
         status (str): "active" | "inactive"
         version (int): Current config version
         config_json (dict): Full tool config including policy thresholds,
@@ -162,7 +160,6 @@ async def get_policy_rules(tool_type: str) -> dict[str, Any]:
 
     Returns:
         tool_type (str): The tool type
-        autonomy_level (str): "auto" | "approve"
         version (int): Config version (rules increment this when changed)
         policy (dict): Full policy configuration. Contents vary by tool type
             but typically include:
@@ -175,7 +172,6 @@ async def get_policy_rules(tool_type: str) -> dict[str, Any]:
     tool = await _find_tool_by_type(tool_type)
     return {
         "tool_type": tool.get("type"),
-        "autonomy_level": tool.get("autonomy_level"),
         "version": tool.get("version"),
         "policy": tool.get("config_json", {}),
     }

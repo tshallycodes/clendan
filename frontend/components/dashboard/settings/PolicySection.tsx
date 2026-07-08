@@ -10,11 +10,6 @@ import { useCanConfigure } from '@/lib/auth-client'
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
-const AUTONOMY_BADGE: Record<Tool['autonomy_level'], string> = {
-  auto:    'bg-[rgba(0,200,83,0.08)] text-[#00C853] border border-[rgba(0,200,83,0.2)]',
-  approve: 'bg-[rgba(0,168,204,0.08)] text-[#00a8cc] border border-[rgba(0,168,204,0.2)]',
-}
-
 export function PolicySection() {
   const { getToken } = useAuth()
   const canConfigure = useCanConfigure()
@@ -73,9 +68,7 @@ export function PolicySection() {
                 <span className="text-xs font-body text-brand-text font-medium truncate">
                   {formatType(tool.type)}
                 </span>
-                <span className={`text-[11px] font-body px-2 py-0.5 rounded-sm ${AUTONOMY_BADGE[tool.autonomy_level]}`}>
-                  {tool.autonomy_level}
-                </span>
+                <span className="text-[11px] font-body text-brand-muted">v{tool.version}</span>
               </div>
 
               <div className="flex items-center gap-3 shrink-0">

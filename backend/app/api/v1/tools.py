@@ -21,13 +21,11 @@ VALID_TYPES = {
     "document_intelligence", "spend_control",
     "tax_compliance", "financial_reporting", "payment_run",
 }
-VALID_AUTONOMY_LEVELS = {"auto", "approve"}
 VALID_STATUSES = {"active", "inactive"}
 
 
 class DeployToolRequest(BaseModel):
     type: str
-    autonomy_level: str = "approve"
     config: dict[str, Any] = {}
 
     @field_validator("type")
@@ -37,29 +35,10 @@ class DeployToolRequest(BaseModel):
             raise ValueError(f"type must be one of: {', '.join(sorted(VALID_TYPES))}")
         return v
 
-    @field_validator("autonomy_level")
-    @classmethod
-    def validate_autonomy_level(cls, v: str) -> str:
-        if v not in VALID_AUTONOMY_LEVELS:
-            raise ValueError(
-                f"autonomy_level must be one of: {', '.join(sorted(VALID_AUTONOMY_LEVELS))}"
-            )
-        return v
-
 
 class PatchToolRequest(BaseModel):
-    autonomy_level: str | None = None
     status: str | None = None
     config: dict[str, Any] | None = None
-
-    @field_validator("autonomy_level")
-    @classmethod
-    def validate_autonomy_level(cls, v: str | None) -> str | None:
-        if v is not None and v not in VALID_AUTONOMY_LEVELS:
-            raise ValueError(
-                f"autonomy_level must be one of: {', '.join(sorted(VALID_AUTONOMY_LEVELS))}"
-            )
-        return v
 
     @field_validator("status")
     @classmethod
@@ -75,7 +54,6 @@ def _serialize_tool(w: Any) -> dict:
     return {
         "id": w.id,
         "type": w.type,
-        "autonomy_level": w.autonomy_level,
         "status": w.status,
         "version": w.version,
         "config_json": w.config_json,
@@ -96,7 +74,6 @@ async def deploy_tool(
         data={
             "tenant": {"connect": {"id": tenant_id}},
             "type": body.type,
-            "autonomy_level": body.autonomy_level,
             "config_json": Json(body.config),
             "status": "active",
             "version": 1,
@@ -165,8 +142,6 @@ async def update_tool(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Tool not found")
 
     update_data: dict[str, Any] = {"version": tool.version + 1}
-    if body.autonomy_level is not None:
-        update_data["autonomy_level"] = body.autonomy_level
     if body.status is not None:
         update_data["status"] = body.status
     if body.config is not None:

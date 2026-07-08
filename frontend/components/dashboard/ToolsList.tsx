@@ -15,7 +15,6 @@ const rowVariants = {
 interface DeployedTool {
   id: string
   type: string
-  autonomy_level: string
   status: string
   version: number
 }
@@ -27,11 +26,6 @@ const TOOL_NAMES: Record<string, string> = {
   tax_compliance: 'Tax Compliance',
   financial_reporting: 'Financial Reporting',
   payment_run: 'Payment Runs',
-}
-
-const AUTONOMY_STYLES: Record<string, { bg: string; text: string; border: string; label: string }> = {
-  auto:    { bg: 'bg-[rgba(0,200,83,0.08)]',  text: 'text-[#00C853]', border: 'border-[rgba(0,200,83,0.2)]',  label: 'AUTO' },
-  approve: { bg: 'bg-[rgba(0,168,204,0.08)]', text: 'text-[#00a8cc]', border: 'border-[rgba(0,168,204,0.2)]', label: 'APPROVE' },
 }
 
 function toolDisplayName(type: string): string {
@@ -58,7 +52,6 @@ export function ToolsList({ tools }: { tools: DeployedTool[] }) {
         <motion.div variants={listVariants} initial="hidden" animate="show" className="divide-y divide-brand-border">
           {tools.map((tool) => {
             const isActive = tool.status === 'active'
-            const autonomy = AUTONOMY_STYLES[tool.autonomy_level] ?? AUTONOMY_STYLES.approve
             return (
               <motion.div key={tool.id} variants={rowVariants} className="px-5 py-3 flex items-center gap-4 hover:bg-brand-elevated transition-colors">
                 <span className="relative flex h-2.5 w-2.5 shrink-0">
@@ -71,8 +64,8 @@ export function ToolsList({ tools }: { tools: DeployedTool[] }) {
                   <div className="text-xs font-body text-brand-text truncate">{toolDisplayName(tool.type)}</div>
                   <div className="text-[11px] font-body text-brand-muted">{tool.type}</div>
                 </div>
-                <span className={`text-[11px] font-body px-2 py-0.5 rounded-sm border shrink-0 ${autonomy.bg} ${autonomy.text} ${autonomy.border}`}>
-                  {autonomy.label}
+                <span className={`text-[11px] font-body px-2 py-0.5 rounded-sm border shrink-0 ${isActive ? 'bg-[rgba(0,200,83,0.08)] text-[#00C853] border-[rgba(0,200,83,0.2)]' : 'text-brand-muted border-brand-border'}`}>
+                  {isActive ? 'ACTIVE' : 'INACTIVE'}
                 </span>
                 <span className="text-[11px] font-body text-brand-muted shrink-0">v{tool.version}</span>
               </motion.div>
