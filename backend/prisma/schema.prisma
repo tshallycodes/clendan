@@ -108,6 +108,16 @@ model Integration {
   connected_at          DateTime?
   last_synced_at        DateTime?
   sync_metadata         Json?
+  // Document sources only (google_drive, dropbox, onedrive): the folder name/path to
+  // watch. Only files inside it are listed, backfilled, and processed by Document
+  // Intelligence. Empty => nothing is processed (privacy-safe default - never sweep the
+  // whole account).
+  watch_folder          String?
+  // Real-time push state (Drive changes.watch channel). Dropbox needs none - its
+  // app-level webhook re-syncs on any change.
+  webhook_channel_id    String?
+  webhook_resource_id   String?
+  webhook_expires_at    DateTime?
 
   tenant                  Tenant                 @relation(fields: [tenant_id], references: [id])
   sync_logs               IntegrationSyncLog[]

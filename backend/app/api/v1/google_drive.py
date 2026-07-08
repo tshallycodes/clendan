@@ -9,6 +9,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import RedirectResponse
 from prisma import Prisma
+from pydantic import BaseModel
 
 from app.core.config import get_settings
 from app.core.db import get_db_dep
@@ -23,6 +24,10 @@ logger = get_logger(__name__)
 router = APIRouter(tags=["google-drive"])
 
 INTEGRATION_TYPE = "google_drive"
+
+
+class WatchFolderRequest(BaseModel):
+    folder: str
 
 
 @router.get("/integrations/google-drive/connect")
@@ -134,8 +139,40 @@ async def drive_status(
             "last_synced_at": integration.last_synced_at.isoformat() if integration.last_synced_at else None,
             "integration_id": integration.id,
             "summary": integration.sync_metadata,
+            "watch_folder": integration.watch_folder,
         }
     )
+
+
+@router.patch("/integrations/google-drive/watch-folder")
+async def drive_set_watch_folder(
+    body: WatchFolderRequest,
+    current_user: RequireOrgAuth,
+    db: Annotated[Prisma, Depends(get_db_dep)],
+):
+    """Set the Drive folder to watch. Only PDFs inside it are processed. Saving a non-empty
+    folder triggers a sync so existing files are backfilled immediately."""
+    tenant_id = current_user.tenant_id
+
+    integration = await db.integration.find_first(
+        where={"tenant_id": tenant_id, "type": INTEGRATION_TYPE, "status": {"not": "disconnected"}}
+    )
+    if not integration:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No Google Drive integration found")
+
+    folder = body.folder.strip() or None
+    await db.integration.update(
+        where={"id": integration.id},
+        data={"watch_folder": folder, "status": "syncing" if folder else integration.status},
+    )
+
+    if folder:
+        try:
+            await enqueue_drive_sync(integration_id=integration.id, tenant_id=tenant_id)
+        except Exception as exc:
+            logger.error("drive_watch_folder_sync_enqueue_failed tenant=%s: %s", tenant_id, type(exc).__name__)
+
+    return standard_response(data={"watch_folder": folder, "integration_id": integration.id})
 
 
 @router.post("/integrations/google-drive/sync")

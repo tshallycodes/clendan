@@ -64,19 +64,32 @@ async def sync_drive_connection(ctx: dict, integration_id: str, tenant_id: str) 
         except Exception as exc:
             logger.error("drive_token_refresh_failed integration_id=%s: %s", integration_id, type(exc).__name__)
 
-    initial_status = integration.status
     sync_start = time.monotonic()
     sync_status = "success"
     file_count = 0
     files: list = []
 
-    try:
-        files = await google.list_pdf_files(access_token)
-        file_count = len(files)
-        logger.info("drive_pdf_files_found integration_id=%s count=%d", integration_id, file_count)
-    except Exception as exc:
-        logger.error("drive_sync_failed integration_id=%s: %s", integration_id, type(exc).__name__)
-        sync_status = "error"
+    # Privacy-safe scoping: only files inside the configured watch folder are ever read.
+    # No folder configured (or the folder cannot be resolved) => process nothing. We never
+    # sweep the whole drive.
+    watch_folder = getattr(integration, "watch_folder", None)
+    folder_id: str | None = None
+    if watch_folder:
+        try:
+            folder_id = await google.find_folder_id_by_name(access_token, watch_folder)
+        except Exception as exc:
+            logger.error("drive_folder_resolve_failed integration_id=%s: %s", integration_id, type(exc).__name__)
+        if not folder_id:
+            logger.warning("drive_watch_folder_not_found integration_id=%s folder=%s", integration_id, watch_folder)
+
+    if watch_folder and folder_id:
+        try:
+            files = await google.list_pdf_files(access_token, folder_id=folder_id)
+            file_count = len(files)
+            logger.info("drive_pdf_files_found integration_id=%s count=%d", integration_id, file_count)
+        except Exception as exc:
+            logger.error("drive_sync_failed integration_id=%s: %s", integration_id, type(exc).__name__)
+            sync_status = "error"
 
     elapsed_ms = int((time.monotonic() - sync_start) * 1000)
 
@@ -100,7 +113,9 @@ async def sync_drive_connection(ctx: dict, integration_id: str, tenant_id: str) 
                 "sync_metadata": Json({"files": file_count}),
             },
         )
-        if initial_status == "connected" and files:
+        # Process every file in the watch folder (first sync included, so existing files
+        # are backfilled). Dedup by execution input_ref keeps repeat syncs idempotent.
+        if files:
             from app.events import enqueue_event
             _MAX_BYTES = 10 * 1024 * 1024
             for f in files:

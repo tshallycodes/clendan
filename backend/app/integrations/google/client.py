@@ -386,18 +386,56 @@ async def download_drive_file_bytes(access_token: str, file_id: str) -> bytes:
     return await _circuit.call(_retry, _call)
 
 
-async def list_pdf_files(access_token: str) -> list:
+async def find_folder_id_by_name(access_token: str, folder_name: str) -> str | None:
     """
-    Lists non-trashed PDF files in the connected Google Drive.
-    Returns list of file metadata dicts: [{id, name, mimeType, ...}].
+    Resolves a Drive folder name to its folder ID. Returns the first non-trashed match,
+    or None if there is no folder with that name. Matching is case-sensitive per the
+    Drive API; the name is compared exactly.
     """
+    name = (folder_name or "").strip().strip("/")
+    if not name:
+        return None
+    escaped = name.replace("\\", "\\\\").replace("'", "\\'")
+
     async def _call():
         async with httpx.AsyncClient() as client:
             response = await client.get(
                 f"{DRIVE_API_BASE}/files",
                 headers={"Authorization": f"Bearer {access_token}"},
                 params={
-                    "q": "mimeType='application/pdf' and trashed=false",
+                    "q": (
+                        "mimeType='application/vnd.google-apps.folder' "
+                        f"and name='{escaped}' and trashed=false"
+                    ),
+                    "fields": "files(id,name)",
+                },
+                timeout=15.0,
+            )
+            response.raise_for_status()
+            return response.json()
+
+    data = await _circuit.call(_retry, _call)
+    folders = data.get("files", []) or []
+    return folders[0].get("id") if folders else None
+
+
+async def list_pdf_files(access_token: str, folder_id: str | None = None) -> list:
+    """
+    Lists non-trashed PDF files in the connected Google Drive. When ``folder_id`` is
+    provided, only PDFs directly inside that folder are returned; otherwise every PDF in
+    the drive is returned. Returns list of file metadata dicts: [{id, name, mimeType, ...}].
+    """
+    query = "mimeType='application/pdf' and trashed=false"
+    if folder_id:
+        query += f" and '{folder_id}' in parents"
+
+    async def _call():
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                f"{DRIVE_API_BASE}/files",
+                headers={"Authorization": f"Bearer {access_token}"},
+                params={
+                    "q": query,
                     "fields": "files(id,name,mimeType,size,createdTime,modifiedTime)",
                 },
                 timeout=15.0,

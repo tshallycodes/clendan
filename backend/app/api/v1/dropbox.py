@@ -9,6 +9,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import RedirectResponse
 from prisma import Prisma
+from pydantic import BaseModel
 
 from app.core.config import get_settings
 from app.core.db import get_db_dep
@@ -22,6 +23,10 @@ logger = get_logger(__name__)
 router = APIRouter(tags=["dropbox"])
 
 INTEGRATION_TYPE = "dropbox"
+
+
+class WatchFolderRequest(BaseModel):
+    folder: str
 
 
 @router.get("/integrations/dropbox/connect")
@@ -112,8 +117,38 @@ async def dropbox_status(
             "last_synced_at": integration.last_synced_at.isoformat() if integration.last_synced_at else None,
             "integration_id": integration.id,
             "summary": integration.sync_metadata,
+            "watch_folder": integration.watch_folder,
         }
     )
+
+
+@router.patch("/integrations/dropbox/watch-folder")
+async def dropbox_set_watch_folder(
+    body: WatchFolderRequest,
+    current_user: RequireOrgAuth,
+    db: Annotated[Prisma, Depends(get_db_dep)],
+):
+    """Set the Dropbox folder path to watch (e.g. /Clendan). Only PDFs inside it are
+    processed. Saving a non-empty folder triggers a sync so existing files are backfilled."""
+    integration = await db.integration.find_first(
+        where={"tenant_id": current_user.tenant_id, "type": INTEGRATION_TYPE, "status": {"not": "disconnected"}}
+    )
+    if not integration:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No Dropbox integration found")
+
+    folder = body.folder.strip() or None
+    await db.integration.update(
+        where={"id": integration.id},
+        data={"watch_folder": folder, "status": "syncing" if folder else integration.status},
+    )
+
+    if folder:
+        try:
+            await enqueue_dropbox_sync(integration_id=integration.id, tenant_id=current_user.tenant_id)
+        except Exception as exc:
+            logger.error("dropbox_watch_folder_sync_enqueue_failed tenant=%s: %s", current_user.tenant_id, type(exc).__name__)
+
+    return standard_response(data={"watch_folder": folder, "integration_id": integration.id})
 
 
 @router.post("/integrations/dropbox/sync")

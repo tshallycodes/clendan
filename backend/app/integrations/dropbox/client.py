@@ -124,8 +124,22 @@ async def refresh_dropbox_token(refresh_token: str) -> dict:
     }
 
 
-async def list_pdf_files(access_token: str) -> list:
-    """Lists all PDF files in the connected Dropbox (recursive). Returns [{id, name, path_lower, size}]."""
+def _normalise_dropbox_path(folder: str | None) -> str:
+    """Dropbox wants '' for the root, or '/Folder' (leading slash, no trailing). Returns
+    the normalised path for list_folder."""
+    path = (folder or "").strip()
+    if not path or path == "/":
+        return ""
+    path = "/" + path.strip("/")
+    return path
+
+
+async def list_pdf_files(access_token: str, folder_path: str | None = None) -> list:
+    """Lists PDF files in the connected Dropbox, recursively. When ``folder_path`` is
+    provided only that folder (and its subfolders) is scanned; otherwise the whole account
+    is scanned. Returns [{id, name, path_lower, size}]."""
+    path = _normalise_dropbox_path(folder_path)
+
     async def _call():
         async with httpx.AsyncClient() as client:
             response = await client.post(
@@ -134,7 +148,7 @@ async def list_pdf_files(access_token: str) -> list:
                     "Authorization": f"Bearer {access_token}",
                     "Content-Type": "application/json",
                 },
-                json={"path": "", "recursive": True},
+                json={"path": path, "recursive": True},
                 timeout=30.0,
             )
             response.raise_for_status()

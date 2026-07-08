@@ -73,6 +73,14 @@ const ALL_SUMMARY_SLUGS = new Set([
   'sage',
 ])
 
+// Document sources that scope processing to a single watch folder. Files outside the
+// folder are never read by Document Intelligence.
+const WATCH_FOLDER_SLUGS = new Set(['google-drive', 'dropbox'])
+const FOLDER_PLACEHOLDER: Record<string, string> = {
+  'google-drive': 'e.g. Invoices',
+  'dropbox': 'e.g. /Clendan',
+}
+
 export function IntegrationDetailDrawer({ slug, intg, status, lastSyncedAt, onClose, onConnect, onDisconnect, onResync, onSyncLog }: Props) {
   const { getToken } = useAuth()
   const { convert } = useCurrency()
@@ -82,9 +90,14 @@ export function IntegrationDetailDrawer({ slug, intg, status, lastSyncedAt, onCl
   const [confirmDisconnect, setConfirmDisconnect] = useState(false)
   const [disconnecting, setDisconnecting] = useState(false)
   const [resyncing, setResyncing] = useState(false)
+  const [watchFolder, setWatchFolder] = useState('')
+  const [folderInput, setFolderInput] = useState('')
+  const [savingFolder, setSavingFolder] = useState(false)
+  const [folderSaved, setFolderSaved] = useState(false)
 
   const open = slug !== null && intg !== null
   const isConnected = status === 'connected' || status === 'syncing'
+  const isWatchFolderSource = slug !== null && WATCH_FOLDER_SLUGS.has(slug)
 
   useEffect(() => {
     setConfirmDisconnect(false)
@@ -92,6 +105,9 @@ export function IntegrationDetailDrawer({ slug, intg, status, lastSyncedAt, onCl
     setResyncing(false)
     setLogs([])
     setSummary(null)
+    setWatchFolder('')
+    setFolderInput('')
+    setFolderSaved(false)
     if (!slug || !isConnected) return
 
     setLogsLoading(true)
@@ -115,6 +131,9 @@ export function IntegrationDetailDrawer({ slug, intg, status, lastSyncedAt, onCl
           if (sumRes.ok) {
             const json = await sumRes.json()
             setSummary(json.data?.summary ?? null)
+            const wf = json.data?.watch_folder ?? ''
+            setWatchFolder(wf)
+            setFolderInput(wf)
           }
         }
       } catch { /* silent */ } finally { setLogsLoading(false) }
@@ -122,6 +141,27 @@ export function IntegrationDetailDrawer({ slug, intg, status, lastSyncedAt, onCl
 
     load()
   }, [slug, status]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  async function saveWatchFolder() {
+    if (!slug) return
+    setSavingFolder(true)
+    setFolderSaved(false)
+    try {
+      const token = await getToken()
+      const res = await fetch(`${API}/integrations/${slug}/watch-folder`, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ folder: folderInput.trim() }),
+      })
+      if (res.ok) {
+        const json = await res.json()
+        setWatchFolder(json.data?.watch_folder ?? '')
+        setFolderSaved(true)
+      }
+    } catch { /* silent */ } finally {
+      setSavingFolder(false)
+    }
+  }
 
   const lastSyncDisplay = lastSyncedAt
     ? new Date(lastSyncedAt).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
@@ -235,6 +275,38 @@ export function IntegrationDetailDrawer({ slug, intg, status, lastSyncedAt, onCl
                           <SummaryCard label="PDF Files" value={String(summary.files)} />
                         )}
                       </div>
+                    </section>
+                  )}
+
+                  {/* Watch folder (document sources only) */}
+                  {isWatchFolderSource && (
+                    <section>
+                      <p className="text-[11px] font-body uppercase tracking-widest text-brand-muted mb-1">Document Processing</p>
+                      <p className="text-[11px] font-body text-brand-muted mb-3 leading-relaxed">
+                        Only files inside this folder are read and processed by Document Intelligence.
+                        Everything else in your account is ignored. Leave empty to process nothing.
+                      </p>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={folderInput}
+                          onChange={(e) => { setFolderInput(e.target.value); setFolderSaved(false) }}
+                          placeholder={FOLDER_PLACEHOLDER[slug ?? ''] ?? 'Folder name'}
+                          className="flex-1 bg-brand-bg border border-brand-border focus:border-[#00C853] rounded-sm px-3 py-2 text-xs font-body text-brand-text placeholder:text-brand-muted outline-none transition-colors"
+                        />
+                        <button
+                          onClick={saveWatchFolder}
+                          disabled={savingFolder || folderInput.trim() === watchFolder}
+                          className="px-4 py-2 text-[12px] font-body text-brand-text border border-brand-border rounded-sm hover:bg-brand-elevated transition-colors disabled:opacity-50"
+                        >
+                          {savingFolder ? 'Saving…' : 'Save'}
+                        </button>
+                      </div>
+                      {folderSaved && (
+                        <p className="text-[11px] font-body text-[#00C853] mt-2">
+                          {watchFolder ? 'Saved. Scanning the folder for existing files…' : 'Saved. Processing paused (no folder set).'}
+                        </p>
+                      )}
                     </section>
                   )}
 

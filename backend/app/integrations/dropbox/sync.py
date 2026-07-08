@@ -64,19 +64,22 @@ async def sync_dropbox_connection(_ctx: dict, integration_id: str, tenant_id: st
         except Exception as exc:
             logger.error("dropbox_token_refresh_failed integration_id=%s: %s", integration_id, type(exc).__name__)
 
-    initial_status = integration.status
     sync_start = time.monotonic()
     sync_status = "success"
     file_count = 0
     files: list = []
 
-    try:
-        files = await dropbox.list_pdf_files(access_token)
-        file_count = len(files)
-        logger.info("dropbox_pdf_files_found integration_id=%s count=%d", integration_id, file_count)
-    except Exception as exc:
-        logger.error("dropbox_sync_list_failed integration_id=%s: %s", integration_id, type(exc).__name__)
-        sync_status = "error"
+    # Privacy-safe scoping: only files inside the configured watch folder are ever read.
+    # No folder configured => process nothing. We never sweep the whole Dropbox.
+    watch_folder = getattr(integration, "watch_folder", None)
+    if watch_folder:
+        try:
+            files = await dropbox.list_pdf_files(access_token, folder_path=watch_folder)
+            file_count = len(files)
+            logger.info("dropbox_pdf_files_found integration_id=%s count=%d", integration_id, file_count)
+        except Exception as exc:
+            logger.error("dropbox_sync_list_failed integration_id=%s: %s", integration_id, type(exc).__name__)
+            sync_status = "error"
 
     elapsed_ms = int((time.monotonic() - sync_start) * 1000)
 
@@ -106,7 +109,9 @@ async def sync_dropbox_connection(_ctx: dict, integration_id: str, tenant_id: st
                 "sync_metadata": Json({"files": file_count}),
             },
         )
-        if initial_status == "connected" and files:
+        # Process every file in the watch folder (first sync included, so existing files
+        # are backfilled). Dedup by execution input_ref keeps repeat syncs idempotent.
+        if files:
             from app.events import enqueue_event
             _MAX_BYTES = 10 * 1024 * 1024
             for f in files:
