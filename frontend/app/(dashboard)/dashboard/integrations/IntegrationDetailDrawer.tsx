@@ -80,8 +80,16 @@ const EMAIL_SLUGS = new Set(['gmail', 'outlook'])
 const FOLDER_PLACEHOLDER: Record<string, string> = {
   'google-drive': 'e.g. Invoices',
   'dropbox': 'e.g. /Clendan',
-  'gmail': 'e.g. invoice OR bill  ·  from:supplier.com  ·  label:Invoices',
+  'gmail': 'e.g. (invoice OR bill)  ·  from:supplier.com  ·  label:Invoices',
   'outlook': "e.g. contains(subject,'invoice')",
+}
+
+// The recommended keyword filter, prefilled for a freshly-connected email source so the
+// broad "catch invoices from any supplier" default is one click (Save) away. Gmail already
+// scopes to has:attachment, so this is just the keyword part (parenthesised for correct OR).
+const RECOMMENDED_EMAIL_FILTER: Record<string, string> = {
+  'gmail': '(invoice OR bill)',
+  'outlook': "(contains(subject,'invoice') or contains(subject,'bill'))",
 }
 
 export function IntegrationDetailDrawer({ slug, intg, status, lastSyncedAt, onClose, onConnect, onDisconnect, onResync, onSyncLog }: Props) {
@@ -137,7 +145,10 @@ export function IntegrationDetailDrawer({ slug, intg, status, lastSyncedAt, onCl
             setSummary(json.data?.summary ?? null)
             const wf = json.data?.watch_folder ?? ''
             setWatchFolder(wf)
-            setFolderInput(wf)
+            // Nudge new email sources toward the recommended keyword filter: prefill it
+            // (unsaved) so it is one Save click away, without silently reading the mailbox.
+            const isEmail = slug !== null && EMAIL_SLUGS.has(slug)
+            setFolderInput(wf || (isEmail ? (RECOMMENDED_EMAIL_FILTER[slug ?? ''] ?? '') : ''))
           }
         }
       } catch { /* silent */ } finally { setLogsLoading(false) }
@@ -308,6 +319,12 @@ export function IntegrationDetailDrawer({ slug, intg, status, lastSyncedAt, onCl
                           {savingFolder ? 'Saving…' : 'Save'}
                         </button>
                       </div>
+                      {isEmailSource && !watchFolder && !folderSaved
+                        && folderInput.trim() === (RECOMMENDED_EMAIL_FILTER[slug ?? ''] ?? '') && (
+                        <p className="text-[11px] font-body text-brand-muted mt-2">
+                          Recommended filter shown - catches invoices from any supplier. Click Save to apply, or edit it.
+                        </p>
+                      )}
                       {folderSaved && (
                         <p className="text-[11px] font-body text-[#00C853] mt-2">
                           {watchFolder
