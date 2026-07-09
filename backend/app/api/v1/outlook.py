@@ -9,6 +9,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from prisma import Prisma
+from pydantic import BaseModel
 
 from app.core.db import get_db_dep
 from app.core.logging import get_logger
@@ -20,6 +21,10 @@ from app.integrations.outlook.sync import enqueue_outlook_sync
 
 logger = get_logger(__name__)
 router = APIRouter(tags=["outlook"])
+
+
+class EmailFilterRequest(BaseModel):
+    folder: str
 
 
 @router.get("/integrations/outlook/connect")
@@ -162,8 +167,38 @@ async def outlook_status(
             "integration_id": integration.id,
             "email": email,
             "summary": integration.sync_metadata,
+            "watch_folder": integration.watch_folder,
         }
     )
+
+
+@router.patch("/integrations/outlook/watch-folder")
+async def outlook_set_filter(
+    body: EmailFilterRequest,
+    current_user: RequireOrgAuth,
+    db: Annotated[Prisma, Depends(get_db_dep)],
+):
+    """Set the Outlook OData filter that scopes which emails are ingested (e.g.
+    contains(subject,'invoice')). Empty = process nothing. Saving a non-empty filter
+    triggers a sync so matching emails are picked up immediately."""
+    integration = await db.integration.find_first(
+        where={"tenant_id": current_user.tenant_id, "type": "outlook", "status": {"not": "disconnected"}}
+    )
+    if not integration:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No Outlook integration found")
+
+    folder = body.folder.strip() or None
+    await db.integration.update(
+        where={"id": integration.id},
+        data={"watch_folder": folder, "status": "syncing" if folder else integration.status},
+    )
+    if folder:
+        try:
+            await enqueue_outlook_sync(integration_id=integration.id, tenant_id=current_user.tenant_id)
+        except Exception as exc:
+            logger.error("outlook_filter_sync_enqueue_failed tenant=%s: %s", current_user.tenant_id, type(exc).__name__)
+
+    return standard_response(data={"watch_folder": folder, "integration_id": integration.id})
 
 
 @router.post("/integrations/outlook/sync")
@@ -246,7 +281,7 @@ async def outlook_disconnect(
 
     await db.integration.update(
         where={"id": integration.id},
-        data={"status": "disconnected", "encrypted_credentials": "{}"},
+        data={"status": "disconnected", "encrypted_credentials": "{}", "watch_folder": None},
     )
 
     logger.info(

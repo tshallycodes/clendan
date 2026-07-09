@@ -99,14 +99,20 @@ async def sync_outlook_connection(ctx: dict, integration_id: str, tenant_id: str
     # ---------------------------------------------------------------------------
     # Scan messages with attachments
     # ---------------------------------------------------------------------------
-    initial_status = integration.status
     start = time.monotonic()
     sync_status = "success"
     messages_count = 0
     messages: list = []
 
+    # Privacy-safe scoping: only emails matching the configured filter are scanned.
+    # Empty filter => scan nothing (never sweep the whole mailbox).
+    email_filter = getattr(integration, "watch_folder", None)
+
     try:
-        messages = await outlook.list_messages_with_attachments(access_token=access_token)
+        messages = (
+            await outlook.list_messages_with_attachments(access_token=access_token, filter_str=email_filter)
+            if email_filter else []
+        )
         messages_count = len(messages)
         logger.info("outlook_sync_messages integration_id=%s count=%d", integration_id, messages_count)
     except Exception as exc:
@@ -138,30 +144,15 @@ async def sync_outlook_connection(ctx: dict, integration_id: str, tenant_id: str
         data={"status": "connected", "connected_at": datetime.now(UTC)},
     )
 
-    if sync_status == "success" and initial_status == "connected" and messages:
+    # One event per message (first sync included, deduped by idempotency key):
+    # Invoice & Receipt Processing classifies each attachment.
+    if sync_status == "success" and messages:
         try:
             from app.events import enqueue_event
             for message in messages:
                 message_id = message.get("id", "")
                 if not message_id:
                     continue
-                subject = (message.get("subject") or "").lower()
-                _doc_type = (
-                    "receipt" if "receipt" in subject else
-                    "contract" if "contract" in subject or "agreement" in subject else
-                    "invoice"
-                )
-                await enqueue_event(
-                    tenant_id=tenant_id,
-                    event_type="receipt_received",
-                    payload={
-                        "source": "outlook",
-                        "integration_id": integration_id,
-                        "message_id": message_id,
-                    },
-                    idempotency_key=f"outlook:receipt:{message_id}",
-                    db=db,
-                )
                 await enqueue_event(
                     tenant_id=tenant_id,
                     event_type="document_received",
@@ -169,7 +160,6 @@ async def sync_outlook_connection(ctx: dict, integration_id: str, tenant_id: str
                         "source": "outlook",
                         "integration_id": integration_id,
                         "message_id": message_id,
-                        "document_type": _doc_type,
                     },
                     idempotency_key=f"outlook:document:{message_id}",
                     db=db,

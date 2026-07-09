@@ -66,7 +66,6 @@ async def sync_gmail_connection(ctx: dict, integration_id: str, tenant_id: str) 
         except Exception as exc:
             logger.error("gmail_token_refresh_failed integration_id=%s: %s", integration_id, type(exc).__name__)
 
-    initial_status = integration.status
     sync_start = time.monotonic()
     sync_status = "success"
     message_count = 0
@@ -89,9 +88,15 @@ async def sync_gmail_connection(ctx: dict, integration_id: str, tenant_id: str) 
                     integration_id, type(exc).__name__,
                 )
 
-        # Scan last 30 days for emails with attachments
-        thirty_days_ago = (datetime.now(UTC) - timedelta(days=30)).strftime("%Y/%m/%d")
-        messages = await google.list_messages_with_attachments(access_token, thirty_days_ago)
+        # Privacy-safe scoping: only emails matching the configured filter are scanned.
+        # Empty filter => scan nothing (never sweep the whole mailbox).
+        email_filter = getattr(integration, "watch_folder", None)
+        messages = []
+        if email_filter:
+            thirty_days_ago = (datetime.now(UTC) - timedelta(days=30)).strftime("%Y/%m/%d")
+            messages = await google.list_messages_with_attachments(
+                access_token, thirty_days_ago, extra_query=email_filter,
+            )
         message_count = len(messages)
         logger.info("gmail_messages_found integration_id=%s count=%d", integration_id, message_count)
 
@@ -144,28 +149,12 @@ async def sync_gmail_connection(ctx: dict, integration_id: str, tenant_id: str) 
             where={"id": integration_id},
             data={"status": "connected", "connected_at": datetime.now(UTC)},
         )
-        if initial_status == "connected" and pdf_attachments:
+        # Process every matched attachment (first sync included, deduped by idempotency
+        # key). One event per attachment: Invoice & Receipt Processing classifies it.
+        if pdf_attachments:
             try:
                 from app.events import enqueue_event
                 for message_id, attachment_id, att_filename in pdf_attachments:
-                    name_lower = att_filename.lower()
-                    _doc_type = (
-                        "receipt" if "receipt" in name_lower else
-                        "contract" if "contract" in name_lower or "agreement" in name_lower else
-                        "invoice"
-                    )
-                    await enqueue_event(
-                        tenant_id=tenant_id,
-                        event_type="receipt_received",
-                        payload={
-                            "source": "gmail",
-                            "integration_id": integration_id,
-                            "message_id": message_id,
-                            "attachment_id": attachment_id,
-                        },
-                        idempotency_key=f"gmail:receipt:{message_id}:{attachment_id}",
-                        db=db,
-                    )
                     await enqueue_event(
                         tenant_id=tenant_id,
                         event_type="document_received",
@@ -174,7 +163,6 @@ async def sync_gmail_connection(ctx: dict, integration_id: str, tenant_id: str) 
                             "integration_id": integration_id,
                             "message_id": message_id,
                             "attachment_id": attachment_id,
-                            "document_type": _doc_type,
                             "filename": att_filename,
                         },
                         idempotency_key=f"gmail:document:{message_id}:{attachment_id}",

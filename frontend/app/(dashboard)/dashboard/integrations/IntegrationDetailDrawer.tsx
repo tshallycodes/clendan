@@ -73,12 +73,15 @@ const ALL_SUMMARY_SLUGS = new Set([
   'sage',
 ])
 
-// Document sources that scope processing to a single watch folder. Files outside the
-// folder are never read by Document Intelligence.
-const WATCH_FOLDER_SLUGS = new Set(['google-drive', 'dropbox'])
+// Sources that scope ingestion so only matching documents are processed. A file/email
+// outside the scope is never read.
+const WATCH_FOLDER_SLUGS = new Set(['google-drive', 'dropbox', 'gmail', 'outlook'])
+const EMAIL_SLUGS = new Set(['gmail', 'outlook'])
 const FOLDER_PLACEHOLDER: Record<string, string> = {
   'google-drive': 'e.g. Invoices',
   'dropbox': 'e.g. /Clendan',
+  'gmail': 'e.g. label:Invoices  or  from:accounts@supplier.com',
+  'outlook': "e.g. contains(subject,'invoice')",
 }
 
 export function IntegrationDetailDrawer({ slug, intg, status, lastSyncedAt, onClose, onConnect, onDisconnect, onResync, onSyncLog }: Props) {
@@ -98,6 +101,7 @@ export function IntegrationDetailDrawer({ slug, intg, status, lastSyncedAt, onCl
   const open = slug !== null && intg !== null
   const isConnected = status === 'connected' || status === 'syncing'
   const isWatchFolderSource = slug !== null && WATCH_FOLDER_SLUGS.has(slug)
+  const isEmailSource = slug !== null && EMAIL_SLUGS.has(slug)
 
   useEffect(() => {
     setConfirmDisconnect(false)
@@ -279,13 +283,14 @@ export function IntegrationDetailDrawer({ slug, intg, status, lastSyncedAt, onCl
                     </section>
                   )}
 
-                  {/* Watch folder (document sources only) */}
+                  {/* Ingestion scope (document + email sources) */}
                   {isWatchFolderSource && (
                     <section>
                       <p className="text-[11px] font-body uppercase tracking-widest text-brand-muted mb-1">Document Processing</p>
                       <p className="text-[11px] font-body text-brand-muted mb-3 leading-relaxed">
-                        Only files inside this folder are read and processed by Document Intelligence.
-                        Everything else in your account is ignored. Leave empty to process nothing.
+                        {isEmailSource
+                          ? 'Only emails matching this filter are read and their attachments processed. Everything else in your mailbox is ignored. Leave empty to process nothing.'
+                          : 'Only files inside this folder are read and processed. Everything else in your account is ignored. Leave empty to process nothing.'}
                       </p>
                       <div className="flex gap-2">
                         <input
@@ -306,8 +311,10 @@ export function IntegrationDetailDrawer({ slug, intg, status, lastSyncedAt, onCl
                       {folderSaved && (
                         <p className="text-[11px] font-body text-[#00C853] mt-2">
                           {watchFolder
-                            ? `Saved. Files in ${watchFolder} will appear in Documents as they are processed.`
-                            : 'Saved. Processing paused (no folder set).'}
+                            ? (isEmailSource
+                                ? 'Saved. Matching emails will appear in Documents as they are processed.'
+                                : `Saved. Files in ${watchFolder} will appear in Documents as they are processed.`)
+                            : 'Saved. Processing paused (nothing set).'}
                         </p>
                       )}
                     </section>

@@ -8,6 +8,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from prisma import Prisma
+from pydantic import BaseModel
 
 from app.core.config import get_settings
 from app.core.db import get_db_dep
@@ -22,6 +23,10 @@ logger = get_logger(__name__)
 router = APIRouter(tags=["gmail"])
 
 INTEGRATION_TYPE = "gmail"
+
+
+class EmailFilterRequest(BaseModel):
+    folder: str
 
 
 @router.get("/integrations/gmail/connect")
@@ -165,8 +170,38 @@ async def gmail_status(
             "last_synced_at": integration.last_synced_at.isoformat() if integration.last_synced_at else None,
             "integration_id": integration.id,
             "summary": integration.sync_metadata,
+            "watch_folder": integration.watch_folder,
         }
     )
+
+
+@router.patch("/integrations/gmail/watch-folder")
+async def gmail_set_filter(
+    body: EmailFilterRequest,
+    current_user: RequireOrgAuth,
+    db: Annotated[Prisma, Depends(get_db_dep)],
+):
+    """Set the Gmail search filter that scopes which emails are ingested (e.g.
+    'label:Invoices' or 'from:accounts@supplier.com'). Empty = process nothing. Saving a
+    non-empty filter triggers a sync so matching emails are picked up immediately."""
+    integration = await db.integration.find_first(
+        where={"tenant_id": current_user.tenant_id, "type": INTEGRATION_TYPE, "status": {"not": "disconnected"}}
+    )
+    if not integration:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No Gmail integration found")
+
+    folder = body.folder.strip() or None
+    await db.integration.update(
+        where={"id": integration.id},
+        data={"watch_folder": folder, "status": "syncing" if folder else integration.status},
+    )
+    if folder:
+        try:
+            await enqueue_gmail_sync(integration_id=integration.id, tenant_id=current_user.tenant_id)
+        except Exception as exc:
+            logger.error("gmail_filter_sync_enqueue_failed tenant=%s: %s", current_user.tenant_id, type(exc).__name__)
+
+    return standard_response(data={"watch_folder": folder, "integration_id": integration.id})
 
 
 @router.post("/integrations/gmail/sync")
@@ -239,7 +274,7 @@ async def gmail_disconnect(
 
     await db.integration.update(
         where={"id": integration.id},
-        data={"status": "disconnected", "encrypted_credentials": "{}"},
+        data={"status": "disconnected", "encrypted_credentials": "{}", "watch_folder": None},
     )
 
     return standard_response(data={"status": "disconnected"})

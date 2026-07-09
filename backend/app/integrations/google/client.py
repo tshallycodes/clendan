@@ -261,18 +261,24 @@ async def stop_gmail_watch(access_token: str) -> None:
     await _retry(_call)
 
 
-async def list_messages_with_attachments(access_token: str, after_date: str) -> list:
+async def list_messages_with_attachments(access_token: str, after_date: str, extra_query: str = "") -> list:
     """
-    Lists Gmail messages that have attachments after the given date.
+    Lists Gmail messages that have attachments after the given date. ``extra_query`` is
+    appended to the Gmail search (e.g. "label:Invoices" or "from:accounts@supplier.com")
+    to scope which emails are ingested.
     after_date format: YYYY/MM/DD (Gmail query syntax).
     Returns list of message stubs: [{id, threadId}].
     """
+    query = f"has:attachment after:{after_date}"
+    if extra_query and extra_query.strip():
+        query = f"{query} {extra_query.strip()}"
+
     async def _call():
         async with httpx.AsyncClient() as client:
             response = await client.get(
                 f"{GMAIL_API_BASE}/messages",
                 headers={"Authorization": f"Bearer {access_token}"},
-                params={"q": f"has:attachment after:{after_date}"},
+                params={"q": query},
                 timeout=15.0,
             )
             response.raise_for_status()
