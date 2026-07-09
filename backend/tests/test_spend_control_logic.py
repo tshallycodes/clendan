@@ -232,3 +232,64 @@ class TestJobRunnerFinalization:
 
         db.execution.update.assert_awaited()
         assert db.execution.update.await_args.kwargs["data"]["status"] == "failed"
+
+
+class TestPersistControlStatus:
+    """The writeback that lets Payment Runs respect Spend Control's verdict."""
+
+    def _model(self):
+        m = MagicMock()
+        m.update_many = AsyncMock()
+        return m
+
+    @pytest.mark.asyncio
+    async def test_approved_batched_into_single_update(self):
+        from app.tools.spend_control import _persist_control_status
+        model = self._model()
+        await _persist_control_status(model, "t1", [
+            ("a", "approved", "ok"), ("b", "approved", "ok"), ("c", "approved", "ok"),
+        ])
+        # one batched update_many for all approved ids, tenant-scoped
+        model.update_many.assert_awaited_once()
+        call = model.update_many.await_args.kwargs
+        assert call["where"] == {"id": {"in": ["a", "b", "c"]}, "tenant_id": "t1"}
+        assert call["data"]["control_status"] == "approved"
+
+    @pytest.mark.asyncio
+    async def test_flagged_and_blocked_written_individually_with_reason(self):
+        from app.tools.spend_control import _persist_control_status
+        model = self._model()
+        await _persist_control_status(model, "t1", [
+            ("a", "approved", "ok"),
+            ("b", "flagged", "possible duplicate"),
+            ("c", "blocked", "over limit"),
+        ])
+        # 1 batched approved + 1 per flagged + 1 per blocked = 3 calls
+        assert model.update_many.await_count == 3
+        wheres = [c.kwargs["where"] for c in model.update_many.await_args_list]
+        # every write is tenant-scoped
+        assert all(w.get("tenant_id") == "t1" for w in wheres)
+        by_id = {
+            c.kwargs["where"]["id"]: c.kwargs["data"]
+            for c in model.update_many.await_args_list
+            if c.kwargs["where"]["id"] in ("b", "c")
+        }
+        assert by_id["b"]["control_status"] == "flagged"
+        assert by_id["b"]["control_reason"] == "possible duplicate"
+        assert by_id["c"]["control_status"] == "blocked"
+
+    @pytest.mark.asyncio
+    async def test_no_approved_ids_skips_batch_update(self):
+        from app.tools.spend_control import _persist_control_status
+        model = self._model()
+        await _persist_control_status(model, "t1", [("c", "blocked", "over limit")])
+        # only the individual blocked write, no empty approved batch
+        assert model.update_many.await_count == 1
+        assert model.update_many.await_args.kwargs["where"]["id"] == "c"
+
+    @pytest.mark.asyncio
+    async def test_reason_truncated_to_500_chars(self):
+        from app.tools.spend_control import _persist_control_status
+        model = self._model()
+        await _persist_control_status(model, "t1", [("b", "flagged", "x" * 900)])
+        assert len(model.update_many.await_args.kwargs["data"]["control_reason"]) == 500

@@ -28,6 +28,32 @@ from app.tools.base import BaseTool, ToolOutput, ToolType
 logger = get_logger(__name__)
 
 
+async def _persist_control_status(
+    model, tenant_id: str, decisions: list[tuple[str, str, str]]
+) -> None:
+    """Persist Spend Control's per-record verdict onto the bill/expense rows so downstream
+    tools (Payment Runs) can respect it instead of it living only in the audit log.
+
+    ``decisions`` is a list of ``(record_id, control_status, control_reason)`` where
+    control_status is "approved" | "flagged" | "blocked". The "approved" majority is batched
+    into one update_many; flagged/blocked rows are written individually so each keeps its own
+    reason. Every write is tenant-scoped.
+    """
+    now = datetime.now(UTC)
+    approved_ids = [rid for rid, status, _ in decisions if status == "approved"]
+    if approved_ids:
+        await model.update_many(
+            where={"id": {"in": approved_ids}, "tenant_id": tenant_id},
+            data={"control_status": "approved", "control_reason": None, "control_assessed_at": now},
+        )
+    for rid, status, reason in decisions:
+        if status == "approved":
+            continue
+        await model.update_many(
+            where={"id": rid, "tenant_id": tenant_id},
+            data={"control_status": status, "control_reason": (reason or "")[:500], "control_assessed_at": now},
+        )
+
 
 # ============================================================
 # Expense Control
@@ -422,6 +448,13 @@ async def _execute_expense_control(
         execution_id=execution_id,
     )
 
+    # Persist each verdict onto the expense row (audit is written first, above).
+    _expense_status = {"approve": "approved", "flag": "flagged", "block": "blocked"}
+    await _persist_control_status(
+        db.accountingexpense, tenant_id,
+        [(d.expense_id, _expense_status[d.action], d.reasoning) for d in decisions],
+    )
+
     actions_taken: list[str] = []
     block_ids = [d.expense_id for d in decisions if d.action == "block"]
     flag_ids = [d.expense_id for d in decisions if d.action == "flag"]
@@ -766,6 +799,19 @@ async def _execute_accounts_payable(tenant_id: str, tool_id: str, execution_id: 
 
     await write_audit_log(tenant_id=tenant_id, actor=_AP_ACTOR, action=f"accounts_payable:{overall}",
                           reasoning_trace=reasoning_trace, model_version=_AP_MODEL_VERSION, execution_id=execution_id)
+
+    # Persist each verdict onto the bill row so Payment Runs respects it (audit written first).
+    # Any policy override on the recommendation is already reflected in claude_map.
+    _ap_status = {"auto_pay": "approved", "batch_pay": "approved",
+                  "request_approval": "flagged", "flag_duplicate": "flagged", "block": "blocked"}
+    control_decisions: list[tuple[str, str, str]] = []
+    for b in bills:
+        r = claude_map.get(b.id)
+        status = _ap_status.get(r.recommendation, "flagged") if r else "flagged"
+        if b.is_duplicate and status == "approved":
+            status = "flagged"  # never auto-approve a suspected duplicate
+        control_decisions.append((b.id, status, r.reasoning if r else "unscored by AP model"))
+    await _persist_control_status(db.accountingbill, tenant_id, control_decisions)
 
     duplicate_count = sum(1 for b in bills if b.is_duplicate)
     actions_taken = [f"assessed {len(bills)} bill(s)"]

@@ -138,3 +138,38 @@ class TestClassifyBills:
             "big": "request_approval",
             "late": "skip",
         }
+
+
+class TestSpendControlGating:
+    """Payment Runs must respect Spend Control's persisted verdict on each bill."""
+
+    def test_blocked_bill_is_skipped(self):
+        [s] = _classify_bills([_bill(outstanding_cents=10_000, control_status="blocked")], DEFAULT_POLICY, TODAY)
+        assert s.action == "skip"
+        assert s.reason == "blocked_by_spend_control"
+
+    def test_blocked_wins_even_when_small_and_due(self):
+        # would otherwise auto-schedule; the block gate fires first
+        past = TODAY - timedelta(days=1)
+        [s] = _classify_bills([_bill(due_date=past, outstanding_cents=5_000, control_status="blocked")], DEFAULT_POLICY, TODAY)
+        assert s.action == "skip"
+        assert s.reason == "blocked_by_spend_control"
+
+    def test_blocked_reason_beats_out_of_window(self):
+        far = TODAY + timedelta(days=30)
+        [s] = _classify_bills([_bill(due_date=far, outstanding_cents=10_000, control_status="blocked")], DEFAULT_POLICY, TODAY)
+        assert s.reason == "blocked_by_spend_control"
+
+    def test_flagged_bill_routes_to_approval_not_schedule(self):
+        # small + due → normally schedule_payment; flagged forces human approval
+        [s] = _classify_bills([_bill(outstanding_cents=10_000, control_status="flagged")], DEFAULT_POLICY, TODAY)
+        assert s.action == "request_approval"
+        assert s.reason == "flagged_by_spend_control"
+
+    def test_approved_bill_follows_normal_thresholds(self):
+        [s] = _classify_bills([_bill(outstanding_cents=10_000, control_status="approved")], DEFAULT_POLICY, TODAY)
+        assert s.action == "schedule_payment"
+
+    def test_unassessed_none_control_follows_normal_thresholds(self):
+        [s] = _classify_bills([_bill(outstanding_cents=10_000, control_status=None)], DEFAULT_POLICY, TODAY)
+        assert s.action == "schedule_payment"

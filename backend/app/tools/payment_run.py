@@ -86,9 +86,24 @@ def _classify_bills(bills, policy: _ToolPolicy, today: date) -> list[_BillSummar
     summaries: list[_BillSummary] = []
 
     for bill in bills[:policy.max_bills_per_run]:
+        control = (getattr(bill, "control_status", None) or "").lower()
         due = bill.due_date
         if isinstance(due, datetime):
             due = due.date()
+
+        # Spend Control's verdict gates payment. A blocked bill is never paid; a flagged
+        # bill can never auto-schedule and is routed to human approval instead.
+        if control == "blocked":
+            summaries.append(_BillSummary(
+                id=bill.id,
+                contact_name=getattr(bill, "contact_name", None),
+                total_cents=bill.total_cents,
+                outstanding_cents=bill.outstanding_cents,
+                due_date=due.isoformat() if due else None,
+                action="skip",
+                reason="blocked_by_spend_control",
+            ))
+            continue
 
         if due is None or due > cutoff:
             summaries.append(_BillSummary(
@@ -99,6 +114,18 @@ def _classify_bills(bills, policy: _ToolPolicy, today: date) -> list[_BillSummar
                 due_date=due.isoformat() if due else None,
                 action="skip",
                 reason="not_due_within_window",
+            ))
+            continue
+
+        if control == "flagged":
+            summaries.append(_BillSummary(
+                id=bill.id,
+                contact_name=getattr(bill, "contact_name", None),
+                total_cents=bill.total_cents,
+                outstanding_cents=bill.outstanding_cents,
+                due_date=due.isoformat() if due else None,
+                action="request_approval",
+                reason="flagged_by_spend_control",
             ))
             continue
 
@@ -263,6 +290,7 @@ async def _execute(tenant_id: str, tool_id: str, execution_id: str, payload: dic
     active_summaries = scheduled + needs_approval
     claude_result = await _call_claude(active_summaries, policy, settings_obj)
 
+    blocked_by_control = [s for s in summaries if s.reason == "blocked_by_spend_control"]
     total_auto_cents = sum(s.outstanding_cents for s in scheduled)
     total_approval_cents = sum(s.outstanding_cents for s in needs_approval)
     scheduled_bill_ids = [s.id for s in scheduled]
@@ -283,6 +311,7 @@ async def _execute(tenant_id: str, tool_id: str, execution_id: str, payload: dic
         "total_bills_scanned": len(bills),
         "scheduled_count": len(scheduled),
         "approval_required_count": len(needs_approval),
+        "blocked_by_spend_control_count": len(blocked_by_control),
         "total_auto_pay_cents": total_auto_cents,
         "total_approval_cents": total_approval_cents,
         "risk_flags": claude_result.risk_flags,
@@ -322,6 +351,8 @@ async def _execute(tenant_id: str, tool_id: str, execution_id: str, payload: dic
             )
 
     actions_taken = [f"scanned {len(bills)} bills, {len(scheduled)} scheduled, {len(needs_approval)} need approval"]
+    if blocked_by_control:
+        actions_taken.append(f"excluded {len(blocked_by_control)} bill(s) blocked by Spend Control")
     if scheduled_bill_ids:
         actions_taken.append(f"created payment run for {len(scheduled_bill_ids)} bills totalling {total_auto_cents} cents")
     if claude_result.risk_flags:

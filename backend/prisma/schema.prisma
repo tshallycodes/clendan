@@ -376,6 +376,12 @@ model AccountingBill {
   issue_date        DateTime?
   due_date          DateTime?
   paid_at           DateTime?
+  // Spend Control's assessment of this bill: "approved" | "flagged" | "blocked".
+  // Payment Runs never pays a "blocked" bill and routes a "flagged" one to human
+  // approval. Null = not yet assessed by Spend Control.
+  control_status      String?
+  control_reason      String?
+  control_assessed_at DateTime?
   raw_data          Json?
   created_at        DateTime  @default(now())
   updated_at        DateTime  @updatedAt
@@ -458,6 +464,10 @@ model AccountingExpense {
   tax_cents      Int       @default(0)
   expense_date   DateTime?
   approved       Boolean   @default(false)
+  // Spend Control's assessment: "approved" | "flagged" | "blocked". Null = not yet assessed.
+  control_status String?
+  control_reason String?
+  control_assessed_at DateTime?
   raw_data       Json?
   created_at     DateTime  @default(now())
   updated_at     DateTime  @updatedAt
