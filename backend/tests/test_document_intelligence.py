@@ -15,6 +15,8 @@ def _mock_db(config_json: dict | None = None):
     db.document.update = AsyncMock(return_value=None)
     db.execution.update = AsyncMock(return_value=None)
     db.invoice.create = AsyncMock(return_value=None)
+    db.accountingexpense.find_first = AsyncMock(return_value=None)
+    db.accountingexpense.create = AsyncMock(return_value=None)
     return db
 
 
@@ -67,7 +69,7 @@ async def test_receipt_routes_to_expense():
     complete = AsyncMock(return_value="auto_approved")
     rec_result = {
         "decision": "auto_approved", "reason": "ok",
-        "parsed_receipt": {"merchant": "Cafe", "amount_minor": 500, "category": "meals"},
+        "parsed_receipt": {"merchant": "Cafe", "amount_minor": 500, "category": "meals", "currency": "GBP"},
         "confidence": 0.95,
     }
     execute_receipt = AsyncMock(return_value=rec_result)
@@ -85,6 +87,13 @@ async def test_receipt_routes_to_expense():
     execute_receipt.assert_awaited_once()
     audit.assert_not_called()  # receipt audits itself
     complete.assert_awaited_once()
+    # receipt becomes a native expense Spend Control will assess
+    db.accountingexpense.create.assert_awaited_once()
+    exp = db.accountingexpense.create.await_args.kwargs["data"]
+    assert exp["source"] == "receipt"
+    assert exp["amount_cents"] == 500
+    assert exp["contact_name"] == "Cafe"
+    assert exp["approved"] is False
 
 
 @pytest.mark.asyncio

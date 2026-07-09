@@ -441,7 +441,9 @@ model AccountingPayment {
 model AccountingExpense {
   id             String    @id @default(cuid())
   tenant_id      String
-  integration_id String
+  // Nullable: ERP-synced expenses set this; Clendan-originated receipt expenses
+  // (source="receipt") have no integration.
+  integration_id String?
   source         String
   external_id    String
 
@@ -458,8 +460,8 @@ model AccountingExpense {
   created_at     DateTime  @default(now())
   updated_at     DateTime  @updatedAt
 
-  tenant      Tenant      @relation(fields: [tenant_id], references: [id])
-  integration Integration @relation(fields: [integration_id], references: [id])
+  tenant      Tenant       @relation(fields: [tenant_id], references: [id])
+  integration Integration? @relation(fields: [integration_id], references: [id])
 
   @@unique([integration_id, external_id])
   @@index([tenant_id])

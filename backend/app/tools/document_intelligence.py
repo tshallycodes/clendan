@@ -7,7 +7,7 @@ import asyncio
 import base64
 import json
 import time
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 import anthropic
@@ -189,6 +189,51 @@ async def _create_native_invoice(
         _logger.warning("doc_intel_native_invoice_create_failed", extra={"error": str(exc)})
 
 
+async def _create_native_expense(
+    db, tenant_id: str, document_id: str | None, execution_id: str, parsed: dict, decision: str
+) -> None:
+    """Persist a native expense (source='receipt', no ERP integration) from the parsed
+    receipt so Spend Control's expense job assesses it against your spend policy. Only for
+    receipts the receipt tool accepted (auto_approved). Best-effort - never fails the job."""
+    if decision != "auto_approved":
+        return
+    amount = int(parsed.get("amount_minor") or 0)
+    if amount <= 0:
+        return
+
+    d = parsed.get("date")
+    expense_date = None
+    if d:
+        try:
+            expense_date = datetime.fromisoformat(str(d))
+        except ValueError:
+            expense_date = None
+    # Default to now so it falls inside Spend Control's lookback window (which filters on date).
+    expense_date = expense_date or datetime.now(UTC)
+
+    external_id = document_id or execution_id
+    try:
+        existing = await db.accountingexpense.find_first(
+            where={"tenant_id": tenant_id, "source": "receipt", "external_id": external_id}
+        )
+        if existing:
+            return
+        await db.accountingexpense.create(data={
+            "tenant_id": tenant_id,
+            "source": "receipt",
+            "external_id": external_id,
+            "category": parsed.get("category"),
+            "contact_name": parsed.get("merchant"),
+            "amount_cents": amount,
+            "currency": parsed.get("currency") or "GBP",
+            "expense_date": expense_date,
+            "approved": False,  # Spend Control decides against its spend limits
+            "raw_data": PrismaJson(parsed),
+        })
+    except Exception as exc:
+        _logger.warning("doc_intel_native_expense_create_failed", extra={"error": str(exc)})
+
+
 async def run_document_intelligence_job(
     ctx: dict,
     *,
@@ -273,14 +318,16 @@ async def run_document_intelligence_job(
                 content_type=content_type,
                 policy_config=raw_config,
             )
+            parsed_rec = rec.get("parsed_receipt", {}) or {}
             result = {
                 "document_type": "receipt",
                 "decision": rec["decision"],
                 "confidence": rec["confidence"],
                 "reason": rec["reason"],
-                "extracted": rec.get("parsed_receipt", {}) or {},
+                "extracted": parsed_rec,
             }
             audit_needed = False
+            await _create_native_expense(db, tenant_id, document_id, execution_id, parsed_rec, rec["decision"])
         else:
             # Not an invoice or receipt - this tool only processes financial documents.
             result = {
