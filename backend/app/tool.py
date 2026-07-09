@@ -47,6 +47,7 @@ from app.tools.spend_control import run_expense_control_job, run_accounts_payabl
 from app.tools.tax_compliance import run_tax_compliance_job
 from app.tools.financial_reporting import run_financial_reporting_job
 from app.tools.payment_run import run_payment_run_job
+from app.tools.accounts_receivable import run_ar_collections_job
 from app.tools.document_intelligence import run_document_intelligence_job
 from app.tools.month_end_close import run_month_end_close_job, run_month_end_close_scheduled
 from app.tools.payroll_reconciliation import run_payroll_rec_job
@@ -642,6 +643,30 @@ async def expire_stale_approvals(_ctx: dict) -> None:
             )
 
 
+async def run_ar_collections_scheduled(_ctx: dict) -> None:
+    """Daily cron: run AR collections for every active ar_collections tool so overdue
+    customer invoices are aged and chased automatically. Date-bucketed idempotency key
+    prevents double-firing within a day."""
+    from app.events import enqueue_event
+    db = get_db()
+    day_key = datetime.now(UTC).strftime("%Y-%m-%d")
+    tools = await db.tool.find_many(where={"type": "ar_collections", "status": "active"})
+    for tool in tools:
+        try:
+            await enqueue_event(
+                tenant_id=tool.tenant_id,
+                event_type="ar_collections_run",
+                payload={"source": "schedule"},
+                idempotency_key=f"ar_collections:{tool.tenant_id}:{day_key}",
+                db=db,
+            )
+        except Exception as exc:
+            logger.error(
+                "ar_collections_schedule_failed tenant=%s: %s",
+                tool.tenant_id, type(exc).__name__,
+            )
+
+
 async def run_reconciliation_scheduled_check(_ctx: dict) -> None:
     """Hourly cron: fires reconciliation_run for tools configured for daily or weekly frequency.
     Real-time frequency is handled separately via sync hooks in plaid/truelayer sync.
@@ -777,6 +802,8 @@ class ToolSettings:
         run_journal_entry_job,
         resync_integrations_daily,
         expire_stale_approvals,
+        run_ar_collections_job,
+        run_ar_collections_scheduled,
     ]
     cron_jobs = [
         cron(run_financial_reporting_monthly, minute=0),  # hourly — gated by per-tool day-of-month/hour config
@@ -786,6 +813,7 @@ class ToolSettings:
         cron(expire_stale_approvals, minute=5),  # hourly — auto-reject expired approvals
         cron(run_month_end_close_scheduled, hour=0, minute=10),  # daily midnight UTC
         cron(resync_integrations_daily, hour=3, minute=0),   # daily 3am UTC
+        cron(run_ar_collections_scheduled, hour=8, minute=0),  # daily 8am UTC — chase overdue invoices
     ]
     on_startup = startup
     on_shutdown = shutdown

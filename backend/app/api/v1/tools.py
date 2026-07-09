@@ -20,6 +20,7 @@ VALID_TYPES = {
     "reconciliation", "expense_control",
     "document_intelligence", "spend_control",
     "tax_compliance", "financial_reporting", "payment_run",
+    "ar_collections",
 }
 VALID_STATUSES = {"active", "inactive"}
 

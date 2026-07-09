@@ -21,6 +21,7 @@ TOOL_TYPE_TO_JOB: dict[str, str] = {
     "payment_run":         "run_payment_run_job",
     "document_intelligence": "run_document_intelligence_job",
     "payroll_reconciliation": "run_payroll_rec_job",
+    "ar_collections":      "run_ar_collections_job",
 }
 
 # Maps event_type (integration sync / webhook) → arq job function name
@@ -39,6 +40,7 @@ EVENT_TYPE_TO_JOB: dict[str, str] = {
     "tax_compliance_run":        "run_tax_compliance_job",
     "financial_report_run":      "run_financial_reporting_job",
     "payment_run_requested":     "run_payment_run_job",
+    "ar_collections_run":        "run_ar_collections_job",
 }
 
 # Maps event_type → tool DB type (used to look up the active tool for execution creation)
@@ -55,6 +57,7 @@ EVENT_TYPE_TO_TOOL_TYPE: dict[str, str] = {
     "tax_compliance_run":        "tax_compliance",
     "financial_report_run":      "financial_reporting",
     "payment_run_requested":     "payment_run",
+    "ar_collections_run":        "ar_collections",
 }
 
 

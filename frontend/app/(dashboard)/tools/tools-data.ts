@@ -109,6 +109,29 @@ export const TOOLS: ToolDef[] = [
     ],
   },
   {
+    slug: 'ar-collections',
+    type: 'ar_collections',
+    requires: ['accounting'],
+    name: 'AR & Collections',
+    desc: 'Chase overdue customer invoices automatically - ages every receivable and recommends the right collection action, from a gentle reminder to escalation.',
+    capabilities: [
+      'Ages every outstanding customer invoice by days overdue',
+      'Tiered collection actions - reminder, second reminder, final notice, escalation',
+      'Auto-sends gentle reminders within policy; routes firmer actions for approval',
+      'Optional late fees above a configurable overdue threshold',
+      'Write-off candidate flagging for long-overdue, low-value balances',
+      'Runs daily on a schedule across all connected accounting sources',
+      'Full aging breakdown and recommended-action list in the audit trail',
+      'Multi-source aggregation: Xero, QuickBooks, FreshBooks',
+    ],
+    howItWorks: [
+      { step: '01', label: 'Sync',   desc: 'Pulls outstanding customer invoices from your connected accounting sources.' },
+      { step: '02', label: 'Age',    desc: 'Calculates days overdue for every unpaid invoice against its due date.' },
+      { step: '03', label: 'Decide', desc: 'Assigns each invoice a collection action by tier and applies your late-fee and write-off rules.' },
+      { step: '04', label: 'Route',  desc: 'Auto-approves reminders within policy; routes final notices, escalations, and write-offs for approval. Every run is audited.' },
+    ],
+  },
+  {
     slug: 'payment-runs',
     type: 'payment_run',
     requires: ['accounting'],
@@ -136,7 +159,7 @@ export function slugToTool(slug: string): ToolDef | undefined {
 // in pipeline order - the sequence a document travels through.
 
 export interface WorkflowDef {
-  id: 'accounts-payable' | 'month-end-close'
+  id: 'accounts-payable' | 'accounts-receivable' | 'month-end-close'
   name: string
   headline: string
   tagline: string
@@ -150,6 +173,13 @@ export const WORKFLOWS: WorkflowDef[] = [
     headline: 'From inbox to approved bill.',
     tagline: 'Invoices are ingested, read, coded, checked against your spend policy, and scheduled for payment - automatically.',
     toolTypes: ['document_intelligence', 'spend_control', 'payment_run'],
+  },
+  {
+    id: 'accounts-receivable',
+    name: 'Accounts Receivable',
+    headline: 'From overdue to collected.',
+    tagline: 'Every outstanding customer invoice is aged and chased with the right nudge - reminders, final notices, escalations - so cash comes in without manual follow-up.',
+    toolTypes: ['ar_collections'],
   },
   {
     id: 'month-end-close',
