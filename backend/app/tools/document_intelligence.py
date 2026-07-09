@@ -234,6 +234,52 @@ async def _create_native_expense(
         _logger.warning("doc_intel_native_expense_create_failed", extra={"error": str(exc)})
 
 
+async def _create_native_bill(
+    db, tenant_id: str, document_id: str | None, execution_id: str, parsed: dict, decision: str
+) -> None:
+    """Persist a native bill (source='invoice', no ERP integration) from the parsed invoice
+    so Spend Control's AP job and Payment Runs assess and pay it immediately - no ERP
+    round-trip required. Only for auto-approved invoices. Deduped on (tenant, source,
+    external_id). If the same bill later syncs from the ERP, the QB sync adopts this row
+    (see quickbooks/persist.upsert_bill) so it is never counted or paid twice. Best-effort."""
+    if decision != "auto_approved":
+        return
+    amount = int(parsed.get("amount_minor") or 0)
+    if amount <= 0:
+        return
+
+    number = parsed.get("invoice_number") or None
+    external_id = number or document_id or execution_id
+    due = parsed.get("due_date")
+    due_dt = None
+    if due:
+        try:
+            due_dt = datetime.fromisoformat(str(due))
+        except ValueError:
+            due_dt = None
+    try:
+        existing = await db.accountingbill.find_first(
+            where={"tenant_id": tenant_id, "source": "invoice", "external_id": external_id}
+        )
+        if existing:
+            return
+        await db.accountingbill.create(data={
+            "tenant_id": tenant_id,
+            "source": "invoice",
+            "external_id": external_id,
+            "number": number,
+            "status": "open",  # not paid/void -> Spend Control + Payment pick it up
+            "contact_name": parsed.get("vendor"),
+            "currency": parsed.get("currency") or "GBP",
+            "total_cents": amount,
+            "outstanding_cents": amount,
+            "due_date": due_dt,
+            "raw_data": PrismaJson(parsed),
+        })
+    except Exception as exc:
+        _logger.warning("doc_intel_native_bill_create_failed", extra={"error": str(exc)})
+
+
 async def run_document_intelligence_job(
     ctx: dict,
     *,
@@ -306,6 +352,7 @@ async def run_document_intelligence_job(
             rule_triggered = inv.get("rule_triggered")
             audit_needed = False
             await _create_native_invoice(db, tenant_id, document_id, parsed, inv["decision"])
+            await _create_native_bill(db, tenant_id, document_id, execution_id, parsed, inv["decision"])
         elif doc_type == "receipt":
             # Receipt -> expense. Reuses the receipt tool's flow, which writes its own
             # audit before any action, so we skip the generic audit below.

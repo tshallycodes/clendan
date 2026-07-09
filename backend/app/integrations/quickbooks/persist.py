@@ -92,6 +92,32 @@ async def upsert_bill(integration_id: str, tenant_id: str, bill: dict) -> None:
     balance = float(bill.get("Balance") or 0)
     status = "paid" if balance == 0 else "unpaid"
 
+    # If Clendan already created a native bill for this invoice (source="invoice", matched
+    # by invoice number), adopt it - link it to this ERP record - instead of creating a
+    # second row. Prevents the same bill being counted or paid twice once it syncs back.
+    doc_number = bill.get("DocNumber")
+    if doc_number:
+        native = await db.accountingbill.find_first(
+            where={"tenant_id": tenant_id, "source": "invoice", "number": doc_number}
+        )
+        if native:
+            await db.accountingbill.update(
+                where={"id": native.id},
+                data={
+                    "integration_id": integration_id,
+                    "external_id": bill["Id"],
+                    "source": SOURCE,
+                    "status": status,
+                    "contact_name": (bill.get("VendorRef") or {}).get("name") or native.contact_name,
+                    "currency": (bill.get("CurrencyRef") or {}).get("value", "USD"),
+                    "total_cents": _cents(bill.get("TotalAmt")),
+                    "outstanding_cents": _cents(bill.get("Balance")),
+                    "issue_date": _parse_date(bill.get("TxnDate")),
+                    "due_date": _parse_date(bill.get("DueDate")),
+                },
+            )
+            return
+
     await db.accountingbill.upsert(
         where={"integration_id_external_id": {"integration_id": integration_id, "external_id": bill["Id"]}},
         data={

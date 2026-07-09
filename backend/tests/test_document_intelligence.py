@@ -17,6 +17,8 @@ def _mock_db(config_json: dict | None = None):
     db.invoice.create = AsyncMock(return_value=None)
     db.accountingexpense.find_first = AsyncMock(return_value=None)
     db.accountingexpense.create = AsyncMock(return_value=None)
+    db.accountingbill.find_first = AsyncMock(return_value=None)
+    db.accountingbill.create = AsyncMock(return_value=None)
     return db
 
 
@@ -58,6 +60,13 @@ async def test_invoice_routes_to_ap_and_creates_native_invoice():
     execute_invoice.assert_awaited_once()
     db.invoice.create.assert_awaited_once()
     assert db.invoice.create.await_args.kwargs["data"]["vendor"] == "Acme Ltd"
+    # native bill Spend Control + Payment will read (source="invoice", payable)
+    db.accountingbill.create.assert_awaited_once()
+    bill = db.accountingbill.create.await_args.kwargs["data"]
+    assert bill["source"] == "invoice"
+    assert bill["status"] == "open"
+    assert bill["outstanding_cents"] == 12345
+    assert bill["contact_name"] == "Acme Ltd"
     audit.assert_not_called()  # invoice audits itself inside execute_invoice_tool
     complete.assert_awaited_once()
 

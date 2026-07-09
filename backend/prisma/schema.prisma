@@ -360,7 +360,9 @@ model AccountingInvoice {
 model AccountingBill {
   id                String    @id @default(cuid())
   tenant_id         String
-  integration_id    String
+  // Nullable: ERP-synced bills set this; Clendan-originated bills from processed invoices
+  // (source="invoice") have no integration until an ERP sync adopts them.
+  integration_id    String?
   source            String
   external_id       String
 
@@ -379,7 +381,7 @@ model AccountingBill {
   updated_at        DateTime  @updatedAt
 
   tenant            Tenant            @relation(fields: [tenant_id], references: [id])
-  integration       Integration       @relation(fields: [integration_id], references: [id])
+  integration       Integration?      @relation(fields: [integration_id], references: [id])
   bank_transactions BankTransaction[]
 
   @@unique([integration_id, external_id])
