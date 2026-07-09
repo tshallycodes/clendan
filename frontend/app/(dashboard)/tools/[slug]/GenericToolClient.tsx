@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { ConfigDrawer } from '@/components/dashboard/tools/ConfigDrawer'
 import { ToolExecutionsTab } from '@/components/dashboard/tools/ToolExecutionsTab'
 import { DocumentsTab } from '@/components/dashboard/tools/DocumentsTab'
+import { PaymentRunsPanel } from '@/components/dashboard/tools/PaymentRunsPanel'
 import type { Tool } from '@/components/dashboard/tools/ToolCard'
 import type { ToolDef } from '../tools-data'
 import { useAuth } from '@clerk/nextjs'
@@ -63,6 +64,7 @@ export function GenericToolClient({ tool, deployed }: Props) {
 
   const isActive = deployed?.status === 'active'
   const isDoc = tool.type === 'document_intelligence'
+  const isPayment = tool.type === 'payment_run'
 
   async function handleToggle() {
     if (!deployed) return
@@ -159,10 +161,13 @@ export function GenericToolClient({ tool, deployed }: Props) {
         )}
       </motion.div>
 
-      {/* Main body - the tool's working surface (documents for doc-intel, run activity otherwise). */}
+      {/* Main body - the tool's working surface (documents for doc-intel, payment runs for
+          payment_run, run activity otherwise). */}
       <motion.div variants={sectionVariants}>
         {isDoc ? (
           <DocumentsTab toolId={deployed?.id ?? null} />
+        ) : isPayment ? (
+          deployed ? <PaymentRunsPanel toolId={deployed.id} /> : <DeployPrompt tool={tool} />
         ) : deployed ? (
           <ToolExecutionsTab toolId={deployed.id} />
         ) : (

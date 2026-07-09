@@ -108,6 +108,8 @@ export const TOOL_FIELDS: Record<string, FieldDef[]> = {
       description: 'Only include bills in the payment run that are due within this many days. Prevents paying too far in advance and helps manage cash timing.' },
     { key: 'max_bills_per_run', type: 'number', label: 'Max bills per run', unit: 'bills', default: 50,
       description: 'Maximum number of bills included in a single payment run batch. Limits the size of any one run for easier review.' },
+    { key: 'approval_deadline_days', type: 'number', label: 'Approval deadline', unit: 'days', min: 1, default: 3,
+      description: 'Days a scheduled run waits for your approval before it auto-cancels. Approve within this window to release payment; miss it and the run is cancelled (you can reschedule it).' },
     { key: 'run_day_of_week', type: 'select', label: 'Schedule · Run day', options: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'], default: 'monday',
       description: 'Day of the week the automatic weekly payment run fires, in your organisation timezone (Settings).' },
     { key: 'run_hour', type: 'number', label: 'Schedule · Run at hour', unit: '0–23', min: 0, max: 23, default: 7,
