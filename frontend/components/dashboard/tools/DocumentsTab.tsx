@@ -10,7 +10,7 @@ import { askClen } from '@/components/clen/clen-launcher'
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
-type DocumentType = 'document' | 'pending'
+type DocumentType = 'invoice' | 'receipt' | 'other' | 'document' | 'pending'
 type DocumentStatus = 'processing' | 'completed' | 'failed'
 
 interface ProcessedDocument {
@@ -32,16 +32,20 @@ interface ProcessedDocument {
 }
 
 const DECISION_CONFIG: Record<string, { label: string; color: string; bg: string; border: string }> = {
-  analysed:              { label: 'Analysed',        color: 'text-[#00C853]',  bg: 'bg-[rgba(0,200,83,0.08)]',   border: 'border-[rgba(0,200,83,0.2)]' },
   classification_failed: { label: 'Unreadable',      color: 'text-[#ff4d6d]',  bg: 'bg-[rgba(255,77,109,0.08)]', border: 'border-[rgba(255,77,109,0.2)]' },
   blocked:               { label: 'Blocked',         color: 'text-[#ff4d6d]',  bg: 'bg-[rgba(255,77,109,0.08)]', border: 'border-[rgba(255,77,109,0.2)]' },
   auto_approved:         { label: 'Auto-approved',   color: 'text-[#00C853]',  bg: 'bg-[rgba(0,200,83,0.08)]',   border: 'border-[rgba(0,200,83,0.2)]' },
   approval_required:     { label: 'Needs review',    color: 'text-[#00a8cc]',  bg: 'bg-[rgba(0,168,204,0.08)]',  border: 'border-[rgba(0,168,204,0.2)]' },
+  no_action:             { label: 'No action',       color: 'text-brand-muted', bg: 'bg-brand-elevated',         border: 'border-brand-border' },
+  analysed:              { label: 'Processed',       color: 'text-[#00C853]',  bg: 'bg-[rgba(0,200,83,0.08)]',   border: 'border-[rgba(0,200,83,0.2)]' },
 }
 
 const DOC_TYPE_LABEL: Record<string, string> = {
+  invoice:  'Invoice',
+  receipt:  'Receipt',
+  other:    'Not financial',
   document: 'Document',
-  pending:  'Analysing…',
+  pending:  'Processing…',
 }
 
 function formatBytes(bytes: number): string {
@@ -472,7 +476,8 @@ function DocumentRow({ doc, toolId, onAbort }: DocumentRowProps) {
 
 const DOC_FILTERS = [
   { key: 'all', label: 'All' },
-  { key: 'analysed', label: 'Analysed' },
+  { key: 'invoice', label: 'Invoices' },
+  { key: 'receipt', label: 'Receipts' },
   { key: 'approval_required', label: 'Needs review' },
   { key: 'classification_failed', label: 'Unreadable' },
 ] as const
@@ -708,7 +713,7 @@ function UploadArea({ uploading, onFiles }: { uploading: boolean; onFiles: (file
             PDF · Word · PNG · JPG · WebP · max 10 MB
           </p>
           <p className="text-[11px] font-body text-brand-muted mt-1">
-            Clen analyses and extracts summary, risks, loopholes, and improvements
+            Clen reads each file - invoices become bills, receipts become expenses
           </p>
         </div>
       )}
@@ -768,10 +773,15 @@ export function DocumentsTab({ toolId }: { toolId: string | null }) {
             if (d.id.startsWith('temp-')) return d
             const updated = fresh.find(f => f.id === d.id)
             if (updated && d.status === 'processing' && updated.status === 'completed') {
-              const isSuccess = ['auto_pushed', 'analysed', 'auto_approved'].includes(updated.decision ?? '')
-              const label = DECISION_CONFIG[updated.decision ?? '']?.label ?? 'Processed'
+              const dec = updated.decision ?? ''
+              const toastType = ['auto_pushed', 'analysed', 'auto_approved'].includes(dec)
+                ? 'success'
+                : ['classification_failed', 'blocked', 'failed'].includes(dec)
+                  ? 'error'
+                  : 'info'
+              const label = DECISION_CONFIG[dec]?.label ?? 'Processed'
               const name = updated.filename ?? 'Document'
-              setTimeout(() => toast(`${name}: ${label}`, isSuccess ? 'success' : 'error'), 0)
+              setTimeout(() => toast(`${name}: ${label}`, toastType), 0)
             }
             return updated ?? d
           })
@@ -828,7 +838,7 @@ export function DocumentsTab({ toolId }: { toolId: string | null }) {
           setTotal(t => t - 1)
           continue
         }
-        toast(`${file.name} uploaded - analysing…`, 'success')
+        toast(`${file.name} uploaded - processing…`, 'success')
         setDocuments(prev => prev.map(d => d.id === tempId ? {
           id: json.data.document_id,
           document_type: 'pending' as DocumentType,
@@ -865,7 +875,8 @@ export function DocumentsTab({ toolId }: { toolId: string | null }) {
   const isFiltered = query !== '' || decisionFilter !== 'all'
   const visibleDocs = documents.filter(d => {
     if (query && !(d.filename ?? '').toLowerCase().includes(query)) return false
-    if (decisionFilter === 'analysed') return d.decision === 'analysed' || d.decision === 'auto_approved'
+    if (decisionFilter === 'invoice') return d.document_type === 'invoice'
+    if (decisionFilter === 'receipt') return d.document_type === 'receipt'
     if (decisionFilter === 'approval_required') return d.decision === 'approval_required'
     if (decisionFilter === 'classification_failed') return d.decision === 'classification_failed'
     return true

@@ -1,6 +1,7 @@
 """
-Document Intelligence Tool - comprehensive AI analysis of any business document.
-Classifies uploads and produces structured analysis: summary, risks, loopholes, improvements.
+Invoice & Receipt Processing Tool (internal type: document_intelligence).
+Classifies each financial document and routes it: invoice -> bill (AP), receipt -> expense
+(Spend Control). Anything that is not an invoice or receipt is recorded with no action.
 """
 import asyncio
 import base64
@@ -12,7 +13,6 @@ from typing import Any
 import anthropic
 import fitz  # PyMuPDF
 from prisma import Json as PrismaJson
-from pydantic import BaseModel
 
 from app.audit.logger import write_audit_log
 from app.core.config import get_settings
@@ -35,46 +35,18 @@ _ALLOWED_CONTENT_TYPES = {
 _MAX_FILE_BYTES = 10 * 1024 * 1024  # 10 MB
 _DOCX_MIME = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
 
-class _ToolPolicy(BaseModel):
-    auto_approve_confidence_min: float = 0.80
-    flag_keywords: str = ""
-
-
-def _parse_policy(config_json: dict) -> _ToolPolicy:
-    mapped: dict[str, Any] = {}
-    if "auto_approve_confidence_min" in config_json:
-        mapped["auto_approve_confidence_min"] = float(config_json["auto_approve_confidence_min"]) / 100
-    if "flag_keywords" in config_json:
-        mapped["flag_keywords"] = str(config_json["flag_keywords"])
-    return _ToolPolicy(**mapped)
-
-
 _CLASSIFY_PROMPT = """Classify this document. Return ONLY valid JSON:
 {
-  "type": "receipt" or "invoice" or "document" or "error",
+  "type": "receipt" or "invoice" or "other" or "error",
   "error_reason": null or one of: "image_unreadable", "empty_document", "no_text_found", "cannot_identify",
   "error_message": null or a human-readable error message in title case
 }
 receipt = any receipt, proof of purchase, expense claim, transaction record.
 invoice = a supplier/vendor invoice or bill requesting payment - has an invoice number, line items, and a payable total.
-document = any other business document: contract, NDA, report, letter, policy, financial statement, proposal, etc.
+other = any document that is not a receipt or invoice (contract, report, letter, statement, etc.). This tool only processes financial documents, so these are recorded with no action.
 error = cannot classify. Set error_reason and a clear error_message.
 Error reasons: image_unreadable (too blurry/dark), empty_document (blank), no_text_found (no readable text), cannot_identify (unrecognised content).
 Return ONLY the JSON object. No markdown, no explanation."""
-
-
-_DOCUMENT_PROMPT = """Analyse this business document comprehensively. Return ONLY valid JSON:
-{
-  "document_subtype": one of: contract nda agreement report letter policy financial_statement invoice proposal terms_of_service other,
-  "summary": "2-3 paragraph plain English summary",
-  "risks": ["specific risk or concern"],
-  "loopholes": ["potential loophole or ambiguous clause"],
-  "improvements": ["suggested improvement or missing clause"],
-  "parties": ["entity or person name"],
-  "key_dates": ["date and its significance"],
-  "confidence": float 0.0 to 1.0
-}
-Be thorough but concise. Each item should be a clear, specific statement. Return ONLY the JSON. No markdown."""
 
 
 def _generate_thumbnail(file_bytes: bytes, content_type: str) -> str | None:
@@ -111,50 +83,6 @@ def _docx_to_text(file_bytes: bytes) -> str:
         raise ValueError("python-docx not installed - cannot process Word documents") from exc
     except Exception as exc:
         raise ValueError(f"Failed to read Word document: {exc}") from exc
-
-
-async def _call_claude_vision(
-    file_bytes: bytes,
-    content_type: str,
-    prompt: str,
-    max_tokens: int = 1024,
-) -> dict[str, Any]:
-    settings = get_settings()
-    client = anthropic.AsyncAnthropic(api_key=settings.anthropic_api_key, timeout=60.0)
-
-    if content_type == "application/pdf":
-        images = _pdf_to_images(file_bytes)
-        media_type = "image/png"
-    else:
-        images = [file_bytes]
-        media_type = content_type
-
-    content: list[dict] = []
-    for img_bytes in images:
-        b64 = base64.standard_b64encode(img_bytes).decode()
-        content.append({"type": "image", "source": {"type": "base64", "media_type": media_type, "data": b64}})
-    content.append({"type": "text", "text": prompt})
-
-    last_exc: Exception = RuntimeError("No attempts made")
-    for attempt in range(settings.max_agent_attempts):
-        try:
-            response = await client.messages.create(
-                model=settings.claude_model,
-                max_tokens=max_tokens,
-                messages=[{"role": "user", "content": content}],
-            )
-            return json.loads(response.content[0].text)
-        except (anthropic.APIStatusError, anthropic.APIConnectionError) as exc:
-            last_exc = exc
-            _logger.warning("doc_intel_claude_transient", extra={"attempt": attempt + 1, "error": str(exc)})
-            if attempt < settings.max_agent_attempts - 1:
-                await asyncio.sleep(settings.backoff_seconds * (attempt + 1))
-        except (json.JSONDecodeError, Exception) as exc:
-            raise ValueError(f"Claude returned unparseable response: {exc}") from exc
-
-    raise RuntimeError(
-        f"Claude API failed after {settings.max_agent_attempts} attempts: {last_exc}"
-    ) from last_exc
 
 
 async def _call_claude_text(text: str, prompt: str, max_tokens: int = 1024) -> dict[str, Any]:
@@ -226,32 +154,6 @@ async def _classify_document(file_bytes: bytes, content_type: str) -> dict[str, 
 
 
 
-async def _process_document(file_bytes: bytes, content_type: str) -> dict[str, Any]:
-    if content_type == _DOCX_MIME:
-        text = _docx_to_text(file_bytes)
-        data = await _call_claude_text(text, _DOCUMENT_PROMPT, max_tokens=2048)
-    else:
-        data = await _call_claude_vision(file_bytes, content_type, _DOCUMENT_PROMPT, max_tokens=2048)
-
-    confidence = float(data.get("confidence", 0.0))
-    subtype = data.get("document_subtype", "other")
-    extracted: dict[str, Any] = {
-        "document_subtype": subtype,
-        "summary": data.get("summary", ""),
-        "risks": data.get("risks", []),
-        "loopholes": data.get("loopholes", []),
-        "improvements": data.get("improvements", []),
-        "parties": data.get("parties", []),
-        "key_dates": data.get("key_dates", []),
-    }
-    return {
-        "decision": "analysed",
-        "confidence": confidence,
-        "reason": f"Document analysed - {subtype.replace('_', ' ')}",
-        "extracted": extracted,
-    }
-
-
 _INVOICE_STATUS_BY_DECISION = {
     "auto_approved": "approved",
     "approval_required": "pending",
@@ -317,7 +219,6 @@ async def run_document_intelligence_job(
         else:
             tool = await db.tool.find_first(where={"id": tool_id, "tenant_id": tenant_id})
             raw_config = tool.config_json if tool and isinstance(tool.config_json, dict) else {}
-        policy = _parse_policy(raw_config)
 
         classification = await _classify_document(file_bytes, content_type)
         doc_type = classification.get("type", "error")
@@ -360,53 +261,38 @@ async def run_document_intelligence_job(
             rule_triggered = inv.get("rule_triggered")
             audit_needed = False
             await _create_native_invoice(db, tenant_id, document_id, parsed, inv["decision"])
+        elif doc_type == "receipt":
+            # Receipt -> expense. Reuses the receipt tool's flow, which writes its own
+            # audit before any action, so we skip the generic audit below.
+            from app.tools.receipt_processing import execute_receipt_tool
+            rec = await execute_receipt_tool(
+                tool_id=tool_id,
+                tenant_id=tenant_id,
+                execution_id=execution_id,
+                file_bytes=file_bytes,
+                content_type=content_type,
+                policy_config=raw_config,
+            )
+            result = {
+                "document_type": "receipt",
+                "decision": rec["decision"],
+                "confidence": rec["confidence"],
+                "reason": rec["reason"],
+                "extracted": rec.get("parsed_receipt", {}) or {},
+            }
+            audit_needed = False
         else:
-            r = await _process_document(file_bytes, content_type)
-            result = {"document_type": "document", **r}
-
-            # Apply policy - keyword check first, then confidence threshold
-            matched_keywords: list[str] = []
-            if policy.flag_keywords.strip():
-                keywords = [kw.strip().lower() for kw in policy.flag_keywords.split(",") if kw.strip()]
-                analysis_text = json.dumps(result.get("extracted", {})).lower()
-                matched_keywords = [kw for kw in keywords if kw in analysis_text]
-                if matched_keywords:
-                    result["decision"] = "approval_required"
-                    rule_triggered = f"keyword: {', '.join(matched_keywords)}"
-
-            if result["decision"] != "approval_required":
-                if result.get("confidence", 0.0) >= policy.auto_approve_confidence_min:
-                    result["decision"] = "auto_approved"
-                else:
-                    result["decision"] = "approval_required"
-
-            # Replace the generic "Document analysed - <type>" description with a reason
-            # that explains the decision - this is what the approval UI shows under
-            # "Why this needs review".
-            conf_pct = round(result.get("confidence", 0.0) * 100)
-            threshold_pct = round(policy.auto_approve_confidence_min * 100)
-            if result["decision"] == "approval_required":
-                if matched_keywords:
-                    result["reason"] = (
-                        f"Flagged for manual review: contains keyword(s) "
-                        f"{', '.join(matched_keywords)}."
-                    )
-                elif conf_pct < threshold_pct:
-                    result["reason"] = (
-                        f"Extraction confidence {conf_pct}% is below the {threshold_pct}% "
-                        f"auto-approve threshold - a person should verify the extracted data "
-                        f"before it is used."
-                    )
-                else:
-                    result["reason"] = "Routed for manual review before the data is used."
-            elif result["decision"] == "auto_approved":
-                result["reason"] = (
-                    f"Auto-approved: extraction confidence {conf_pct}% met the "
-                    f"{threshold_pct}% threshold."
-                )
+            # Not an invoice or receipt - this tool only processes financial documents.
+            result = {
+                "document_type": "other",
+                "decision": "no_action",
+                "confidence": 1.0,
+                "reason": "Not an invoice or receipt - no financial action taken.",
+                "extracted": {},
+            }
 
         # Audit FIRST - if this fails, the operation fails (hard requirement).
-        # Invoices are already audited inside execute_invoice_tool (audit_needed=False).
+        # Invoices/receipts are already audited inside their own tool (audit_needed=False).
         if audit_needed:
             await write_audit_log(
                 tenant_id=tenant_id,

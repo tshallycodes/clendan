@@ -16,10 +16,14 @@ export interface FieldDef {
 
 export const TOOL_FIELDS: Record<string, FieldDef[]> = {
   document_intelligence: [
-    { key: 'auto_approve_confidence_min', type: 'number', label: 'Auto-approve min confidence', unit: '%', step: 1, min: 0, max: 100, default: 80,
-      description: "Documents where Claude's confidence is at or above this are auto-approved. Below this threshold, the document is routed to the Approvals queue for human review." },
-    { key: 'flag_keywords', type: 'text', label: 'Flag keywords', placeholder: 'termination, penalty, indemnity', default: '',
-      description: 'Comma-separated keywords. If any appear in the analysis output, the document is routed to Approvals regardless of confidence. Leave blank to disable keyword flagging.' },
+    { key: 'auto_threshold_minor', type: 'number', label: 'Auto-approve invoices under', penceDisplay: true, default: 50000,
+      description: 'Invoices below this total are auto-approved and the bill is written to your connected ERP. Default £500.' },
+    { key: 'block_threshold_minor', type: 'number', label: 'Block invoices over', penceDisplay: true, default: 1000000,
+      description: 'Invoices above this total are blocked outright and never auto-processed. Default £10,000.' },
+    { key: 'min_ocr_confidence', type: 'number', label: 'Minimum extraction confidence', unit: '0–1', step: 0.01, min: 0, max: 1, default: 0.85,
+      description: 'Invoices extracted below this confidence are routed to Approvals for manual review instead of auto-approved.' },
+    { key: 'duplicate_window_days', type: 'number', label: 'Duplicate detection window', unit: 'days', default: 90,
+      description: 'Flag an invoice as a duplicate if the same invoice number was already seen within this many days.' },
   ],
   reconciliation: [
     // ── Bank ──────────────────────────────────────────────────────────────

@@ -1,198 +1,40 @@
 """
-Tests for the document_intelligence tool.
+Tests for the Invoice & Receipt Processing tool (internal type document_intelligence).
 
-Covers policy parsing, analysis output shaping, and the full arq job logic:
-classification-error handling, confidence-threshold decisions, keyword flagging,
-audit-before-complete ordering, and the policy_config kwarg contract used by the
-document_received auto-ingest path (run_document_received_job).
+Covers classification routing - invoice -> AP (execute_invoice_tool + native Invoice),
+receipt -> expense (execute_receipt_tool), other -> no action - plus audit-before-complete
+ordering and the policy_config auto-ingest contract.
 """
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 
 
-# ---- pure helpers -----------------------------------------------------------
-
-def test_parse_policy_defaults():
-    from app.tools.document_intelligence import _parse_policy
-    policy = _parse_policy({})
-    assert policy.auto_approve_confidence_min == 0.80
-    assert policy.flag_keywords == ""
-
-
-def test_parse_policy_maps_percentage_confidence():
-    from app.tools.document_intelligence import _parse_policy
-    policy = _parse_policy({"auto_approve_confidence_min": 90, "flag_keywords": "lawsuit, penalty"})
-    assert policy.auto_approve_confidence_min == 0.90
-    assert policy.flag_keywords == "lawsuit, penalty"
-
-
-@pytest.mark.asyncio
-async def test_process_document_shapes_output():
-    analysis = {
-        "document_subtype": "contract",
-        "summary": "A supply contract.",
-        "risks": ["r1"], "loopholes": ["l1"], "improvements": ["i1"],
-        "parties": ["Acme Ltd"], "key_dates": ["2026-01-01: start"],
-        "confidence": 0.88,
-    }
-    with patch("app.tools.document_intelligence._call_claude_vision", AsyncMock(return_value=analysis)):
-        from app.tools.document_intelligence import _process_document
-        result = await _process_document(b"pdf-bytes", "application/pdf")
-    assert result["decision"] == "analysed"
-    assert result["confidence"] == 0.88
-    assert result["extracted"]["document_subtype"] == "contract"
-    assert result["extracted"]["risks"] == ["r1"]
-    assert result["extracted"]["parties"] == ["Acme Ltd"]
-
-
-# ---- job logic --------------------------------------------------------------
-
 def _mock_db(config_json: dict | None = None):
     db = MagicMock()
-    db.tool = MagicMock()
     db.tool.find_first = AsyncMock(return_value=MagicMock(config_json=config_json or {}))
-    db.document = MagicMock()
     db.document.update = AsyncMock(return_value=None)
-    db.execution = MagicMock()
     db.execution.update = AsyncMock(return_value=None)
+    db.invoice.create = AsyncMock(return_value=None)
     return db
 
 
-def _analysis(confidence: float, extracted: dict | None = None) -> dict:
-    return {
-        "decision": "analysed",
-        "confidence": confidence,
-        "reason": "Document analysed — contract",
-        "extracted": extracted if extracted is not None else {"summary": "x", "risks": []},
-    }
-
-
-def _patches(db, audit, complete, classify_ret, process_ret, dlq=None):
-    process_mock = AsyncMock(return_value=process_ret) if process_ret is not None else AsyncMock()
+def _patches(db, audit, complete, classify_ret):
     return (
         patch("app.tools.document_intelligence.get_db", return_value=db),
         patch("app.tools.document_intelligence.write_audit_log", audit),
         patch("app.tools.document_intelligence.complete_execution", complete),
-        patch("app.tools.document_intelligence.push_to_dlq", dlq or AsyncMock()),
+        patch("app.tools.document_intelligence.push_to_dlq", AsyncMock()),
         patch("app.tools.document_intelligence._classify_document", AsyncMock(return_value=classify_ret)),
-        patch("app.tools.document_intelligence._process_document", process_mock),
-    ), process_mock
-
-
-@pytest.mark.asyncio
-async def test_job_auto_approved_high_confidence():
-    db = _mock_db()
-    audit = AsyncMock(return_value="audit-id")
-    complete = AsyncMock(return_value="auto_approved")
-    ps, _ = _patches(db, audit, complete, {"type": "document"}, _analysis(0.95))
-    with ps[0], ps[1], ps[2], ps[3], ps[4], ps[5]:
-        from app.tools.document_intelligence import run_document_intelligence_job
-        result = await run_document_intelligence_job(
-            {}, execution_id="e1", tenant_id="t1", tool_id="tool1",
-            file_bytes=b"pdf", content_type="application/pdf", document_id="d1",
-        )
-    assert result["decision"] == "auto_approved"
-    assert result["document_type"] == "document"
-    audit.assert_called_once()
-    complete.assert_called_once()
-    assert complete.call_args.kwargs["decision"] == "auto_approved"
-    assert complete.call_args.kwargs["confidence"] == 0.95
-
-
-@pytest.mark.asyncio
-async def test_job_approval_required_low_confidence():
-    db = _mock_db()
-    audit = AsyncMock(return_value="audit-id")
-    complete = AsyncMock(return_value="approval_required")
-    ps, _ = _patches(db, audit, complete, {"type": "document"}, _analysis(0.50))
-    with ps[0], ps[1], ps[2], ps[3], ps[4], ps[5]:
-        from app.tools.document_intelligence import run_document_intelligence_job
-        result = await run_document_intelligence_job(
-            {}, execution_id="e2", tenant_id="t1", tool_id="tool1",
-            file_bytes=b"pdf", content_type="application/pdf", document_id="d2",
-        )
-    assert result["decision"] == "approval_required"
-
-
-@pytest.mark.asyncio
-async def test_job_keyword_flag_forces_approval_even_when_confident():
-    db = _mock_db(config_json={"flag_keywords": "lawsuit"})
-    audit = AsyncMock(return_value="audit-id")
-    complete = AsyncMock(return_value="approval_required")
-    analysis = _analysis(0.99, {"risks": ["Possible lawsuit exposure"]})
-    ps, _ = _patches(db, audit, complete, {"type": "document"}, analysis)
-    with ps[0], ps[1], ps[2], ps[3], ps[4], ps[5]:
-        from app.tools.document_intelligence import run_document_intelligence_job
-        result = await run_document_intelligence_job(
-            {}, execution_id="e3", tenant_id="t1", tool_id="tool1",
-            file_bytes=b"pdf", content_type="application/pdf", document_id="d3",
-        )
-    assert result["decision"] == "approval_required"
-    # rule_triggered flows into the audit reasoning trace
-    trace = audit.call_args.kwargs["reasoning_trace"]
-    assert trace["rule_triggered"] == "keyword: lawsuit"
-
-
-@pytest.mark.asyncio
-async def test_job_classification_error_marks_pending_unreadable():
-    db = _mock_db()
-    audit = AsyncMock(return_value="audit-id")
-    complete = AsyncMock(return_value="classification_failed")
-    ps, process_mock = _patches(
-        db, audit, complete,
-        {"type": "error", "error_message": "Image Unreadable"},
-        None,
     )
-    with ps[0], ps[1], ps[2], ps[3], ps[4], ps[5]:
-        from app.tools.document_intelligence import run_document_intelligence_job
-        result = await run_document_intelligence_job(
-            {}, execution_id="e4", tenant_id="t1", tool_id="tool1",
-            file_bytes=b"pdf", content_type="application/pdf", document_id="d4",
-        )
-    assert result["document_type"] == "pending"
-    assert result["decision"] == "classification_failed"
-    assert result["confidence"] == 0.0
-    assert result["reason"] == "Image Unreadable"
-    process_mock.assert_not_called()  # analysis skipped on classification error
 
 
 @pytest.mark.asyncio
-async def test_job_accepts_policy_config_kwarg_and_skips_db_read():
-    """Regression: run_document_received_job enqueues the job WITH policy_config.
-
-    The job must accept the kwarg (else arq raises TypeError at bind time, outside the
-    try/except, stranding the execution) and use it in place of a tenant DB read.
-    """
+async def test_invoice_routes_to_ap_and_creates_native_invoice():
     db = _mock_db()
-    db.tool.find_first = AsyncMock(side_effect=AssertionError("must not read tool when policy_config is given"))
-    audit = AsyncMock(return_value="audit-id")
-    complete = AsyncMock(return_value="auto_approved")
-    ps, _ = _patches(db, audit, complete, {"type": "document"}, _analysis(0.95))
-    with ps[0], ps[1], ps[2], ps[3], ps[4], ps[5]:
-        from app.tools.document_intelligence import run_document_intelligence_job
-        result = await run_document_intelligence_job(
-            {}, execution_id="e5", tenant_id="t1", tool_id="tool1",
-            file_bytes=b"pdf", content_type="application/pdf", document_id="d5",
-            policy_config={"auto_approve_confidence_min": 50},
-        )
-    assert result["decision"] == "auto_approved"
-    db.tool.find_first.assert_not_called()
-
-
-@pytest.mark.asyncio
-async def test_job_invoice_routes_to_ap_and_creates_native_invoice():
-    """An invoice is processed via the AP flow (execute_invoice_tool), which extracts +
-    writes the bill + audits itself; doc-intel then persists a native Invoice and does not
-    double-audit."""
-    db = _mock_db()
-    db.invoice = MagicMock()
-    db.invoice.create = AsyncMock(return_value=None)
     audit = AsyncMock(return_value="audit-id")
     complete = AsyncMock(return_value="auto_approved")
     inv_result = {
-        "decision": "auto_approved",
-        "reason": "Auto-approved: within AP thresholds.",
-        "rule_triggered": None,
+        "decision": "auto_approved", "reason": "within thresholds", "rule_triggered": None,
         "parsed_invoice": {
             "vendor": "Acme Ltd", "invoice_number": "INV-1", "amount_minor": 12345,
             "currency": "GBP", "due_date": "2026-06-30", "line_items": [],
@@ -200,30 +42,113 @@ async def test_job_invoice_routes_to_ap_and_creates_native_invoice():
         "confidence": 0.97,
     }
     execute_invoice = AsyncMock(return_value=inv_result)
-    with (
-        patch("app.tools.document_intelligence.get_db", return_value=db),
-        patch("app.tools.document_intelligence.write_audit_log", audit),
-        patch("app.tools.document_intelligence.complete_execution", complete),
-        patch("app.tools.document_intelligence.push_to_dlq", AsyncMock()),
-        patch("app.tools.document_intelligence._classify_document", AsyncMock(return_value={"type": "invoice"})),
-        patch("app.tools.invoice_processing.execute_invoice_tool", execute_invoice),
+    ps = _patches(db, audit, complete, {"type": "invoice"})
+    with ps[0], ps[1], ps[2], ps[3], ps[4], patch(
+        "app.tools.invoice_processing.execute_invoice_tool", execute_invoice
     ):
         from app.tools.document_intelligence import run_document_intelligence_job
         result = await run_document_intelligence_job(
-            {}, execution_id="e7", tenant_id="t1", tool_id="tool1",
-            file_bytes=b"pdf", content_type="application/pdf", document_id="d7",
+            {}, execution_id="e1", tenant_id="t1", tool_id="tool1",
+            file_bytes=b"pdf", content_type="application/pdf", document_id="d1",
         )
     assert result["document_type"] == "invoice"
     assert result["decision"] == "auto_approved"
     execute_invoice.assert_awaited_once()
     db.invoice.create.assert_awaited_once()
-    created = db.invoice.create.await_args.kwargs["data"]
-    assert created["vendor"] == "Acme Ltd"
-    assert created["invoice_number"] == "INV-1"
-    assert created["status"] == "approved"
-    audit.assert_not_called()  # invoice audit is written inside execute_invoice_tool
+    assert db.invoice.create.await_args.kwargs["data"]["vendor"] == "Acme Ltd"
+    audit.assert_not_called()  # invoice audits itself inside execute_invoice_tool
     complete.assert_awaited_once()
-    assert complete.await_args.kwargs["decision"] == "auto_approved"
+
+
+@pytest.mark.asyncio
+async def test_receipt_routes_to_expense():
+    db = _mock_db()
+    audit = AsyncMock(return_value="audit-id")
+    complete = AsyncMock(return_value="auto_approved")
+    rec_result = {
+        "decision": "auto_approved", "reason": "ok",
+        "parsed_receipt": {"merchant": "Cafe", "amount_minor": 500, "category": "meals"},
+        "confidence": 0.95,
+    }
+    execute_receipt = AsyncMock(return_value=rec_result)
+    ps = _patches(db, audit, complete, {"type": "receipt"})
+    with ps[0], ps[1], ps[2], ps[3], ps[4], patch(
+        "app.tools.receipt_processing.execute_receipt_tool", execute_receipt
+    ):
+        from app.tools.document_intelligence import run_document_intelligence_job
+        result = await run_document_intelligence_job(
+            {}, execution_id="e2", tenant_id="t1", tool_id="tool1",
+            file_bytes=b"pdf", content_type="application/pdf", document_id="d2",
+        )
+    assert result["document_type"] == "receipt"
+    assert result["decision"] == "auto_approved"
+    execute_receipt.assert_awaited_once()
+    audit.assert_not_called()  # receipt audits itself
+    complete.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_other_document_no_action():
+    db = _mock_db()
+    audit = AsyncMock(return_value="audit-id")
+    complete = AsyncMock(return_value="no_action")
+    ps = _patches(db, audit, complete, {"type": "other"})
+    with ps[0], ps[1], ps[2], ps[3], ps[4]:
+        from app.tools.document_intelligence import run_document_intelligence_job
+        result = await run_document_intelligence_job(
+            {}, execution_id="e3", tenant_id="t1", tool_id="tool1",
+            file_bytes=b"pdf", content_type="application/pdf", document_id="d3",
+        )
+    assert result["document_type"] == "other"
+    assert result["decision"] == "no_action"
+    assert "no financial action" in result["reason"].lower()
+    audit.assert_called_once()  # non-financial doc is still recorded/audited
+    complete.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_classification_error_marks_pending():
+    db = _mock_db()
+    audit = AsyncMock(return_value="audit-id")
+    complete = AsyncMock(return_value="classification_failed")
+    ps = _patches(db, audit, complete, {"type": "error", "error_message": "Image Unreadable"})
+    with ps[0], ps[1], ps[2], ps[3], ps[4]:
+        from app.tools.document_intelligence import run_document_intelligence_job
+        result = await run_document_intelligence_job(
+            {}, execution_id="e4", tenant_id="t1", tool_id="tool1",
+            file_bytes=b"pdf", content_type="application/pdf", document_id="d4",
+        )
+    assert result["document_type"] == "pending"
+    assert result["decision"] == "classification_failed"
+    assert result["reason"] == "Image Unreadable"
+
+
+@pytest.mark.asyncio
+async def test_accepts_policy_config_kwarg_and_skips_db_read():
+    """The auto-ingest path passes policy_config; the job must accept it and not read the
+    tool from the DB (the kwarg is bound before the try/except)."""
+    db = _mock_db()
+    db.tool.find_first = AsyncMock(side_effect=AssertionError("must not read tool when policy_config given"))
+    audit = AsyncMock(return_value="audit-id")
+    complete = AsyncMock(return_value="auto_approved")
+    execute_invoice = AsyncMock(return_value={
+        "decision": "auto_approved", "reason": "ok", "rule_triggered": None,
+        "parsed_invoice": {"vendor": "X", "invoice_number": "1", "amount_minor": 1,
+                           "currency": "GBP", "line_items": []},
+        "confidence": 0.9,
+    })
+    ps = _patches(db, audit, complete, {"type": "invoice"})
+    with ps[0], ps[1], ps[2], ps[3], ps[4], patch(
+        "app.tools.invoice_processing.execute_invoice_tool", execute_invoice
+    ):
+        from app.tools.document_intelligence import run_document_intelligence_job
+        result = await run_document_intelligence_job(
+            {}, execution_id="e5", tenant_id="t1", tool_id="tool1",
+            file_bytes=b"pdf", content_type="application/pdf", document_id="d5",
+            policy_config={"auto_threshold_minor": 5000},
+        )
+    assert result["decision"] == "auto_approved"
+    db.tool.find_first.assert_not_called()
 
 
 def test_spend_control_run_routes_to_accounts_payable():
@@ -234,14 +159,14 @@ def test_spend_control_run_routes_to_accounts_payable():
 
 
 @pytest.mark.asyncio
-async def test_job_audit_failure_aborts_before_complete_execution():
-    """Audit must be written before the execution is finalised — if audit fails the
+async def test_audit_failure_aborts_before_complete_execution():
+    """Audit must be written before the execution is finalised - if audit fails the
     operation fails and complete_execution is never reached."""
     db = _mock_db()
     audit = AsyncMock(side_effect=RuntimeError("audit log down"))
-    complete = AsyncMock(return_value="auto_approved")
-    ps, _ = _patches(db, audit, complete, {"type": "document"}, _analysis(0.95))
-    with ps[0], ps[1], ps[2], ps[3], ps[4], ps[5]:
+    complete = AsyncMock(return_value="no_action")
+    ps = _patches(db, audit, complete, {"type": "other"})
+    with ps[0], ps[1], ps[2], ps[3], ps[4]:
         from app.tools.document_intelligence import run_document_intelligence_job
         with pytest.raises(RuntimeError, match="audit log down"):
             await run_document_intelligence_job(
@@ -249,5 +174,4 @@ async def test_job_audit_failure_aborts_before_complete_execution():
                 file_bytes=b"pdf", content_type="application/pdf", document_id="d6",
             )
     complete.assert_not_called()
-    # execution marked failed on the error path
     db.execution.update.assert_awaited()
