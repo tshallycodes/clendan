@@ -8,9 +8,11 @@ from datetime import datetime, UTC
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi.responses import RedirectResponse
 from prisma import Prisma
 from pydantic import BaseModel
 
+from app.core.config import get_settings
 from app.core.db import get_db_dep
 from app.core.logging import get_logger
 from app.core.responses import standard_response
@@ -128,13 +130,7 @@ async def outlook_callback(
         "outlook_callback_ok tenant=%s integration_id=%s email=%s",
         tenant_id, integration.id, email,
     )
-    return standard_response(
-        data={
-            "status": "syncing",
-            "integration_id": integration.id,
-            "email": email,
-        }
-    )
+    return RedirectResponse(url=f"{get_settings().frontend_url}/dashboard/integrations?connected=outlook")
 
 
 @router.get("/integrations/outlook/status")

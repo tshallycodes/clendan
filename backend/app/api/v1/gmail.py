@@ -7,6 +7,7 @@ from datetime import datetime, UTC
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.responses import RedirectResponse
 from prisma import Prisma
 from pydantic import BaseModel
 
@@ -146,7 +147,7 @@ async def gmail_callback(
     except Exception as exc:
         logger.warning("gmail_sync_enqueue_failed", extra={"tenant_id": tenant_id, "error": str(exc)})
 
-    return standard_response(data={"status": "syncing", "integration_id": integration.id})
+    return RedirectResponse(url=f"{settings.frontend_url}/dashboard/integrations?connected=gmail")
 
 
 @router.get("/integrations/gmail/status")
