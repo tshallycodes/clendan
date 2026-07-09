@@ -147,7 +147,7 @@ async def sync_gmail_connection(ctx: dict, integration_id: str, tenant_id: str) 
     if sync_status == "success":
         await db.integration.update(
             where={"id": integration_id},
-            data={"status": "connected", "connected_at": datetime.now(UTC)},
+            data={"status": "connected", "connected_at": datetime.now(UTC), "last_synced_at": datetime.now(UTC)},
         )
         # Process every matched attachment (first sync included, deduped by idempotency
         # key). One event per attachment: Invoice & Receipt Processing classifies it.

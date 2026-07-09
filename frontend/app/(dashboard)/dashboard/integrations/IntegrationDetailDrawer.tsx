@@ -80,7 +80,7 @@ const EMAIL_SLUGS = new Set(['gmail', 'outlook'])
 const FOLDER_PLACEHOLDER: Record<string, string> = {
   'google-drive': 'e.g. Invoices',
   'dropbox': 'e.g. /Clendan',
-  'gmail': 'e.g. label:Invoices  or  from:accounts@supplier.com',
+  'gmail': 'e.g. invoice OR bill  ·  from:supplier.com  ·  label:Invoices',
   'outlook': "e.g. contains(subject,'invoice')",
 }
 
@@ -289,7 +289,7 @@ export function IntegrationDetailDrawer({ slug, intg, status, lastSyncedAt, onCl
                       <p className="text-[11px] font-body uppercase tracking-widest text-brand-muted mb-1">Document Processing</p>
                       <p className="text-[11px] font-body text-brand-muted mb-3 leading-relaxed">
                         {isEmailSource
-                          ? 'Only emails matching this filter are read and their attachments processed. Everything else in your mailbox is ignored. Leave empty to process nothing.'
+                          ? 'Only emails matching this filter are read; the rest of your mailbox is ignored. You can cast a wide net (e.g. invoice OR bill) - Clen classifies every attachment and only acts on invoices and receipts, ignoring the rest. Leave empty to process nothing.'
                           : 'Only files inside this folder are read and processed. Everything else in your account is ignored. Leave empty to process nothing.'}
                       </p>
                       <div className="flex gap-2">

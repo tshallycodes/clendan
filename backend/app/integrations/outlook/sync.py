@@ -141,7 +141,7 @@ async def sync_outlook_connection(ctx: dict, integration_id: str, tenant_id: str
 
     await db.integration.update(
         where={"id": integration_id},
-        data={"status": "connected", "connected_at": datetime.now(UTC)},
+        data={"status": "connected", "connected_at": datetime.now(UTC), "last_synced_at": datetime.now(UTC)},
     )
 
     # One event per message (first sync included, deduped by idempotency key):
