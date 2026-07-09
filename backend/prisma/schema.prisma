@@ -62,6 +62,30 @@ model Tenant {
   journal_entries         JournalEntry[]
   category_corrections    CategoryCorrection[]
   workflow_connections    WorkflowConnection[]
+  collection_reminders    CollectionReminder[]
+}
+
+// One row per collection reminder dispatched (or would-be dispatched in dry-run) for an
+// AR invoice. Doubles as the per-tier dedup guard: AR never re-sends the same tier to the
+// same invoice because a row already exists for (tenant_id, invoice_id, tier).
+model CollectionReminder {
+  id         String   @id @default(cuid())
+  tenant_id  String
+  invoice_id String
+  tier       String // reminder | second_reminder | final_notice | escalate
+  channel    String // gmail | outlook | none (dry-run with no mailbox)
+  to_email   String
+  mode       String // dry_run | live
+  status     String // sent | failed | dry_run
+  message_id String?
+  subject    String?
+  error      String?
+  created_at DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenant_id], references: [id])
+
+  @@index([tenant_id])
+  @@index([tenant_id, invoice_id, tier])
 }
 
 // A toggleable auto-handoff between two consecutive tools in a workflow.
@@ -794,6 +818,10 @@ model JournalEntry {
   total_minor Int                @default(0)
   currency    String             @default("GBP")
   posted_at   DateTime?
+  // ERP posting: which integration it was posted to and the external system's id.
+  // Null until the entry is posted to an accounting system (see app/core/erp_writer.py).
+  integration_id String?
+  external_id    String?
   created_at  DateTime           @default(now())
   lines       JournalEntryLine[]
 

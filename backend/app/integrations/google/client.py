@@ -25,7 +25,9 @@ GOOGLE_USERINFO_URL = "https://www.googleapis.com/oauth2/v3/userinfo"
 GMAIL_API_BASE = "https://gmail.googleapis.com/gmail/v1/users/me"
 DRIVE_API_BASE = "https://www.googleapis.com/drive/v3"
 
-GMAIL_SCOPE = "https://www.googleapis.com/auth/gmail.readonly"
+# gmail.send is required to dispatch AR collection reminders from the connected mailbox.
+# Adding it means existing Gmail connections must reconnect to grant the new scope.
+GMAIL_SCOPE = "https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/gmail.send"
 DRIVE_SCOPE = "https://www.googleapis.com/auth/drive"
 
 TOKEN_TTL_SECONDS = 3600
@@ -289,6 +291,37 @@ async def list_messages_with_attachments(access_token: str, after_date: str, ext
     if not isinstance(messages, list):
         raise ValueError("Gmail messages list returned unexpected format")
     return messages
+
+
+async def send_gmail_message(
+    access_token: str, *, to: str, subject: str, body_text: str, reply_to: str | None = None
+) -> dict:
+    """Send a plain-text email from the connected Gmail account (users.messages.send).
+    Gmail sets From to the authenticated account. Returns {message_id, thread_id}."""
+    import base64 as _base64
+    from email.message import EmailMessage
+
+    msg = EmailMessage()
+    msg["To"] = to
+    msg["Subject"] = subject
+    if reply_to:
+        msg["Reply-To"] = reply_to
+    msg.set_content(body_text)
+    raw = _base64.urlsafe_b64encode(msg.as_bytes()).decode()
+
+    async def _call():
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                f"{GMAIL_API_BASE}/messages/send",
+                headers={"Authorization": f"Bearer {access_token}", "Content-Type": "application/json"},
+                json={"raw": raw},
+                timeout=20.0,
+            )
+            response.raise_for_status()
+            return response.json()
+
+    data = await _circuit.call(_retry, _call)
+    return {"message_id": data.get("id", ""), "thread_id": data.get("threadId", "")}
 
 
 async def get_message_parts(access_token: str, message_id: str) -> dict:

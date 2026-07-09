@@ -46,16 +46,29 @@ def _inv(inv_id: str, outstanding_cents: int, days_overdue: int, status: str = "
     m.currency = "GBP"
     m.number = f"N-{inv_id}"
     m.contact_name = "Customer"
+    m.contact_id = None  # real Prisma rows carry str|None, never a MagicMock
     m.due_date = now - timedelta(days=days_overdue)
     return m
 
 
-def _db(invoices, config=None):
+def _db(invoices, config=None, contacts=None):
     db = MagicMock()
     db.tool.find_first = AsyncMock(return_value=MagicMock(config_json=config or {}))
     db.accountinginvoice.find_many = AsyncMock(return_value=invoices)
+    db.accountingcontact.find_many = AsyncMock(return_value=contacts or [])
+    db.collectionreminder.find_first = AsyncMock(return_value=None)
+    db.collectionreminder.create = AsyncMock()
+    db.integration.find_first = AsyncMock(return_value=None)
     db.execution.update = AsyncMock()
     return db
+
+
+def _contact(external_id="Customer-ext", email="c@x.com", name="Customer"):
+    m = MagicMock()
+    m.external_id = external_id
+    m.email = email
+    m.name = name
+    return m
 
 
 @pytest.mark.asyncio
@@ -123,3 +136,81 @@ async def test_late_fee_forces_approval_and_is_computed():
         result = await _execute("t1", "tool1", "e1", {})
     assert result["decision"] == "approval_required"
     assert result["output_data"]["late_fee_cents_total"] == 10_000  # 10% of 100_000
+
+
+# ---- reminder dispatch ------------------------------------------------------
+
+def _item(action="reminder", requires_approval=False, invoice_id="a", contact_name="Customer", contact_id=None):
+    return {
+        "invoice_id": invoice_id, "number": f"N-{invoice_id}", "contact_name": contact_name,
+        "contact_id": contact_id, "outstanding_cents": 10_000, "currency": "GBP",
+        "days_overdue": 3, "action": action, "tier": action, "late_fee_cents": 0,
+        "requires_approval": requires_approval,
+    }
+
+
+class TestReminderDispatch:
+    @pytest.mark.asyncio
+    async def test_dry_run_previews_without_persisting(self):
+        db = _db([], contacts=[_contact()])
+        with patch("app.tools.accounts_receivable.send_via_mailbox",
+                   AsyncMock(return_value={"mode": "dry_run", "channel": "gmail", "message_id": ""})) as send:
+            from app.tools.accounts_receivable import _dispatch_auto_reminders
+            summary = await _dispatch_auto_reminders(db, "t1", [_item()])
+        send.assert_awaited_once()
+        assert summary["dry_run"] == 1 and summary["sent"] == 0
+        db.collectionreminder.create.assert_not_awaited()  # dry-run never persists
+
+    @pytest.mark.asyncio
+    async def test_live_send_persists_reminder_row(self):
+        db = _db([], contacts=[_contact()])
+        with patch("app.tools.accounts_receivable.send_via_mailbox",
+                   AsyncMock(return_value={"mode": "live", "channel": "gmail", "message_id": "m1"})):
+            from app.tools.accounts_receivable import _dispatch_auto_reminders
+            summary = await _dispatch_auto_reminders(db, "t1", [_item()])
+        assert summary["sent"] == 1
+        db.collectionreminder.create.assert_awaited_once()
+        data = db.collectionreminder.create.await_args.kwargs["data"]
+        assert data["mode"] == "live" and data["tier"] == "reminder" and data["message_id"] == "m1"
+
+    @pytest.mark.asyncio
+    async def test_no_email_skips_without_sending(self):
+        db = _db([], contacts=[])  # no contact emails available
+        with patch("app.tools.accounts_receivable.send_via_mailbox", AsyncMock()) as send:
+            from app.tools.accounts_receivable import _dispatch_auto_reminders
+            summary = await _dispatch_auto_reminders(db, "t1", [_item()])
+        send.assert_not_awaited()
+        assert summary["skipped_no_email"] == 1
+
+    @pytest.mark.asyncio
+    async def test_dedup_skips_already_live_sent(self):
+        db = _db([], contacts=[_contact()])
+        db.collectionreminder.find_first = AsyncMock(return_value=MagicMock())  # a live row exists
+        with patch("app.tools.accounts_receivable.send_via_mailbox", AsyncMock()) as send:
+            from app.tools.accounts_receivable import _dispatch_auto_reminders
+            summary = await _dispatch_auto_reminders(db, "t1", [_item()])
+        send.assert_not_awaited()
+        assert summary["skipped_already_sent"] == 1
+
+    @pytest.mark.asyncio
+    async def test_firmer_and_flagged_actions_not_auto_sent(self):
+        db = _db([], contacts=[_contact()])
+        with patch("app.tools.accounts_receivable.send_via_mailbox", AsyncMock()) as send:
+            from app.tools.accounts_receivable import _dispatch_auto_reminders
+            summary = await _dispatch_auto_reminders(db, "t1", [
+                _item(action="final_notice", requires_approval=True),
+                _item(action="reminder", requires_approval=True),  # reminder tier but routed to approval
+            ])
+        send.assert_not_awaited()
+        assert summary["sent"] == 0 and summary["dry_run"] == 0
+
+    @pytest.mark.asyncio
+    async def test_mail_error_recorded_as_failed(self):
+        from app.core.mailer import MailError
+        db = _db([], contacts=[_contact()])
+        with patch("app.tools.accounts_receivable.send_via_mailbox",
+                   AsyncMock(side_effect=MailError("no mailbox"))):
+            from app.tools.accounts_receivable import _dispatch_auto_reminders
+            summary = await _dispatch_auto_reminders(db, "t1", [_item()])
+        assert summary["failed"] == 1
+        db.collectionreminder.create.assert_not_awaited()

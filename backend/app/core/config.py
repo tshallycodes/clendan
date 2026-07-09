@@ -36,6 +36,16 @@ class Settings(BaseSettings):
     # (see app/core/payouts.py) and a deliberate go-live review.
     payments_live: bool = False
 
+    # Live outbound email: when false (default), AR collection reminders are recorded as
+    # dry-run (logged as "would send") but nothing leaves the mailbox. Enabling actually
+    # sends from the tenant's connected Gmail/Outlook (see app/core/mailer.py).
+    emails_live: bool = False
+
+    # Live ERP writes: when false (default), bill/journal posting is recorded in Clendan
+    # (marked posted, dry-run) but nothing is written to the external accounting system.
+    # Enabling posts to the connected ERP (see app/core/erp_writer.py).
+    erp_write_live: bool = False
+
     quickbooks_client_id: str = ""
     quickbooks_client_secret: str = ""
     quickbooks_redirect_uri: str = ""

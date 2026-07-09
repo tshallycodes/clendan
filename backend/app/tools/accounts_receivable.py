@@ -6,10 +6,11 @@ Ages outstanding customer invoices and recommends tiered collection actions
 tenant's collections policy. Gentle reminders auto-approve when enabled; firmer actions
 (final notice, escalation, late fees, write-offs) route to a human for approval.
 
-MVP scope: it decides and records the recommended action per invoice. Actually sending
-reminder emails and posting late fees / write-offs to the ERP is a deferred execution layer
-(mirrors Payment Runs, which schedules but does not yet move money) - it must land behind
-its own design review because it is an outbound, customer-facing action.
+Auto-approved reminder tiers (reminder / second reminder) are now dispatched from the
+tenant's connected mailbox via app/core/mailer.py - dry-run by default (recorded as
+"would send") until emails_live is enabled. Each tier is sent at most once per invoice
+(deduped through the CollectionReminder log). Firmer, customer-facing actions (final notice,
+escalation, late fees, write-offs) still route to a human for approval and are not auto-sent.
 """
 from __future__ import annotations
 
@@ -23,6 +24,7 @@ from app.audit.logger import write_audit_log
 from app.core.db import get_db
 from app.core.execution import complete_execution
 from app.core.logging import get_logger
+from app.core.mailer import MailError, send_via_mailbox
 from app.core.sources import source_filter
 from app.queue.pool import push_to_dlq
 from app.tools.base import BaseTool, ToolOutput, ToolType
@@ -80,6 +82,103 @@ def _tier_for(days: int, policy: _ToolPolicy) -> tuple[str, str]:
     if days >= policy.reminder_1_days:
         return "reminder", "reminder"
     return "none", "not yet due for action"
+
+
+# Tiers that auto-send as a plain reminder (never firmer notices, which need approval).
+_AUTO_SEND_TIERS = {"reminder", "second_reminder"}
+_CCY_SYMBOLS = {"GBP": "£", "USD": "$", "EUR": "€"}
+
+
+def _fmt_amount(cents: int, currency: str) -> str:
+    sym = _CCY_SYMBOLS.get((currency or "GBP").upper(), "")
+    base = f"{cents / 100:,.2f}"
+    return f"{sym}{base}" if sym else f"{base} {(currency or 'GBP').upper()}"
+
+
+def _reminder_message(item: dict) -> tuple[str, str]:
+    """Build (subject, plain-text body) for an auto-send reminder tier."""
+    number = item.get("number") or "your invoice"
+    name = item.get("contact_name") or "there"
+    amount = _fmt_amount(item["outstanding_cents"], item.get("currency") or "GBP")
+    days = item.get("days_overdue") or 0
+    if item["action"] == "second_reminder":
+        subject = f"Second reminder: invoice {number} ({amount} outstanding)"
+        opener = f"We haven't yet received payment for invoice {number}, now {days} days overdue."
+    else:
+        subject = f"Reminder: invoice {number} ({amount} outstanding)"
+        opener = (
+            f"This is a friendly reminder that invoice {number} for {amount} is now due."
+            if days <= 0
+            else f"This is a friendly reminder that invoice {number} for {amount} is {days} days overdue."
+        )
+    body = (
+        f"Hi {name},\n\n{opener}\n\n"
+        f"Amount outstanding: {amount}\n\n"
+        "If you've already sent payment, please disregard this note. Otherwise we'd be grateful "
+        "if you could arrange payment at your earliest convenience.\n\n"
+        "If you have any questions about this invoice, just reply to this email.\n\n"
+        "Many thanks."
+    )
+    return subject, body
+
+
+async def _dispatch_auto_reminders(db, tenant_id: str, items: list[dict]) -> dict:
+    """Send the auto-approved reminder tiers via the tenant's mailbox (dry-run unless
+    emails_live). Deduped per (invoice, tier) on prior LIVE sends so a customer is never
+    emailed the same tier twice; dry-run previews never persist and re-evaluate each run.
+    """
+    summary = {"sent": 0, "dry_run": 0, "skipped_no_email": 0, "skipped_already_sent": 0,
+               "failed": 0, "details": []}
+
+    to_send = [it for it in items if it["action"] in _AUTO_SEND_TIERS and not it["requires_approval"]]
+    if not to_send:
+        return summary
+
+    # Recipient emails come from the synced customer contacts (by ERP contact id, then name).
+    contacts = await db.accountingcontact.find_many(
+        where={"tenant_id": tenant_id, "email": {"not": None}},
+    )
+    email_by_extid = {c.external_id: c.email for c in contacts if c.email}
+    email_by_name = {c.name.strip().lower(): c.email for c in contacts if c.email and c.name}
+
+    for it in to_send:
+        invoice_id, tier = it["invoice_id"], it["action"]
+        already = await db.collectionreminder.find_first(
+            where={"tenant_id": tenant_id, "invoice_id": invoice_id, "tier": tier, "mode": "live"},
+        )
+        if already:
+            summary["skipped_already_sent"] += 1
+            continue
+
+        to_email = email_by_extid.get(it.get("contact_id")) or email_by_name.get(
+            (it.get("contact_name") or "").strip().lower()
+        )
+        if not to_email:
+            summary["skipped_no_email"] += 1
+            summary["details"].append({"invoice_id": invoice_id, "tier": tier, "status": "no_email"})
+            continue
+
+        subject, body = _reminder_message(it)
+        try:
+            res = await send_via_mailbox(db, tenant_id, to=to_email, subject=subject, body=body)
+        except MailError as exc:
+            summary["failed"] += 1
+            summary["details"].append({"invoice_id": invoice_id, "tier": tier, "status": "failed", "error": str(exc)})
+            continue
+
+        if res["mode"] == "live":
+            await db.collectionreminder.create(data={
+                "tenant_id": tenant_id, "invoice_id": invoice_id, "tier": tier,
+                "channel": res["channel"], "to_email": to_email, "mode": "live",
+                "status": "sent", "message_id": res.get("message_id") or None, "subject": subject,
+            })
+            summary["sent"] += 1
+            summary["details"].append({"invoice_id": invoice_id, "tier": tier, "status": "sent", "channel": res["channel"]})
+        else:
+            summary["dry_run"] += 1
+            summary["details"].append({"invoice_id": invoice_id, "tier": tier, "status": "dry_run", "channel": res["channel"]})
+
+    return summary
 
 
 async def _execute(tenant_id: str, tool_id: str, execution_id: str, payload: dict) -> dict:
@@ -154,6 +253,7 @@ async def _execute(tenant_id: str, tool_id: str, execution_id: str, payload: dic
             "invoice_id": inv.id,
             "number": getattr(inv, "number", None),
             "contact_name": getattr(inv, "contact_name", None),
+            "contact_id": getattr(inv, "contact_id", None),
             "outstanding_cents": out_cents,
             "currency": inv.currency,
             "days_overdue": days,
@@ -177,8 +277,8 @@ async def _execute(tenant_id: str, tool_id: str, execution_id: str, payload: dic
         "items": items,
         "policy": policy.model_dump(),
         "note": (
-            "MVP records recommended collection actions; sending reminders and posting late "
-            "fees / write-offs is a deferred outbound execution layer."
+            "Auto reminders are dispatched from the connected mailbox (dry-run unless "
+            "emails_live); late fees / write-offs and firmer notices still route to approval."
         ),
     }
 
@@ -187,10 +287,26 @@ async def _execute(tenant_id: str, tool_id: str, execution_id: str, payload: dic
         reasoning_trace=reasoning_trace, model_version=_MODEL_VERSION, execution_id=execution_id,
     )
 
+    # Dispatch auto-approved reminders (dry-run unless emails_live). Audit is written first,
+    # above; the send outcome is recorded in its own audit line and in output_data.
+    reminders = await _dispatch_auto_reminders(db, tenant_id, items)
+    reasoning_trace["reminders"] = reminders
+    if any(reminders[k] for k in ("sent", "dry_run", "failed", "skipped_no_email")):
+        await write_audit_log(
+            tenant_id=tenant_id, actor=_ACTOR, action="ar_collections:reminders_dispatched",
+            reasoning_trace={"reminders": reminders}, model_version=_MODEL_VERSION, execution_id=execution_id,
+        )
+
     actions_taken = [
         f"aged {len(outstanding)} outstanding invoice(s); {overdue_count} overdue",
         f"recommended {len(items)} collection action(s)",
     ]
+    if reminders["sent"]:
+        actions_taken.append(f"sent {reminders['sent']} reminder(s)")
+    if reminders["dry_run"]:
+        actions_taken.append(f"{reminders['dry_run']} reminder(s) previewed (dry-run - emails not live)")
+    if reminders["skipped_no_email"]:
+        actions_taken.append(f"{reminders['skipped_no_email']} reminder(s) need a customer email")
     for action, n in sorted(tier_counts.items()):
         actions_taken.append(f"{action}: {n}")
     if late_fee_cents_total:

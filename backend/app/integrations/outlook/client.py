@@ -18,7 +18,9 @@ from app.integrations.outlook.circuit_breaker import _circuit
 logger = get_logger(__name__)
 
 GRAPH_API_BASE = "https://graph.microsoft.com/v1.0"
-OUTLOOK_SCOPES = "Mail.Read offline_access"
+# Mail.Send is required to dispatch AR collection reminders from the connected mailbox.
+# Adding it means existing Outlook connections must reconnect to grant the new scope.
+OUTLOOK_SCOPES = "Mail.Read Mail.Send offline_access"
 TOKEN_TTL_SECONDS = 3600  # Microsoft access tokens expire in 1 hour
 SUBSCRIPTION_EXPIRY_MINUTES = 4230  # Maximum allowed by Microsoft Graph
 
@@ -171,6 +173,34 @@ async def get_user_info(access_token: str) -> dict:
         "display_name": data.get("displayName", ""),
         "email": data.get("mail") or data.get("userPrincipalName", ""),
     }
+
+
+async def send_outlook_message(
+    access_token: str, *, to: str, subject: str, body_text: str, reply_to: str | None = None
+) -> dict:
+    """Send a plain-text email from the connected Outlook account (POST /me/sendMail).
+    Graph returns 202 Accepted with no body. Returns {message_id, thread_id}."""
+    message: dict = {
+        "subject": subject,
+        "body": {"contentType": "Text", "content": body_text},
+        "toRecipients": [{"emailAddress": {"address": to}}],
+    }
+    if reply_to:
+        message["replyTo"] = [{"emailAddress": {"address": reply_to}}]
+
+    async def _call():
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                f"{GRAPH_API_BASE}/me/sendMail",
+                json={"message": message, "saveToSentItems": True},
+                headers={"Authorization": f"Bearer {access_token}", "Content-Type": "application/json"},
+                timeout=20.0,
+            )
+            response.raise_for_status()
+            return response
+
+    resp = await _circuit.call(_retry, _call)
+    return {"message_id": resp.headers.get("request-id", ""), "thread_id": ""}
 
 
 async def create_mail_subscription(
