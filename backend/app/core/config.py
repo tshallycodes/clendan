@@ -31,6 +31,11 @@ class Settings(BaseSettings):
     backoff_seconds: float = 1.0
     approval_ttl_seconds: int = 86400
 
+    # Live payouts: when false (default), Payment Runs execute in dry-run mode - bills are
+    # marked paid in Clendan but no money moves. Enabling requires a wired payout rail
+    # (see app/core/payouts.py) and a deliberate go-live review.
+    payments_live: bool = False
+
     quickbooks_client_id: str = ""
     quickbooks_client_secret: str = ""
     quickbooks_redirect_uri: str = ""

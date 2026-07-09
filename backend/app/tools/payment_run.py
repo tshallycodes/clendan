@@ -49,6 +49,7 @@ class _ToolPolicy(BaseModel):
     approval_threshold_cents: int = 250_000
     due_within_days: int = 7
     max_bills_per_run: int = 50
+    approval_deadline_days: int = 3  # days a scheduled run waits for approval before it auto-cancels
 
 
 def _parse_policy(config_json: dict) -> _ToolPolicy:
@@ -58,6 +59,7 @@ def _parse_policy(config_json: dict) -> _ToolPolicy:
         approval_threshold_cents=raw.get("approval_threshold_cents", 250_000),
         due_within_days=raw.get("due_within_days", 7),
         max_bills_per_run=raw.get("max_bills_per_run", 50),
+        approval_deadline_days=raw.get("approval_deadline_days", 3),
     )
 
 
@@ -312,7 +314,7 @@ async def _execute(tenant_id: str, tool_id: str, execution_id: str, payload: dic
                     "tenant_id": tenant_id,
                     "execution_id": execution_id,
                     "status": "scheduled",
-                    "scheduled_for": datetime.now(UTC) + timedelta(days=1),
+                    "scheduled_for": datetime.now(UTC) + timedelta(days=policy.approval_deadline_days),
                     "bill_count": len(scheduled_bill_ids),
                     "total_amount_cents": total_auto_cents,
                     "bill_ids": scheduled_bill_ids,

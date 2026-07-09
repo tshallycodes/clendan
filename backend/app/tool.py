@@ -667,6 +667,18 @@ async def run_ar_collections_scheduled(_ctx: dict) -> None:
             )
 
 
+async def expire_scheduled_payment_runs(_ctx: dict) -> None:
+    """Hourly cron: auto-cancel scheduled payment runs whose approval window has elapsed."""
+    from app.core.payouts import expire_due_payment_runs
+    db = get_db()
+    try:
+        cancelled = await expire_due_payment_runs(db)
+        if cancelled:
+            logger.info("payment_runs_expired count=%d", cancelled)
+    except Exception as exc:
+        logger.error("payment_run_expiry_cron_failed: %s", type(exc).__name__)
+
+
 async def run_reconciliation_scheduled_check(_ctx: dict) -> None:
     """Hourly cron: fires reconciliation_run for tools configured for daily or weekly frequency.
     Real-time frequency is handled separately via sync hooks in plaid/truelayer sync.
@@ -804,6 +816,7 @@ class ToolSettings:
         expire_stale_approvals,
         run_ar_collections_job,
         run_ar_collections_scheduled,
+        expire_scheduled_payment_runs,
     ]
     cron_jobs = [
         cron(run_financial_reporting_monthly, minute=0),  # hourly — gated by per-tool day-of-month/hour config
@@ -811,6 +824,7 @@ class ToolSettings:
         cron(fetch_exchange_rates_daily, hour=0, minute=5),
         cron(run_reconciliation_scheduled_check, minute=0),  # hourly
         cron(expire_stale_approvals, minute=5),  # hourly — auto-reject expired approvals
+        cron(expire_scheduled_payment_runs, minute=15),  # hourly — auto-cancel expired payment runs
         cron(run_month_end_close_scheduled, hour=0, minute=10),  # daily midnight UTC
         cron(resync_integrations_daily, hour=3, minute=0),   # daily 3am UTC
         cron(run_ar_collections_scheduled, hour=8, minute=0),  # daily 8am UTC — chase overdue invoices
