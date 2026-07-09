@@ -30,6 +30,47 @@ logger = get_logger(__name__)
 router = APIRouter(prefix="/document-intelligence", tags=["document-intelligence"])
 
 
+async def _fresh_access_token(source: str, integration, tenant_id: str, db, creds: dict) -> str:
+    """Return a valid access token for a cloud source, refreshing + persisting it if the
+    stored one has expired. Best-effort - falls back to the stored token on any failure.
+
+    The browse/import endpoints need this because, unlike the sync jobs, they read the
+    token directly; a short-lived token (e.g. Dropbox ~4h) would otherwise be stale and the
+    listing would fail with "Failed to list files".
+    """
+    access_token = creds.get("access_token", "")
+    expiry = creds.get("token_expiry_at")
+    refresh_token = creds.get("refresh_token", "")
+    if not (expiry and refresh_token):
+        return access_token
+    try:
+        if datetime.fromisoformat(str(expiry)) > datetime.now(UTC):
+            return access_token  # still valid
+    except (ValueError, TypeError):
+        return access_token
+
+    try:
+        if source == "google_drive":
+            from app.integrations.google import client as _g
+            new_tokens = await _g.refresh_google_token(refresh_token)
+        elif source == "dropbox":
+            from app.integrations.dropbox import client as _d
+            new_tokens = await _d.refresh_dropbox_token(refresh_token)
+        else:
+            from app.integrations.onedrive import client as _o
+            new_tokens = await _o.refresh_onedrive_token(refresh_token)
+        from app.integrations.encryption import encrypt_credentials
+        new_creds = {**creds, **new_tokens}
+        await db.integration.update(
+            where={"id": integration.id},
+            data={"encrypted_credentials": encrypt_credentials(new_creds, tenant_id)},
+        )
+        return new_tokens.get("access_token", access_token)
+    except Exception as exc:
+        logger.warning("browse_token_refresh_failed source=%s: %s", source, type(exc).__name__)
+        return access_token
+
+
 class ImportRequest(BaseModel):
     file_ids: list[str] | None = None
 
@@ -499,7 +540,7 @@ async def browse_integration_files(
     except ValueError:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Credential decryption failed")
 
-    access_token = creds.get("access_token", "")
+    access_token = await _fresh_access_token(source, integration, tenant_id, db, creds)
 
     try:
         if source == "google_drive":
@@ -584,7 +625,7 @@ async def import_from_integration(
     except ValueError:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Credential decryption failed")
 
-    access_token = creds.get("access_token", "")
+    access_token = await _fresh_access_token(source, integration, tenant_id, db, creds)
 
     try:
         if source == "google_drive":
