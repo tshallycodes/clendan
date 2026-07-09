@@ -357,7 +357,8 @@ export function ReconciliationClient() {
         )}
       </motion.div>
 
-      {/* Reconcile Content */}
+      {/* Reconcile Content - only once deployed, matching the other tools' undeployed state */}
+      {deployed ? (
       <motion.div variants={sectionVariants} className="space-y-4 mt-6">
         {/* Rec type selector */}
         <div ref={recTypeSelectorRef} className="flex items-center gap-1 p-1 bg-brand-elevated border border-brand-border rounded-sm w-fit">
@@ -429,6 +430,16 @@ export function ReconciliationClient() {
           <VatRecSection toolId={deployed?.id ?? null} />
         )}
       </motion.div>
+      ) : (
+        <motion.div variants={sectionVariants} className="mt-6">
+          <div className="bg-brand-surface border border-brand-border rounded-sm px-4 py-16 text-center space-y-2">
+            <p className="text-xs font-body text-brand-secondary">This agent is not deployed yet.</p>
+            <p className="text-[11px] font-body text-brand-muted">
+              Deploy it to start reconciling and see its activity here. Requires connected Banking · Accounting integrations.
+            </p>
+          </div>
+        </motion.div>
+      )}
 
       {/* Overview Sidebar */}
       <AnimatePresence>
