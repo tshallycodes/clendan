@@ -39,7 +39,9 @@ async def test_doc_intel_to_spend_backlog_sums_unassessed_bills_and_expenses():
     assert n == 8
     # backlog = records Spend Control has not assessed yet (control_status unset)
     assert db.accountingbill.count.await_args.kwargs["where"]["control_status"] is None
-    assert db.accountingexpense.count.await_args.kwargs["where"]["control_status"] is None
+    exp_where = db.accountingexpense.count.await_args.kwargs["where"]
+    assert exp_where["control_status"] is None
+    assert "expense_date" not in exp_where  # no age limit - Spend Control sweeps all unassessed
 
 
 @pytest.mark.asyncio

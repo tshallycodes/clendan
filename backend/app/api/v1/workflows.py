@@ -4,7 +4,6 @@ A connection is the edge between two consecutive tools in a workflow. Enabled me
 the upstream tool auto-advances to the downstream one on a successful run. A missing
 row means enabled (default on). Only known edges (see WORKFLOW_EDGES) are accepted.
 """
-from datetime import UTC, datetime, timedelta
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -20,7 +19,6 @@ from app.core.workflow import WORKFLOW_EDGES
 logger = get_logger(__name__)
 router = APIRouter(prefix="/workflows", tags=["workflows"])
 
-_EXPENSE_WINDOW_DAYS = 30
 _UNPAID_BILL_STATUSES = ["paid", "void"]
 
 
@@ -42,13 +40,13 @@ async def _edge_backlog(db, tenant_id: str, from_type: str, to_type: str) -> int
     """
     if from_type == "document_intelligence" and to_type == "spend_control":
         # Bills/expenses that exist but Spend Control has not assessed (control_status unset).
-        cutoff = datetime.now(UTC) - timedelta(days=_EXPENSE_WINDOW_DAYS)
+        # No age limit - Spend Control now sweeps every unassessed record regardless of age.
         bills = await db.accountingbill.count(
             where={"tenant_id": tenant_id, "control_status": None,
                    "status": {"not_in": _UNPAID_BILL_STATUSES}}
         )
         expenses = await db.accountingexpense.count(
-            where={"tenant_id": tenant_id, "control_status": None, "expense_date": {"gte": cutoff}}
+            where={"tenant_id": tenant_id, "control_status": None}
         )
         return bills + expenses
 

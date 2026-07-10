@@ -250,13 +250,18 @@ async def _execute_expense_control(
     policy = _parse_expense_policy(config_raw)
     src = source_filter(config_raw, "accounting_sources")
 
-    # 1. Fetch AccountingExpense records for tenant, last 30 days
+    # 1. Fetch expenses to assess: everything in the recent window PLUS any still-unassessed
+    # expense of ANY age, so nothing ages out of Spend Control's reach. Mirrors the AP side,
+    # which scans all outstanding bills with no date limit.
     cutoff = datetime.now(UTC) - timedelta(days=30)
     raw_expenses = await db.accountingexpense.find_many(
         where={
             "tenant_id": tenant_id,
             **src,
-            "expense_date": {"gte": cutoff},
+            "OR": [
+                {"expense_date": {"gte": cutoff}},
+                {"control_status": None},
+            ],
         }
     )
     if not raw_expenses:
@@ -264,7 +269,7 @@ async def _execute_expense_control(
         reasoning_trace: dict = {
             "overall_decision": "auto_approved",
             "expense_count": 0,
-            "note": "no expenses in last 30 days",
+            "note": "no recent or unassessed expenses to process",
             "policy": policy.model_dump(),
         }
         await write_audit_log(
@@ -290,10 +295,19 @@ async def _execute_expense_control(
         for e in raw_expenses
     ]
 
-    # 1b. Period utilization - compute burn rate from fetched expenses
+    # 1b. Burn rate is a recent-velocity signal - compute from the lookback window only, not
+    # the older unassessed expenses swept in above (which would inflate it).
+    def _within_window(dt) -> bool:
+        if dt is None:
+            return False
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=UTC)
+        return dt >= cutoff
+
+    recent_expenses = [e for e in expenses if _within_window(e.expense_date)]
     period_days: int = policy.lookback_days
-    if period_days > 0 and expenses:
-        total_spend = sum(e.amount_cents for e in expenses)
+    if period_days > 0 and recent_expenses:
+        total_spend = sum(e.amount_cents for e in recent_expenses)
         daily_burn_minor: int = total_spend // max(period_days, 1)
         projected_month_spend_minor: int = daily_burn_minor * 30
     else:
