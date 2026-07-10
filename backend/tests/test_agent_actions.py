@@ -209,3 +209,93 @@ async def test_list_overdue_invoices_shapes_items():
     assert res["count"] == 1
     item = res["overdue_invoices"][0]
     assert item["number"] == "INV-1" and item["days_overdue"] == 3
+
+
+# ---- create_bill (write) ---------------------------------------------------
+
+@pytest.mark.asyncio
+async def test_propose_create_bill_previews_formatted_amount():
+    db = MagicMock()
+    db.agentaction.create = AsyncMock(return_value=_action(kind="create_bill"))
+    from app.core.agent_actions import propose_action
+    res = await propose_action(db, "t1", kind="create_bill",
+                               params={"vendor": "Acme Ltd", "amount_minor": 12345, "currency": "GBP"},
+                               proposed_by="u1")
+    assert res["capability"] == "write"
+    assert "Acme Ltd" in res["preview"] and "123.45" in res["preview"]
+    data = db.agentaction.create.await_args.kwargs["data"]
+    assert data["capability"] == "write" and data["params"]["amount_minor"] == 12345
+
+
+@pytest.mark.asyncio
+async def test_propose_create_bill_rejects_nonpositive_amount():
+    db = MagicMock()
+    db.agentaction.create = AsyncMock()
+    from app.core.agent_actions import propose_action, AgentActionError
+    with pytest.raises(AgentActionError, match="positive"):
+        await propose_action(db, "t1", kind="create_bill",
+                             params={"vendor": "Acme", "amount_minor": 0, "currency": "GBP"},
+                             proposed_by="u1")
+    db.agentaction.create.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_execute_create_bill_creates_native_bill_and_posts_dry_run():
+    action = _action(kind="create_bill",
+                     params={"vendor": "Acme Ltd", "amount_minor": 12345, "currency": "GBP",
+                             "number": "B-1", "due_date": None})
+    db = MagicMock()
+    db.agentaction.find_first = AsyncMock(return_value=action)
+    db.agentaction.update = AsyncMock()
+    db.accountingbill.find_first = AsyncMock(return_value=None)
+    created_bill = MagicMock(id="bill1")
+    db.accountingbill.create = AsyncMock(return_value=created_bill)
+    with (
+        patch("app.core.agent_actions.write_audit_log", AsyncMock()) as audit,
+        patch("app.core.erp_writer.post_bill", AsyncMock(return_value={"mode": "dry_run"})) as post,
+    ):
+        from app.core.agent_actions import execute_action
+        res = await execute_action(db, "t1", "act1", confirmed_by="u1")
+    assert res["executed"] is True
+    # native bill written (source="invoice", payable, minor units mirrored)
+    db.accountingbill.create.assert_awaited_once()
+    bd = db.accountingbill.create.await_args.kwargs["data"]
+    assert bd["source"] == "invoice" and bd["status"] == "open"
+    assert bd["outstanding_cents"] == 12345 and bd["contact_name"] == "Acme Ltd"
+    # posted via the governed rail with the created bill (dry-run unless erp_write_live)
+    post.assert_awaited_once()
+    assert post.await_args.args[2] is created_bill
+    # audit-first: create_bill audit written before mutation, plus the generic execute audit
+    assert audit.await_count >= 2
+
+
+@pytest.mark.asyncio
+async def test_execute_create_bill_is_idempotent_on_existing_bill():
+    action = _action(kind="create_bill",
+                     params={"vendor": "Acme Ltd", "amount_minor": 12345, "currency": "GBP",
+                             "number": "B-1", "due_date": None})
+    db = MagicMock()
+    db.agentaction.find_first = AsyncMock(return_value=action)
+    db.agentaction.update = AsyncMock()
+    db.accountingbill.find_first = AsyncMock(return_value=MagicMock(id="prior"))
+    db.accountingbill.create = AsyncMock()
+    with (
+        patch("app.core.agent_actions.write_audit_log", AsyncMock()),
+        patch("app.core.erp_writer.post_bill", AsyncMock(return_value={"mode": "dry_run"})) as post,
+    ):
+        from app.core.agent_actions import execute_action
+        await execute_action(db, "t1", "act1", confirmed_by="u1")
+    db.accountingbill.create.assert_not_awaited()  # reused the existing bill
+    post.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_clen_create_bill_returns_proposal():
+    db = MagicMock()
+    db.agentaction.create = AsyncMock(return_value=_action(kind="create_bill"))
+    from app.clen.tools import execute_tool
+    res = await execute_tool("create_bill",
+                             {"vendor": "Acme", "amount_minor": 5000, "currency": "GBP"},
+                             "t1", "u1", db)
+    assert "proposed_action" in res
+    assert res["proposed_action"]["kind"] == "create_bill"

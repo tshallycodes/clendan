@@ -97,6 +97,10 @@ async def _dispatch(
             return await _pause_tool(input.get("tool_type", ""), tenant_id, user_id, db)
         case "run_automation":
             return await _propose_run_automation(input.get("tool_type", ""), tenant_id, user_id, db)
+        case "create_bill":
+            return await _propose_create_bill(input, tenant_id, user_id, db)
+        case "prepare_payment":
+            return await _propose_prepare_payment(input, tenant_id, user_id, db)
         case _:
             return {"error": f"Unknown tool: {name}"}
 
@@ -406,6 +410,53 @@ async def _propose_run_automation(
         proposal = await propose_action(
             db, tenant_id, kind="run_automation",
             params={"tool_type": tool_type}, proposed_by=user_id,
+        )
+    except AgentActionError as exc:
+        return {"error": str(exc)}
+    return {"proposed_action": proposal}
+
+
+async def _propose_create_bill(
+    input: dict[str, Any], tenant_id: str, user_id: Optional[str], db: Prisma
+) -> dict:
+    """Propose (do not create) a supplier bill. Returns a confirm-card payload; the bill is only
+    written when the user confirms via POST /clen/actions/{id}/confirm."""
+    from app.core.agent_actions import AgentActionError, propose_action
+    try:
+        proposal = await propose_action(
+            db, tenant_id, kind="create_bill",
+            params={
+                "vendor": input.get("vendor", ""),
+                "amount_minor": input.get("amount_minor"),
+                "currency": input.get("currency", "GBP"),
+                "number": input.get("number"),
+                "due_date": input.get("due_date"),
+            },
+            proposed_by=user_id,
+        )
+    except AgentActionError as exc:
+        return {"error": str(exc)}
+    return {"proposed_action": proposal}
+
+
+async def _propose_prepare_payment(
+    input: dict[str, Any], tenant_id: str, user_id: Optional[str], db: Prisma
+) -> dict:
+    """Propose (do not pay) a supplier payment - a money action. Clendan PREPARES the payment for
+    the authorised human to release; it never moves funds. Returns a details-verified confirm
+    payload carrying payee / account / amount + the account-changed flag."""
+    from app.core.agent_actions import AgentActionError, propose_action
+    try:
+        proposal = await propose_action(
+            db, tenant_id, kind="prepare_payment",
+            params={
+                "bill_id": input.get("bill_id"),
+                "vendor": input.get("vendor"),
+                "amount_minor": input.get("amount_minor"),
+                "currency": input.get("currency", "GBP"),
+                "account_identifier": input.get("account_identifier"),
+            },
+            proposed_by=user_id,
         )
     except AgentActionError as exc:
         return {"error": str(exc)}

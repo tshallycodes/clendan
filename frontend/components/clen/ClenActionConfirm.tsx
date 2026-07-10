@@ -1,52 +1,24 @@
 'use client'
 
-import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { useAuth } from '@clerk/nextjs'
+import { PaymentConfirmSheet } from './PaymentConfirmSheet'
+import { useActionConfirm, type ProposedAction } from './useActionConfirm'
 
-const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+// Re-exported so existing importers (ClenMessage) keep their import path.
+export type { ProposedAction } from './useActionConfirm'
 
-export interface ProposedAction {
-  action_id: string
-  kind?: string
-  capability?: string
-  preview: string
-  requires_confirmation?: boolean
-  expires_at?: string
+// The confirm gate for anything the agent proposes. The agent never acts on its own - it proposes
+// an action and this is where the user releases or declines it. Money actions (capability="money")
+// render a details-verified sheet instead; nothing here moves funds - it prepares.
+export function ClenActionConfirm({ proposedAction }: { proposedAction: ProposedAction }) {
+  if (proposedAction.capability === 'money') {
+    return <PaymentConfirmSheet proposedAction={proposedAction} />
+  }
+  return <StandardActionConfirm proposedAction={proposedAction} />
 }
 
-type State = 'idle' | 'busy' | 'confirmed' | 'cancelled' | 'error'
-
-// The confirm gate for anything the agent proposes. The agent never acts on its own - it
-// proposes an action and this card is where the user releases or declines it. Money actions
-// (capability="money") render with a danger accent; nothing here moves funds - it prepares.
-export function ClenActionConfirm({ proposedAction }: { proposedAction: ProposedAction }) {
-  const { getToken } = useAuth()
-  const [state, setState] = useState<State>('idle')
-  const [message, setMessage] = useState('')
-
-  async function act(kind: 'confirm' | 'cancel') {
-    setState('busy')
-    try {
-      const token = await getToken()
-      const res = await fetch(`${API}/clen/actions/${proposedAction.action_id}/${kind}`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-      })
-      const j = (await res.json().catch(() => ({}))) as { detail?: string; error?: string }
-      if (!res.ok) {
-        setState('error')
-        setMessage(j.detail ?? j.error ?? 'Could not complete the action')
-        return
-      }
-      setState(kind === 'confirm' ? 'confirmed' : 'cancelled')
-    } catch {
-      setState('error')
-      setMessage('Connection failed - please try again')
-    }
-  }
-
-  const isMoney = proposedAction.capability === 'money'
+function StandardActionConfirm({ proposedAction }: { proposedAction: ProposedAction }) {
+  const { state, message, act } = useActionConfirm(proposedAction.action_id)
   const heading =
     state === 'confirmed' ? 'Confirmed' : state === 'cancelled' ? 'Cancelled' : 'Needs your confirmation'
 
@@ -55,12 +27,10 @@ export function ClenActionConfirm({ proposedAction }: { proposedAction: Proposed
       initial={{ opacity: 0, y: 4 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.15 }}
-      className={`my-2 border rounded-sm bg-brand-surface overflow-hidden ${
-        isMoney ? 'border-[#ff4d6d]' : 'border-brand-border'
-      }`}
+      className="my-2 border border-brand-border rounded-sm bg-brand-surface overflow-hidden"
     >
       <div className="flex items-center gap-2 px-3 py-2 border-b border-brand-border bg-brand-bg">
-        <span className={isMoney ? 'text-[#ff4d6d] text-xs' : 'text-brand-warning text-xs'}>⚡</span>
+        <span className="text-brand-warning text-xs" aria-hidden="true">⚡</span>
         <span className="text-[11px] font-body text-brand-secondary uppercase tracking-wider">{heading}</span>
         {proposedAction.capability && (
           <span className="ml-auto text-[11px] font-body text-brand-muted">{proposedAction.capability}</span>
