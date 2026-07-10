@@ -1,6 +1,6 @@
 import httpx
 from typing import Annotated, Literal
-from fastapi import Depends, HTTPException, Security, status
+from fastapi import Depends, Header, HTTPException, Query, Security, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import JWTError, jwt
 from jose.exceptions import JWKError
@@ -147,3 +147,93 @@ def require_role(*roles: str):
 
 RequireAuth = Annotated[dict, Depends(require_auth)]
 RequireOrgAuth = Annotated[CurrentUser, Depends(get_current_user)]
+
+
+# ---------------------------------------------------------------------------
+# Firm / portfolio layer — act-as-client resolution (additive, backward-compatible)
+# ---------------------------------------------------------------------------
+# An accounting / fractional-CFO firm (the ICP) operates a portfolio of client tenants,
+# each on their own QB/Xero + banks. A firm member may "act as" any client tenant whose
+# Tenant.firm_id belongs to one of the member's firms. Every act-as is authorised against
+# firm membership (cross-firm access is impossible) and produces an auditable trail. Non-firm
+# users never trigger any of this: with no client selector the caller keeps their own tenant,
+# so existing RequireOrgAuth / CurrentUser flows behave exactly as before.
+
+CLIENT_HEADER = "X-Clendan-Client"
+
+
+class ActiveContext(BaseModel):
+    """Resolved request scope. For a normal user this is just their own tenant; for a firm
+    member acting as a client, tenant_id is the client tenant and acting_as is True. The
+    caller's identity and role (user) never change — only the tenant we scope queries to."""
+    user: CurrentUser
+    tenant_id: str
+    firm_id: str | None = None
+    acting_as: bool = False
+
+
+async def get_member_firm_ids(db: Prisma, clerk_user_id: str) -> list[str]:
+    """Firm IDs the caller belongs to via FirmMembership. Empty list for non-firm users.
+    FirmMembership.member_id is the internal Member.id; the raw clerk_user_id is also accepted
+    as a candidate so either seeding convention resolves correctly."""
+    member = await db.member.find_unique(where={"clerk_user_id": clerk_user_id})
+    candidates = [clerk_user_id]
+    if member:
+        candidates.append(member.id)
+    memberships = await db.firmmembership.find_many(where={"member_id": {"in": candidates}})
+    return [m.firm_id for m in memberships]
+
+
+async def authorise_client_access(db: Prisma, clerk_user_id: str, target_tenant_id: str):
+    """Single authorisation gate for every firm act-as. Returns the target client Tenant if the
+    caller belongs to the firm that owns it; raises 403 otherwise. A member can ONLY reach client
+    tenants under their own firm — the target's firm_id must be one of the caller's own firms."""
+    firm_ids = await get_member_firm_ids(db, clerk_user_id)
+    if not firm_ids:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorised to act as this client",
+        )
+    target = await db.tenant.find_unique(where={"id": target_tenant_id})
+    if not target or target.firm_id is None or target.firm_id not in firm_ids:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorised to act as this client",
+        )
+    return target
+
+
+async def resolve_active_context(
+    current_user: Annotated[CurrentUser, Depends(get_current_user)],
+    db: Annotated[Prisma, Depends(get_db_dep)],
+    x_clendan_client: Annotated[str | None, Header(alias=CLIENT_HEADER)] = None,
+    client: Annotated[str | None, Query()] = None,
+) -> ActiveContext:
+    """Resolve the ACTIVE tenant for a request.
+
+    No client selector -> the caller's own tenant (existing behaviour, unchanged for everyone).
+    Selector present (X-Clendan-Client header or ?client= query) -> the caller must be a firm
+    member of the firm that owns that client tenant, else 403. Every resolved act-as is logged
+    with the request trace id for an auditable trail. Apply this dependency to any route the
+    client switcher must scope; routes that don't use it keep their own-tenant behaviour."""
+    selector = (x_clendan_client or client or "").strip()
+    if not selector or selector == current_user.tenant_id:
+        return ActiveContext(user=current_user, tenant_id=current_user.tenant_id)
+    target = await authorise_client_access(db, current_user.user_id, selector)
+    logger.info(
+        "firm_act_as_resolved",
+        extra={
+            "actor": current_user.user_id,
+            "firm_id": target.firm_id,
+            "client_tenant_id": target.id,
+        },
+    )
+    return ActiveContext(
+        user=current_user,
+        tenant_id=target.id,
+        firm_id=target.firm_id,
+        acting_as=True,
+    )
+
+
+RequireActiveContext = Annotated[ActiveContext, Depends(resolve_active_context)]

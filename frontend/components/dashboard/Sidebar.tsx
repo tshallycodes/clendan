@@ -3,7 +3,7 @@
 import React from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { House, CheckSquare, Plugs, Code, Cpu, Gear, SignOut, ListBullets, ShieldCheck } from '@phosphor-icons/react'
+import { House, CheckSquare, Plugs, Code, Cpu, Gear, SignOut, ListBullets, ShieldCheck, Buildings } from '@phosphor-icons/react'
 import { useClerk } from '@clerk/nextjs'
 import { cn } from '@/lib/utils'
 import { ThemeToggle } from '@/components/ThemeToggle'
@@ -12,6 +12,7 @@ import { Logo } from '@/components/Logo'
 
 const NAV: { icon: React.ElementType; label: string; href: string; external?: boolean }[] = [
   { icon: House,        label: 'Dashboard',    href: '/dashboard' },
+  { icon: Buildings,   label: 'Clients',      href: '/clients' },
   { icon: CheckSquare, label: 'Approvals',    href: '/approvals' },
   { icon: ListBullets, label: 'Executions',   href: '/executions' },
   { icon: ShieldCheck, label: 'Audit',        href: '/audit' },
