@@ -5,6 +5,7 @@ import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import type { Components } from 'react-markdown'
 import { CodeBlock } from '@/components/dashboard/api/CodeBlock'
+import { ClenActionConfirm, type ProposedAction } from './ClenActionConfirm'
 import type { ClenMessage as ClenMessageType } from './useClen'
 
 interface Props {
@@ -136,18 +137,23 @@ export function ClenMessage({ message }: Props) {
       <div className="flex-1 min-w-0">
         {message.toolCalls && message.toolCalls.length > 0 && (
           <div className="mb-2 space-y-1">
-            {message.toolCalls.map((tc, i) => (
-              <div
-                key={i}
-                className="flex items-center gap-2 text-[11px] font-body text-brand-muted bg-brand-surface border border-brand-border-subtle rounded-sm px-2 py-1"
-              >
-                <span className="text-brand-warning">◌</span>
-                <span>Checking your data</span>
-                <span className="text-brand-border-subtle">·</span>
-                <span className="truncate">{tc.tool}</span>
-                {tc.result && <span className="ml-auto text-brand-green">✓</span>}
-              </div>
-            ))}
+            {message.toolCalls.map((tc, i) => {
+              // A tool that proposed an action renders a confirm card instead of a chip.
+              const proposed = (tc.result as { proposed_action?: ProposedAction } | undefined)?.proposed_action
+              if (proposed) return <ClenActionConfirm key={i} proposedAction={proposed} />
+              return (
+                <div
+                  key={i}
+                  className="flex items-center gap-2 text-[11px] font-body text-brand-muted bg-brand-surface border border-brand-border-subtle rounded-sm px-2 py-1"
+                >
+                  <span className="text-brand-warning">◌</span>
+                  <span>Checking your data</span>
+                  <span className="text-brand-border-subtle">·</span>
+                  <span className="truncate">{tc.tool}</span>
+                  {tc.result && <span className="ml-auto text-brand-green">✓</span>}
+                </div>
+              )
+            })}
           </div>
         )}
         {message.content && (
