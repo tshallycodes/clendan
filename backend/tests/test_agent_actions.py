@@ -177,3 +177,35 @@ async def test_clen_run_automation_surfaces_error():
     from app.clen.tools import execute_tool
     res = await execute_tool("run_automation", {"tool_type": "spend_control"}, "t1", "u1", db)
     assert "error" in res
+
+
+# ---- agent read capabilities ------------------------------------------------
+
+@pytest.mark.asyncio
+async def test_financial_summary_aggregates_and_flags_overdue():
+    inv_od = MagicMock(outstanding_cents=1000, due_date=datetime.now(UTC) - timedelta(days=5), currency="GBP")
+    inv_ok = MagicMock(outstanding_cents=500, due_date=datetime.now(UTC) + timedelta(days=5), currency="GBP")
+    bill_od = MagicMock(outstanding_cents=800, due_date=datetime.now(UTC) - timedelta(days=2), currency="GBP")
+    db = MagicMock()
+    db.accountinginvoice.find_many = AsyncMock(return_value=[inv_od, inv_ok])
+    db.accountingbill.find_many = AsyncMock(return_value=[bill_od])
+    from app.clen.tools import execute_tool
+    res = await execute_tool("get_financial_summary", {}, "t1", "u1", db)
+    assert res["receivables"]["outstanding_cents"] == 1500
+    assert res["receivables"]["overdue_count"] == 1 and res["receivables"]["overdue_cents"] == 1000
+    assert res["payables"]["outstanding_cents"] == 800
+    assert res["net_position_cents"] == 700  # 1500 receivable - 800 payable
+
+
+@pytest.mark.asyncio
+async def test_list_overdue_invoices_shapes_items():
+    inv = MagicMock(id="i1", number="INV-1", contact_name="Acme",
+                    outstanding_cents=1200, currency="GBP",
+                    due_date=datetime.now(UTC) - timedelta(days=3))
+    db = MagicMock()
+    db.accountinginvoice.find_many = AsyncMock(return_value=[inv])
+    from app.clen.tools import execute_tool
+    res = await execute_tool("list_overdue_invoices", {"limit": 5}, "t1", "u1", db)
+    assert res["count"] == 1
+    item = res["overdue_invoices"][0]
+    assert item["number"] == "INV-1" and item["days_overdue"] == 3

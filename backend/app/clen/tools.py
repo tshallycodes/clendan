@@ -73,6 +73,10 @@ async def _dispatch(
             )
         case "get_execution_stats":
             return await _get_execution_stats(tenant_id, db, period=input.get("period", "7d"))
+        case "get_financial_summary":
+            return await _get_financial_summary(tenant_id, db)
+        case "list_overdue_invoices":
+            return await _list_overdue_invoices(tenant_id, db, limit=min(int(input.get("limit", 10)), 50))
         case "list_tools":
             return await _list_tools(tenant_id, db)
         case "get_tool_status":
@@ -197,6 +201,71 @@ async def _get_execution_stats(tenant_id: str, db: Prisma, period: str) -> dict:
         "total": len(executions),
         "by_decision": counts,
     }
+
+
+_SETTLED_INVOICE_STATUSES = ["paid", "voided", "deleted", "draft"]
+_SETTLED_BILL_STATUSES = ["paid", "void"]
+
+
+def _is_overdue(due, now: datetime) -> bool:
+    if not due:
+        return False
+    due_aware = due if due.tzinfo else due.replace(tzinfo=UTC)
+    return due_aware < now
+
+
+async def _get_financial_summary(tenant_id: str, db: Prisma) -> dict:
+    """Outstanding receivables vs payables across the connected books, with overdue portions."""
+    now = datetime.now(UTC)
+    invoices = await db.accountinginvoice.find_many(
+        where={"tenant_id": tenant_id, "outstanding_cents": {"gt": 0},
+               "status": {"not_in": _SETTLED_INVOICE_STATUSES}}
+    )
+    bills = await db.accountingbill.find_many(
+        where={"tenant_id": tenant_id, "outstanding_cents": {"gt": 0},
+               "status": {"not_in": _SETTLED_BILL_STATUSES}}
+    )
+
+    def _rollup(rows) -> dict:
+        total = sum(int(r.outstanding_cents or 0) for r in rows)
+        od = [r for r in rows if _is_overdue(r.due_date, now)]
+        return {
+            "outstanding_cents": total, "count": len(rows),
+            "overdue_count": len(od), "overdue_cents": sum(int(r.outstanding_cents or 0) for r in od),
+        }
+
+    ar, ap = _rollup(invoices), _rollup(bills)
+    return {
+        "receivables": ar,
+        "payables": ap,
+        "net_position_cents": ar["outstanding_cents"] - ap["outstanding_cents"],
+        "note": ("Amounts are minor units (pence/cents), aggregated across every connected "
+                 "source; multi-currency amounts are summed nominally."),
+    }
+
+
+async def _list_overdue_invoices(tenant_id: str, db: Prisma, limit: int) -> dict:
+    """The oldest overdue customer invoices - the chase list."""
+    now = datetime.now(UTC)
+    invoices = await db.accountinginvoice.find_many(
+        where={"tenant_id": tenant_id, "outstanding_cents": {"gt": 0},
+               "status": {"not_in": _SETTLED_INVOICE_STATUSES}, "due_date": {"lt": now}},
+        order={"due_date": "asc"},
+        take=limit,
+    )
+    items = []
+    for inv in invoices:
+        due = inv.due_date
+        due_aware = (due if due.tzinfo else due.replace(tzinfo=UTC)) if due else None
+        items.append({
+            "id": inv.id,
+            "number": getattr(inv, "number", None),
+            "contact_name": getattr(inv, "contact_name", None),
+            "outstanding_cents": int(inv.outstanding_cents or 0),
+            "currency": inv.currency,
+            "days_overdue": (now - due_aware).days if due_aware else None,
+        })
+    return {"overdue_invoices": items, "count": len(items)}
 
 
 async def _list_tools(tenant_id: str, db: Prisma) -> dict:

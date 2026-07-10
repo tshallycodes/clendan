@@ -45,6 +45,30 @@ ACCOUNT_TOOLS: list[dict] = [
         },
     },
     {
+        "name": "get_financial_summary",
+        "description": (
+            "Returns the money position across the connected books: total outstanding "
+            "receivables (money owed to you), total outstanding payables (money you owe), and "
+            "how much of each is overdue. Use for 'what's my position', 'how much do I owe', "
+            "'who owes me', 'am I cash positive'."
+        ),
+        "input_schema": {"type": "object", "properties": {}, "required": []},
+    },
+    {
+        "name": "list_overdue_invoices",
+        "description": (
+            "Lists the oldest overdue customer invoices (receivables past their due date). "
+            "Use for 'what's overdue', 'who hasn't paid', or before chasing customers."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "limit": {"type": "integer", "description": "Max invoices to return (default 10, max 50).", "default": 10},
+            },
+            "required": [],
+        },
+    },
+    {
         "name": "list_tools",
         "description": "Lists all tools configured for this organisation.",
         "input_schema": {"type": "object", "properties": {}, "required": []},

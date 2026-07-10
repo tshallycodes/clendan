@@ -10,6 +10,7 @@ import { IntegrationsHealth } from '@/components/dashboard/IntegrationsHealth'
 import { QuickActions } from '@/components/dashboard/QuickActions'
 import { AnimatedPage, AnimatedSection } from '@/components/dashboard/AnimatedPage'
 import { AutomationRing } from '@/components/dashboard/AutomationRing'
+import { AskClendanHero } from '@/components/dashboard/AskClendanHero'
 
 export const metadata: Metadata = { title: 'Dashboard' }
 
@@ -99,6 +100,12 @@ export default async function DashboardPage() {
           <h1 className="font-heading font-bold text-2xl text-brand-text">Dashboard</h1>
           <p className={`text-xs font-body mt-1 ${statusColor}`}>{statusMessage}</p>
         </div>
+      </AnimatedSection>
+
+      <AnimatedSection><AskClendanHero /></AnimatedSection>
+
+      <AnimatedSection>
+        <p className="text-[11px] font-body uppercase tracking-widest text-brand-muted">Snapshot</p>
       </AnimatedSection>
 
       <AnimatedSection>
