@@ -90,3 +90,22 @@ async def resolve_approval(
         model_version="human" if actor.startswith("user:") else "system",
         execution_id=approval.execution_id,
     )
+
+    # Post the now-approved journal entry to the connected ERP (dry-run unless erp_write_live).
+    # Best-effort: a posting failure must not undo the approval, which is already audited above.
+    if is_approve and execution and execution.input_ref and execution.input_ref.startswith("journal_entry:"):
+        parts = execution.input_ref.split(":")
+        je_id = parts[1] if len(parts) >= 2 else ""
+        if je_id:
+            try:
+                entry = await db.journalentry.find_first(
+                    where={"id": je_id, "tenant_id": approval.tenant_id},
+                )
+                if entry and entry.status == "approved":
+                    from app.core.erp_writer import post_journal_entry
+                    await post_journal_entry(db, approval.tenant_id, entry)
+            except Exception as exc:
+                logger.error(
+                    "journal_entry_erp_post_failed",
+                    extra={"journal_entry_id": je_id, "error": type(exc).__name__},
+                )

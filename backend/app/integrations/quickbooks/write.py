@@ -13,6 +13,100 @@ from app.integrations.quickbooks import client as qb
 logger = get_logger(__name__)
 
 
+async def _load_qb_credentials(db, tenant_id: str) -> tuple[str, str, bool]:
+    """Load and (if expired) refresh QuickBooks credentials for the tenant.
+
+    Returns (access_token, realm_id, sandbox). Raises if there is no connected QuickBooks
+    integration or the stored credentials are incomplete. Shared by every QB writer.
+    """
+    settings = get_settings()
+    integration = await db.integration.find_first(
+        where={"tenant_id": tenant_id, "type": "quickbooks", "status": "connected"}
+    )
+    if not integration:
+        logger.error("qb_no_connected_integration", extra={"tenant_id": tenant_id})
+        raise ValueError(f"No connected QuickBooks integration for tenant {tenant_id}")
+
+    creds = decrypt_credentials(integration.encrypted_credentials, tenant_id)
+    access_token = creds.get("access_token", "")
+    realm_id = creds.get("realm_id", "")
+
+    token_expiry_at = creds.get("token_expiry_at")
+    if token_expiry_at:
+        try:
+            if datetime.fromisoformat(token_expiry_at) <= datetime.now(UTC):
+                logger.info("qb_write_token_expired_refreshing", extra={"tenant_id": tenant_id})
+                new_tokens = await qb.refresh_token(creds["refresh_token"])
+                creds = {**creds, **new_tokens}
+                access_token = creds["access_token"]
+                await db.integration.update(
+                    where={"id": integration.id},
+                    data={"encrypted_credentials": encrypt_credentials(creds, tenant_id)},
+                )
+        except Exception as exc:
+            logger.error("qb_write_token_refresh_failed", extra={"tenant_id": tenant_id, "error": type(exc).__name__})
+
+    if not access_token or not realm_id:
+        logger.error("qb_credentials_incomplete", extra={
+            "tenant_id": tenant_id, "has_access_token": bool(access_token), "has_realm_id": bool(realm_id),
+        })
+        raise ValueError("QuickBooks credentials missing access_token or realm_id")
+
+    return access_token, realm_id, settings.quickbooks_sandbox
+
+
+async def write_journal_to_quickbooks(
+    tenant_id: str,
+    *,
+    description: str,
+    lines: list[dict],
+) -> dict:
+    """Post a Clendan journal entry to QuickBooks as a JournalEntry.
+
+    ``lines`` are provider-neutral: {account_code, account_name, posting_type, amount_minor,
+    description}. Each line's account is resolved to a QB AccountRef by account number, then
+    by name; an unmappable account raises rather than posting a wrong entry.
+    """
+    db = get_db()
+    access_token, realm_id, sandbox = await _load_qb_credentials(db, tenant_id)
+
+    accounts = await qb.get_accounts(access_token, realm_id, sandbox)
+    by_num: dict[str, str] = {}
+    by_name: dict[str, str] = {}
+    for a in accounts:
+        num = str(a.get("AcctNum") or "").strip()
+        name = str(a.get("Name") or "").strip().lower()
+        if num:
+            by_num[num] = a["Id"]
+        if name:
+            by_name[name] = a["Id"]
+
+    qb_lines: list[dict] = []
+    for ln in lines:
+        code = str(ln.get("account_code") or "").strip()
+        name = str(ln.get("account_name") or "").strip().lower()
+        account_id = by_num.get(code) or by_name.get(name)
+        if not account_id:
+            raise ValueError(
+                f"Cannot map journal line account '{ln.get('account_code')}/{ln.get('account_name')}' "
+                "to a QuickBooks account"
+            )
+        qb_lines.append({
+            "account_id": account_id,
+            "posting_type": ln["posting_type"],
+            "amount_minor": ln["amount_minor"],
+            "description": ln.get("description", ""),
+        })
+
+    result = await qb.create_journal_entry(
+        access_token, realm_id, description=description, lines=qb_lines, sandbox=sandbox,
+    )
+    logger.info("qb_journal_created", extra={
+        "tenant_id": tenant_id, "qb_journal_id": result["qb_journal_id"], "line_count": len(qb_lines),
+    })
+    return result
+
+
 async def write_bill_to_quickbooks(
     tenant_id: str,
     execution_id: str,
@@ -35,7 +129,6 @@ async def write_bill_to_quickbooks(
     Returns QB bill dict. Raises on any failure — caller decides whether to surface or swallow.
     """
     db = get_db()
-    settings = get_settings()
 
     logger.info("qb_write_bill_start", extra={
         "tenant_id": tenant_id, "execution_id": execution_id,
@@ -43,52 +136,7 @@ async def write_bill_to_quickbooks(
         "amount_minor": amount_minor, "currency": currency, "due_date": due_date,
     })
 
-    integration = await db.integration.find_first(
-        where={"tenant_id": tenant_id, "type": "quickbooks", "status": "connected"}
-    )
-    if not integration:
-        logger.error("qb_no_connected_integration", extra={"tenant_id": tenant_id})
-        raise ValueError(f"No connected QuickBooks integration for tenant {tenant_id}")
-
-    logger.info("qb_integration_found", extra={
-        "tenant_id": tenant_id, "integration_id": integration.id,
-    })
-
-    creds = decrypt_credentials(integration.encrypted_credentials, tenant_id)
-    encrypted_access = creds.get("access_token", "")
-    realm_id = creds.get("realm_id", "")
-    sandbox = settings.quickbooks_sandbox
-
-    token_expiry_at = creds.get("token_expiry_at")
-    if token_expiry_at:
-        try:
-            if datetime.fromisoformat(token_expiry_at) <= datetime.now(UTC):
-                logger.info("qb_write_token_expired_refreshing", extra={"tenant_id": tenant_id})
-                new_tokens = await qb.refresh_token(creds["refresh_token"])
-                creds = {**creds, **new_tokens}
-                encrypted_access = creds["access_token"]
-                await db.integration.update(
-                    where={"id": integration.id},
-                    data={"encrypted_credentials": encrypt_credentials(creds, tenant_id)},
-                )
-        except Exception as exc:
-            logger.error("qb_write_token_refresh_failed", extra={"tenant_id": tenant_id, "error": type(exc).__name__})
-
-    logger.info("qb_credentials_check", extra={
-        "tenant_id": tenant_id,
-        "has_access_token": bool(encrypted_access),
-        "has_realm_id": bool(realm_id),
-        "sandbox": sandbox,
-        "cred_keys": list(creds.keys()),
-    })
-
-    if not encrypted_access or not realm_id:
-        logger.error("qb_credentials_incomplete", extra={
-            "tenant_id": tenant_id,
-            "has_access_token": bool(encrypted_access),
-            "has_realm_id": bool(realm_id),
-        })
-        raise ValueError("QuickBooks credentials missing access_token or realm_id")
+    encrypted_access, realm_id, sandbox = await _load_qb_credentials(db, tenant_id)
 
     logger.info("qb_finding_vendor", extra={"tenant_id": tenant_id, "vendor": vendor})
     vendor_id = await qb.find_or_create_vendor(

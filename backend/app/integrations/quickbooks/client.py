@@ -350,6 +350,58 @@ async def create_bill(
     }
 
 
+async def create_journal_entry(
+    encrypted_access: str,
+    realm_id: str,
+    *,
+    description: str,
+    lines: list[dict],
+    sandbox: bool = True,
+) -> dict:
+    """Creates a JournalEntry in QuickBooks.
+
+    ``lines`` are provider-neutral dicts: {account_id, posting_type ("Debit"|"Credit"),
+    amount_minor, description}. Amounts are minor units, converted to decimal here.
+    """
+    access_token = encrypted_access
+    api_base = get_api_base(sandbox)
+
+    qb_lines = [
+        {
+            "Description": ln.get("description", ""),
+            "Amount": round(ln["amount_minor"] / 100, 2),
+            "DetailType": "JournalEntryLineDetail",
+            "JournalEntryLineDetail": {
+                "PostingType": ln["posting_type"],
+                "AccountRef": {"value": ln["account_id"]},
+            },
+        }
+        for ln in lines
+    ]
+    payload: dict = {"Line": qb_lines, "PrivateNote": description}
+
+    async def _call():
+        async with httpx.AsyncClient() as client:
+            res = await client.post(
+                f"{api_base}/{realm_id}/journalentry",
+                json=payload,
+                headers={
+                    "Authorization": f"Bearer {access_token}",
+                    "Accept": "application/json",
+                    "Content-Type": "application/json",
+                },
+                timeout=15.0,
+            )
+            res.raise_for_status()
+            return res.json()
+
+    raw = await _circuit.call(_retry, _call)
+    je = raw.get("JournalEntry", {})
+    if not je:
+        raise ValueError("QuickBooks returned empty JournalEntry response after creation")
+    return {"qb_journal_id": je["Id"], "qb_sync_token": je["SyncToken"], "created": True}
+
+
 async def _query(access_token: str, realm_id: str, sql: str, sandbox: bool = True) -> list:
     """Runs a QB query and returns the first entity list found in QueryResponse."""
     async def _call():

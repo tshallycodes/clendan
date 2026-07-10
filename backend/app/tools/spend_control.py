@@ -19,6 +19,7 @@ from pydantic import BaseModel
 from app.audit.logger import write_audit_log
 from app.core.config import get_settings
 from app.core.db import get_db
+from app.core.erp_writer import ErpWriteError, post_bill
 from app.core.execution import complete_execution
 from app.core.logging import get_logger
 from app.core.sources import source_filter
@@ -813,8 +814,30 @@ async def _execute_accounts_payable(tenant_id: str, tool_id: str, execution_id: 
         control_decisions.append((b.id, status, r.reasoning if r else "unscored by AP model"))
     await _persist_control_status(db.accountingbill, tenant_id, control_decisions)
 
+    # Post approved native bills (not yet on any ERP) to the connected accounting system.
+    # Dry-run unless erp_write_live; best-effort so a posting failure never fails the run.
+    # Only source="invoice" bills with no integration are native + unposted, so this never
+    # re-posts an ERP-synced bill or one already posted (which then carries integration_id).
+    approved_ids = {bid for bid, status, _ in control_decisions if status == "approved"}
+    raw_by_id = {r.id: r for r in raw}
+    bills_posted = 0
+    for bid in approved_ids:
+        row = raw_by_id.get(bid)
+        if row is None or getattr(row, "integration_id", None) is not None or row.source != "invoice":
+            continue
+        try:
+            res = await post_bill(db, tenant_id, row, execution_id=execution_id)
+            if res.get("mode") == "live":
+                bills_posted += 1
+        except ErpWriteError:
+            pass  # live enabled but no ERP connected - surfaced elsewhere, not fatal here
+        except Exception as exc:
+            logger.warning("ap_bill_erp_post_failed", extra={"bill_id": bid, "error": type(exc).__name__})
+
     duplicate_count = sum(1 for b in bills if b.is_duplicate)
     actions_taken = [f"assessed {len(bills)} bill(s)"]
+    if bills_posted:
+        actions_taken.append(f"posted {bills_posted} approved bill(s) to the ERP")
     if policy_overrides:
         actions_taken.extend(policy_overrides)
     if duplicate_count:
