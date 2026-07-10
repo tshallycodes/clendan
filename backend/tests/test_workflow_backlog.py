@@ -22,12 +22,13 @@ def _exec(created_at):
     return m
 
 
-def _db(bills_count=0, exp_count=0, approved=None, runs=None):
+def _db(bills_count=0, exp_count=0, approved=None, runs=None, spend_cfg=None):
     db = MagicMock()
     db.accountingbill.count = AsyncMock(return_value=bills_count)
     db.accountingexpense.count = AsyncMock(return_value=exp_count)
     db.accountingbill.find_many = AsyncMock(return_value=approved or [])
     db.paymentrun.find_many = AsyncMock(return_value=runs or [])
+    db.tool.find_first = AsyncMock(return_value=MagicMock(config_json=spend_cfg or {}))
     return db
 
 
@@ -41,7 +42,17 @@ async def test_doc_intel_to_spend_backlog_sums_unassessed_bills_and_expenses():
     assert db.accountingbill.count.await_args.kwargs["where"]["control_status"] is None
     exp_where = db.accountingexpense.count.await_args.kwargs["where"]
     assert exp_where["control_status"] is None
-    assert "expense_date" not in exp_where  # no age limit - Spend Control sweeps all unassessed
+    assert "expense_date" not in exp_where  # default (0) = no age limit, sweeps all unassessed
+
+
+@pytest.mark.asyncio
+async def test_doc_intel_expense_backlog_respects_catch_up_limit():
+    from app.api.v1.workflows import _edge_backlog
+    db = _db(bills_count=2, exp_count=4, spend_cfg={"expense_lookback_days": 60})
+    n = await _edge_backlog(db, "t1", "document_intelligence", "spend_control")
+    assert n == 6
+    # a positive catch-up limit bounds the expense count by expense_date
+    assert "expense_date" in db.accountingexpense.count.await_args.kwargs["where"]
 
 
 @pytest.mark.asyncio

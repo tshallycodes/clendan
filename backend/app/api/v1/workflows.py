@@ -4,6 +4,7 @@ A connection is the edge between two consecutive tools in a workflow. Enabled me
 the upstream tool auto-advances to the downstream one on a successful run. A missing
 row means enabled (default on). Only known edges (see WORKFLOW_EDGES) are accepted.
 """
+from datetime import UTC, datetime, timedelta
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -40,14 +41,23 @@ async def _edge_backlog(db, tenant_id: str, from_type: str, to_type: str) -> int
     """
     if from_type == "document_intelligence" and to_type == "spend_control":
         # Bills/expenses that exist but Spend Control has not assessed (control_status unset).
-        # No age limit - Spend Control now sweeps every unassessed record regardless of age.
+        # Bills: no age limit (all outstanding are assessed). Expenses: bounded by the tool's
+        # unassessed catch-up limit (expense_lookback_days; 0 = no limit), so the badge counts
+        # exactly what a flush would actually process.
         bills = await db.accountingbill.count(
             where={"tenant_id": tenant_id, "control_status": None,
                    "status": {"not_in": _UNPAID_BILL_STATUSES}}
         )
-        expenses = await db.accountingexpense.count(
-            where={"tenant_id": tenant_id, "control_status": None}
-        )
+        exp_where: dict = {"tenant_id": tenant_id, "control_status": None}
+        tool = await db.tool.find_first(where={"tenant_id": tenant_id, "type": "spend_control"})
+        cfg = tool.config_json if tool and isinstance(tool.config_json, dict) else {}
+        try:
+            max_age = int(cfg.get("expense_lookback_days", 0) or 0)
+        except (TypeError, ValueError):
+            max_age = 0
+        if max_age > 0:
+            exp_where["expense_date"] = {"gte": datetime.now(UTC) - timedelta(days=max_age)}
+        expenses = await db.accountingexpense.count(where=exp_where)
         return bills + expenses
 
     if from_type == "spend_control" and to_type == "payment_run":

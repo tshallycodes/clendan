@@ -72,8 +72,10 @@ export const TOOL_FIELDS: Record<string, FieldDef[]> = {
       description: 'Expenses above this amount require a receipt or supporting document before reimbursement.' },
     { key: 'monthly_limit_per_employee', type: 'number', label: 'Monthly limit per employee', penceDisplay: true, default: 500000,
       description: 'Per-employee spend budget for a calendar month. Used as a guardrail when assessing spend velocity and burn rate.' },
-    { key: 'lookback_days', type: 'number', label: 'Lookback period', unit: 'days', default: 30,
-      description: 'How many days of expense history the agent reviews on each run.' },
+    { key: 'lookback_days', type: 'number', label: 'Recent review window', unit: 'days', min: 1, default: 30,
+      description: 'Recent expenses within this many days are re-checked on every run (also drives the burn-rate calculation). Older expenses are only picked up if still unassessed - see the catch-up limit below.' },
+    { key: 'expense_lookback_days', type: 'number', label: 'Unassessed catch-up limit', unit: 'days · 0 = no limit', min: 0, default: 0,
+      description: 'How far back to catch up expenses that have never been assessed. 0 = no limit (assess every unassessed expense, any age). Set a number to ignore unassessed expenses older than that. Outstanding bills are always assessed regardless of age.' },
   ],
   tax_compliance: [
     { key: 'accounting_sources', type: 'multiselect', label: 'Accounting sources', options: [], default: [],

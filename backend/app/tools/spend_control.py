@@ -83,7 +83,11 @@ class _ExpenseToolPolicy(BaseModel):
     monthly_limit_per_employee: int = 500_000
     blocked_categories: list[str] = []
     receipt_required_above: int = 2_500
-    lookback_days: int = 30
+    lookback_days: int = 30  # recent window used for burn-rate velocity + re-assessment
+    # Max age (days) of a still-unassessed expense that Spend Control will catch up on.
+    # 0 = no limit (assess every unassessed expense of any age). A positive value caps how
+    # far back the catch-up reaches. Recent expenses are always re-checked (lookback_days).
+    expense_lookback_days: int = 0
 
 
 class _ExpenseRecord(BaseModel):
@@ -250,19 +254,23 @@ async def _execute_expense_control(
     policy = _parse_expense_policy(config_raw)
     src = source_filter(config_raw, "accounting_sources")
 
-    # 1. Fetch expenses to assess: everything in the recent window PLUS any still-unassessed
-    # expense of ANY age, so nothing ages out of Spend Control's reach. Mirrors the AP side,
-    # which scans all outstanding bills with no date limit.
-    cutoff = datetime.now(UTC) - timedelta(days=30)
+    # 1. Fetch expenses to assess. Always re-check the recent window (keeps assessments fresh
+    # against the current policy) AND catch up any still-unassessed expense. The catch-up is
+    # bounded by the configured max age (expense_lookback_days; 0 = no limit), so the user
+    # controls how far back Spend Control reaches. Unassessed rows are assessed once and then
+    # carry a control_status, so this does not re-scan them on every run.
+    now = datetime.now(UTC)
+    burn_cutoff = now - timedelta(days=policy.lookback_days)
+    conditions: list[dict] = [{"expense_date": {"gte": burn_cutoff}}]
+    if policy.expense_lookback_days > 0:
+        conditions.append({
+            "control_status": None,
+            "expense_date": {"gte": now - timedelta(days=policy.expense_lookback_days)},
+        })
+    else:
+        conditions.append({"control_status": None})
     raw_expenses = await db.accountingexpense.find_many(
-        where={
-            "tenant_id": tenant_id,
-            **src,
-            "OR": [
-                {"expense_date": {"gte": cutoff}},
-                {"control_status": None},
-            ],
-        }
+        where={"tenant_id": tenant_id, **src, "OR": conditions}
     )
     if not raw_expenses:
         # Nothing to process - write audit and return
@@ -302,7 +310,7 @@ async def _execute_expense_control(
             return False
         if dt.tzinfo is None:
             dt = dt.replace(tzinfo=UTC)
-        return dt >= cutoff
+        return dt >= burn_cutoff
 
     recent_expenses = [e for e in expenses if _within_window(e.expense_date)]
     period_days: int = policy.lookback_days
