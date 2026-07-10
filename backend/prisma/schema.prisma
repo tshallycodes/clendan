@@ -65,6 +65,51 @@ model Tenant {
   collection_reminders    CollectionReminder[]
   vat_returns             VatReturn[]
   agent_actions           AgentAction[]
+  vendor_bank_details     VendorBankDetail[]
+  // Firm layer: a client tenant may belong to an accounting/fractional-CFO firm.
+  firm_id                 String?
+  firm                    Firm?              @relation(fields: [firm_id], references: [id])
+}
+
+// Last-known bank details Clendan paid a vendor to. Powers the payment-confirm "account
+// changed since last payment" fraud flag. Not the ledger - just what we last released to.
+model VendorBankDetail {
+  id                 String   @id @default(cuid())
+  tenant_id          String
+  vendor_ref         String // ERP contact id, or a normalised vendor name when no id
+  account_identifier String // e.g. "sortcode:accountnumber" or IBAN from the last payment
+  currency           String   @default("GBP")
+  created_at         DateTime @default(now())
+  updated_at         DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenant_id], references: [id])
+
+  @@unique([tenant_id, vendor_ref])
+  @@index([tenant_id])
+}
+
+// An accounting / fractional-CFO firm that operates a portfolio of client tenants. The ICP.
+// A firm member can act as any client tenant under their firm (scoped + audited).
+model Firm {
+  id         String           @id @default(cuid())
+  name       String
+  created_at DateTime         @default(now())
+  updated_at DateTime         @updatedAt
+  tenants    Tenant[]
+  members    FirmMembership[]
+}
+
+model FirmMembership {
+  id         String   @id @default(cuid())
+  firm_id    String
+  member_id  String // references the Member/User acting on behalf of the firm
+  role       String   @default("member") // owner | admin | member
+  created_at DateTime @default(now())
+
+  firm Firm @relation(fields: [firm_id], references: [id])
+
+  @@unique([firm_id, member_id])
+  @@index([firm_id])
 }
 
 // The chat agent's propose -> confirm -> execute spine. The agent never mutates state

@@ -28,7 +28,7 @@ const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 const REC_TYPES: { key: string; label: string }[] = [
   { key: 'all',     label: 'All' },
   { key: 'bank',    label: 'Bank' },
-  { key: 'payroll', label: 'Payroll' },
+  // Payroll deferred: out of the AP -> close -> AR operator wedge. Component + backend kept.
   { key: 'invoice', label: 'Invoice' },
   { key: 'vat',     label: 'VAT' },
 ]
