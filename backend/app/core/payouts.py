@@ -1,12 +1,17 @@
 """
-Payment disbursement + PaymentRun lifecycle.
+Payment preparation + PaymentRun lifecycle.
+
+MONEY-MOVEMENT BOUNDARY (locked principle). Clendan never custodies or transfers funds.
+Moving a client's money would make Clendan a money transmitter (licensing / fund
+safeguarding) - a different, regulated business. Instead Clendan *prepares* a payment batch
+and hands off: the authorised human releases it in the system that already holds the money
+(the client's bank / ERP). "Approve" here records that a run was released and marks its bills
+paid in Clendan's mirror so the books reflect it - it does NOT wire money.
 
 Deliberately SEPARATE from app/tools/payment_run.py, whose docstring forbids a payout call:
-the tool only schedules/records intent. This is the gated place where money actually moves -
-and by default it does NOT. `_execute_payout` runs in dry-run mode (marks the batch's bills
-paid in Clendan, no money moves) unless settings.payments_live is true, in which case a real
-payout rail must be wired. The rail is intentionally a refusing stub until a provider +
-credentials + a go-live review land - so "live" can never silently mean "nothing happened".
+the tool only schedules/records intent. `payments_live` is kept as a hard tripwire - there is
+by design NO disbursement rail, so if anyone ever flips it, `_execute_payout` refuses loudly
+rather than silently moving funds through unreviewed code.
 
 State machine on PaymentRun.status:
     scheduled  --approve (before scheduled_for)--> paid
@@ -43,16 +48,19 @@ async def _mark_bills_paid(db, tenant_id: str, bill_ids: list) -> None:
 
 
 async def _execute_payout(db, tenant_id: str, run) -> dict:
-    """Disburse a scheduled run. DRY-RUN by default: marks the batch's bills paid in Clendan
-    without moving money. Real money moves only when payments_live is on AND a rail is wired
-    (currently a refusing stub)."""
+    """Record a scheduled run as released. Clendan does NOT move money (see the module
+    MONEY-MOVEMENT BOUNDARY): it marks the batch's bills paid in Clendan's mirror so the books
+    reflect the payment the human is releasing in the bank/ERP. `payments_live` is a tripwire -
+    there is deliberately no disbursement rail, so it refuses loudly if ever enabled."""
     settings = get_settings()
     bill_ids = list(run.bill_ids or [])
     if settings.payments_live:
-        # Real disbursement rail goes here (Wise / bank / provider) with idempotency keys,
-        # retries with backoff, and a reconciliation follow-up. Intentionally refuses rather
-        # than silently no-op, so enabling "live" without a rail fails loudly.
-        raise PaymentRunError("Live payouts are enabled but no payout rail is configured.")
+        # By design Clendan prepares payments and hands off - it never transfers funds. This
+        # refuses loudly so "live" can never silently wire a client's money.
+        raise PaymentRunError(
+            "Clendan does not disburse funds (prepare-and-hand-off by design); "
+            "payments_live must stay off."
+        )
     await _mark_bills_paid(db, tenant_id, bill_ids)
     return {"mode": "dry_run", "bills_paid": len(bill_ids), "total_cents": run.total_amount_cents}
 

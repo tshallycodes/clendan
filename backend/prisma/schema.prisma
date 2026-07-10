@@ -64,6 +64,32 @@ model Tenant {
   workflow_connections    WorkflowConnection[]
   collection_reminders    CollectionReminder[]
   vat_returns             VatReturn[]
+  agent_actions           AgentAction[]
+}
+
+// The chat agent's propose -> confirm -> execute spine. The agent never mutates state
+// directly; it proposes an AgentAction (status "proposed"), the user confirms it in the UI,
+// and only then does it execute through the same governed path as any other trigger. Money
+// actions reuse this with capability="money" behind a details-verified confirmation.
+model AgentAction {
+  id           String    @id @default(cuid())
+  tenant_id    String
+  kind         String // run_automation | (later) create_bill, prepare_payment, ...
+  capability   String // read | write | money
+  params       Json
+  preview      String // human-readable summary shown on the confirm card
+  status       String    @default("proposed") // proposed | executed | cancelled | expired
+  proposed_by  String?
+  confirmed_by String?
+  execution_id String?
+  created_at   DateTime  @default(now())
+  confirmed_at DateTime?
+  expires_at   DateTime
+
+  tenant Tenant @relation(fields: [tenant_id], references: [id])
+
+  @@index([tenant_id])
+  @@index([tenant_id, status])
 }
 
 // A computed VAT return for a filing period. Persisted by Tax Compliance each run so the

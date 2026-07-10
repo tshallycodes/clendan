@@ -138,6 +138,12 @@ These rules apply to every feature that touches financial data. No exceptions.
 - **Reconciliation** — every external data sync must have a reconciliation job to detect drift
 - **Rollback capability** — any financial action taken by an agent must be reversable where technically possible. Document explicitly where it is not.
 - **Zero trust on external data** — data from Plaid, Xero, QuickBooks, Stripe, FreshBooks is always validated before writing to DB. Never pass external data directly to ledger.
+- **Money-movement boundary (locked) — prepare, never disburse.** Clendan never custodies or
+  transfers funds; moving a client's money would make it a money transmitter (licensing / fund
+  safeguarding). Clendan *prepares* payments (writes a pending/draft into the client's bank or
+  ERP) and hands off — the authorised human releases them in the system that holds the money.
+  There is deliberately no disbursement rail; `payments_live` is a tripwire that refuses loudly
+  if flipped. Any feature that would move funds from a Clendan-controlled path is out of scope.
 
 ---
 

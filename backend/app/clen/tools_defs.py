@@ -123,4 +123,21 @@ ACCOUNT_TOOLS: list[dict] = [
             "required": ["tool_type"],
         },
     },
+    {
+        "name": "run_automation",
+        "description": (
+            "ACTION: Runs a deployed automation now (e.g. the user asks to 'run spend control' "
+            "or 'reconcile now'). This does NOT run immediately - it PROPOSES the action and "
+            "returns a confirmation card the user must approve in the UI before it executes. "
+            "Call this when the user wants to trigger a tool/automation on demand, then tell "
+            "them you've prepared it and to confirm."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "tool_type": {"type": "string", "description": "Automation/tool type to run (e.g. spend_control, reconciliation, ar_collections, tax_compliance)."},
+            },
+            "required": ["tool_type"],
+        },
+    },
 ]

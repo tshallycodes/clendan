@@ -8,7 +8,7 @@ import time
 from typing import Annotated, AsyncGenerator, Optional
 
 import anthropic
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.responses import StreamingResponse
 from jose import JWTError, jwt
 from jose.exceptions import JWKError
@@ -18,7 +18,8 @@ from pydantic import BaseModel
 from app.core.config import get_settings
 from app.core.db import get_db_dep
 from app.core.logging import get_logger
-from app.core.security import _fetch_jwks
+from app.core.responses import standard_response
+from app.core.security import RequireOrgAuth, _fetch_jwks
 from app.clen.context import build_system_prompt
 from app.clen.tools import ACCOUNT_TOOLS, execute_tool
 
@@ -255,3 +256,40 @@ async def clen_clear_conversation():
     clients that want a documented clear action. Returns confirmation only.
     """
     return {"cleared": True}
+
+
+# ---------------------------------------------------------------------------
+# Agent actions - the confirm/cancel gate for anything the agent proposes.
+# The chat proposes an action; the user confirms it here before it executes.
+# ---------------------------------------------------------------------------
+
+@router.post("/clen/actions/{action_id}/confirm", status_code=status.HTTP_202_ACCEPTED)
+async def confirm_agent_action(
+    action_id: str,
+    current_user: RequireOrgAuth,
+    db: Annotated[Prisma, Depends(get_db_dep)],
+):
+    """Confirm and execute an action the agent proposed. Idempotent per action."""
+    from app.core.agent_actions import AgentActionError, execute_action
+    try:
+        result = await execute_action(
+            db, current_user.tenant_id, action_id, confirmed_by=current_user.user_id,
+        )
+    except AgentActionError as exc:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc))
+    return standard_response(data=result)
+
+
+@router.post("/clen/actions/{action_id}/cancel")
+async def cancel_agent_action(
+    action_id: str,
+    current_user: RequireOrgAuth,
+    db: Annotated[Prisma, Depends(get_db_dep)],
+):
+    """Cancel an action the agent proposed but the user declined."""
+    from app.core.agent_actions import AgentActionError, cancel_action
+    try:
+        result = await cancel_action(db, current_user.tenant_id, action_id)
+    except AgentActionError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc))
+    return standard_response(data=result)

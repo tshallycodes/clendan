@@ -31,9 +31,9 @@ class Settings(BaseSettings):
     backoff_seconds: float = 1.0
     approval_ttl_seconds: int = 86400
 
-    # Live payouts: when false (default), Payment Runs execute in dry-run mode - bills are
-    # marked paid in Clendan but no money moves. Enabling requires a wired payout rail
-    # (see app/core/payouts.py) and a deliberate go-live review.
+    # Money-movement tripwire. Clendan prepares payments and hands off - by design it never
+    # transfers funds (that would make it a money transmitter). This stays False; there is no
+    # disbursement rail, and app/core/payouts.py refuses loudly if it is ever flipped on.
     payments_live: bool = False
 
     # Live outbound email: when false (default), AR collection reminders are recorded as

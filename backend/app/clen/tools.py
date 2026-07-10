@@ -91,6 +91,8 @@ async def _dispatch(
             )
         case "pause_tool":
             return await _pause_tool(input.get("tool_type", ""), tenant_id, user_id, db)
+        case "run_automation":
+            return await _propose_run_automation(input.get("tool_type", ""), tenant_id, user_id, db)
         case _:
             return {"error": f"Unknown tool: {name}"}
 
@@ -323,6 +325,22 @@ async def _reject_execution(
         data={"status": "rejected", "responded_at": datetime.now(UTC)},
     )
     return {"rejected": True, "approval_id": approval_id}
+
+
+async def _propose_run_automation(
+    tool_type: str, tenant_id: str, user_id: Optional[str], db: Prisma
+) -> dict:
+    """Propose (do not fire) an on-demand automation run. Returns a confirm-card payload; the
+    action only executes when the user confirms it via POST /clen/actions/{id}/confirm."""
+    from app.core.agent_actions import AgentActionError, propose_action
+    try:
+        proposal = await propose_action(
+            db, tenant_id, kind="run_automation",
+            params={"tool_type": tool_type}, proposed_by=user_id,
+        )
+    except AgentActionError as exc:
+        return {"error": str(exc)}
+    return {"proposed_action": proposal}
 
 
 async def _pause_tool(

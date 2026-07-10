@@ -75,7 +75,9 @@ async def test_approve_only_scheduled():
 
 
 @pytest.mark.asyncio
-async def test_live_payout_refuses_without_rail():
+async def test_live_payout_refuses_because_clendan_never_disburses():
+    # Money-movement boundary (locked): Clendan prepares payments, it never transfers funds.
+    # payments_live is a tripwire that must refuse loudly.
     run = _run(scheduled_for=datetime.now(UTC) + timedelta(days=2))
     db = _db(run)
     with (
@@ -83,7 +85,7 @@ async def test_live_payout_refuses_without_rail():
         patch("app.core.payouts.write_audit_log", AsyncMock()),
     ):
         from app.core.payouts import approve_payment_run, PaymentRunError
-        with pytest.raises(PaymentRunError, match="no payout rail"):
+        with pytest.raises(PaymentRunError, match="does not disburse"):
             await approve_payment_run(db, "t1", "run1")
     db.accountingbill.update_many.assert_not_awaited()  # nothing marked paid when it refuses
 
