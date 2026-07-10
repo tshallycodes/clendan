@@ -17,6 +17,8 @@ export interface WorkflowConnection {
   enabled: boolean
   // Records processed upstream but not yet handled downstream (null for window-based edges).
   backlog?: number | null
+  // Window-based edges only: downstream has run before / never seen the upstream's latest output.
+  downstream_stale?: boolean
   downstream_tool_id?: string | null
   downstream_active?: boolean
 }
@@ -92,13 +94,16 @@ function ToolCard({ tool, deployed, step }: { tool: ToolDef; deployed: Tool | un
 }
 
 function Connector({
-  enabled, pending, onToggle, backlog, downstreamActive, downstreamName, flushing, onFlush,
+  enabled, pending, onToggle, backlog, stale, downstreamActive, downstreamName, flushing, onFlush,
 }: {
   enabled: boolean; pending: boolean; onToggle: () => void
-  backlog: number | null | undefined; downstreamActive: boolean; downstreamName: string
+  backlog: number | null | undefined; stale: boolean; downstreamActive: boolean; downstreamName: string
   flushing: boolean; onFlush: () => void
 }) {
-  const waiting = typeof backlog === 'number' && backlog > 0
+  const count = typeof backlog === 'number' && backlog > 0 ? backlog : null
+  // AP edges surface a precise count; window-based (close) edges surface a "behind" signal.
+  const waiting = count !== null || stale
+  const label = count !== null ? `${count} waiting` : 'new input'
   return (
     <div className="shrink-0 self-center flex flex-col items-center gap-1 px-1 lg:px-2.5 py-2 lg:py-0">
       {/* The arrow IS the toggle: on = along the flow (→ desktop, ↓ mobile), off = off-axis + dimmed. */}
@@ -120,14 +125,16 @@ function Connector({
         />
       </button>
 
-      {/* Backlog: records processed upstream but not yet handled downstream - flush manually. */}
+      {/* Backlog: work processed upstream but not yet handled downstream - flush manually. */}
       {waiting && (
         <>
           <span
             className="text-[10px] font-body text-[#f5a623] whitespace-nowrap tabular-nums"
-            title={`${backlog} record(s) processed but not yet sent to ${downstreamName}`}
+            title={count !== null
+              ? `${count} record(s) processed but not yet sent to ${downstreamName}`
+              : `${downstreamName} hasn't run since its upstream produced new output`}
           >
-            {backlog} waiting
+            {label}
           </span>
           {downstreamActive ? (
             <button
@@ -279,6 +286,7 @@ export function ToolsClient({ deployedTools, connections }: Props) {
                         pending={pendingEdge === edgeKey(tool.type, next.type)}
                         onToggle={() => toggleConnection(tool.type, next.type)}
                         backlog={connFor(tool.type, next.type)?.backlog}
+                        stale={connFor(tool.type, next.type)?.downstream_stale ?? false}
                         downstreamActive={connFor(tool.type, next.type)?.downstream_active ?? false}
                         downstreamName={next.name}
                         flushing={flushingEdge === edgeKey(tool.type, next.type)}

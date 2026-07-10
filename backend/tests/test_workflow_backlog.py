@@ -3,9 +3,23 @@ Tests for the per-connection backlog counter (app/api/v1/workflows._edge_backlog
 how many records processed upstream are still waiting for the downstream tool.
 No DB - the Prisma client is mocked.
 """
+from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
+
+
+def _tool(tid):
+    m = MagicMock()
+    m.id = tid
+    return m
+
+
+def _exec(created_at):
+    m = MagicMock()
+    m.created_at = created_at
+    m.decision = "auto_approved"
+    return m
 
 
 def _db(bills_count=0, exp_count=0, approved=None, runs=None):
@@ -53,3 +67,52 @@ async def test_window_based_edges_have_no_backlog():
     db = _db()
     assert await _edge_backlog(db, "t1", "reconciliation", "tax_compliance") is None
     assert await _edge_backlog(db, "t1", "tax_compliance", "financial_reporting") is None
+
+
+# ---- staleness (the flush signal for window-based close edges) --------------
+
+@pytest.mark.asyncio
+async def test_stale_when_downstream_never_ran():
+    from app.api.v1.workflows import _edge_stale
+    db = MagicMock()
+    db.execution.find_first = AsyncMock(side_effect=[_exec(datetime(2026, 7, 1, tzinfo=UTC)), None])
+    assert await _edge_stale(db, "t1", _tool("up"), _tool("down")) is True
+
+
+@pytest.mark.asyncio
+async def test_stale_when_upstream_ran_more_recently():
+    from app.api.v1.workflows import _edge_stale
+    db = MagicMock()
+    db.execution.find_first = AsyncMock(side_effect=[
+        _exec(datetime(2026, 7, 2, tzinfo=UTC)),  # upstream newer
+        _exec(datetime(2026, 7, 1, tzinfo=UTC)),  # downstream older
+    ])
+    assert await _edge_stale(db, "t1", _tool("up"), _tool("down")) is True
+
+
+@pytest.mark.asyncio
+async def test_not_stale_when_downstream_current():
+    from app.api.v1.workflows import _edge_stale
+    db = MagicMock()
+    db.execution.find_first = AsyncMock(side_effect=[
+        _exec(datetime(2026, 7, 1, tzinfo=UTC)),
+        _exec(datetime(2026, 7, 2, tzinfo=UTC)),  # downstream ran after upstream
+    ])
+    assert await _edge_stale(db, "t1", _tool("up"), _tool("down")) is False
+
+
+@pytest.mark.asyncio
+async def test_not_stale_when_upstream_never_ran():
+    from app.api.v1.workflows import _edge_stale
+    db = MagicMock()
+    db.execution.find_first = AsyncMock(return_value=None)
+    assert await _edge_stale(db, "t1", _tool("up"), _tool("down")) is False
+
+
+@pytest.mark.asyncio
+async def test_not_stale_when_a_tool_is_undeployed():
+    from app.api.v1.workflows import _edge_stale
+    db = MagicMock()
+    db.execution.find_first = AsyncMock()
+    assert await _edge_stale(db, "t1", None, _tool("down")) is False
+    db.execution.find_first.assert_not_awaited()

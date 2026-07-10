@@ -72,6 +72,28 @@ async def _edge_backlog(db, tenant_id: str, from_type: str, to_type: str) -> int
     return None
 
 
+async def _latest_completed(db, tenant_id: str, tool_id: str):
+    """Most recent execution that actually produced output (decision set, not pending/failed)."""
+    return await db.execution.find_first(
+        where={"tenant_id": tenant_id, "tool_id": tool_id, "decision": {"not_in": ["pending", "failed"]}},
+        order={"created_at": "desc"},
+    )
+
+
+async def _edge_stale(db, tenant_id: str, up_tool, down_tool) -> bool:
+    """For window-based edges (no per-record queue): is the downstream behind the upstream?
+    True when the upstream has produced output the downstream ran before / has never seen."""
+    if up_tool is None or down_tool is None:
+        return False
+    up = await _latest_completed(db, tenant_id, up_tool.id)
+    if up is None:
+        return False  # upstream has produced nothing to hand off
+    down = await _latest_completed(db, tenant_id, down_tool.id)
+    if down is None:
+        return True  # upstream ran, downstream never has
+    return up.created_at > down.created_at
+
+
 @router.get("/connections")
 async def list_connections(
     current_user: RequireOrgAuth,
@@ -93,11 +115,18 @@ async def list_connections(
     connections = []
     for from_type, (to_type, _event) in WORKFLOW_EDGES.items():
         downstream = tool_by_type.get(to_type)
+        backlog = await _edge_backlog(db, tenant_id, from_type, to_type)
+        # Window-based edges have no per-record backlog - fall back to a staleness signal so
+        # they are still flushable when the downstream is behind the upstream.
+        stale = False
+        if backlog is None:
+            stale = await _edge_stale(db, tenant_id, tool_by_type.get(from_type), downstream)
         connections.append({
             "from_type": from_type,
             "to_type": to_type,
             "enabled": enabled_by_edge.get((from_type, to_type), True),
-            "backlog": await _edge_backlog(db, tenant_id, from_type, to_type),
+            "backlog": backlog,
+            "downstream_stale": stale,
             "downstream_tool_id": downstream.id if downstream else None,
             "downstream_active": bool(downstream and downstream.status == "active"),
         })
