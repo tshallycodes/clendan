@@ -46,6 +46,11 @@ class Settings(BaseSettings):
     # Enabling posts to the connected ERP (see app/core/erp_writer.py).
     erp_write_live: bool = False
 
+    # Live VAT filing: when false (default), filing a VAT return marks it "prepared" in
+    # Clendan but submits nothing. Enabling requires a wired e-filing rail (e.g. HMRC MTD);
+    # until one exists, a live filing raises (see app/core/vat_filing.py).
+    vat_filing_live: bool = False
+
     quickbooks_client_id: str = ""
     quickbooks_client_secret: str = ""
     quickbooks_redirect_uri: str = ""

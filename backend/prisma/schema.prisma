@@ -63,6 +63,34 @@ model Tenant {
   category_corrections    CategoryCorrection[]
   workflow_connections    WorkflowConnection[]
   collection_reminders    CollectionReminder[]
+  vat_returns             VatReturn[]
+}
+
+// A computed VAT return for a filing period. Persisted by Tax Compliance each run so the
+// position is a durable, queryable artifact (not just audit output). status: "draft" (just
+// computed) -> "prepared" (reviewed / filing recorded in dry-run) -> "filed" (submitted to
+// an external filing rail, when one is configured). Amounts are integer minor units.
+model VatReturn {
+  id                String   @id @default(cuid())
+  tenant_id         String
+  execution_id      String?
+  filing_period     String // monthly | quarterly | annual
+  period_label      String // e.g. "Q3 2026"
+  output_vat_cents  Int      @default(0)
+  input_vat_cents   Int      @default(0)
+  net_vat_cents     Int      @default(0)
+  currency          String   @default("GBP")
+  status            String   @default("draft")
+  missing_vat_count Int      @default(0)
+  external_ref      String?
+  filed_at          DateTime?
+  created_at        DateTime @default(now())
+  updated_at        DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenant_id], references: [id])
+
+  @@index([tenant_id])
+  @@index([tenant_id, period_label])
 }
 
 // One row per collection reminder dispatched (or would-be dispatched in dry-run) for an
@@ -367,6 +395,9 @@ model AccountingInvoice {
   due_date          DateTime?
   paid_at           DateTime?
   line_items        Json?
+  // Tax Compliance's classification of a missing-VAT flag on this invoice.
+  tax_status        String?
+  tax_reason        String?
   raw_data          Json?
   created_at        DateTime  @default(now())
   updated_at        DateTime  @updatedAt
@@ -397,6 +428,10 @@ model AccountingBill {
   currency          String    @default("GBP")
   total_cents       Int       @default(0)
   outstanding_cents Int       @default(0)
+  // Tax on the bill (reclaimable input VAT). ERP-synced bills populate these; native bills
+  // default to 0. Tax Compliance uses tax_cents as input VAT.
+  tax_cents         Int       @default(0)
+  subtotal_cents    Int       @default(0)
   issue_date        DateTime?
   due_date          DateTime?
   paid_at           DateTime?
@@ -406,6 +441,10 @@ model AccountingBill {
   control_status      String?
   control_reason      String?
   control_assessed_at DateTime?
+  // Tax Compliance's classification of a missing-VAT flag: "missing_vat" | "exempt" |
+  // "zero_rated" | "data_error". Null = not flagged / not assessed.
+  tax_status        String?
+  tax_reason        String?
   raw_data          Json?
   created_at        DateTime  @default(now())
   updated_at        DateTime  @updatedAt
@@ -492,6 +531,9 @@ model AccountingExpense {
   control_status String?
   control_reason String?
   control_assessed_at DateTime?
+  // Tax Compliance's classification of a missing-VAT flag on this expense.
+  tax_status     String?
+  tax_reason     String?
   raw_data       Json?
   created_at     DateTime  @default(now())
   updated_at     DateTime  @updatedAt

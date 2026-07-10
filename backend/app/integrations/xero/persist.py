@@ -127,7 +127,6 @@ async def upsert_bills(db, integration_id: str, tenant_id: str, records: list) -
             "subtotal_cents": _cents(bill.get("SubTotal", 0)),
             "due_date": _parse_xero_date(bill.get("DueDateString")),
             "issue_date": _parse_xero_date(bill.get("DateString")),
-            "type": "bill",
         }
         try:
             await db.accountingbill.upsert(

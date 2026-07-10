@@ -92,6 +92,11 @@ async def upsert_bill(integration_id: str, tenant_id: str, bill: dict) -> None:
     balance = float(bill.get("Balance") or 0)
     status = "paid" if balance == 0 else "unpaid"
 
+    # Tax (reclaimable input VAT) lives in TxnTaxDetail.TotalTax; TotalAmt is tax-inclusive.
+    total_cents = _cents(bill.get("TotalAmt"))
+    tax_cents = _cents((bill.get("TxnTaxDetail") or {}).get("TotalTax"))
+    subtotal_cents = max(total_cents - tax_cents, 0)
+
     # If Clendan already created a native bill for this invoice (source="invoice", matched
     # by invoice number), adopt it - link it to this ERP record - instead of creating a
     # second row. Prevents the same bill being counted or paid twice once it syncs back.
@@ -110,8 +115,10 @@ async def upsert_bill(integration_id: str, tenant_id: str, bill: dict) -> None:
                     "status": status,
                     "contact_name": (bill.get("VendorRef") or {}).get("name") or native.contact_name,
                     "currency": (bill.get("CurrencyRef") or {}).get("value", "USD"),
-                    "total_cents": _cents(bill.get("TotalAmt")),
+                    "total_cents": total_cents,
                     "outstanding_cents": _cents(bill.get("Balance")),
+                    "tax_cents": tax_cents,
+                    "subtotal_cents": subtotal_cents,
                     "issue_date": _parse_date(bill.get("TxnDate")),
                     "due_date": _parse_date(bill.get("DueDate")),
                 },
@@ -130,8 +137,10 @@ async def upsert_bill(integration_id: str, tenant_id: str, bill: dict) -> None:
                 "status": status,
                 "contact_name": (bill.get("VendorRef") or {}).get("name"),
                 "currency": (bill.get("CurrencyRef") or {}).get("value", "USD"),
-                "total_cents": _cents(bill.get("TotalAmt")),
+                "total_cents": total_cents,
                 "outstanding_cents": _cents(bill.get("Balance")),
+                "tax_cents": tax_cents,
+                "subtotal_cents": subtotal_cents,
                 "issue_date": _parse_date(bill.get("TxnDate")),
                 "due_date": _parse_date(bill.get("DueDate")),
             },
@@ -139,8 +148,10 @@ async def upsert_bill(integration_id: str, tenant_id: str, bill: dict) -> None:
                 "status": status,
                 "contact_name": (bill.get("VendorRef") or {}).get("name"),
                 "currency": (bill.get("CurrencyRef") or {}).get("value", "USD"),
-                "total_cents": _cents(bill.get("TotalAmt")),
+                "total_cents": total_cents,
                 "outstanding_cents": _cents(bill.get("Balance")),
+                "tax_cents": tax_cents,
+                "subtotal_cents": subtotal_cents,
                 "issue_date": _parse_date(bill.get("TxnDate")),
                 "due_date": _parse_date(bill.get("DueDate")),
             },

@@ -93,8 +93,8 @@ def _compute_vat_position(invoices, bills, expenses) -> tuple[int, int, int]:
     """Deterministic VAT position in integer minor units - never float.
 
     Output VAT (collected) = sum of invoice tax; input VAT (reclaimable) = sum of
-    bill + expense tax. AccountingBill does not persist tax_cents, so bills contribute
-    0 until the schema/sync supply it. Returns (output_vat, input_vat, net_liability).
+    bill + expense tax. Bills now persist tax_cents (populated by the ERP sync), so they
+    contribute their reclaimable VAT here. Returns (output_vat, input_vat, net_liability).
     """
     output_vat = sum(getattr(inv, "tax_cents", None) or 0 for inv in invoices)
     input_vat = sum((getattr(b, "tax_cents", None) or 0) for b in bills) + sum(
@@ -182,6 +182,61 @@ async def _call_claude(
     raise RuntimeError(f"Claude API failed after {settings_obj.max_agent_attempts} attempts: {last_exc}")
 
 
+async def _persist_tax_classifications(
+    db, tenant_id: str, classified_items: list[dict],
+    invoice_ids: list[str], bill_ids: list[str], expense_ids: list[str],
+) -> dict:
+    """Persist Claude's per-record VAT classification onto the flagged rows (tax_status /
+    tax_reason) so the verdict is durable and queryable, not just in the audit trace. Each
+    id is routed to its table via the missing-tax id sets. Every write is tenant-scoped.
+    """
+    inv_set, bill_set, exp_set = set(invoice_ids), set(bill_ids), set(expense_ids)
+    counts = {"invoices": 0, "bills": 0, "expenses": 0}
+    for item in classified_items:
+        rid = item.get("id")
+        cls = item.get("classification")
+        if not rid or not cls:
+            continue
+        data = {"tax_status": cls, "tax_reason": (item.get("reason") or "")[:500]}
+        if rid in inv_set:
+            await db.accountinginvoice.update_many(where={"id": rid, "tenant_id": tenant_id}, data=data)
+            counts["invoices"] += 1
+        elif rid in bill_set:
+            await db.accountingbill.update_many(where={"id": rid, "tenant_id": tenant_id}, data=data)
+            counts["bills"] += 1
+        elif rid in exp_set:
+            await db.accountingexpense.update_many(where={"id": rid, "tenant_id": tenant_id}, data=data)
+            counts["expenses"] += 1
+    return counts
+
+
+async def _persist_vat_return(
+    db, tenant_id: str, execution_id: str, *,
+    filing_period: str, period_label: str,
+    output_vat: int, input_vat: int, net_vat: int, currency: str, missing_vat_count: int,
+) -> str:
+    """Upsert the VAT-return artifact for this period so the computed position is durable,
+    not just execution output. One row per (tenant, period_label); a return already marked
+    "filed" is never overwritten by a later run. Returns the VatReturn id.
+    """
+    data = {
+        "execution_id": execution_id, "filing_period": filing_period,
+        "output_vat_cents": output_vat, "input_vat_cents": input_vat,
+        "net_vat_cents": net_vat, "currency": currency, "missing_vat_count": missing_vat_count,
+    }
+    existing = await db.vatreturn.find_first(
+        where={"tenant_id": tenant_id, "period_label": period_label}, order={"created_at": "desc"},
+    )
+    if existing is None:
+        created = await db.vatreturn.create(
+            data={"tenant_id": tenant_id, "period_label": period_label, "status": "draft", **data}
+        )
+        return created.id
+    if existing.status != "filed":
+        await db.vatreturn.update(where={"id": existing.id}, data=data)
+    return existing.id
+
+
 async def _execute(tenant_id: str, tool_id: str, execution_id: str, payload: dict) -> dict:
     settings_obj = get_settings()
     db = get_db()
@@ -190,13 +245,18 @@ async def _execute(tenant_id: str, tool_id: str, execution_id: str, payload: dic
     if tool is None:
         raise ValueError(f"Tool {tool_id} not found for tenant {tenant_id}")
 
-    policy = _parse_policy(tool.config_json if isinstance(tool.config_json, dict) else {})
-    lookback_days = _coerce_lookback_days(payload.get("lookback_days", _LOOKBACK_DAYS))
+    config = tool.config_json if isinstance(tool.config_json, dict) else {}
+    policy = _parse_policy(config)
+    # Lookback comes from the tool config (Reporting lookback period); an explicit trigger
+    # payload overrides it. This drives both the query window and the filing-period label.
+    lookback_days = _coerce_lookback_days(
+        payload.get("lookback_days", config.get("lookback_days", _LOOKBACK_DAYS))
+    )
     now = datetime.now(UTC)
     lookback = now - timedelta(days=lookback_days)
     filing_period, period_label = _detect_filing_period(lookback_days, now)
 
-    src = source_filter(tool.config_json if isinstance(tool.config_json, dict) else None, "accounting_sources")
+    src = source_filter(config, "accounting_sources")
     invoices, bills, expenses, tax_rates = await asyncio.gather(
         db.accountinginvoice.find_many(
             where={"tenant_id": tenant_id, **src, "issue_date": {"gte": lookback}, "status": {"not": "draft"}}
@@ -273,9 +333,29 @@ async def _execute(tenant_id: str, tool_id: str, execution_id: str, payload: dic
         reasoning_trace=reasoning_trace, model_version=_MODEL_VERSION, execution_id=execution_id,
     )
 
+    # Writeback + artifact (audit written first, above). Persist each classification onto the
+    # flagged rows, and upsert the VAT return so the position is a durable, queryable record.
+    report_currency = next(
+        (getattr(r, "currency", None) for r in [*invoices, *bills, *expenses] if getattr(r, "currency", None)),
+        "GBP",
+    )
+    tax_writeback = await _persist_tax_classifications(
+        db, tenant_id, classified_items,
+        [m["id"] for m in missing_invoice], [m["id"] for m in missing_bill], [m["id"] for m in missing_expense],
+    )
+    vat_return_id = await _persist_vat_return(
+        db, tenant_id, execution_id,
+        filing_period=filing_period, period_label=period_label,
+        output_vat=vat_collected, input_vat=input_vat, net_vat=net_vat_liability_minor,
+        currency=report_currency, missing_vat_count=missing_vat_count,
+    )
+    reasoning_trace["vat_return_id"] = vat_return_id
+    reasoning_trace["tax_writeback"] = tax_writeback
+
     actions_taken = [
         f"analysed {len(invoices)} invoices, {len(bills)} bills, {len(expenses)} expenses",
         f"net VAT liability: {net_vat_liability_minor} cents ({period_label})",
+        f"recorded VAT return for {period_label}",
     ]
     if threshold_breached:
         actions_taken.append(f"VAT ALERT: net liability {net_vat_liability_minor} exceeds threshold {policy.vat_alert_threshold_cents}")

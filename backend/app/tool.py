@@ -667,6 +667,40 @@ async def run_ar_collections_scheduled(_ctx: dict) -> None:
             )
 
 
+async def run_tax_compliance_scheduled(_ctx: dict) -> None:
+    """Hourly cron: fires tax_compliance_run on each tool's configured day-of-month + hour
+    (in the tenant's timezone), so the VAT position is recomputed and the return recorded on
+    a schedule. Month-bucketed idempotency prevents double-firing."""
+    from app.events import enqueue_event
+    db = get_db()
+    now_utc = datetime.now(UTC)
+    tools = await db.tool.find_many(where={"type": "tax_compliance", "status": "active"})
+    for tool in tools:
+        try:
+            cfg = tool.config_json or {}
+            tenant = await db.tenant.find_unique(where={"id": tool.tenant_id})
+            now_local, tz_name = _tenant_local_now(tenant, now_utc)
+            if now_local.hour != int(cfg.get("run_hour", 2)):
+                continue
+            try:
+                run_day = int(cfg.get("run_day_of_month", 1))
+            except (TypeError, ValueError):
+                run_day = 1
+            run_day = max(1, min(run_day, 28))  # clamp to a day every month has
+            if now_local.day != run_day:
+                continue
+            await enqueue_event(
+                tenant_id=tool.tenant_id,
+                event_type="tax_compliance_run",
+                payload={},
+                idempotency_key=f"tax_compliance:monthly:{tool.id}:{now_local.strftime('%Y-%m')}",
+                db=db,
+            )
+            logger.info("tax_compliance_scheduled_fired tenant=%s tool=%s tz=%s", tool.tenant_id, tool.id, tz_name)
+        except Exception as exc:
+            logger.error("tax_compliance_cron_failed tenant=%s: %s", tool.tenant_id, type(exc).__name__)
+
+
 async def expire_scheduled_payment_runs(_ctx: dict) -> None:
     """Hourly cron: auto-cancel scheduled payment runs whose approval window has elapsed."""
     from app.core.payouts import expire_due_payment_runs
@@ -816,6 +850,7 @@ class ToolSettings:
         expire_stale_approvals,
         run_ar_collections_job,
         run_ar_collections_scheduled,
+        run_tax_compliance_scheduled,
         expire_scheduled_payment_runs,
     ]
     cron_jobs = [
@@ -828,6 +863,7 @@ class ToolSettings:
         cron(run_month_end_close_scheduled, hour=0, minute=10),  # daily midnight UTC
         cron(resync_integrations_daily, hour=3, minute=0),   # daily 3am UTC
         cron(run_ar_collections_scheduled, hour=8, minute=0),  # daily 8am UTC — chase overdue invoices
+        cron(run_tax_compliance_scheduled, minute=0),  # hourly — gated by per-tool day-of-month/hour config
     ]
     on_startup = startup
     on_shutdown = shutdown

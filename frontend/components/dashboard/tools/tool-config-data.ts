@@ -82,6 +82,12 @@ export const TOOL_FIELDS: Record<string, FieldDef[]> = {
       description: 'Alert and route for approval when the net VAT liability for the period exceeds this amount. Default £10,000.' },
     { key: 'missing_tax_flag_threshold_cents', type: 'number', label: 'Missing tax code flag above', penceDisplay: true, default: 10000,
       description: 'Flag any invoice, bill, or expense above this amount that has no tax code assigned. Default £100 - keeps low-value items out of the review queue.' },
+    { key: 'lookback_days', type: 'number', label: 'Reporting lookback period', unit: 'days', min: 1, default: 90,
+      description: 'How far back the VAT position is computed. Also sets the filing period label: <=31 days = monthly, <=92 = quarterly, otherwise annual. Default 90 (a quarter).' },
+    { key: 'run_day_of_month', type: 'number', label: 'Schedule · Run day of month', unit: '1–28', min: 1, max: 28, default: 1,
+      description: 'Day of the month the VAT position auto-recomputes and the return is recorded, in your organisation timezone (Settings). Capped at 28 so it fires every month.' },
+    { key: 'run_hour', type: 'number', label: 'Schedule · Run at hour', unit: '0–23', min: 0, max: 23, default: 2,
+      description: 'Hour of day the scheduled run fires, in your organisation timezone (Settings).' },
   ],
   financial_reporting: [
     { key: 'accounting_sources', type: 'multiselect', label: 'Accounting sources', options: [], default: [],
