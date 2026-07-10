@@ -1,6 +1,6 @@
 'use client'
 
-import { Fragment, useState } from 'react'
+import { Fragment, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { ArrowRight } from '@phosphor-icons/react'
 import { motion } from 'framer-motion'
@@ -15,6 +15,10 @@ export interface WorkflowConnection {
   from_type: string
   to_type: string
   enabled: boolean
+  // Records processed upstream but not yet handled downstream (null for window-based edges).
+  backlog?: number | null
+  downstream_tool_id?: string | null
+  downstream_active?: boolean
 }
 
 interface Props {
@@ -87,29 +91,60 @@ function ToolCard({ tool, deployed, step }: { tool: ToolDef; deployed: Tool | un
   )
 }
 
-function Connector({ enabled, pending, onToggle }: { enabled: boolean; pending: boolean; onToggle: () => void }) {
-  // The arrow IS the control: click to toggle. On = points along the flow (→ desktop,
-  // ↓ mobile). Off = rotated 90° off-axis and dimmed, to read as "disconnected".
+function Connector({
+  enabled, pending, onToggle, backlog, downstreamActive, downstreamName, flushing, onFlush,
+}: {
+  enabled: boolean; pending: boolean; onToggle: () => void
+  backlog: number | null | undefined; downstreamActive: boolean; downstreamName: string
+  flushing: boolean; onFlush: () => void
+}) {
+  const waiting = typeof backlog === 'number' && backlog > 0
   return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={enabled}
-      aria-label={enabled ? 'Connected - click to disconnect auto-handoff' : 'Disconnected - click to connect auto-handoff'}
-      title={enabled ? 'Connected - a successful run auto-triggers the next tool' : 'Disconnected - tools run independently'}
-      onClick={onToggle}
-      disabled={pending}
-      className="group shrink-0 self-center flex items-center justify-center px-1 lg:px-2.5 py-3 lg:py-0 disabled:opacity-50 active:scale-90 transition-transform"
-    >
-      <ArrowRight
-        weight="bold"
-        className={`w-5 h-5 transition-all duration-200 group-hover:text-brand-text ${
-          enabled
-            ? 'rotate-90 lg:rotate-0 text-brand-secondary'
-            : 'rotate-0 lg:rotate-90 text-brand-muted opacity-40'
-        }`}
-      />
-    </button>
+    <div className="shrink-0 self-center flex flex-col items-center gap-1 px-1 lg:px-2.5 py-2 lg:py-0">
+      {/* The arrow IS the toggle: on = along the flow (→ desktop, ↓ mobile), off = off-axis + dimmed. */}
+      <button
+        type="button"
+        role="switch"
+        aria-checked={enabled}
+        aria-label={enabled ? 'Connected - click to disconnect auto-handoff' : 'Disconnected - click to connect auto-handoff'}
+        title={enabled ? 'Connected - a successful run auto-triggers the next tool' : 'Disconnected - tools run independently'}
+        onClick={onToggle}
+        disabled={pending}
+        className="group flex items-center justify-center disabled:opacity-50 active:scale-90 transition-transform"
+      >
+        <ArrowRight
+          weight="bold"
+          className={`w-5 h-5 transition-all duration-200 group-hover:text-brand-text ${
+            enabled ? 'rotate-90 lg:rotate-0 text-brand-secondary' : 'rotate-0 lg:rotate-90 text-brand-muted opacity-40'
+          }`}
+        />
+      </button>
+
+      {/* Backlog: records processed upstream but not yet handled downstream - flush manually. */}
+      {waiting && (
+        <>
+          <span
+            className="text-[10px] font-body text-[#f5a623] whitespace-nowrap tabular-nums"
+            title={`${backlog} record(s) processed but not yet sent to ${downstreamName}`}
+          >
+            {backlog} waiting
+          </span>
+          {downstreamActive ? (
+            <button
+              type="button"
+              onClick={onFlush}
+              disabled={flushing}
+              title={`Run ${downstreamName} now to process the ${backlog} waiting record(s)`}
+              className="text-[10px] font-body px-2 py-0.5 rounded-sm border border-brand-border text-brand-text hover:bg-brand-elevated whitespace-nowrap disabled:opacity-50 active:scale-95 transition-all"
+            >
+              {flushing ? 'Sending…' : `Run ${downstreamName}`}
+            </button>
+          ) : (
+            <span className="text-[10px] font-body text-brand-muted whitespace-nowrap">deploy to flush</span>
+          )}
+        </>
+      )}
+    </div>
   )
 }
 
@@ -127,20 +162,31 @@ export function ToolsClient({ deployedTools, connections }: Props) {
   }
   const totalDeployed = TOOLS.filter((t) => deployedByType.get(t.type)?.status === 'active').length
 
-  const [connMap, setConnMap] = useState<Record<string, boolean>>(() => {
-    const m: Record<string, boolean> = {}
-    for (const c of connections) m[edgeKey(c.from_type, c.to_type)] = c.enabled
-    return m
-  })
+  const [conns, setConns] = useState<WorkflowConnection[]>(connections)
   const [pendingEdge, setPendingEdge] = useState<string | null>(null)
+  const [flushingEdge, setFlushingEdge] = useState<string | null>(null)
 
-  const isEnabled = (from: string, to: string) => connMap[edgeKey(from, to)] ?? true
+  const byEdge = useMemo(() => {
+    const m: Record<string, WorkflowConnection> = {}
+    for (const c of conns) m[edgeKey(c.from_type, c.to_type)] = c
+    return m
+  }, [conns])
+  const connFor = (from: string, to: string): WorkflowConnection | undefined => byEdge[edgeKey(from, to)]
+  const isEnabled = (from: string, to: string) => connFor(from, to)?.enabled ?? true
+
+  async function refetchConnections() {
+    try {
+      const token = await getToken()
+      const res = await fetch(`${API}/workflows/connections`, { headers: { Authorization: `Bearer ${token}` } })
+      if (res.ok) { const j = await res.json(); setConns(j.data?.connections ?? []) }
+    } catch { /* keep the last known state */ }
+  }
 
   async function toggleConnection(from: string, to: string) {
     const key = edgeKey(from, to)
     const current = isEnabled(from, to)
     const next = !current
-    setConnMap((m) => ({ ...m, [key]: next }))
+    setConns((cs) => cs.map((c) => (c.from_type === from && c.to_type === to ? { ...c, enabled: next } : c)))
     setPendingEdge(key)
     try {
       const token = await getToken()
@@ -159,10 +205,34 @@ export function ToolsClient({ deployedTools, connections }: Props) {
         'success',
       )
     } catch {
-      setConnMap((m) => ({ ...m, [key]: current })) // revert
+      setConns((cs) => cs.map((c) => (c.from_type === from && c.to_type === to ? { ...c, enabled: current } : c))) // revert
       toast('Could not update connection', 'error')
     } finally {
       setPendingEdge(null)
+    }
+  }
+
+  async function flushConnection(from: string, to: string) {
+    const conn = connFor(from, to)
+    if (!conn?.downstream_tool_id) return
+    const key = edgeKey(from, to)
+    setFlushingEdge(key)
+    try {
+      const token = await getToken()
+      const res = await fetch(`${API}/tools/${conn.downstream_tool_id}/run`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ payload: {} }),
+      })
+      if (!res.ok) throw new Error(`${res.status}`)
+      const toName = TOOLS.find((t) => t.type === to)?.name ?? 'the next tool'
+      toast(`Sent ${conn.backlog ?? ''} to ${toName} - assessing now`.replace('  ', ' '), 'success')
+      // The downstream job runs async; give it a moment, then refresh the backlog counts.
+      setTimeout(() => { void refetchConnections() }, 2500)
+    } catch {
+      toast('Could not run the downstream tool', 'error')
+    } finally {
+      setFlushingEdge(null)
     }
   }
 
@@ -208,6 +278,11 @@ export function ToolsClient({ deployedTools, connections }: Props) {
                         enabled={isEnabled(tool.type, next.type)}
                         pending={pendingEdge === edgeKey(tool.type, next.type)}
                         onToggle={() => toggleConnection(tool.type, next.type)}
+                        backlog={connFor(tool.type, next.type)?.backlog}
+                        downstreamActive={connFor(tool.type, next.type)?.downstream_active ?? false}
+                        downstreamName={next.name}
+                        flushing={flushingEdge === edgeKey(tool.type, next.type)}
+                        onFlush={() => flushConnection(tool.type, next.type)}
                       />
                     )}
                   </Fragment>

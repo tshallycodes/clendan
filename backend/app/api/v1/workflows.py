@@ -4,6 +4,7 @@ A connection is the edge between two consecutive tools in a workflow. Enabled me
 the upstream tool auto-advances to the downstream one on a successful run. A missing
 row means enabled (default on). Only known edges (see WORKFLOW_EDGES) are accepted.
 """
+from datetime import UTC, datetime, timedelta
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -19,6 +20,9 @@ from app.core.workflow import WORKFLOW_EDGES
 logger = get_logger(__name__)
 router = APIRouter(prefix="/workflows", tags=["workflows"])
 
+_EXPENSE_WINDOW_DAYS = 30
+_UNPAID_BILL_STATUSES = ["paid", "void"]
+
 
 class ConnectionPatch(BaseModel):
     from_type: str
@@ -31,23 +35,72 @@ def _is_known_edge(from_type: str, to_type: str) -> bool:
     return edge is not None and edge[0] == to_type
 
 
+async def _edge_backlog(db, tenant_id: str, from_type: str, to_type: str) -> int | None:
+    """Count records processed upstream but not yet handled downstream - i.e. what a manual
+    flush would pick up. Returns None for window-based edges (recon->tax, tax->reporting),
+    which re-scan a period rather than draining a per-record queue.
+    """
+    if from_type == "document_intelligence" and to_type == "spend_control":
+        # Bills/expenses that exist but Spend Control has not assessed (control_status unset).
+        cutoff = datetime.now(UTC) - timedelta(days=_EXPENSE_WINDOW_DAYS)
+        bills = await db.accountingbill.count(
+            where={"tenant_id": tenant_id, "control_status": None,
+                   "status": {"not_in": _UNPAID_BILL_STATUSES}}
+        )
+        expenses = await db.accountingexpense.count(
+            where={"tenant_id": tenant_id, "control_status": None, "expense_date": {"gte": cutoff}}
+        )
+        return bills + expenses
+
+    if from_type == "spend_control" and to_type == "payment_run":
+        # Approved, still-owed bills that no scheduled/paid payment run has picked up yet.
+        approved = await db.accountingbill.find_many(
+            where={"tenant_id": tenant_id, "control_status": "approved",
+                   "status": {"not_in": _UNPAID_BILL_STATUSES}, "outstanding_cents": {"gt": 0}}
+        )
+        if not approved:
+            return 0
+        runs = await db.paymentrun.find_many(
+            where={"tenant_id": tenant_id, "status": {"in": ["scheduled", "paid"]}}
+        )
+        handled: set[str] = set()
+        for r in runs:
+            if isinstance(r.bill_ids, list):
+                handled.update(r.bill_ids)
+        return sum(1 for b in approved if b.id not in handled)
+
+    return None
+
+
 @router.get("/connections")
 async def list_connections(
     current_user: RequireOrgAuth,
     db: Annotated[Prisma, Depends(get_db_dep)],
 ):
-    """Returns every workflow edge with its enabled state (default on when unset)."""
-    rows = await db.workflowconnection.find_many(where={"tenant_id": current_user.tenant_id})
+    """Every workflow edge with its enabled state, the downstream tool's deploy status, and
+    a backlog count (records waiting for a manual flush; null for window-based edges)."""
+    tenant_id = current_user.tenant_id
+    rows = await db.workflowconnection.find_many(where={"tenant_id": tenant_id})
     enabled_by_edge = {(r.from_type, r.to_type): r.enabled for r in rows}
 
-    connections = [
-        {
+    # Resolve one tool per type, preferring an active deployment.
+    tool_by_type: dict = {}
+    for t in await db.tool.find_many(where={"tenant_id": tenant_id}):
+        cur = tool_by_type.get(t.type)
+        if not cur or (t.status == "active" and cur.status != "active"):
+            tool_by_type[t.type] = t
+
+    connections = []
+    for from_type, (to_type, _event) in WORKFLOW_EDGES.items():
+        downstream = tool_by_type.get(to_type)
+        connections.append({
             "from_type": from_type,
             "to_type": to_type,
             "enabled": enabled_by_edge.get((from_type, to_type), True),
-        }
-        for from_type, (to_type, _event) in WORKFLOW_EDGES.items()
-    ]
+            "backlog": await _edge_backlog(db, tenant_id, from_type, to_type),
+            "downstream_tool_id": downstream.id if downstream else None,
+            "downstream_active": bool(downstream and downstream.status == "active"),
+        })
     return standard_response(data={"connections": connections})
 
 
