@@ -18,17 +18,24 @@ from app.core.logging import get_logger
 
 logger = get_logger(__name__)
 
-_ERP_TYPES = ("quickbooks", "xero")
+# Providers by capability. QuickBooks and Xero are full GL systems (bills + journals);
+# FreshBooks can post AP bills but has no journal-entry API, so it is bill-capable only.
+_BILL_PROVIDERS = ("quickbooks", "xero", "freshbooks")
+_JOURNAL_PROVIDERS = ("quickbooks", "xero")
+_ERP_TYPES = _BILL_PROVIDERS
 
 
 class ErpWriteError(Exception):
     """Raised when a live ERP write is requested but cannot be fulfilled."""
 
 
-async def resolve_erp_integration(db, tenant_id: str, preferred_id: str | None = None):
-    """Return a connected QuickBooks/Xero integration for the tenant, or None. ``connected_at``
-    is the "actually connected" signal (every provider sets it on a successful OAuth connect)."""
-    base = {"tenant_id": tenant_id, "type": {"in": list(_ERP_TYPES)}}
+async def resolve_erp_integration(
+    db, tenant_id: str, preferred_id: str | None = None, *, capable: tuple[str, ...] = _ERP_TYPES,
+):
+    """Return a connected accounting integration for the tenant that supports the requested
+    operation, or None. ``capable`` limits the provider types (e.g. journal posting resolves
+    only among GL providers). ``connected_at`` is the "actually connected" signal."""
+    base = {"tenant_id": tenant_id, "type": {"in": list(capable)}}
     if preferred_id:
         intg = await db.integration.find_first(where={**base, "id": preferred_id})
         if intg:
@@ -66,10 +73,10 @@ async def post_bill(
     """
     settings = get_settings()
     if not settings.erp_write_live:
-        intg = integration or await resolve_erp_integration(db, tenant_id, preferred_integration_id)
+        intg = integration or await resolve_erp_integration(db, tenant_id, preferred_integration_id, capable=_BILL_PROVIDERS)
         return {"mode": "dry_run", "provider": intg.type if intg else "none", "bill_id": bill.id, "external_id": None}
 
-    intg = integration or await resolve_erp_integration(db, tenant_id, preferred_integration_id)
+    intg = integration or await resolve_erp_integration(db, tenant_id, preferred_integration_id, capable=_BILL_PROVIDERS)
     if intg is None:
         raise ErpWriteError("Live ERP writes are enabled but no accounting integration is connected.")
 
@@ -88,6 +95,10 @@ async def post_bill(
     elif intg.type == "xero":
         from app.integrations.xero.write import create_bill as xero_create_bill
         result = await xero_create_bill(db, tenant_id, intg, bill)
+        external_id = result["external_id"]
+    elif intg.type == "freshbooks":
+        from app.integrations.freshbooks.write import create_bill as fb_create_bill
+        result = await fb_create_bill(db, tenant_id, intg, bill)
         external_id = result["external_id"]
     else:
         raise ErpWriteError(f"Unsupported ERP integration type: {intg.type!r}")
@@ -111,12 +122,15 @@ async def post_journal_entry(
     """
     settings = get_settings()
     if not settings.erp_write_live:
-        intg = integration or await resolve_erp_integration(db, tenant_id, preferred_integration_id)
+        intg = integration or await resolve_erp_integration(db, tenant_id, preferred_integration_id, capable=_JOURNAL_PROVIDERS)
         return {"mode": "dry_run", "provider": intg.type if intg else "none", "entry_id": entry.id, "external_id": None}
 
-    intg = integration or await resolve_erp_integration(db, tenant_id, preferred_integration_id)
+    intg = integration or await resolve_erp_integration(db, tenant_id, preferred_integration_id, capable=_JOURNAL_PROVIDERS)
     if intg is None:
-        raise ErpWriteError("Live ERP writes are enabled but no accounting integration is connected.")
+        raise ErpWriteError(
+            "Live ERP writes are enabled but no journal-capable integration (QuickBooks or "
+            "Xero) is connected. FreshBooks has no journal-entry API."
+        )
 
     lines = await db.journalentryline.find_many(where={"journal_entry_id": entry.id})
     if not lines:

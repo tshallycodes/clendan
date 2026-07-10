@@ -213,3 +213,40 @@ def test_xero_manual_journal_signs_debit_positive_credit_negative():
     ])
     assert out[0]["LineAmount"] == 50.0 and out[0]["AccountCode"] == "400"
     assert out[1]["LineAmount"] == -50.0  # credit is negative in Xero
+
+
+# ---- FreshBooks: bill-capable, not journal-capable --------------------------
+
+@pytest.mark.asyncio
+async def test_post_bill_live_freshbooks_dispatches():
+    db = _db(_integration("freshbooks"))
+    with (
+        patch("app.core.erp_writer.get_settings", return_value=_settings(True)),
+        patch("app.integrations.freshbooks.write.create_bill",
+              AsyncMock(return_value={"external_id": "FB1"})) as w,
+    ):
+        from app.core.erp_writer import post_bill
+        res = await post_bill(db, "t1", _bill())
+    w.assert_awaited_once()
+    assert res["provider"] == "freshbooks" and res["external_id"] == "FB1"
+    assert db.accountingbill.update.await_args.kwargs["data"]["external_id"] == "FB1"
+
+
+@pytest.mark.asyncio
+async def test_post_journal_no_journal_capable_raises_with_freshbooks_note():
+    # resolve among journal-capable providers finds nothing (e.g. only FreshBooks connected)
+    db = _db(None)
+    with patch("app.core.erp_writer.get_settings", return_value=_settings(True)):
+        from app.core.erp_writer import post_journal_entry, ErpWriteError
+        with pytest.raises(ErpWriteError, match="FreshBooks has no journal-entry API"):
+            await post_journal_entry(db, "t1", MagicMock(id="je1"))
+
+
+@pytest.mark.asyncio
+async def test_resolve_bill_vs_journal_capability_filters():
+    from app.core.erp_writer import resolve_erp_integration, _BILL_PROVIDERS, _JOURNAL_PROVIDERS
+    db = _db(_integration("quickbooks"))
+    await resolve_erp_integration(db, "t1", capable=_JOURNAL_PROVIDERS)
+    where = db.integration.find_first.await_args.kwargs["where"]
+    assert where["type"]["in"] == list(_JOURNAL_PROVIDERS)  # freshbooks excluded for journals
+    assert "freshbooks" in _BILL_PROVIDERS and "freshbooks" not in _JOURNAL_PROVIDERS

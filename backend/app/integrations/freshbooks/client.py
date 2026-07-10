@@ -180,3 +180,54 @@ async def get_expense_categories(access_token: str, account_id: str) -> list[dic
         resp = await http.get(url, headers=_auth_headers(access_token))
         resp.raise_for_status()
         return resp.json().get("response", {}).get("result", {}).get("categories", [])
+
+
+# ---------------------------------------------------------------------------
+# Writes — AP bills (FreshBooks has no journal-entry API)
+# ---------------------------------------------------------------------------
+
+async def find_or_create_vendor(access_token: str, account_id: str, vendor_name: str) -> str:
+    """Return a FreshBooks bill-vendor id for ``vendor_name``, creating the vendor if absent."""
+    url = f"{_BASE}/accounting/account/{account_id}/bills/bill_vendors/bill_vendors"
+    async with httpx.AsyncClient(timeout=30) as http:
+        resp = await http.get(url, params={"search[vendor_name]": vendor_name}, headers=_auth_headers(access_token))
+        if resp.is_success:
+            vendors = resp.json().get("response", {}).get("result", {}).get("bill_vendors", [])
+            for v in vendors:
+                if (v.get("vendor_name") or "").strip().lower() == vendor_name.strip().lower():
+                    return str(v.get("vendorid") or v.get("id"))
+        resp = await http.post(url, json={"bill_vendor": {"vendor_name": vendor_name}}, headers=_auth_headers(access_token))
+        resp.raise_for_status()
+        created = resp.json().get("response", {}).get("result", {}).get("bill_vendor", {})
+        vid = created.get("vendorid") or created.get("id")
+        if not vid:
+            raise ValueError("FreshBooks did not return a vendor id")
+        return str(vid)
+
+
+async def create_bill(
+    access_token: str, account_id: str, *,
+    vendor_id: str, bill_number: str, amount_minor: int, currency: str,
+    issue_date: str | None = None, description: str = "",
+) -> dict:
+    """Create an AP bill in FreshBooks. Amount is minor units, converted to decimal here.
+    Returns {"id": <bill id>}."""
+    url = f"{_BASE}/accounting/account/{account_id}/bills/bills"
+    line = {
+        "amount": {"amount": f"{amount_minor / 100:.2f}", "code": currency or "GBP"},
+        "description": description or (bill_number or "Bill"),
+    }
+    bill_obj: dict = {"vendorid": int(vendor_id), "lines": [line], "currency_code": currency or "GBP"}
+    if bill_number:
+        bill_obj["bill_number"] = bill_number
+    if issue_date:
+        bill_obj["issue_date"] = issue_date
+
+    async with httpx.AsyncClient(timeout=30) as http:
+        resp = await http.post(url, json={"bill": bill_obj}, headers=_auth_headers(access_token))
+        resp.raise_for_status()
+        result = resp.json().get("response", {}).get("result", {}).get("bill", {})
+        bid = result.get("id") or result.get("billid")
+        if not bid:
+            raise ValueError("FreshBooks did not return a bill id")
+        return {"id": str(bid)}
