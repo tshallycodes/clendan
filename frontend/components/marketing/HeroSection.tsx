@@ -51,7 +51,7 @@ export function HeroSection() {
           variants={item}
           className="text-xs font-body text-brand-muted uppercase tracking-widest mb-6"
         >
-          AI Financial Agent OS
+          The governed AI operator for finance teams
         </motion.p>
 
         <motion.h1
@@ -59,17 +59,18 @@ export function HeroSection() {
           className="font-heading font-black leading-none tracking-tight text-brand-text mb-6"
           style={{ fontSize: 'clamp(40px, 7vw, 72px)' }}
         >
-          Your Finance Team,
+          Your Finance Ops,
           <br />
-          <span style={{ color: '#00C853' }}>Running on Autopilot</span>
+          <span style={{ color: '#00C853' }}>Run For You</span>
         </motion.h1>
 
         <motion.p
           variants={item}
           className="text-base font-body text-brand-secondary max-w-xl leading-relaxed mb-8"
         >
-          Deploy AI tools that connect to your financial systems, execute tasks autonomously,
-          and produce full audit trails for every action. Not a dashboard. Execution infrastructure.
+          Clendan operates the accounting software you already use — QuickBooks, Xero, Stripe,
+          your bank. It reads your books, does the daily work inside them, and logs every action
+          for you to defend. You sign off on anything that changes; it never moves money on its own.
         </motion.p>
 
         <motion.div variants={item} className="flex flex-col sm:flex-row items-center gap-3">
@@ -78,7 +79,7 @@ export function HeroSection() {
             className="rounded-sm px-5 py-2.5 text-sm font-body font-medium transition-colors active:scale-[0.97]"
             style={{ background: '#00C853', color: '#000' }}
           >
-            Deploy Your First Tool
+            Connect your stack
           </Link>
           <Link
             href="/how-it-works"

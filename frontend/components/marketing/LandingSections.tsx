@@ -67,9 +67,9 @@ export function ProblemStatement() {
 // ─── Solution Overview ─────────────────────────────────────────────────────
 
 const SOLUTIONS = [
-  { icon: Lightning, title: 'Deploy AI Tools', desc: 'Autonomous agents that execute real financial tasks, not just surface insights.' },
-  { icon: LinkIcon, title: 'Connect Your Stack', desc: 'Native integrations with Xero, QuickBooks, Plaid, Stripe, and your ERP.' },
-  { icon: ShieldCheck, title: 'Full Audit Trail', desc: 'Every action logged, every decision explained. Policy-enforced by default.' },
+  { icon: Lightning, title: 'Operate Your Software', desc: 'Clendan does the daily work inside QuickBooks, Xero and your bank — not just surface insights.' },
+  { icon: LinkIcon, title: 'Across Your Whole Stack', desc: 'Read, decide and act across Xero, QuickBooks, Plaid, Stripe and your ERP — the work that lives between them.' },
+  { icon: ShieldCheck, title: 'Governed & Defensible', desc: 'Every action policy-checked, confirmed by you, and logged immutably. It never moves money on its own.' },
 ]
 
 export function SolutionOverview() {
@@ -78,7 +78,7 @@ export function SolutionOverview() {
       <div className="max-w-6xl mx-auto px-6 md:px-8 py-20">
         <FadeInUp>
           <h2 className="font-heading text-xl font-bold text-brand-text mb-2 max-w-2xl">
-            Deploy AI Tools. Connect Your Stack. Execute With a Full Audit Trail.
+            Operate Your Stack. Confirmed by You. Auditable by Default.
           </h2>
           <p className="text-sm font-body text-brand-muted mb-10">Infrastructure, not a dashboard.</p>
         </FadeInUp>
@@ -115,10 +115,10 @@ export function CTABanner() {
           style={{ border: '1px solid rgba(0,200,83,0.2)' }}
         >
           <h2 className="font-heading text-3xl md:text-4xl font-bold text-brand-text">
-            Ready to Automate Your Finance Stack?
+            Ready to Put Your Finance Ops on Autopilot?
           </h2>
           <p className="text-sm font-body text-brand-secondary max-w-sm">
-            Deploy your first AI tool in under 10 minutes.
+            Connect your first accounting system in under 10 minutes.
           </p>
           <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }} transition={{ duration: 0.15 }}>
             <Link
