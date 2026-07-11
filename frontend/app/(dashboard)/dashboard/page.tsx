@@ -5,11 +5,8 @@ import { StatCard } from '@/components/dashboard/StatCard'
 import { ExecutionChart } from '@/components/dashboard/ExecutionChart'
 import { RecentExecutionsTable } from '@/components/dashboard/RecentExecutionsTable'
 import { SystemStatusBar } from '@/components/dashboard/SystemStatusBar'
-import { ToolsList } from '@/components/dashboard/ToolsList'
 import { IntegrationsHealth } from '@/components/dashboard/IntegrationsHealth'
-import { QuickActions } from '@/components/dashboard/QuickActions'
 import { AnimatedPage, AnimatedSection } from '@/components/dashboard/AnimatedPage'
-import { AutomationRing } from '@/components/dashboard/AutomationRing'
 import { AskClendanHero } from '@/components/dashboard/AskClendanHero'
 
 export const metadata: Metadata = { title: 'Dashboard' }
@@ -22,13 +19,6 @@ interface Stats {
   active_tools: number
   invoices: number
   transactions: number
-}
-
-interface DeployedTool {
-  id: string
-  type: string
-  status: 'active' | 'inactive'
-  version: number
 }
 
 interface IntegrationSummary {
@@ -49,13 +39,11 @@ export default async function DashboardPage() {
   try { token = await getBackendToken() } catch { /* clerk unavailable */ }
 
   let stats: Stats | null = null
-  let tools: DeployedTool[] = []
   let integrationStatuses: IntegrationSummary[] = []
 
   if (token) {
-    const [statsResult, toolsResult, ...integrationResults] = await Promise.allSettled([
+    const [statsResult, ...integrationResults] = await Promise.allSettled([
       apiGet<Stats>('/dashboard/stats', token),
-      apiGet<{ tools: DeployedTool[] }>('/tools', token),
       ...INTEGRATION_SLUGS.map(({ slug }) =>
         fetch(`${API_BASE}/integrations/${slug}/status`, {
           headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
@@ -65,7 +53,6 @@ export default async function DashboardPage() {
     ])
 
     if (statsResult.status === 'fulfilled') stats = statsResult.value
-    if (toolsResult.status === 'fulfilled') tools = toolsResult.value?.tools ?? []
 
     integrationStatuses = INTEGRATION_SLUGS.map(({ slug, name }, i) => {
       const result = integrationResults[i]
@@ -144,17 +131,6 @@ export default async function DashboardPage() {
           />
         </div>
       </AnimatedSection>
-
-      <AnimatedSection>
-        <AutomationRing
-          autoApproved={Math.max(0, s.executions - s.pending_approvals)}
-          total={s.executions}
-        />
-      </AnimatedSection>
-
-      <AnimatedSection><QuickActions /></AnimatedSection>
-
-      <AnimatedSection><ToolsList tools={tools} /></AnimatedSection>
 
       <AnimatedSection><IntegrationsHealth integrations={integrationStatuses} /></AnimatedSection>
 
