@@ -7,7 +7,7 @@ import { RecentExecutionsTable } from '@/components/dashboard/RecentExecutionsTa
 import { SystemStatusBar } from '@/components/dashboard/SystemStatusBar'
 import { IntegrationsHealth } from '@/components/dashboard/IntegrationsHealth'
 import { AnimatedPage, AnimatedSection } from '@/components/dashboard/AnimatedPage'
-import { AskClendanHero } from '@/components/dashboard/AskClendanHero'
+import { InlineAgent } from '@/components/dashboard/InlineAgent'
 
 export const metadata: Metadata = { title: 'Dashboard' }
 
@@ -89,7 +89,7 @@ export default async function DashboardPage() {
         </div>
       </AnimatedSection>
 
-      <AnimatedSection><AskClendanHero /></AnimatedSection>
+      <AnimatedSection><InlineAgent /></AnimatedSection>
 
       <AnimatedSection>
         <p className="text-[11px] font-body uppercase tracking-widest text-brand-muted">Snapshot</p>

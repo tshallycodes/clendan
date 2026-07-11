@@ -14,6 +14,9 @@ export function ClenDashboard() {
 
   useEffect(() => registerClenLauncher((s) => { setSeed(s); setIsOpen(true) }), [])
 
+  // On the dashboard home the agent is inline (InlineAgent) - hide the corner launcher there.
+  if (pathname === '/dashboard') return null
+
   return (
     <>
       <button
