@@ -3,7 +3,7 @@
 import React, { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { House, CheckSquare, Plugs, Cpu, Gear, SignOut, List, X, ListBullets, ChartLineUp, Buildings } from '@phosphor-icons/react'
+import { House, CheckSquare, Plugs, Gear, SignOut, List, X, ListBullets, ChartLineUp, Buildings } from '@phosphor-icons/react'
 import { useClerk } from '@clerk/nextjs'
 import { motion, AnimatePresence } from 'framer-motion'
 import { cn } from '@/lib/utils'
@@ -12,7 +12,6 @@ import { Logo } from '@/components/Logo'
 
 const NAV: { icon: React.ElementType; label: string; href: string; external?: boolean }[] = [
   { icon: House,         label: 'Dashboard',   href: '/dashboard' },
-  { icon: Cpu,           label: 'Automations', href: '/tools' },
   { icon: ChartLineUp,   label: 'Reports',     href: '/reports' },
   { icon: CheckSquare,   label: 'Approvals',   href: '/approvals' },
   { icon: ListBullets,   label: 'Activity',    href: '/activity' },

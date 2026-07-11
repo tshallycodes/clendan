@@ -7,6 +7,7 @@ import { IntegrationLogo } from './IntegrationLogo'
 import { StatusDot, StatusLabel } from './CardStatusIndicator'
 import { IntegrationDef, IntegrationStatus } from './types'
 import { useCurrency } from '@/components/Providers'
+import { askClen } from '@/components/clen/clen-launcher'
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
@@ -59,41 +60,42 @@ interface Props {
   onSyncLog: () => void
 }
 
-// What Clendan can operate in each connection, grounded in the operator model + real API
-// coverage. level: yes = supported · limited = partial/API-gated · no = out of scope.
-type Cap = { label: string; level: 'yes' | 'limited' | 'no' }
+// Tasks Clendan's agent can run in each connection. Clicking one opens Clen and hands it the
+// prompt - the agent then does the work (proposing anything that changes state for you to
+// confirm). Grounded in the operator model + real API coverage; nothing here moves money.
+type Task = { label: string; prompt: string; note?: string }
 
-function capabilitiesFor(slug: string, category: string): Cap[] {
+function tasksFor(slug: string, category: string, name: string): Task[] {
   if (category === 'Accounting') {
-    const noGl = slug === 'freshbooks' // FreshBooks has no journal / reports API
-    return [
-      { label: 'Read reports (P&L, balance sheet, VAT)', level: noGl ? 'no' : 'yes' },
-      { label: 'Create & post bills', level: 'yes' },
-      { label: 'Post journal entries', level: noGl ? 'no' : 'yes' },
-      { label: 'Reconcile bank ↔ ledger', level: 'limited' },
-      { label: 'Prepare payments — never disburses', level: 'yes' },
+    const gl = slug !== 'freshbooks' // FreshBooks has no journal / reports API
+    const tasks: Task[] = [
+      { label: 'Process my invoices into bills', prompt: `Process my latest invoices into bills in ${name}` },
+      { label: 'Check spend against my policy', prompt: 'Run spend control on my bills and expenses' },
+      { label: 'Chase everyone who is overdue', prompt: "Chase everyone who's overdue" },
+      { label: "Prepare this week's payment run", prompt: "Prepare this week's payment run" },
+      { label: `Reconcile my bank to ${name}`, prompt: `Reconcile my bank transactions against ${name}`, note: 'API-limited' },
     ]
+    if (gl) {
+      tasks.unshift(
+        { label: `Show my P&L from ${name}`, prompt: `Show my profit and loss from ${name}` },
+        { label: 'Show what VAT I owe', prompt: 'What VAT do I owe?' },
+      )
+    }
+    return tasks
   }
   if (category === 'Payments') {
-    return [
-      { label: 'Read revenue & charges', level: 'yes' },
-      { label: 'Move money', level: 'no' },
-    ]
+    return [{ label: 'Show my revenue this month', prompt: "What's my revenue this month?" }]
   }
   if (category === 'ERP') {
-    return [
-      { label: 'Sync ledger data', level: 'yes' },
-      { label: 'Post bills & journals', level: 'limited' },
-    ]
+    return [{ label: `Sync my ${name} data`, prompt: `Sync my ${name} data` }]
   }
   if (category === 'Document & Email') {
     const email = slug === 'gmail' || slug === 'outlook'
-    return [
-      { label: 'Ingest invoices & receipts', level: 'yes' },
-      { label: 'Send collection reminders', level: email ? 'yes' : 'no' },
-    ]
+    const tasks: Task[] = [{ label: `Pull invoices from my ${name} inbox`, prompt: `Process invoices from my ${name} inbox` }]
+    if (email) tasks.push({ label: 'Send reminders to overdue customers', prompt: 'Send reminders to my overdue customers' })
+    return tasks
   }
-  return [{ label: 'Read data', level: 'yes' }]
+  return [{ label: 'Reconcile my transactions', prompt: 'Reconcile my bank transactions' }]
 }
 
 function statusColor(s: string): string {
@@ -245,21 +247,29 @@ export function IntegrationDetailDrawer({ slug, intg, status, lastSyncedAt, onCl
             </div>
 
             <div className="flex-1 overflow-y-auto px-6 py-5 space-y-6">
-              {/* What Clendan can operate here */}
-              <section>
-                <p className="text-[11px] font-body uppercase tracking-widest text-brand-muted mb-3">What Clendan can do here</p>
-                <div className="space-y-1.5">
-                  {capabilitiesFor(intg.slug, intg.category).map((c) => (
-                    <div key={c.label} className="flex items-center gap-2 text-xs font-body">
-                      <span className={c.level === 'yes' ? 'text-[#00C853]' : c.level === 'limited' ? 'text-[#f5a623]' : 'text-brand-muted'}>
-                        {c.level === 'yes' ? '✓' : c.level === 'limited' ? '≈' : '✕'}
-                      </span>
-                      <span className={c.level === 'no' ? 'text-brand-muted' : 'text-brand-secondary'}>{c.label}</span>
-                      {c.level === 'limited' && <span className="text-[10px] font-body text-brand-muted">(API-limited)</span>}
-                    </div>
-                  ))}
-                </div>
-              </section>
+              {/* Tasks Clendan can run here - each opens Clen and hands it the work */}
+              {isConnected && (
+                <section>
+                  <p className="text-[11px] font-body uppercase tracking-widest text-brand-muted mb-1">What can Clendan do here?</p>
+                  <p className="text-[11px] font-body text-brand-muted mb-3">Pick a task — Clen opens and does it with you.</p>
+                  <div className="space-y-1.5">
+                    {tasksFor(intg.slug, intg.category, intg.name).map((t) => (
+                      <button
+                        key={t.label}
+                        type="button"
+                        onClick={() => { askClen(t.prompt); onClose() }}
+                        className="w-full flex items-center justify-between gap-2 text-left px-3 py-2 rounded-sm border border-brand-border hover:bg-brand-elevated hover:border-brand-green/40 transition-colors group"
+                      >
+                        <span className="flex items-center gap-2 text-xs font-body text-brand-text">
+                          <span className="text-brand-green shrink-0">&rarr;</span>
+                          {t.label}
+                        </span>
+                        {t.note && <span className="text-[10px] font-body text-brand-muted shrink-0">{t.note}</span>}
+                      </button>
+                    ))}
+                  </div>
+                </section>
+              )}
 
               {isConnected ? (
                 <>
