@@ -246,9 +246,9 @@ export function ToolsClient({ deployedTools, connections }: Props) {
   return (
     <motion.div variants={pageVariants} initial="hidden" animate="show" className="p-6 space-y-10">
       <motion.div variants={sectionVariants}>
-        <h1 className="font-heading font-bold text-2xl text-brand-text">Tools</h1>
+        <h1 className="font-heading font-bold text-2xl text-brand-text">Automations</h1>
         <p className="text-xs font-body text-brand-muted mt-1 leading-relaxed max-w-xl">
-          Autonomous AI agents grouped by the two workflows they run end-to-end: accounts payable feeds month-end close. Toggle the connection between two tools to control whether a successful run automatically hands off to the next.
+          Automations that operate your connected accounting stack end-to-end: accounts payable feeds month-end close. Toggle the link between two to control whether a successful run automatically hands off to the next.
         </p>
         <p className="text-[11px] font-body text-brand-muted mt-2">
           {totalDeployed} of {TOOLS.length} deployed across {WORKFLOWS.length} workflows

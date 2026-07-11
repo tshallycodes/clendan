@@ -506,9 +506,9 @@ export function IntegrationsClient() {
     <div className="p-6 space-y-8 relative">
       {/* Page header */}
       <div>
-        <h1 className="font-heading font-bold text-2xl text-brand-text">Integrations</h1>
+        <h1 className="font-heading font-bold text-2xl text-brand-text">Connections</h1>
         <p className="text-[11px] font-body text-brand-muted mt-1 uppercase tracking-widest">
-          Connect your financial systems
+          The systems Clendan operates in
         </p>
       </div>
 

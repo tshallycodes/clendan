@@ -3,7 +3,7 @@
 import React, { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { House, CheckSquare, Plugs, Code, Cpu, Gear, SignOut, List, X, ListBullets, ShieldCheck } from '@phosphor-icons/react'
+import { House, CheckSquare, Plugs, Cpu, Gear, SignOut, List, X, ListBullets, ChartLineUp, Buildings } from '@phosphor-icons/react'
 import { useClerk } from '@clerk/nextjs'
 import { motion, AnimatePresence } from 'framer-motion'
 import { cn } from '@/lib/utils'
@@ -11,14 +11,14 @@ import { ThemeToggle } from '@/components/ThemeToggle'
 import { Logo } from '@/components/Logo'
 
 const NAV: { icon: React.ElementType; label: string; href: string; external?: boolean }[] = [
-  { icon: House,        label: 'Dashboard',    href: '/dashboard' },
-  { icon: CheckSquare, label: 'Approvals',    href: '/approvals' },
-  { icon: ListBullets, label: 'Executions',   href: '/executions' },
-  { icon: ShieldCheck, label: 'Audit',        href: '/audit' },
-  { icon: Plugs,       label: 'Integrations', href: '/dashboard/integrations' },
-  { icon: Cpu,         label: 'Tools',        href: '/tools' },
-  { icon: Code,        label: 'Developer',    href: '/developer' },
-  { icon: Gear,        label: 'Settings',     href: '/settings' },
+  { icon: House,         label: 'Dashboard',   href: '/dashboard' },
+  { icon: Cpu,           label: 'Automations', href: '/tools' },
+  { icon: ChartLineUp,   label: 'Reports',     href: '/reports' },
+  { icon: CheckSquare,   label: 'Approvals',   href: '/approvals' },
+  { icon: ListBullets,   label: 'Activity',    href: '/activity' },
+  { icon: Plugs,         label: 'Connections', href: '/dashboard/integrations' },
+  { icon: Buildings,     label: 'Clients',     href: '/clients' },
+  { icon: Gear,          label: 'Settings',    href: '/settings' },
 ]
 
 export function MobileNav() {
