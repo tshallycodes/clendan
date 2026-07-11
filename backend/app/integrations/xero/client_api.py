@@ -37,6 +37,26 @@ async def _retry(fn, *args, **kwargs):
     raise last_exc
 
 
+async def get_report(access_token: str, xero_tenant_id: str, report_name: str) -> dict:
+    """Fetch a Xero report (e.g. 'ProfitAndLoss', 'BalanceSheet'). Returns the raw report
+    JSON - the ERP's authoritative figures."""
+    async def _call():
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                f"{XERO_API_BASE}/Reports/{report_name}",
+                headers={
+                    "Authorization": f"Bearer {access_token}",
+                    "Xero-Tenant-Id": xero_tenant_id,
+                    "Accept": "application/json",
+                },
+                timeout=30.0,
+            )
+            response.raise_for_status()
+            return response.json()
+
+    return await _circuit.call(_retry, _call)
+
+
 async def get_accounts(access_token: str, xero_tenant_id: str) -> list:
     """
     GET /api.xro/2.0/Accounts — returns list of chart-of-accounts entries.

@@ -69,6 +69,7 @@ from app.api.v1.webhooks.stripe_billing import router as stripe_billing_webhook_
 from app.api.v1.workflows import router as workflows_router
 from app.api.v1.payment_runs import router as payment_runs_router
 from app.api.v1.firms import router as firms_router
+from app.api.v1.reports import router as reports_router
 
 v1_router = APIRouter()
 v1_router.include_router(onboarding.router)
@@ -144,4 +145,5 @@ v1_router.include_router(stripe_billing_webhook_router)
 v1_router.include_router(workflows_router)
 v1_router.include_router(payment_runs_router)
 v1_router.include_router(firms_router)
+v1_router.include_router(reports_router)
 v1_router.include_router(generic_router)  # must be last - uses {slug} path params

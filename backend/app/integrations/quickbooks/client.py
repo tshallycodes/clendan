@@ -402,6 +402,29 @@ async def create_journal_entry(
     return {"qb_journal_id": je["Id"], "qb_sync_token": je["SyncToken"], "created": True}
 
 
+async def get_report(
+    encrypted_access: str, realm_id: str, report_name: str,
+    params: dict | None = None, sandbox: bool = True,
+) -> dict:
+    """Fetch a QuickBooks report (e.g. 'ProfitAndLoss', 'BalanceSheet', 'VATDetailReport').
+    Returns the raw report JSON - the ERP's authoritative figures."""
+    access_token = encrypted_access
+    api_base = get_api_base(sandbox)
+
+    async def _call():
+        async with httpx.AsyncClient() as client:
+            res = await client.get(
+                f"{api_base}/{realm_id}/reports/{report_name}",
+                params={**(params or {}), "minorversion": "65"},
+                headers={"Authorization": f"Bearer {access_token}", "Accept": "application/json"},
+                timeout=30.0,
+            )
+            res.raise_for_status()
+            return res.json()
+
+    return await _circuit.call(_retry, _call)
+
+
 async def _query(access_token: str, realm_id: str, sql: str, sandbox: bool = True) -> list:
     """Runs a QB query and returns the first entity list found in QueryResponse."""
     async def _call():
