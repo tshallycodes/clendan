@@ -164,4 +164,48 @@ ACCOUNT_TOOLS: list[dict] = [
             "required": ["tool_type"],
         },
     },
+    {
+        "name": "create_bill",
+        "description": (
+            "ACTION: Records a supplier bill (accounts payable) in the connected books. This does "
+            "NOT write immediately - it PROPOSES the bill and returns a confirmation card the user "
+            "must approve in the UI before it is created. Amounts are integer minor units "
+            "(pence/cents, e.g. 12345 = 123.45). Use when the user wants to enter/record a bill "
+            "to pay, then tell them you've prepared it and to confirm."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "vendor": {"type": "string", "description": "Supplier / vendor name."},
+                "amount_minor": {"type": "integer", "description": "Total amount in minor units (e.g. 12345 = 123.45)."},
+                "currency": {"type": "string", "description": "ISO currency code (default GBP).", "default": "GBP"},
+                "number": {"type": "string", "description": "Bill / invoice number. Optional."},
+                "due_date": {"type": "string", "description": "Due date, ISO 8601 (e.g. 2026-08-01). Optional."},
+            },
+            "required": ["vendor", "amount_minor"],
+        },
+    },
+    {
+        "name": "prepare_payment",
+        "description": (
+            "ACTION (money): PREPARES a payment to a supplier. Clendan never moves money - it "
+            "records the payment for the authorised human to release in the bank/ERP. This does "
+            "NOT pay immediately - it PROPOSES the payment and returns a details-verified "
+            "confirmation sheet (payee, masked account, amount, and a warning if the supplier's "
+            "bank account changed since the last payment). Provide either a bill_id to pay, or a "
+            "vendor + amount_minor + currency. Amounts are integer minor units. Tell the user "
+            "you've prepared it for their confirmation."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "bill_id": {"type": "string", "description": "The bill to pay. Optional if vendor + amount_minor given."},
+                "vendor": {"type": "string", "description": "Supplier name (when not paying a specific bill)."},
+                "amount_minor": {"type": "integer", "description": "Amount in minor units (when not paying a specific bill)."},
+                "currency": {"type": "string", "description": "ISO currency code (default GBP).", "default": "GBP"},
+                "account_identifier": {"type": "string", "description": "Destination bank account (e.g. 'sortcode:accountnumber' or IBAN). Optional if already on file."},
+            },
+            "required": [],
+        },
+    },
 ]
