@@ -59,6 +59,43 @@ interface Props {
   onSyncLog: () => void
 }
 
+// What Clendan can operate in each connection, grounded in the operator model + real API
+// coverage. level: yes = supported · limited = partial/API-gated · no = out of scope.
+type Cap = { label: string; level: 'yes' | 'limited' | 'no' }
+
+function capabilitiesFor(slug: string, category: string): Cap[] {
+  if (category === 'Accounting') {
+    const noGl = slug === 'freshbooks' // FreshBooks has no journal / reports API
+    return [
+      { label: 'Read reports (P&L, balance sheet, VAT)', level: noGl ? 'no' : 'yes' },
+      { label: 'Create & post bills', level: 'yes' },
+      { label: 'Post journal entries', level: noGl ? 'no' : 'yes' },
+      { label: 'Reconcile bank ↔ ledger', level: 'limited' },
+      { label: 'Prepare payments — never disburses', level: 'yes' },
+    ]
+  }
+  if (category === 'Payments') {
+    return [
+      { label: 'Read revenue & charges', level: 'yes' },
+      { label: 'Move money', level: 'no' },
+    ]
+  }
+  if (category === 'ERP') {
+    return [
+      { label: 'Sync ledger data', level: 'yes' },
+      { label: 'Post bills & journals', level: 'limited' },
+    ]
+  }
+  if (category === 'Document & Email') {
+    const email = slug === 'gmail' || slug === 'outlook'
+    return [
+      { label: 'Ingest invoices & receipts', level: 'yes' },
+      { label: 'Send collection reminders', level: email ? 'yes' : 'no' },
+    ]
+  }
+  return [{ label: 'Read data', level: 'yes' }]
+}
+
 function statusColor(s: string): string {
   if (s === 'success' || s === 'completed') return 'text-[#00C853]'
   if (s === 'error' || s === 'failed') return 'text-[#ff4d6d]'
@@ -208,6 +245,22 @@ export function IntegrationDetailDrawer({ slug, intg, status, lastSyncedAt, onCl
             </div>
 
             <div className="flex-1 overflow-y-auto px-6 py-5 space-y-6">
+              {/* What Clendan can operate here */}
+              <section>
+                <p className="text-[11px] font-body uppercase tracking-widest text-brand-muted mb-3">What Clendan can do here</p>
+                <div className="space-y-1.5">
+                  {capabilitiesFor(intg.slug, intg.category).map((c) => (
+                    <div key={c.label} className="flex items-center gap-2 text-xs font-body">
+                      <span className={c.level === 'yes' ? 'text-[#00C853]' : c.level === 'limited' ? 'text-[#f5a623]' : 'text-brand-muted'}>
+                        {c.level === 'yes' ? '✓' : c.level === 'limited' ? '≈' : '✕'}
+                      </span>
+                      <span className={c.level === 'no' ? 'text-brand-muted' : 'text-brand-secondary'}>{c.label}</span>
+                      {c.level === 'limited' && <span className="text-[10px] font-body text-brand-muted">(API-limited)</span>}
+                    </div>
+                  ))}
+                </div>
+              </section>
+
               {isConnected ? (
                 <>
                   {/* Account summary */}

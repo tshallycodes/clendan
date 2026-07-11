@@ -1,4 +1,5 @@
 ﻿import type { Metadata } from 'next'
+import Link from 'next/link'
 import { getBackendToken } from '@/lib/auth'
 import { apiGet } from '@/lib/api'
 import { OrgNameForm } from '@/components/dashboard/settings/OrgNameForm'
@@ -142,6 +143,29 @@ export default async function SettingsPage() {
             <section className="space-y-4">
               <h2 className="text-[11px] font-body uppercase tracking-widest text-brand-muted border-b border-brand-border pb-2">Billing</h2>
               <BillingSection />
+            </section>
+          </AnimatedSection>
+
+          {/* Developer */}
+          <AnimatedSection>
+            <section className="space-y-4">
+              <h2 className="text-[11px] font-body uppercase tracking-widest text-brand-muted border-b border-brand-border pb-2">Developer</h2>
+              <div className="divide-y divide-brand-border border border-brand-border rounded-sm">
+                <Link href="/developer" className="flex items-center justify-between px-3 py-2.5 hover:bg-brand-elevated transition-colors group">
+                  <div>
+                    <p className="text-xs font-body text-brand-text">API playground &amp; keys</p>
+                    <p className="text-[11px] font-body text-brand-muted mt-0.5">Test endpoints and manage API keys</p>
+                  </div>
+                  <span className="text-brand-muted group-hover:text-brand-text transition-colors text-xs">&rarr;</span>
+                </Link>
+                <Link href="/api" className="flex items-center justify-between px-3 py-2.5 hover:bg-brand-elevated transition-colors group">
+                  <div>
+                    <p className="text-xs font-body text-brand-text">API reference</p>
+                    <p className="text-[11px] font-body text-brand-muted mt-0.5">Full endpoint documentation</p>
+                  </div>
+                  <span className="text-brand-muted group-hover:text-brand-text transition-colors text-xs">&rarr;</span>
+                </Link>
+              </div>
             </section>
           </AnimatedSection>
 
